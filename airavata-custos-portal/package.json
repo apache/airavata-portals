@@ -22,7 +22,7 @@
     "fs": "^0.0.1-security",
     "jwt-decode": "^3.0.0-beta.2",
     "qs": "^6.9.4",
-    "vue": "^2.6.11",
+    "vue": "^3.0.0",
     "vue-router": "^3.4.3",
     "vue-typeahead-bootstrap": "^2.11.1",
     "vuelidate": "^0.7.5",
