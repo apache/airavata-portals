@@ -1,4 +1,4 @@
-airavata-python-sdk==1.0.1
+airavata-python-sdk==2.1.5
 bcrypt==3.1.7
 cffi==1.15.1
 cryptography==38.0.4
@@ -20,5 +20,5 @@ requests==2.20.0
 scp==0.13.2
 six==1.15.0
 thrift-connector==0.24
-thrift==0.10.0
+thrift==0.22.0
 zipstream-new==1.1.8

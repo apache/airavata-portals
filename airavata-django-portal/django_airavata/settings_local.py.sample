@@ -75,6 +75,9 @@ AUTHENTICATION_OPTIONS = {
     # ]
 }
 
+# Path to the CA certificates bundle for secure connections
+CA_CERTS_PATH = '/etc/ssl/certs/ca-certificates.crt'
+
 # Airavata API Configuration
 GATEWAY_ID = 'default'
 AIRAVATA_API_HOST = 'localhost'
