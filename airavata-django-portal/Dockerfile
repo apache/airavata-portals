@@ -1,104 +1,58 @@
-# node image is based on Debian and includes necessary build tools
-FROM node:19.9.0 as build-stage
+# --- Stage 1: Build frontend assets ---
+FROM node:20-slim AS frontend-builder
 
-# build api javascript
-# api must come first, then common, since the others depend on these
-WORKDIR /code/django_airavata/apps/api
-COPY ./django_airavata/apps/api/package.json ./django_airavata/apps/api/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/api/ .
-RUN yarn run build
+WORKDIR /app
+COPY . .
 
-# build common javascript
-WORKDIR /code/django_airavata/static/common
-COPY ./django_airavata/static/common/package.json ./django_airavata/static/common/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/static/common/ .
-RUN yarn run build
+# Install Yarn classic (v1)
+RUN corepack enable && corepack prepare yarn@1.22.19 --activate
 
-# build dataparsers javascript
-WORKDIR /code/django_airavata/apps/dataparsers
-COPY ./django_airavata/apps/dataparsers/package.json ./django_airavata/apps/dataparsers/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/dataparsers/ .
-RUN yarn run build
+# Install dependencies and build frontend assets
+RUN yarn install --ignore-engines
+RUN ./build_js.sh
 
-# build groups javascript
-WORKDIR /code/django_airavata/apps/groups
-COPY ./django_airavata/apps/groups/package.json ./django_airavata/apps/groups/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/groups/ .
-RUN yarn run build
+# --- Stage 2: Python backend ---
+FROM python:3.11-slim AS backend
 
-# build auth javascript
-WORKDIR /code/django_airavata/apps/auth
-COPY ./django_airavata/apps/auth/package.json ./django_airavata/apps/auth/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/auth/ .
-RUN yarn run build
+# Install system dependencies for Python, MySQL, and image processing
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libmariadb-dev-compat \
+    libmariadb-dev \
+    git \
+    gcc \
+    g++ \
+    zlib1g-dev \
+    libjpeg-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# build workspace/django-airavata-workspace-plugin-api javascript
-# This one must come before workspace build
-WORKDIR /code/django_airavata/apps/workspace/django-airavata-workspace-plugin-api
-COPY ./django_airavata/apps/workspace/django-airavata-workspace-plugin-api/package.json ./django_airavata/apps/workspace/django-airavata-workspace-plugin-api/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/workspace/django-airavata-workspace-plugin-api/ .
-RUN yarn run build
+WORKDIR /app
 
-# build admin javascript
-# To reuse cache best, putting the two most volatile apps, admin and workspace, last
-WORKDIR /code/django_airavata/apps/admin
-COPY ./django_airavata/apps/admin/package.json ./django_airavata/apps/admin/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/admin/ .
-RUN yarn run build
+# Copy backend source code
+COPY . .
 
-# build workspace javascript
-WORKDIR /code/django_airavata/apps/workspace
-COPY ./django_airavata/apps/workspace/package.json ./django_airavata/apps/workspace/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/workspace/ .
-RUN yarn run build
+# Copy built frontend assets from builder stage
+COPY --from=frontend-builder /app/django_airavata/static/common ./django_airavata/static/common
+COPY --from=frontend-builder /app/django_airavata/apps/api ./django_airavata/apps/api
+COPY --from=frontend-builder /app/django_airavata/apps/admin ./django_airavata/apps/admin
+COPY --from=frontend-builder /app/django_airavata/apps/auth ./django_airavata/apps/auth
+COPY --from=frontend-builder /app/django_airavata/apps/dataparsers ./django_airavata/apps/dataparsers
+COPY --from=frontend-builder /app/django_airavata/apps/groups ./django_airavata/apps/groups
+COPY --from=frontend-builder /app/django_airavata/apps/workspace ./django_airavata/apps/workspace
+
+# Install Python dependencies
+COPY requirements.txt ./
+COPY requirements-mysql.txt ./
+COPY setup.py ./
+RUN pip install --upgrade pip && \
+    pip install gunicorn && \
+    pip install -r requirements.txt && \
+    pip install -r requirements-mysql.txt && \
+    rm -rf ~/.cache/pip
 
 
-
-FROM python:3.10-slim as server-stage
-
-ENV PYTHONUNBUFFERED 1
-
+# Expose port 8000
 EXPOSE 8000
 
-WORKDIR /code
-COPY requirements.txt requirements-mysql.txt ./
-COPY setup.* ./
-COPY README.md .
-RUN apt-get update && apt-get install -y git gcc g++ zlib1g-dev libjpeg-dev default-libmysqlclient-dev
-RUN pip install --upgrade pip setuptools wheel --no-cache
-RUN pip install -r requirements.txt --no-cache
-RUN pip install -r requirements-mysql.txt --no-cache
-
-# Copy in a default settings_local.py file
-COPY ./django_airavata/settings_local.py.sample ./django_airavata/settings_local.py
-
-COPY ./ .
-
-# Copy javascript builds from build-stage
-WORKDIR /code/django_airavata/apps/api/static/django_airavata_api
-COPY --from=build-stage /code/django_airavata/apps/api/static/django_airavata_api .
-WORKDIR /code/django_airavata/static/common/dist
-COPY --from=build-stage /code/django_airavata/static/common/dist .
-WORKDIR /code/django_airavata/apps/admin/static/django_airavata_admin
-COPY --from=build-stage /code/django_airavata/apps/admin/static/django_airavata_admin .
-WORKDIR /code/django_airavata/apps/groups/static/django_airavata_groups
-COPY --from=build-stage /code/django_airavata/apps/groups/static/django_airavata_groups .
-WORKDIR /code/django_airavata/apps/auth/static/django_airavata_auth
-COPY --from=build-stage /code/django_airavata/apps/auth/static/django_airavata_auth .
-WORKDIR /code/django_airavata/apps/workspace/static/django_airavata_workspace
-COPY --from=build-stage /code/django_airavata/apps/workspace/static/django_airavata_workspace .
-WORKDIR /code/django_airavata/apps/dataparsers/static/django_airavata_dataparsers
-COPY --from=build-stage /code/django_airavata/apps/dataparsers/static/django_airavata_dataparsers .
-
-WORKDIR /code
-
-ENTRYPOINT ["/code/scripts/start-server.sh"]
-
+# Entrypoint: Gunicorn for production
+CMD ["gunicorn", "django_airavata.wsgi:application", "-b", "0.0.0.0:8000", "--workers=3", "--log-level=info"]

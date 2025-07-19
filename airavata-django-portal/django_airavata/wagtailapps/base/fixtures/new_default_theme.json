@@ -3453,14 +3453,6 @@
 },
 {
     "model": "taggit.tag",
-    "pk": 14,
-    "fields": {
-        "name": "logo",
-        "slug": "logo_1"
-    }
-},
-{
-    "model": "taggit.tag",
     "pk": 15,
     "fields": {
         "name": "XSEDE",
