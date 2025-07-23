@@ -45,6 +45,11 @@ const NAV_CONTENT = [
     needsAuth: false,
   },
   {
+    title: "Research Catalog",
+    url: "/catalog",
+    needsAuth: false,
+  },
+  {
     title: "Sessions",
     url: "/sessions",
     needsAuth: true,

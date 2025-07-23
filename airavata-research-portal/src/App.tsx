@@ -26,11 +26,13 @@ import ResourceDetails from "./components/resources/ResourceDetails";
 import Notebooks from "./components/notebooks";
 import Repositories from "./components/repositories";
 import {Login} from "./components/auth/UserLoginPage";
+import {Signup} from "./components/auth/SignupPage";
+import {OAuthCallback} from "./components/auth/OAuthCallback";
 import ProtectedComponent from "./components/auth/ProtectedComponent";
 import {AuthProvider, AuthProviderProps} from "react-oidc-context";
 import {useEffect, useState} from "react";
 import NavBarFooterLayout from "./layouts/NavBarFooterLayout";
-import {CybershuttleLanding} from "./components/home/CybershuttleLanding";
+import {NewLandingPage} from "./components/home/NewLandingPage";
 import {APP_REDIRECT_URI, CLIENT_ID, OPENID_CONFIG_URL,} from "./lib/constants";
 import {WebStorageStateStore} from "oidc-client-ts";
 import {Resources} from "./components/resources";
@@ -41,6 +43,20 @@ import {AddRepoMaster} from "./components/add/AddRepoMaster";
 import {Add} from "./components/add";
 import {AddProjectMaster} from "./components/add/AddProjectMaster";
 import {StarredResourcesPage} from "@/components/resources/StarredResourcesPage.tsx";
+import {Catalog} from "./components/catalog";
+import {SidebarLayout} from "./layouts/SidebarLayout";
+import {ResourceDetail} from "./components/resources/ResourceDetail";
+import SearchResults from "./components/search/SearchResults";
+import {AddModelForm} from "./components/models/AddModelForm";
+import {AddDatasetForm} from "./components/datasets/AddDatasetForm";
+import {DatasetDetail} from "./components/datasets/DatasetDetail";
+import {ModelDetail} from "./components/models/ModelDetail";
+import {NotebookDetail} from "./components/notebooks/NotebookDetail";
+import {RepositoryDetail} from "./components/repositories/RepositoryDetail";
+import {AddComputeResourceForm} from "./components/resources/AddComputeResourceForm";
+import {AddStorageResourceForm} from "./components/resources/AddStorageResourceForm";
+import {AddNotebookForm} from "./components/notebooks/AddNotebookForm";
+import {AddRepositoryForm} from "./components/repositories/AddRepositoryForm";
 
 function App() {
   const colorMode = useColorMode();
@@ -102,22 +118,38 @@ function App() {
           <Toaster/>
           <UserSet/>
           <Routes>
-            {/* Public Route */}
-            <Route element={<NavBarFooterLayout/>}>
-              <Route path="/" element={<CybershuttleLanding/>}/>
-              <Route path="/login" element={<Login/>}/>
+            <Route path="/login" element={<Login/>}/>
+            <Route path="/signup" element={<Signup/>}/>
+            <Route path="/oauth_callback" element={<OAuthCallback/>}/>
+
+            {/* Public Routes with Sidebar Layout */}
+            <Route element={<SidebarLayout/>}>
+              <Route path="/" element={<NewLandingPage/>}/>
               <Route path="/resources" element={<Resources/>}/>
+              <Route path="/resources/storage/:id" element={<ResourceDetail/>}/>
+              <Route path="/resources/compute/:id" element={<ResourceDetail/>}/>
               <Route path="/events" element={<Events/>}/>
               <Route path="/resources/datasets" element={<Datasets/>}/>
               <Route path="/resources/notebooks" element={<Notebooks/>}/>
               <Route path="/resources/repositories" element={<Repositories/>}/>
               <Route path="/resources/models" element={<Models/>}/>
-              <Route path="/resources/:type/:id" element={<ResourceDetails/>}/>
+              <Route path="/resources/models/new" element={<AddModelForm/>}/>
+              <Route path="/resources/datasets/new" element={<AddDatasetForm/>}/>
+              <Route path="/resources/datasets/:id" element={<DatasetDetail/>}/>
+              <Route path="/resources/models/:id" element={<ModelDetail/>}/>
+              <Route path="/resources/notebooks/:id" element={<NotebookDetail/>}/>
+              <Route path="/resources/repositories/:id" element={<RepositoryDetail/>}/>
+              <Route path="/resources/compute/new" element={<AddComputeResourceForm/>}/>
+              <Route path="/resources/storage/new" element={<AddStorageResourceForm/>}/>
+              <Route path="/resources/notebooks/new" element={<AddNotebookForm/>}/>
+              <Route path="/resources/repositories/new" element={<AddRepositoryForm/>}/>
+              <Route path="/catalog" element={<Catalog/>}/>
+              <Route path="/search" element={<SearchResults/>}/>
             </Route>
 
-            {/* Protected Routes with Layout */}
+            {/* Protected Routes with Sidebar Layout */}
             <Route
-                element={<ProtectedComponent Component={NavBarFooterLayout}/>}
+                element={<ProtectedComponent Component={SidebarLayout}/>}
             >
               <Route path="/resources/starred" element={<StarredResourcesPage/>}/>
               <Route path="/sessions" element={<Home/>}/>

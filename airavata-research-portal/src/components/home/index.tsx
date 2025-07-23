@@ -11,20 +11,6 @@ const Home = () => {
   return (
     <Box>
       <Container maxW="container.xl" mt={8}>
-        {/* <HStack alignItems="flex-end" justify="space-between">
-          <PageHeader
-            title="Projects"
-            description="Projects are a combination of repositories, notebooks, models, and datasets."
-          />
-
-          <HStack gap={4}>
-            <AddZipButton />
-            <AddRepositoryButton />
-          </HStack>
-        </HStack>
-
-        <ProjectsSection /> */}
-
         <HStack alignItems="flex-end" justify="space-between" mt={4}>
           <PageHeader
             title="Sessions"

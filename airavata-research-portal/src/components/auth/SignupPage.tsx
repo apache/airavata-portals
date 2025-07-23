@@ -6,14 +6,14 @@ import { useNavigate } from "react-router";
 // Using the existing hero image
 import HeroImage from "../../assets/Hero.original.png";
 
-export const Login = () => {
+export const Signup = () => {
   const [loading, setLoading] = useState(false);
   const auth = useAuth();
   const navigate = useNavigate();
 
   const redirect = new URLSearchParams(window.location.search).get("redirect") || "/";
 
-  const handleLogin = () => {
+  const handleSignup = () => {
     setLoading(true);
     auth.signinRedirect({
       redirect_uri: `${window.location.origin}${redirect}`,
@@ -23,7 +23,6 @@ export const Login = () => {
       },
     });
   };
-
 
   return (
     <Container maxWidth="100vw" height="100vh" padding={0}>
@@ -65,7 +64,7 @@ export const Login = () => {
           </Box>
         </Box>
 
-        {/* Right side - Login Form */}
+        {/* Right side - Signup Form */}
         <Box width="50%" height="100vh" display="flex" flexDirection="column">
           {/* Header */}
           <HStack justifyContent="space-between" padding={6}>
@@ -80,7 +79,7 @@ export const Login = () => {
             </HStack>
           </HStack>
 
-          {/* Login Form */}
+          {/* Signup Form */}
           <VStack 
             flex={1} 
             justifyContent="center" 
@@ -90,21 +89,22 @@ export const Login = () => {
             gap={6}
           >
             <VStack gap={2} alignItems="flex-start" width="100%">
-              <Text fontSize="2xl" fontWeight="bold">Welcome back</Text>
+              <Text fontSize="2xl" fontWeight="bold">Create Account</Text>
               <Text color="gray.500" fontSize="sm">
-                Sign in with your credentials to continue your work in
-                cybershuttle
+                Let your passion fuel your drive as you research through top
+                scientific discoveries
               </Text>
             </VStack>
 
             <VStack gap={4} width="100%">
-              <Input placeholder="Username" backgroundColor="gray.50" border="none" />
-              <Input placeholder="Password" type="password" backgroundColor="gray.50" border="none" />
-              
-              <HStack justifyContent="space-between" width="100%" fontSize="sm">
-                <Text color="gray.500">Remember me</Text>
-                <Text color="blue.500" cursor="pointer">Forgot Password?</Text>
+              <HStack gap={4} width="100%">
+                <Input placeholder="First Name" backgroundColor="gray.50" border="none" />
+                <Input placeholder="Last Name" backgroundColor="gray.50" border="none" />
               </HStack>
+              <Input placeholder="Username" backgroundColor="gray.50" border="none" />
+              <Input placeholder="E-mail" backgroundColor="gray.50" border="none" />
+              <Input placeholder="Password" type="password" backgroundColor="gray.50" border="none" />
+              <Input placeholder="Confirm Password" type="password" backgroundColor="gray.50" border="none" />
             </VStack>
 
             <VStack gap={3} width="100%">
@@ -113,10 +113,10 @@ export const Login = () => {
                 backgroundColor="blue.400"
                 color="white"
                 _hover={{ backgroundColor: "blue.500" }}
-                onClick={handleLogin}
+                onClick={handleSignup}
                 loading={loading}
               >
-                Sign In
+                Sign Up
               </Button>
 
               <Text fontSize="sm" color="gray.400">or</Text>
@@ -128,21 +128,21 @@ export const Login = () => {
                 backgroundColor="white"
                 _hover={{ backgroundColor: "gray.50" }}
                 leftIcon={<Text>🔗</Text>}
-                onClick={handleLogin}
+                onClick={handleSignup}
                 loading={loading}
               >
-                Sign in with Cilogon
+                Sign up with Cilogon
               </Button>
 
               <Text fontSize="sm" color="gray.600" textAlign="center">
-                Don't have an account?{" "}
+                Already have an account?{" "}
                 <Text 
                   as="span" 
                   color="blue.500" 
                   cursor="pointer"
-                  onClick={() => navigate("/signup")}
+                  onClick={() => navigate("/login")}
                 >
-                  Sign up
+                  Sign In
                 </Text>
               </Text>
             </VStack>

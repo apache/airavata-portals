@@ -15,9 +15,12 @@ export const resourceTypeToColor = (type: string) => {
   }
 }
 
-export const isValidImaage = (url: string) => {
+export const isValidImaage = (url: string | undefined) => {
   // should start with http or https 
-
+  if (!url) {
+    return false;
+  }
+  
   if (url.startsWith("http")) {
     return true;
   }

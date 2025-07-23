@@ -20,11 +20,10 @@
 import {Resource} from "@/interfaces/ResourceType.ts";
 import {ResourceOptionButton} from "@/components/resources/ResourceOptions.tsx";
 import {Box} from "@chakra-ui/react";
-import api from "@/lib/api.ts";
-import {CONTROLLER} from "@/lib/controller.ts";
 import {toaster} from "@/components/ui/toaster.tsx";
 import {useEffect, useState} from "react";
 import {BsStar, BsStarFill} from "react-icons/bs";
+import {useAuth} from "react-oidc-context";
 
 export const StarResourceButton = ({
                                      resource,
@@ -36,36 +35,80 @@ export const StarResourceButton = ({
   const [changeStarLoading, setChangeStarLoading] = useState(false);
   const [initialLoad, setinitialLoad] = useState(false);
   const [starred, setStarred] = useState(false);
+  const auth = useAuth();
+
+  const getApiEndpoint = (resourceType: string, resourceId: string) => {
+    const typeMap: { [key: string]: string } = {
+      'MODEL': 'models',
+      'DATASET': 'datasets', 
+      'NOTEBOOK': 'notebooks',
+      'REPOSITORY': 'repositories',
+      'STORAGE': 'storage-resources',
+      'COMPUTE': 'compute-resources'
+    };
+    return `http://localhost:8080/api/${typeMap[resourceType] || 'models'}/${resourceId}/star`;
+  };
 
   useEffect(() => {
+    if (!auth.user?.profile.email) return;
+    
     async function getWhetherUserStarred() {
-      setinitialLoad(true);
-      const resp = await api.get(`${CONTROLLER.resources}/${resource.id}/star`);
-      setStarred(resp.data);
-      setinitialLoad(false);
+      try {
+        setinitialLoad(true);
+        const endpoint = getApiEndpoint(resource.type, resource.id);
+        const response = await fetch(`${endpoint}?userEmail=${encodeURIComponent(auth.user?.profile.email || '')}`);
+        const isStarred = await response.json();
+        setStarred(isStarred);
+      } catch (error) {
+        console.error('Error checking star status:', error);
+      } finally {
+        setinitialLoad(false);
+      }
     }
 
     getWhetherUserStarred();
-  }, []);
+  }, [resource.id, resource.type, auth.user?.profile.email]);
 
   const handleStarResource = async () => {
+    if (!auth.user?.profile.email) {
+      toaster.create({
+        title: "Please log in to star resources",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       setChangeStarLoading(true);
-      await api.post(`${CONTROLLER.resources}/${resource.id}/star`);
+      const endpoint = getApiEndpoint(resource.type, resource.id);
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          userEmail: auth.user.profile.email,
+          userName: auth.user.profile.name || 'User'
+        })
+      });
+      
+      const newStarredState = await response.json();
+      
       toaster.create({
-        title: starred ? "Unstarred" : "Starred",
+        title: newStarredState ? "Starred" : "Unstarred",
         description: resource.name,
         type: "success",
       })
-      setStarred(prev => {
-        if (prev) {
-          onSuccess(resource.id || "INVALID");
-        }
-        return !prev;
-      });
-    } catch {
+      
+      setStarred(newStarredState);
+      
+      if (!newStarredState) {
+        onSuccess(resource.id || "INVALID");
+      }
+    } catch (error) {
+      console.error('Error starring resource:', error);
       toaster.create({
-        title: "Error liking resource",
+        title: "Error updating star status",
         type: "error",
       });
     } finally {

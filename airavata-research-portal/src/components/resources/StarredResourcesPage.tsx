@@ -19,12 +19,12 @@
 
 import {useEffect, useState} from "react";
 import {useAuth} from "react-oidc-context";
-import api from "@/lib/api.ts";
-import {CONTROLLER} from "@/lib/controller.ts";
 import {Container, SimpleGrid, Spinner} from "@chakra-ui/react";
 import {Resource} from "@/interfaces/ResourceType.ts";
 import {ResourceCard} from "@/components/home/ResourceCard.tsx";
 import {PageHeader} from "@/components/PageHeader.tsx";
+import {StatusEnum} from "@/interfaces/StatusEnum.ts";
+import {PrivacyEnum} from "@/interfaces/PrivacyEnum.ts";
 
 export const StarredResourcesPage = () => {
   const [starredResources, setStarredResources] = useState([]);
@@ -32,17 +32,38 @@ export const StarredResourcesPage = () => {
   const auth = useAuth();
 
   useEffect(() => {
-    if (auth.isLoading) return;
+    if (auth.isLoading || !auth.user?.profile.email) return;
 
     async function getStarredResources() {
-      setLoading(true);
-      const resp = await api.get(`${CONTROLLER.resources}/${auth.user?.profile.email}/stars`)
-      setStarredResources(resp.data);
-      setLoading(false);
+      try {
+        setLoading(true);
+        const response = await fetch(`http://localhost:8080/api/users/${encodeURIComponent(auth.user?.profile.email || '')}/starred`);
+        const data = await response.json();
+        
+        // Transform the data to match the expected Resource format
+        const transformedResources = data.map((item: any) => ({
+          id: item.resource.id.toString(),
+          name: item.resource.title,
+          description: item.resource.description || '',
+          headerImage: item.resource.headerImage || '',
+          authors: item.resource.authors || [],
+          tags: (item.resource.tags || []).map((tag: string) => ({ value: tag })),
+          status: StatusEnum.VERIFIED,
+          privacy: PrivacyEnum.PUBLIC,
+          type: item.type.toUpperCase()
+        }));
+        
+        setStarredResources(transformedResources);
+      } catch (error) {
+        console.error('Error fetching starred resources:', error);
+        setStarredResources([]);
+      } finally {
+        setLoading(false);
+      }
     }
 
     getStarredResources();
-  }, [auth.isLoading]);
+  }, [auth.isLoading, auth.user?.profile.email]);
 
   return (
       <Container maxW="container.lg" mt={8}>
