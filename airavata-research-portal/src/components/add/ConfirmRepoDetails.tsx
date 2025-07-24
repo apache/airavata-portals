@@ -1,10 +1,11 @@
-import { PrivacyEnum } from "@/interfaces/PrivacyEnum";
-import { CreateResourceRequest } from "@/interfaces/Requests/CreateResourceRequest";
+import {PrivacyEnum} from "@/interfaces/PrivacyEnum";
+import {CreateResourceRequest} from "@/interfaces/Requests/CreateResourceRequest";
 import api from "@/lib/api";
-import { CONTROLLER } from "@/lib/controller";
+import {CONTROLLER} from "@/lib/controller";
 import {
   Button,
   Code,
+  createListCollection,
   Field,
   HStack,
   Input,
@@ -13,11 +14,10 @@ import {
   Text,
   Textarea,
   VStack,
-  createListCollection,
 } from "@chakra-ui/react";
-import { toaster } from "../ui/toaster";
-import { useNavigate } from "react-router";
-import { useState } from "react";
+import {toaster} from "../ui/toaster";
+import {useNavigate} from "react-router";
+import {useState} from "react";
 
 const privacyOptions = createListCollection({
   items: Object.keys(PrivacyEnum).map((key) => ({
@@ -27,10 +27,10 @@ const privacyOptions = createListCollection({
 });
 
 export const ConfirmRepoDetails = ({
-  createResourceRequest,
-  setCreateResourceRequest,
-  githubUrl,
-}: {
+                                     createResourceRequest,
+                                     setCreateResourceRequest,
+                                     githubUrl,
+                                   }: {
   createResourceRequest: CreateResourceRequest;
   setCreateResourceRequest: (data: CreateResourceRequest) => void;
   githubUrl: string;
@@ -42,8 +42,8 @@ export const ConfirmRepoDetails = ({
     try {
       setLoading(true);
       await api.post(
-        `${CONTROLLER.resources}/repository?githubUrl=${githubUrl}`,
-        createResourceRequest
+          `${CONTROLLER.resources}/repository?githubUrl=${githubUrl}`,
+          createResourceRequest
       );
 
       toaster.create({
@@ -52,7 +52,7 @@ export const ConfirmRepoDetails = ({
         type: "success",
       });
       navigate(
-        "/resources?resourceTypes=REPOSITORY%2CNOTEBOOK%2CDATASET%2CMODEL"
+          "/resources?resourceTypes=REPOSITORY%2CNOTEBOOK%2CDATASET%2CMODEL"
       );
     } catch (error) {
       console.error("Error adding repository:", error);
@@ -66,87 +66,89 @@ export const ConfirmRepoDetails = ({
     }
   };
 
-  return (
-    <>
-      <VStack gap={4}>
-        <Text>
-          To make any changes, please modify the <Code>cybershuttle.yml</Code>{" "}
-          file in your GitHub repository.
-        </Text>
-        <Field.Root disabled>
-          <Field.Label>Repository Name</Field.Label>
-          <Input value={createResourceRequest.name} />
-        </Field.Root>
-        <Field.Root disabled>
-          <Field.Label>Repository URL</Field.Label>
-          <Input value={githubUrl} />
-        </Field.Root>
-        <Field.Root disabled>
-          <Field.Label>Description</Field.Label>
-          <Textarea maxH="5lh" value={createResourceRequest.description} />
-        </Field.Root>
-        <Field.Root disabled>
-          <Field.Label>Tags</Field.Label>
-          <HStack flexWrap={"wrap"} gap={2}>
-            {createResourceRequest.tags.map((tag) => (
-              <Code key={tag} colorScheme="blue">
-                {tag}
-              </Code>
-            ))}
-          </HStack>
-        </Field.Root>
-        <Field.Root disabled>
-          <Field.Label>Authors</Field.Label>
-          <HStack flexWrap={"wrap"} gap={2}>
-            {createResourceRequest.authors.map((author) => (
-              <Code key={author} colorScheme="blue">
-                {author}
-              </Code>
-            ))}
-          </HStack>
-        </Field.Root>
-        <Field.Root>
-          <Select.Root
-            value={[createResourceRequest.privacy]} // ✅ value must be an array
-            onValueChange={(value) => {
-              console.log(value);
-              setCreateResourceRequest({
-                ...createResourceRequest,
-                privacy: value.value[0] as PrivacyEnum, // ✅ value is a string[]
-              });
-            }}
-            collection={privacyOptions}
-            width="full"
-            disabled={true}
-          >
-            <Select.HiddenSelect />
-            <Select.Label>Privacy</Select.Label>
-            <Select.Control width="full">
-              <Select.Trigger width="full">
-                <Select.ValueText placeholder="Select privacy" width="full" />
-              </Select.Trigger>
-              <Select.IndicatorGroup>
-                <Select.Indicator />
-              </Select.IndicatorGroup>
-            </Select.Control>
-            <Portal>
-              <Select.Positioner>
-                <Select.Content width="full">
-                  {privacyOptions.items.map((item) => (
-                    <Select.Item item={item} key={item.value} width="full">
-                      {item.label}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Positioner>
-            </Portal>
-          </Select.Root>
-        </Field.Root>
+  console.log(createResourceRequest);
 
-        <Button w="full" loading={loading} onClick={onSubmit}>
-          Add Repository
-        </Button>
-      </VStack>
-    </>
+  return (
+      <>
+        <VStack gap={4}>
+          <Text>
+            To make any changes, please modify the <Code>cybershuttle.yml</Code>{" "}
+            file in your GitHub repository.
+          </Text>
+          <Field.Root disabled>
+            <Field.Label>Repository Name</Field.Label>
+            <Input value={createResourceRequest.name}/>
+          </Field.Root>
+          <Field.Root disabled>
+            <Field.Label>Repository URL</Field.Label>
+            <Input value={githubUrl}/>
+          </Field.Root>
+          <Field.Root disabled>
+            <Field.Label>Description</Field.Label>
+            <Textarea maxH="5lh" value={createResourceRequest.description}/>
+          </Field.Root>
+          <Field.Root disabled>
+            <Field.Label>Tags</Field.Label>
+            <HStack flexWrap={"wrap"} gap={2}>
+              {createResourceRequest.tags.map((tag) => (
+                  <Code key={tag} colorScheme="blue">
+                    {tag}
+                  </Code>
+              ))}
+            </HStack>
+          </Field.Root>
+          <Field.Root disabled>
+            <Field.Label>Authors</Field.Label>
+            <VStack alignItems={'flex-start'} flexWrap={"wrap"} gap={2}>
+              {createResourceRequest.authors.map((author) => (
+                  <Code key={author.authorId + author.role} colorScheme="blue">
+                    {author.authorId} ({author.role})
+                  </Code>
+              ))}
+            </VStack>
+          </Field.Root>
+          <Field.Root>
+            <Select.Root
+                value={[createResourceRequest.privacy]}
+                onValueChange={(value) => {
+                  console.log(value);
+                  setCreateResourceRequest({
+                    ...createResourceRequest,
+                    privacy: value.value[0] as PrivacyEnum,
+                  });
+                }}
+                collection={privacyOptions}
+                width="full"
+                disabled={true}
+            >
+              <Select.HiddenSelect/>
+              <Select.Label>Privacy</Select.Label>
+              <Select.Control width="full">
+                <Select.Trigger width="full">
+                  <Select.ValueText placeholder="Select privacy" width="full"/>
+                </Select.Trigger>
+                <Select.IndicatorGroup>
+                  <Select.Indicator/>
+                </Select.IndicatorGroup>
+              </Select.Control>
+              <Portal>
+                <Select.Positioner>
+                  <Select.Content width="full">
+                    {privacyOptions.items.map((item) => (
+                        <Select.Item item={item} key={item.value} width="full">
+                          {item.label}
+                        </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+              </Portal>
+            </Select.Root>
+          </Field.Root>
+
+          <Button w="full" loading={loading} onClick={onSubmit}>
+            Add Repository
+          </Button>
+        </VStack>
+      </>
   );
 };

@@ -54,6 +54,7 @@ import {CONTROLLER} from "@/lib/controller";
 import {DatasetSpecificDetails} from "../datasets/DatasetSpecificDetails";
 import {ResourceOptions} from "@/components/resources/ResourceOptions.tsx";
 import {toaster} from "@/components/ui/toaster.tsx";
+import {ResourceAuthor} from "@/interfaces/ResourceAuthor.ts";
 
 async function getResource(id: string) {
   const response = await api.get(`${CONTROLLER.resources}/public/${id}`);
@@ -171,20 +172,20 @@ const ResourceDetails = () => {
                 ))}
               </HStack>
 
-              <HStack mt={8}>
-                {resource.authors.map((author: string) => {
+              <HStack mt={8} wrap={'wrap'}>
+                {resource.authors.map((author: ResourceAuthor) => {
                   return (
-                      <HStack key={author}>
-                        <Avatar.Root shape="full" size="xl">
-                          <Avatar.Fallback name={author}/>
-                          <Avatar.Image src={author}/>
+                      <HStack>
+                        <Avatar.Root shape="full" size="xs">
+                          <Avatar.Fallback name={author.authorId}/>
+                          <Avatar.Image src={author.authorId}/>
                         </Avatar.Root>
 
                         <Box>
-                          <Text fontWeight="bold">{author}</Text>
+                          <Text fontWeight="bold" fontSize={'sm'}>{author.authorId}</Text>
                         </Box>
                       </HStack>
-                  );
+                  )
                 })}
               </HStack>
             </Box>

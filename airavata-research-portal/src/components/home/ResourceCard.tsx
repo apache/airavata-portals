@@ -20,7 +20,7 @@
 import {ModelResource, Resource} from "@/interfaces/ResourceType";
 import {Tag} from "@/interfaces/TagType";
 import {isValidImaage, resourceTypeToColor} from "@/lib/util";
-import {Avatar, Badge, Box, Card, HStack, Image, Text,} from "@chakra-ui/react";
+import {Avatar, Badge, Box, Card, HStack, Image, Text, VStack,} from "@chakra-ui/react";
 import {ResourceTypeBadge} from "../resources/ResourceTypeBadge";
 import {ResourceTypeEnum} from "@/interfaces/ResourceTypeEnum";
 import {ModelCardButton} from "../models/ModelCardButton";
@@ -40,7 +40,6 @@ export const ResourceCard = ({
   removeOnUnStar?: boolean;
 }) => {
   const [hideCard, setHideCard] = useState(false);
-  const author = resource.authors[0];
 
   const isValidImage = isValidImaage(resource.headerImage);
 
@@ -122,18 +121,22 @@ export const ResourceCard = ({
             </Card.Body>
 
             <Card.Footer justifyContent="space-between" pt={4}>
-              {author && (
-                  <HStack>
-                    <Avatar.Root shape="full" size="sm">
-                      <Avatar.Fallback name={author}/>
-                      <Avatar.Image src={author}/>
-                    </Avatar.Root>
+              <VStack alignItems={'flex-start'}>
+                {resource.authors.map(author => (
+                        <HStack>
+                          <Avatar.Root shape="full" size="xs">
+                            <Avatar.Fallback name={author.authorId}/>
+                            <Avatar.Image src={author.authorId}/>
+                          </Avatar.Root>
 
-                    <Box>
-                      <Text fontWeight="bold">{author}</Text>
-                    </Box>
-                  </HStack>
-              )}
+                          <Box>
+                            <Text fontWeight="bold" fontSize={'sm'}>{author.authorId}</Text>
+                          </Box>
+                        </HStack>
+                    )
+                )}
+              </VStack>
+
 
               {(resource.type as ResourceTypeEnum) === ResourceTypeEnum.MODEL && (
                   <ModelCardButton model={resource as ModelResource}/>
