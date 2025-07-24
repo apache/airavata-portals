@@ -50,7 +50,6 @@ RUN pip install --upgrade pip && \
     pip install -r requirements-mysql.txt && \
     rm -rf ~/.cache/pip
 
-
 # Expose port 8000
 EXPOSE 8000
 
