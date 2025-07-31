@@ -162,19 +162,26 @@ def create_serializer_class(thrift_data_type, enable_date_time_conversion=False)
 
         def create(self, validated_data):
             params = self.process_nested_fields(validated_data)
-            if (thrift_data_type.__name__ == 'ExperimentModel' and
-                'experimentId' in params and params['experimentId'] is None):
-                del params['experimentId']
+
+            # The Thrift models expect a mandatory ID but provide a default value for creation.
+            # The latest library upgrade is tight and fails if an ID is explicitly passed as `None`.
+            # This logic removes such fields allowing the default to be used.
+            thrift_spec = thrift_data_type.thrift_spec
+            for field_spec in thrift_spec:
+                if field_spec:
+                    field_name = field_spec[2]
+                    default_value = field_spec[4]
+                    if default_value is not None:
+                        if field_name in params and params[field_name] is None:
+                            del params[field_name]
 
             if (thrift_data_type.__name__ == 'ExperimentModel' and
                 'experimentType' in params and isinstance(params['experimentType'], int)):
                 params['experimentType'] = ExperimentType(params['experimentType'])
 
-            if thrift_data_type.__name__ == 'ApplicationDeploymentDescription':
-                if 'appDeploymentId' in params and params['appDeploymentId'] is None:
-                    del params['appDeploymentId']
-                if 'parallelism' in params and isinstance(params['parallelism'], int):
-                    params['parallelism'] = ApplicationParallelismType(params['parallelism'])
+            if (thrift_data_type.__name__ == 'ApplicationDeploymentDescription' and
+                'parallelism' in params and isinstance(params['parallelism'], int)):
+                params['parallelism'] = ApplicationParallelismType(params['parallelism'])
 
             return thrift_data_type(**params)
 
