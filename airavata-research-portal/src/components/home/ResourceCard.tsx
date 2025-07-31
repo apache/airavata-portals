@@ -27,6 +27,8 @@ import {ModelCardButton} from "../models/ModelCardButton";
 import {useState} from "react";
 import {Link} from 'react-router';
 import {ResourceOptions} from "@/components/resources/ResourceOptions.tsx";
+import {PrivacyEnum} from "@/interfaces/PrivacyEnum.ts";
+import {PrivateResourceTooltip} from "@/components/resources/PrivateResourceTooltip.tsx";
 
 export const ResourceCard = ({
                                resource,
@@ -87,8 +89,14 @@ export const ResourceCard = ({
         <Card.Header>
           <HStack justifyContent={'space-between'} alignItems={'center'} flexWrap={'wrap'}>
             <Card.Title>{resource.name}</Card.Title>
-            <ResourceOptions deleteable={deletable} resource={resource} onDeleteSuccess={hideCardCallback}
-                             onUnStarSuccess={removeOnUnStar ? hideCardCallback : dummyOnUnStarSuccess}/>
+
+            <HStack alignItems={'center'}>
+              {resource.privacy === PrivacyEnum.PRIVATE &&
+                  <PrivateResourceTooltip/>
+              }
+              <ResourceOptions deleteable={deletable} resource={resource} onDeleteSuccess={hideCardCallback}
+                               onUnStarSuccess={removeOnUnStar ? hideCardCallback : dummyOnUnStarSuccess}/>
+            </HStack>
           </HStack>
         </Card.Header>
 

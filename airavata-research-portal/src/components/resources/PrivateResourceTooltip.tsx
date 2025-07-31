@@ -17,15 +17,13 @@
  *  under the License.
  */
 
-export enum PrivacyEnum {
-  PUBLIC = "PUBLIC",
-  PRIVATE = "PRIVATE",
-}
+import {Tooltip} from "@/components/ui/tooltip.tsx";
+import {IoEyeOffOutline} from "react-icons/io5";
 
-export function isPrivacyEnum(value: string | undefined): boolean {
-  if (value === undefined || value === null) {
-    return false;
-  }
-
-  return Object.values(PrivacyEnum).includes(value as PrivacyEnum);
+export const PrivateResourceTooltip = () => {
+  return (
+      <Tooltip content={"This resource is private and can only be seen by the resource's authors"}>
+        <IoEyeOffOutline/>
+      </Tooltip>
+  )
 }

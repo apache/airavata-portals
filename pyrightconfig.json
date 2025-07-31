@@ -1,0 +1,25 @@
+{
+  "include": [
+    "airavata-django-portal/django_airavata",
+    "airavata-django-portal/tests",
+  ],
+  "extraPaths": [
+    "airavata-django-portal-commons",
+    "airavata-django-portal-sdk"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    "build",
+    "dist",
+    "*.egg-info"
+  ],
+  "ignore": [
+    "**/migrations"
+  ],
+  "reportMissingImports": "warning",
+  "reportMissingTypeStubs": false,
+  "pythonVersion": "3.10",
+  "typeCheckingMode": "basic"
+}

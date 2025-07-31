@@ -4,6 +4,7 @@ Used to create Django Rest Framework serializers for Apache Thrift Data Types
 import copy
 import datetime
 import logging
+import enum
 
 from rest_framework.serializers import (
     BooleanField,
@@ -20,6 +21,10 @@ from rest_framework.serializers import (
     ValidationError
 )
 from thrift.Thrift import TType
+from airavata.model.experiment.ttypes import ExperimentType
+from airavata.model.status.ttypes import ExperimentState
+from airavata.model.application.io.ttypes import DataType
+from airavata.model.appcatalog.parallelism.ttypes import ApplicationParallelismType
 
 logger = logging.getLogger(__name__)
 
@@ -67,18 +72,19 @@ class ThriftEnumField(Field):
         self.enumClass = enumClass
 
     def to_representation(self, obj):
+        # For IntEnum, obj is the enum member, its `.name` is the string
         if obj is None:
             return None
-        return self.enumClass._VALUES_TO_NAMES[obj]
+        return obj.name
 
     def to_internal_value(self, data):
+        # Convert string name back into an IntEnum member
         if self.allow_null and data is None:
             return None
-        if data not in self.enumClass._NAMES_TO_VALUES:
-            raise ValidationError(
-                "Not an allowed name of enum {}".format(
-                    self.enumClass.__name__))
-        return self.enumClass._NAMES_TO_VALUES.get(data, None)
+        try:
+            return self.enumClass[data]
+        except KeyError:
+            raise ValidationError(f"'{data}' is not a valid name for enum {self.enumClass.__name__}")
 
 
 def create_serializer(thrift_data_type, enable_date_time_conversion=False, **kwargs):
@@ -129,6 +135,20 @@ def create_serializer_class(thrift_data_type, enable_date_time_conversion=False)
                     if (params.get(field_name, None) is not None or
                             not serializer.allow_null):
                         if isinstance(serializer.child, Serializer):
+                            # If this is a list of experiment inputs, need to manually
+                            # convert the 'type' field from an integer to a DataType enum
+                            if field_name == 'experimentInputs' and 'type' in serializer.child.fields:
+                                for item in params[field_name]:
+                                    if 'type' in item and isinstance(item['type'], int):
+                                        item['type'] = DataType(item['type'])
+                            elif field_name == 'experimentOutputs' and 'type' in serializer.child.fields:
+                                for item in params[field_name]:
+                                    if 'type' in item and isinstance(item['type'], int):
+                                        item['type'] = DataType(item['type'])
+                            elif field_name == 'experimentStatus' and 'state' in serializer.child.fields:
+                                for item in params[field_name]:
+                                    if 'state' in item and isinstance(item['state'], int):
+                                        item['state'] = ExperimentState(item['state'])
                             params[field_name] = [serializer.child.create(
                                 item) for item in params[field_name]]
                         else:
@@ -142,6 +162,20 @@ def create_serializer_class(thrift_data_type, enable_date_time_conversion=False)
 
         def create(self, validated_data):
             params = self.process_nested_fields(validated_data)
+            if (thrift_data_type.__name__ == 'ExperimentModel' and
+                'experimentId' in params and params['experimentId'] is None):
+                del params['experimentId']
+
+            if (thrift_data_type.__name__ == 'ExperimentModel' and
+                'experimentType' in params and isinstance(params['experimentType'], int)):
+                params['experimentType'] = ExperimentType(params['experimentType'])
+
+            if thrift_data_type.__name__ == 'ApplicationDeploymentDescription':
+                if 'appDeploymentId' in params and params['appDeploymentId'] is None:
+                    del params['appDeploymentId']
+                if 'parallelism' in params and isinstance(params['parallelism'], int):
+                    params['parallelism'] = ApplicationParallelismType(params['parallelism'])
+
             return thrift_data_type(**params)
 
         def update(self, instance, validated_data):
@@ -171,6 +205,10 @@ def process_field(field, enable_date_time_conversion, required=False, read_only=
         if field_class == CharField:
             kwargs['allow_blank'] = allow_null
         thrift_model_class = mapping[field[1]]
+
+        if thrift_model_class == IntegerField and field[3] is not None and isinstance(field[3], type) and issubclass(field[3], enum.IntEnum):
+            return ThriftEnumField(field[3], required=required, read_only=read_only, allow_null=allow_null)
+
         if enable_date_time_conversion and thrift_model_class == IntegerField and field[2].lower().endswith("time"):
             thrift_model_class = UTCPosixTimestampDateTimeField
         return thrift_model_class(**kwargs)
@@ -196,10 +234,18 @@ def process_list_field(field):
     :return:
     """
     list_details = field[3]
-    if list_details[0] in mapping:
-        # handling scenario when the data type hold by the list is in the
-        # mapping
-        return mapping[list_details[0]]()
-    elif list_details[0] == TType.STRUCT:
-        # handling scenario when the data type hold by the list is a struct
-        return create_serializer(list_details[1][0])
+    item_ttype = list_details[0]
+    # For enums, extra type info is the enum Class (e.g. ExperimentState)
+    # For structs, it's a tuple of (StructClass, StructClass.thrift_spec)
+    item_type_info = list_details[1]
+
+    if (item_ttype == TType.I32 and
+        item_type_info is not None and
+        isinstance(item_type_info, type) and
+        issubclass(item_type_info, enum.IntEnum)):
+        return ThriftEnumField(item_type_info)
+
+    if item_ttype in mapping:
+        return mapping[item_ttype]()
+    elif item_ttype == TType.STRUCT:
+        return create_serializer(item_type_info[0])

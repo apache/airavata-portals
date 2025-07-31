@@ -58,11 +58,14 @@ class WorkspacePreferencesHelper:
         if (not prefs.most_recent_project_id or
                 not self._can_write(request, prefs.most_recent_project_id)):
             most_recent_project = self._get_most_recent_project(request)
-            logger.warn(
-                "_check: updating most_recent_project_id to {}".format(
-                    most_recent_project.projectID))
-            prefs.most_recent_project_id = most_recent_project.projectID
-            prefs.save()
+            if most_recent_project is not None:
+                logger.info("_check: updating most_recent_project_id to {}".format(most_recent_project.projectID))
+                prefs.most_recent_project_id = most_recent_project.projectID
+                prefs.save()
+            else:
+                logger.warning("_check: no writeable projects found, unsetting most_recent_project_id")
+                prefs.most_recent_project_id = None
+                prefs.save()
         group_resource_profiles = request.airavata_client.getGroupResourceList(
             request.authz_token, settings.GATEWAY_ID)
         group_resource_profile_ids = list(map(lambda g: g.groupResourceProfileId, group_resource_profiles))
