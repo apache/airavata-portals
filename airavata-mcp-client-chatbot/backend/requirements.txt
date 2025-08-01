@@ -3,7 +3,7 @@ flask==2.3.3
 flask-cors==4.0.0
 
 # HTTP client for API calls
-requests==2.31.0
+requests==2.32.4
 
 # LangChain + Qwen3 integration (from your working demo)
 langchain==0.1.0
