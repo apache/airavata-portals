@@ -17,3 +17,9 @@ package-lock.json
 site/
 .tox/
 yarn-error.log
+# Ignore all yarn.lock files
+**/yarn.lock
+# Ignore diff files
+=*
+*.diff
+*.patch
