@@ -31,7 +31,7 @@ import { unifiedApiService } from "../../lib/apiConfig";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface StorageResource {
-  id: string;
+  storageResourceId: string;
   name: string;
   hostName: string;
   storageType: string;
@@ -40,7 +40,7 @@ interface StorageResource {
 }
 
 interface ComputeResource {
-  id: string;
+  computeResourceId: string;
   name: string;
   hostName: string;
   computeType: string;
@@ -91,11 +91,13 @@ export const Resources = () => {
     }
   };
 
-  const handleViewResource = (id, type) => {
+  const handleViewResource = (resource, type) => {
+    const id = type === "storage" ? resource.storageResourceId : resource.computeResourceId;
     navigate(`/resources/${type}/${id}`);
   };
 
-  const handleEditResource = (id, type) => {
+  const handleEditResource = (resource, type) => {
+    const id = type === "storage" ? resource.storageResourceId : resource.computeResourceId;
     navigate(`/resources/${type}/${id}/edit`);
   };
 
@@ -335,7 +337,7 @@ export const Resources = () => {
                 {/* Rows */}
                 {getFilteredResources().map((resource, index) => (
                   <Box 
-                    key={resource.id} 
+                    key={activeTab === "storage" ? resource.storageResourceId : resource.computeResourceId} 
                     p={4} 
                     borderBottom="1px solid" 
                     borderColor="gray.100"
@@ -379,14 +381,14 @@ export const Resources = () => {
                             bg="black"
                             color="white"
                             _hover={{ bg: "gray.800" }}
-                            onClick={() => handleViewResource(resource.id, activeTab)}
+                            onClick={() => handleViewResource(resource, activeTab)}
                           >
                             View
                           </Button>
                           <Button
                             size="sm"
                             colorScheme="blue"
-                            onClick={() => handleEditResource(resource.id, activeTab)}
+                            onClick={() => handleEditResource(resource, activeTab)}
                           >
                             Edit
                           </Button>

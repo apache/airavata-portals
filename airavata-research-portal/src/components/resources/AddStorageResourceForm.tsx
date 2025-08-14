@@ -100,7 +100,9 @@ export const AddStorageResourceForm = () => {
         // Required fields
         accessProtocol: resource.accessProtocol || (resource.storageType === 'S3' ? 'HTTPS' : 'SCP'),
         capacityTB: resource.capacityTB || 1,
-        endpoint: resource.endpoint || '',
+        endpoint: resource.storageType === 'S3' 
+          ? (resource.endpoint || resource.hostName || '') 
+          : (resource.hostName || resource.endpoint || ''),
         // S3-specific fields
         bucketName: resource.bucketName || '',
         accessKey: resource.accessKey || '',

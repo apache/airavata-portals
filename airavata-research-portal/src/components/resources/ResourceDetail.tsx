@@ -28,63 +28,63 @@ import {
   Flex,
   Spinner,
   Badge,
-  useDisclosure,
 } from "@chakra-ui/react";
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { unifiedApiService } from "../../lib/apiConfig";
 import { toaster } from "../ui/toaster";
-import {
-  DialogRoot,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogBody,
-  DialogFooter,
-  DialogActionTrigger,
-} from "../ui/dialog";
 
 interface StorageResource {
-  id: string;
+  storageResourceId: string;
   name: string;
   storage?: string;
   storageType: string;
   status?: string;
   isActive?: boolean;
+  enabled?: boolean;
   description: string;
+  storageResourceDescription?: string;
   capacityTB?: number;
   supportsEncryption?: boolean;
   supportsVersioning?: boolean;
   host?: string;
+  hostName?: string;
   port?: number;
   accessCredentials?: string;
   createdAt?: string;
   updatedAt?: string;
+  creationTime?: number;
+  updateTime?: number;
 }
 
 interface ComputeResource {
-  id: string;
+  computeResourceId: string;
   name: string;
   compute?: string;
   computeType: string;
   status?: string;
   isActive?: boolean;
+  enabled?: boolean;
   description: string;
+  resourceDescription?: string;
   cpuCores?: number;
   memoryGB?: number;
   gpuCores?: number;
   host?: string;
+  hostName?: string;
   port?: number;
   accessCredentials?: string;
   createdAt?: string;
   updatedAt?: string;
+  creationTime?: number;
+  updateTime?: number;
 }
 
 export const ResourceDetail = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
   
   const [resource, setResource] = useState<StorageResource | ComputeResource | null>(null);
@@ -134,28 +134,44 @@ export const ResourceDetail = () => {
   };
 
   const handleDelete = async () => {
+    console.log("🗑️ Delete button clicked!", { type, id, resource: resource?.name });
+    
     try {
       setDeleting(true);
       
       if (type === "storage" && id) {
-        await unifiedApiService.deleteStorageResource(id);
+        console.log("🔄 Calling deleteStorageResource with ID:", id);
+        const result = await unifiedApiService.deleteStorageResource(id);
+        console.log("✅ Storage resource deleted successfully:", result);
         toaster.create({
           title: "Storage resource deleted",
           description: "The storage resource has been successfully deleted.",
           type: "success",
         });
       } else if (type === "compute" && id) {
-        await unifiedApiService.deleteComputeResource(id);
+        console.log("🔄 Calling deleteComputeResource with ID:", id);
+        const result = await unifiedApiService.deleteComputeResource(id);
+        console.log("✅ Compute resource deleted successfully:", result);
         toaster.create({
           title: "Compute resource deleted", 
           description: "The compute resource has been successfully deleted.",
           type: "success",
         });
+      } else {
+        console.error("❌ Invalid type or ID for deletion:", { type, id });
+        throw new Error(`Invalid type (${type}) or ID (${id}) for deletion`);
       }
       
-      navigate("/resources");
+      console.log("🚀 Navigating back to resources with tab:", type);
+      navigate(`/resources?tab=${type}`);
     } catch (err: any) {
-      console.error("Failed to delete resource:", err);
+      console.error("❌ Failed to delete resource:", err);
+      console.error("Error details:", {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        config: err.config
+      });
       toaster.create({
         title: "Delete failed",
         description: `Failed to delete resource: ${err.response?.data || err.message}`,
@@ -163,12 +179,12 @@ export const ResourceDetail = () => {
       });
     } finally {
       setDeleting(false);
-      onClose();
+      setShowDeleteConfirm(false);
     }
   };
 
   const getStatusColor = (resource: any) => {
-    // Handle both old status string format and new isActive boolean format
+    // Handle both old status string format and new enabled/isActive boolean format
     if (typeof resource.status === 'string') {
       switch (resource.status.toLowerCase()) {
         case "active":
@@ -182,6 +198,8 @@ export const ResourceDetail = () => {
       }
     } else if (typeof resource.isActive === 'boolean') {
       return resource.isActive ? "green" : "gray";
+    } else if (typeof resource.enabled === 'boolean') {
+      return resource.enabled ? "green" : "gray";
     }
     return "gray";
   };
@@ -200,7 +218,7 @@ export const ResourceDetail = () => {
         <Container maxW="1200px" py={10}>
           <VStack spacing={4}>
             <Text color="red.500" fontSize="lg">{error || "Resource not found"}</Text>
-            <Button onClick={() => navigate("/resources")}>
+            <Button onClick={() => navigate(`/resources?tab=${type || 'compute'}`)}>
               Back to Resources
             </Button>
           </VStack>
@@ -219,10 +237,10 @@ export const ResourceDetail = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate("/resources")}
+                onClick={() => navigate(`/resources?tab=${type}`)}
                 color="gray.600"
               >
-                ← Back to Resources
+                ← Back to {type === 'compute' ? 'Compute' : 'Storage'} Resources
               </Button>
               <Heading size="lg" color="gray.800">
                 {resource.name}
@@ -240,7 +258,8 @@ export const ResourceDetail = () => {
                   colorScheme={getStatusColor(resource)}
                 >
                   {typeof resource.status === 'string' ? resource.status : 
-                   ((resource as any).isActive ? 'Active' : 'Inactive')}
+                   (resource.isActive !== undefined ? (resource.isActive ? 'Active' : 'Inactive') :
+                    (resource.enabled !== undefined ? (resource.enabled ? 'Active' : 'Inactive') : 'Unknown'))}
                 </Badge>
               </HStack>
             </VStack>
@@ -256,7 +275,10 @@ export const ResourceDetail = () => {
               <Button
                 colorScheme="red"
                 variant="outline"
-                onClick={onOpen}
+                onClick={() => {
+                  console.log("🔴 Delete button clicked");
+                  setShowDeleteConfirm(true);
+                }}
               >
                 Delete
               </Button>
@@ -285,7 +307,9 @@ export const ResourceDetail = () => {
                   
                   <HStack justify="space-between">
                     <Text fontWeight="medium" color="gray.600">ID:</Text>
-                    <Text fontSize="sm" fontFamily="mono" color="gray.500">{resource.id}</Text>
+                    <Text fontSize="sm" fontFamily="mono" color="gray.500">
+                      {type === "storage" ? (resource as StorageResource).storageResourceId : (resource as ComputeResource).computeResourceId}
+                    </Text>
                   </HStack>
                   
                   {type === "storage" ? (
@@ -344,12 +368,12 @@ export const ResourceDetail = () => {
                     </>
                   )}
                   
-                  {((resource as any).host || (resource as any).port) && (
+                  {((resource as any).host || (resource as any).hostName || (resource as any).port) && (
                     <>
-                      {(resource as any).host && (
+                      {((resource as any).host || (resource as any).hostName) && (
                         <HStack justify="space-between">
                           <Text fontWeight="medium" color="gray.600">Host:</Text>
-                          <Text fontFamily="mono" fontSize="sm">{(resource as any).host}</Text>
+                          <Text fontFamily="mono" fontSize="sm">{(resource as any).host || (resource as any).hostName}</Text>
                         </HStack>
                       )}
                       {(resource as any).port && (
@@ -372,15 +396,16 @@ export const ResourceDetail = () => {
                       colorScheme={getStatusColor(resource)}
                     >
                       {typeof resource.status === 'string' ? resource.status : 
-                       ((resource as any).isActive ? 'Active' : 'Inactive')}
+                       (resource.isActive !== undefined ? (resource.isActive ? 'Active' : 'Inactive') :
+                        (resource.enabled !== undefined ? (resource.enabled ? 'Active' : 'Inactive') : 'Unknown'))}
                     </Badge>
                   </HStack>
                   
-                  {(resource as any).createdAt && (
+                  {((resource as any).createdAt || (resource as any).creationTime) && (
                     <HStack justify="space-between">
                       <Text fontWeight="medium" color="gray.600">Created:</Text>
                       <Text fontSize="sm" color="gray.500">
-                        {new Date((resource as any).createdAt).toLocaleDateString()}
+                        {new Date((resource as any).createdAt || (resource as any).creationTime).toLocaleDateString()}
                       </Text>
                     </HStack>
                   )}
@@ -392,7 +417,10 @@ export const ResourceDetail = () => {
                   Description
                 </Text>
                 <Text color="gray.600" lineHeight="1.6">
-                  {resource.description}
+                  {resource.description || 
+                   (type === "storage" ? (resource as StorageResource).storageResourceDescription : 
+                    (resource as ComputeResource).resourceDescription) || 
+                   "No description available"}
                 </Text>
               </Box>
 
@@ -433,37 +461,56 @@ export const ResourceDetail = () => {
         </VStack>
       </Container>
       
-      {/* Delete Confirmation Dialog */}
-      <DialogRoot open={isOpen} onOpenChange={({ open }) => !open && onClose()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle fontSize="lg" fontWeight="bold">
-              Delete {type} Resource
-            </DialogTitle>
-          </DialogHeader>
-
-          <DialogBody>
-            Are you sure you want to delete "{resource?.name}"? This action cannot be undone.
-          </DialogBody>
-
-          <DialogFooter>
-            <DialogActionTrigger asChild>
-              <Button ref={cancelRef} onClick={onClose}>
+      {/* Delete Confirmation */}
+      {showDeleteConfirm && (
+        <Box
+          position="fixed"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          bg="blackAlpha.600"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          zIndex="9999"
+        >
+          <Box
+            bg="white"
+            borderRadius="lg"
+            p={6}
+            maxW="400px"
+            w="90%"
+            boxShadow="xl"
+          >
+            <Heading size="md" mb={4}>Delete {type} Resource</Heading>
+            <Text mb={6}>
+              Are you sure you want to delete "{resource?.name}"? This action cannot be undone.
+            </Text>
+            <HStack spacing={3} justify="flex-end">
+              <Button 
+                onClick={() => {
+                  console.log("🔵 Cancel clicked!");
+                  setShowDeleteConfirm(false);
+                }}
+              >
                 Cancel
               </Button>
-            </DialogActionTrigger>
-            <Button
-              colorScheme="red"
-              onClick={handleDelete}
-              isLoading={deleting}
-              loadingText="Deleting..."
-              ml={3}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </DialogRoot>
+              <Button
+                colorScheme="red"
+                onClick={() => {
+                  console.log("🟥 Delete confirmed!");
+                  handleDelete();
+                }}
+                isLoading={deleting}
+                loadingText="Deleting..."
+              >
+                Delete
+              </Button>
+            </HStack>
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 };

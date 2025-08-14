@@ -401,8 +401,10 @@ export const AddComputeResourceForm: React.FC = () => {
     hostAliases: [''],
     ipAddresses: [''],
     resourceDescription: '',
-    sshUsername: '',
-    sshKey: '',
+    // SSH configuration (mapped from JobSubmissionInterface)
+    sshPort: 22,
+    alternativeSSHHostName: '',
+    securityProtocol: 'SSH_KEYS',
     
     // Required backend fields
     computeType: 'HPC',
@@ -411,11 +413,8 @@ export const AddComputeResourceForm: React.FC = () => {
     operatingSystem: 'Linux',
     queueSystem: 'SLURM',
     
-    // Step 2 fields 
-    sshPort: 22,
-    authenticationMethod: 'SSH_KEY',
-    workingDirectory: '/tmp',
-    schedulerType: 'SLURM',
+    // Job management fields (mapped from JobSubmissionInterface -> SSHJobSubmission -> ResourceJobManager)
+    resourceJobManagerType: 'SLURM',
     dataMovementProtocol: 'SCP',
     
     // Backend compatibility fields
@@ -440,18 +439,17 @@ export const AddComputeResourceForm: React.FC = () => {
         hostAliases: resource.hostAliases || [''],
         ipAddresses: resource.ipAddresses || [''], 
         resourceDescription: resource.resourceDescription || '',
-        sshUsername: resource.sshUsername || '',
+        // SSH configuration
         sshPort: resource.sshPort || 22,
-        authenticationMethod: resource.authenticationMethod || 'SSH_KEY',
-        sshKey: resource.sshKey || '',
+        alternativeSSHHostName: resource.alternativeSSHHostName || '',
+        securityProtocol: resource.securityProtocol || 'SSH_KEYS',
         // Required backend fields
         computeType: resource.computeType || 'HPC',
         cpuCores: resource.cpuCores || 1,
         memoryGB: resource.memoryGB || 1,
         operatingSystem: resource.operatingSystem || 'Linux',
         queueSystem: resource.queueSystem || 'SLURM',
-        workingDirectory: resource.workingDirectory || '/tmp',
-        schedulerType: resource.schedulerType || 'SLURM',
+        resourceJobManagerType: resource.resourceJobManagerType || 'SLURM',
         dataMovementProtocol: resource.dataMovementProtocol || 'SCP',
         // Backend compatibility fields
         additionalInfo: resource.additionalInfo || '',
@@ -535,10 +533,10 @@ export const AddComputeResourceForm: React.FC = () => {
     e.preventDefault();
     
     // Validation
-    if (!formData.name.trim() || !formData.hostName.trim() || !formData.resourceDescription.trim() || !formData.sshUsername.trim() || !formData.workingDirectory.trim()) {
+    if (!formData.name.trim() || !formData.hostName.trim() || !formData.resourceDescription.trim()) {
       toaster.create({
         title: "Validation Error",
-        description: "Please fill in all required fields: name, hostname, description, SSH username, and working directory",
+        description: "Please fill in all required fields: name, hostname, and description",
         type: "error",
       });
       return;
@@ -562,14 +560,6 @@ export const AddComputeResourceForm: React.FC = () => {
       return;
     }
 
-    if (formData.authenticationMethod === 'SSH_KEY' && !formData.sshKey.trim()) {
-      toaster.create({
-        title: "Validation Error",
-        description: "Please provide SSH key for SSH key authentication",
-        type: "error",
-      });
-      return;
-    }
 
     setLoading(true);
 
@@ -587,13 +577,12 @@ export const AddComputeResourceForm: React.FC = () => {
         memoryGB: parseInt(formData.memoryGB.toString()) || 1,
         operatingSystem: formData.operatingSystem,
         queueSystem: formData.queueSystem,
-        // SSH configuration
-        sshUsername: formData.sshUsername.trim(),
+        // SSH configuration (mapped from JobSubmissionInterface)
         sshPort: parseInt(formData.sshPort.toString()) || 22,
-        authenticationMethod: formData.authenticationMethod,
-        sshKey: formData.sshKey.trim(),
-        workingDirectory: formData.workingDirectory.trim(),
-        schedulerType: formData.schedulerType,
+        alternativeSSHHostName: formData.alternativeSSHHostName.trim() || null,
+        securityProtocol: formData.securityProtocol,
+        // Job management fields
+        resourceJobManagerType: formData.resourceJobManagerType,
         dataMovementProtocol: formData.dataMovementProtocol,
         resourceManager: formData.resourceManager.trim() || 'Default Resource Manager',
         additionalInfo: formData.additionalInfo.trim() || null,
@@ -884,25 +873,24 @@ export const AddComputeResourceForm: React.FC = () => {
                     </Box>
                   </HStack>
 
-                  {/* SSH Username */}
+                  {/* Alternative SSH Hostname */}
                   <HStack spacing={4} align="start">
                     <Box minW="200px" pt={2}>
                       <Text fontSize="sm" color="gray.700" fontWeight="medium">
-                        SSH Username <Text as="span" color="red.500">*</Text>
+                        Alternative SSH Hostname
                       </Text>
                     </Box>
                     <Text color="gray.500" pt={2}>:</Text>
                     <Box flex={1}>
                       <Input
-                        placeholder="SSH username"
-                        value={formData.sshUsername}
-                        onChange={(e) => handleInputChange('sshUsername', e.target.value)}
+                        placeholder="Alternative hostname (optional)"
+                        value={formData.alternativeSSHHostName}
+                        onChange={(e) => handleInputChange('alternativeSSHHostName', e.target.value)}
                         bg="white"
                         border="1px solid"
                         borderColor="gray.300"
                         borderRadius="md"
                         _focus={{ borderColor: "#60B4F7", boxShadow: "0 0 0 1px #60B4F7" }}
-                        required
                       />
                     </Box>
                   </HStack>
@@ -931,44 +919,29 @@ export const AddComputeResourceForm: React.FC = () => {
                     </Box>
                   </HStack>
 
-                  {/* Authentication Method */}
+                  {/* Security Protocol */}
                   <HStack spacing={4} align="start">
                     <Box minW="200px" pt={2}>
                       <Text fontSize="sm" color="gray.700" fontWeight="medium">
-                        Authentication Method <Text as="span" color="red.500">*</Text>
+                        Security Protocol <Text as="span" color="red.500">*</Text>
                       </Text>
                     </Box>
                     <Text color="gray.500" pt={2}>:</Text>
                     <Box flex={1}>
-                      <HStack spacing={2}>
-                        <Box as="select" 
-                          value={formData.authenticationMethod}
-                          onChange={(e: any) => handleInputChange('authenticationMethod', e.target.value)}
-                          bg="white"
-                          border="1px solid"
-                          borderColor="gray.300"
-                          borderRadius="md"
-                          p={2}
-                          _focus={{ borderColor: "#60B4F7", boxShadow: "0 0 0 1px #60B4F7" }}
-                          w="200px"
-                        >
-                          <option value="SSH_KEY">SSH Key</option>
-                          <option value="PASSWORD">Password</option>
-                        </Box>
-                        {formData.authenticationMethod === 'SSH_KEY' && (
-                          <Input
-                            placeholder="Type the SSH Key"
-                            value={formData.sshKey}
-                            onChange={(e) => handleInputChange('sshKey', e.target.value)}
-                            bg="white"
-                            border="1px solid"
-                            borderColor="gray.300"
-                            borderRadius="md"
-                            _focus={{ borderColor: "#60B4F7", boxShadow: "0 0 0 1px #60B4F7" }}
-                            flex={1}
-                          />
-                        )}
-                      </HStack>
+                      <Box as="select" 
+                        value={formData.securityProtocol}
+                        onChange={(e: any) => handleInputChange('securityProtocol', e.target.value)}
+                        bg="white"
+                        border="1px solid"
+                        borderColor="gray.300"
+                        borderRadius="md"
+                        p={2}
+                        _focus={{ borderColor: "#60B4F7", boxShadow: "0 0 0 1px #60B4F7" }}
+                        w="full"
+                      >
+                        <option value="SSH_KEYS">SSH Keys</option>
+                        <option value="USERNAME_PASSWORD">Username/Password</option>
+                      </Box>
                     </Box>
                   </HStack>
 
@@ -1107,26 +1080,32 @@ export const AddComputeResourceForm: React.FC = () => {
                     </Box>
                   </HStack>
 
-                  {/* Working Directory */}
+                  {/* Resource Job Manager Type */}
                   <HStack spacing={4} align="start">
                     <Box minW="200px" pt={2}>
                       <Text fontSize="sm" color="gray.700" fontWeight="medium">
-                        Working Directory <Text as="span" color="red.500">*</Text>
+                        Resource Job Manager Type <Text as="span" color="red.500">*</Text>
                       </Text>
                     </Box>
                     <Text color="gray.500" pt={2}>:</Text>
                     <Box flex={1}>
-                      <Input
-                        placeholder="Working directory path"
-                        value={formData.workingDirectory}
-                        onChange={(e) => handleInputChange('workingDirectory', e.target.value)}
+                      <Box as="select" 
+                        value={formData.resourceJobManagerType}
+                        onChange={(e: any) => handleInputChange('resourceJobManagerType', e.target.value)}
                         bg="white"
                         border="1px solid"
                         borderColor="gray.300"
                         borderRadius="md"
+                        p={2}
                         _focus={{ borderColor: "#60B4F7", boxShadow: "0 0 0 1px #60B4F7" }}
-                        required
-                      />
+                        w="full"
+                      >
+                        <option value="SLURM">SLURM</option>
+                        <option value="PBS">PBS</option>
+                        <option value="UGE">UGE</option>
+                        <option value="LSF">LSF</option>
+                        <option value="FORK">FORK</option>
+                      </Box>
                     </Box>
                   </HStack>
                 </VStack>
@@ -1159,15 +1138,15 @@ export const AddComputeResourceForm: React.FC = () => {
                     </HStack>
 
                     <VStack spacing={6} align="stretch">
-                      {/* Scheduler Type */}
+                      {/* Resource Job Manager Type */}
                       <HStack spacing={4} align="start">
                         <Box minW="200px" pt={2}>
-                          <Text fontSize="sm" color="gray.700" fontWeight="medium">Scheduler Type</Text>
+                          <Text fontSize="sm" color="gray.700" fontWeight="medium">Resource Job Manager Type</Text>
                         </Box>
                         <Text color="gray.500" pt={2}>:</Text>
                         <Box flex={1}>
                           <Text fontSize="sm" color="gray.600" pt={2}>
-                            {formData.schedulerType}
+                            {formData.resourceJobManagerType}
                           </Text>
                         </Box>
                       </HStack>
