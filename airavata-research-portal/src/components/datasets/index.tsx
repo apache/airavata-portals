@@ -45,12 +45,14 @@ interface Dataset {
 
 const filterCategories = [
   "All",
-  "Computer Vision", 
-  "Cyber Security",
-  "Finance",
-  "Healthcare",
-  "NLP",
-  "Life Sciences"
+  "computer-vision",
+  "cybersecurity", 
+  "finance",
+  "healthcare",
+  "nlp",
+  "life-sciences",
+  "medical",
+  "climate"
 ];
 
 export const Datasets = () => {

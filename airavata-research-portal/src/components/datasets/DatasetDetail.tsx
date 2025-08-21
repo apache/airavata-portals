@@ -20,17 +20,22 @@
 import React, { useState, useEffect } from 'react';
 import { Box, VStack, HStack, Text, Button, Badge } from '@chakra-ui/react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { adminApiService } from '../../lib/adminApi';
+import { v1ApiService } from '../../lib/v1Api';
 import { normalizeTags, TagV2 } from "../../lib/tagUtils";
 
 interface Dataset {
-  id: number;
-  title: string;
+  id: string;
+  name: string;
   description: string;
-  tags: (string | TagV2)[];
+  tags: TagV2[];
   authors: string[];
-  starCount: number;
-  category: string;
+  status: string;
+  state: string;
+  privacy: string;
+  createdAt: string;
+  updatedAt: string;
+  datasetUrl: string;
+  type: string;
 }
 
 export const DatasetDetail = () => {
@@ -42,15 +47,15 @@ export const DatasetDetail = () => {
 
   useEffect(() => {
     if (id) {
-      fetchDataset(parseInt(id));
+      fetchDataset(id);
     }
   }, [id]);
 
-  const fetchDataset = async (datasetId: number) => {
+  const fetchDataset = async (datasetId: string) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await adminApiService.getDatasetById(datasetId);
+      const data = await v1ApiService.getDatasetById(datasetId);
       setDataset(data);
     } catch (err) {
       console.error('Failed to fetch dataset:', err);
@@ -96,7 +101,7 @@ export const DatasetDetail = () => {
           </Button>
           <HStack spacing={2}>
             <Button size="sm" variant="outline">
-              Star {dataset.starCount}
+              Star
             </Button>
             <Button size="sm" variant="outline">
               Fork
@@ -109,7 +114,7 @@ export const DatasetDetail = () => {
             {/* Header */}
             <VStack align="start" spacing={2} w="full">
               <Text fontSize="3xl" fontWeight="bold">
-                {dataset.title}
+                {dataset.name}
               </Text>
               <Text color="gray.600" fontSize="lg">
                 {dataset.description}
@@ -148,10 +153,16 @@ export const DatasetDetail = () => {
                 borderColor="gray.200"
               >
                 <Text fontSize="sm" color="gray.600">
-                  Category: {dataset.category}
+                  Status: {dataset.status}
                 </Text>
                 <Text fontSize="sm" color="gray.600">
-                  Stars: {dataset.starCount}
+                  Privacy: {dataset.privacy}
+                </Text>
+                <Text fontSize="sm" color="gray.600">
+                  Type: {dataset.type}
+                </Text>
+                <Text fontSize="sm" color="gray.600">
+                  Created: {new Date(dataset.createdAt).toLocaleDateString()}
                 </Text>
               </Box>
             </VStack>

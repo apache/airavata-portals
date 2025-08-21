@@ -19,8 +19,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Box, VStack, HStack, Text, Button, Badge } from '@chakra-ui/react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { adminApiService } from '../../lib/adminApi';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { v1ApiService } from '../../lib/v1Api';
 import { normalizeTags, TagV2 } from "../../lib/tagUtils";
 
 interface Model {
@@ -35,6 +35,7 @@ interface Model {
 
 export const ModelDetail = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const [model, setModel] = useState<Model | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,15 +43,15 @@ export const ModelDetail = () => {
 
   useEffect(() => {
     if (id) {
-      fetchModel(parseInt(id));
+      fetchModel(id);
     }
   }, [id]);
 
-  const fetchModel = async (modelId: number) => {
+  const fetchModel = async (modelId: string) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await adminApiService.getModelById(modelId);
+      const data = await v1ApiService.getModelById(modelId);
       setModel(data);
     } catch (err) {
       console.error('Failed to fetch model:', err);
@@ -93,7 +94,15 @@ export const ModelDetail = () => {
         <HStack w="full" justify="space-between" align="center">
           <Button
             variant="ghost"
-            onClick={() => navigate('/resources/models')}
+            onClick={() => {
+              // Check if user came from catalog page
+              const referrer = location.state?.from || document.referrer;
+              if (referrer && (referrer.includes('/catalog') || location.state?.from === '/catalog')) {
+                navigate('/catalog');
+              } else {
+                navigate('/resources/models');
+              }
+            }}
             color="gray.600"
             size="sm"
             leftIcon={<Text>←</Text>}

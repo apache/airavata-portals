@@ -41,26 +41,33 @@ const researchApi: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor for authentication - using dev API key for development
+// Request interceptor for authentication - prioritize JWT tokens
 researchApi.interceptors.request.use(
   async (config) => {
-    // For development: use API key from environment variable instead of JWT token
+    // Try JWT authentication first
+    try {
+      const oidcStorage = localStorage.getItem(`oidc.user:${window.location.origin}/oauth_callback`);
+      if (oidcStorage) {
+        const user = JSON.parse(oidcStorage);
+        if (user && user.access_token) {
+          config.headers.Authorization = `Bearer ${user.access_token}`;
+          config.headers["X-Claims"] = JSON.stringify({
+            "userName": user.profile.email || user.profile.sub,
+            "gatewayID": "default",
+          });
+          return config;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to add JWT token to researchApi request:', error);
+    }
+    
+    // Fallback to dev API key for development
     const devApiKey = import.meta.env.VITE_DEV_API_KEY;
     if (devApiKey) {
       config.headers["X-API-Key"] = devApiKey;
     }
     
-    // Keep the original JWT logic commented for future use
-    // if (getUser) {
-    //   const user = await getUser();
-    //   if (user) {
-    //     config.headers.Authorization = `Bearer ${user.access_token}`;
-    //     config.headers["X-Claims"] = JSON.stringify({
-    //       "userName": user.profile.email,
-    //       "gatewayID": "default",
-    //     });
-    //   }
-    // }
     return config;
   },
   (error) => Promise.reject(error)

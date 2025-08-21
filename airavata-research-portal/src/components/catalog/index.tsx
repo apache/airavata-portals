@@ -233,6 +233,7 @@ export const Catalog = () => {
                     authors={resource.authors}
                     starCount={0}
                     onStar={handleStar}
+                    resourceType={resource.type}
                   />
                 </Box>
               ))}

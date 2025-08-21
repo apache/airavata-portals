@@ -26,6 +26,78 @@ const v1Api = axios.create({
   },
 });
 
+// Request interceptor for authentication - prioritize JWT tokens
+v1Api.interceptors.request.use(
+  (config) => {
+    console.group('🔐 v1Api Authentication Check');
+    console.log('📡 Request URL:', config.url);
+    console.log('🎯 Request Method:', config.method?.toUpperCase());
+    
+    // Try JWT authentication first
+    try {
+      const oidcStorageKey = `oidc.user:${window.location.origin}/oauth_callback`;
+      console.log('🔍 Checking localStorage key:', oidcStorageKey);
+      
+      const oidcStorage = localStorage.getItem(oidcStorageKey);
+      if (oidcStorage) {
+        console.log('✅ OIDC storage found');
+        const user = JSON.parse(oidcStorage);
+        
+        if (user && user.access_token) {
+          const tokenPreview = user.access_token.substring(0, 20) + '...';
+          console.log('🎫 JWT token found:', tokenPreview);
+          console.log('👤 User email:', user.profile?.email || 'N/A');
+          console.log('🆔 User subject:', user.profile?.sub || 'N/A');
+          
+          config.headers.Authorization = `Bearer ${user.access_token}`;
+          config.headers["X-Claims"] = JSON.stringify({
+            "userName": user.profile.email || user.profile.sub,
+            "gatewayID": "default",
+          });
+          
+          console.log('✨ Authentication Method: JWT TOKEN');
+          console.log('📤 Headers set:', {
+            'Authorization': `Bearer ${tokenPreview}`,
+            'X-Claims': config.headers["X-Claims"]
+          });
+          console.groupEnd();
+          return config;
+        } else {
+          console.log('❌ JWT token not found in user object');
+        }
+      } else {
+        console.log('❌ No OIDC storage found');
+      }
+    } catch (error) {
+      console.error('💥 Error processing JWT token:', error);
+    }
+    
+    // Fallback to dev API key for development
+    const devApiKey = import.meta.env.VITE_DEV_API_KEY;
+    if (devApiKey) {
+      const keyPreview = devApiKey.substring(0, 10) + '...';
+      console.log('🔑 Dev API key found:', keyPreview);
+      config.headers["X-API-Key"] = devApiKey;
+      console.log('✨ Authentication Method: DEV API KEY');
+      console.log('📤 Headers set:', {
+        'X-API-Key': keyPreview
+      });
+    } else {
+      console.error('🚫 No authentication method available!');
+      console.log('💡 Make sure you are either:');
+      console.log('   1. Logged in via OIDC, or');
+      console.log('   2. Have VITE_DEV_API_KEY set in .env.local');
+    }
+    
+    console.groupEnd();
+    return config;
+  },
+  (error) => {
+    console.error('🔥 v1Api request interceptor error:', error);
+    return Promise.reject(error);
+  }
+);
+
 // Response interceptor to handle errors
 v1Api.interceptors.response.use(
   (response) => response,

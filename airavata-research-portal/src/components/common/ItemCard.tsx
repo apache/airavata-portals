@@ -39,6 +39,7 @@ interface ItemCardProps {
   authors: string[];
   starCount: number;
   onStar?: (id: number | string) => void;
+  resourceType?: string;
 }
 
 export const ItemCard = ({ 
@@ -48,7 +49,8 @@ export const ItemCard = ({
   tags, 
   authors, 
   starCount, 
-  onStar 
+  onStar,
+  resourceType 
 }: ItemCardProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -97,7 +99,24 @@ export const ItemCard = ({
   }, [id, location.pathname, auth.user?.profile.email]);
 
   const handleCardClick = () => {
-    // Determine the route based on current path
+    // Use resourceType prop if available (for catalog page), otherwise fall back to path-based detection
+    if (resourceType) {
+      const type = resourceType.toLowerCase();
+      const navigateOptions = location.pathname.includes('/catalog') ? { state: { from: '/catalog' } } : undefined;
+      
+      if (type === 'dataset') {
+        navigate(`/resources/datasets/${id}`, navigateOptions);
+      } else if (type === 'model') {
+        navigate(`/resources/models/${id}`, navigateOptions);
+      } else if (type === 'notebook') {
+        navigate(`/resources/notebooks/${id}`, navigateOptions);
+      } else if (type === 'repository') {
+        navigate(`/resources/repositories/${id}`, navigateOptions);
+      }
+      return;
+    }
+    
+    // Fallback: Determine the route based on current path
     if (location.pathname.includes('/datasets')) {
       navigate(`/resources/datasets/${id}`);
     } else if (location.pathname.includes('/models')) {

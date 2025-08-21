@@ -19,8 +19,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Box, VStack, HStack, Text, Button, Badge } from '@chakra-ui/react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { adminApiService } from '../../lib/adminApi';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { v1ApiService } from '../../lib/v1Api';
 import { normalizeTags, TagV2 } from "../../lib/tagUtils";
 
 interface Notebook {
@@ -35,6 +35,7 @@ interface Notebook {
 
 export const NotebookDetail = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const [notebook, setNotebook] = useState<Notebook | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,15 +43,15 @@ export const NotebookDetail = () => {
 
   useEffect(() => {
     if (id) {
-      fetchNotebook(parseInt(id));
+      fetchNotebook(id);
     }
   }, [id]);
 
-  const fetchNotebook = async (notebookId: number) => {
+  const fetchNotebook = async (notebookId: string) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await adminApiService.getNotebookById(notebookId);
+      const data = await v1ApiService.getNotebookById(notebookId);
       setNotebook(data);
     } catch (err) {
       console.error('Failed to fetch notebook:', err);
@@ -93,7 +94,15 @@ export const NotebookDetail = () => {
         <HStack w="full" justify="space-between" align="center">
           <Button
             variant="ghost"
-            onClick={() => navigate('/resources/notebooks')}
+            onClick={() => {
+              // Check if user came from catalog page
+              const referrer = location.state?.from || document.referrer;
+              if (referrer && (referrer.includes('/catalog') || location.state?.from === '/catalog')) {
+                navigate('/catalog');
+              } else {
+                navigate('/resources/notebooks');
+              }
+            }}
             color="gray.600"
             size="sm"
             leftIcon={<Text>←</Text>}

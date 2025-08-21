@@ -20,7 +20,7 @@
 import React, { useState } from 'react';
 import { Box, VStack, HStack, Text, Button } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
-import { adminApiService } from '../../lib/adminApi';
+import { v1ApiService } from '../../lib/v1Api';
 
 type UploadOption = 'file' | 'url' | 'repository';
 
@@ -51,18 +51,23 @@ export const AddDatasetForm = () => {
     setLoading(true);
     try {
       const newDataset = {
-        title: title.trim(),
+        name: title.trim(),
         description: description.trim(),
-        category: 'medical',
-        tags: ['test', selectedOption],
+        headerImage: '/images/default-dataset.png',
+        tags: [
+          { name: 'test' },
+          { name: selectedOption }
+        ],
         authors: ['test@user.com'],
-        starCount: 0,
-        sourceType: selectedOption,
-        sourceUrl: selectedOption === 'url' ? url : selectedOption === 'repository' ? repositoryUrl : null
+        datasetUrl: selectedOption === 'url' ? url : selectedOption === 'repository' ? repositoryUrl : title.toLowerCase().replace(/\s+/g, '-'),
+        status: 'VERIFIED',
+        state: 'ACTIVE',
+        privacy: 'PUBLIC',
+        type: 'DATASET'
       };
 
       console.log('Submitting dataset:', newDataset);
-      const createdDataset = await adminApiService.createDataset(newDataset);
+      const createdDataset = await v1ApiService.createDataset(newDataset);
       console.log('Dataset created successfully:', createdDataset);
       
       navigate('/resources/datasets');

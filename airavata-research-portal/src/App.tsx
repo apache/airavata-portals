@@ -77,7 +77,7 @@ function App() {
         const redirectUri = APP_REDIRECT_URI;
 
         const theConfig: AuthProviderProps = {
-          authority: `https://auth.dev.cybershuttle.org/admin/master/console/#/default`,
+          authority: `https://auth.dev.cybershuttle.org/realms/default`,
           client_id: CLIENT_ID,
           redirect_uri: redirectUri,
           response_type: "code",
@@ -154,7 +154,6 @@ function App() {
                 element={<ProtectedComponent Component={SidebarLayout}/>}
             >
               <Route path="/resources/starred" element={<StarredResourcesPage/>}/>
-              <Route path="/sessions" element={<Home/>}/>
               <Route path="/add" element={<Add/>}/>
               <Route path="/add/repo" element={<AddRepoMaster/>}/>
               <Route path="/add/project" element={<AddProjectMaster/>}/>
