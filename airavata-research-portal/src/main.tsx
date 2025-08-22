@@ -1,3 +1,5 @@
+console.log('🚨 main.tsx is loading');
+
 import { Provider } from "@/components/ui/provider";
 import React from "react";
 import ReactDOM from "react-dom/client";

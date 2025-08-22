@@ -59,6 +59,8 @@ import {AddNotebookForm} from "./components/notebooks/AddNotebookForm";
 import {AddRepositoryForm} from "./components/repositories/AddRepositoryForm";
 
 function App() {
+  console.log('🚨 App.tsx function is executing');
+  
   const colorMode = useColorMode();
   const navigate = useNavigate();
   const location = useLocation();
@@ -70,9 +72,28 @@ function App() {
 
   useEffect(() => {
     const fetchOidcConfig = async () => {
+      const timestamp = new Date().toISOString();
+      console.group(`🔧 [${timestamp}] OIDC Configuration Setup`);
+      
       try {
+        console.log('🌐 OIDC Config URL:', OPENID_CONFIG_URL);
+        console.log('🆔 Client ID:', CLIENT_ID);
+        console.log('↩️ Redirect URI:', APP_REDIRECT_URI);
+        console.log('🏠 Current Origin:', window.location.origin);
+        
+        console.log('📡 Fetching OIDC configuration...');
         const response = await fetch(OPENID_CONFIG_URL);
+        
+        if (!response.ok) {
+          throw new Error(`OIDC config fetch failed: ${response.status} ${response.statusText}`);
+        }
+        
         const data = await response.json();
+        console.log('✅ OIDC config fetched successfully');
+        console.log('🔗 Authorization endpoint:', data.authorization_endpoint);
+        console.log('🎫 Token endpoint:', data.token_endpoint);
+        console.log('🔐 JWKS URI:', data.jwks_uri);
+        console.log('👤 UserInfo endpoint:', data.userinfo_endpoint);
 
         const redirectUri = APP_REDIRECT_URI;
 
@@ -92,11 +113,57 @@ function App() {
           },
           userStore: new WebStorageStateStore({store: window.localStorage}),
           automaticSilentRenew: true,
+          onSigninCallback: (user) => {
+            console.group(`🎉 [${new Date().toISOString()}] OIDC Signin Callback`);
+            console.log('👤 User authenticated:', user?.profile?.email || user?.profile?.sub);
+            console.log('🎫 Access token received:', user?.access_token ? 'YES' : 'NO');
+            console.log('🕐 Token expires at:', user?.expires_at ? new Date(user.expires_at * 1000).toISOString() : 'N/A');
+            console.log('🔄 Refresh token available:', user?.refresh_token ? 'YES' : 'NO');
+            console.groupEnd();
+          },
+          onUserLoaded: (user) => {
+            console.group(`👤 [${new Date().toISOString()}] OIDC User Loaded`);
+            console.log('📧 Email:', user?.profile?.email);
+            console.log('🆔 Subject:', user?.profile?.sub);
+            console.log('🌍 Preferred Username:', user?.profile?.preferred_username);
+            console.log('🔑 Roles:', user?.profile?.roles);
+            console.log('🕐 Token expires at:', user?.expires_at ? new Date(user.expires_at * 1000).toISOString() : 'N/A');
+            console.log('📦 Storage key will be:', `oidc.user:${window.location.origin}/oauth_callback`);
+            console.groupEnd();
+          },
+          onUserUnloaded: () => {
+            console.log(`🚪 [${new Date().toISOString()}] OIDC User Unloaded - User signed out`);
+          },
+          onAccessTokenExpiring: () => {
+            console.warn(`⏰ [${new Date().toISOString()}] OIDC Access Token Expiring - Will attempt renewal`);
+          },
+          onAccessTokenExpired: () => {
+            console.error(`💀 [${new Date().toISOString()}] OIDC Access Token Expired - Authentication required`);
+          },
+          onSilentRenewError: (error) => {
+            console.error(`🔄 [${new Date().toISOString()}] OIDC Silent Renew Error:`, error);
+          },
         };
 
+        console.log('⚙️ Final OIDC config created');
+        console.log('🔄 Automatic silent renew:', theConfig.automaticSilentRenew);
+        console.log('📱 Response type:', theConfig.response_type);
+        console.log('🎯 Scope:', theConfig.scope);
+        
         setOidcConfig(theConfig);
+        console.log('✅ OIDC configuration set successfully');
+        console.groupEnd();
       } catch (error) {
-        console.error("Error fetching OIDC config:", error);
+        console.error(`💥 [${timestamp}] Error fetching OIDC config:`, error);
+        console.error('🔍 Error details:');
+        console.error('   Message:', error.message);
+        console.error('   Stack:', error.stack);
+        console.error('🎯 Check:');
+        console.error('   1. OIDC provider URL is accessible');
+        console.error('   2. Network connectivity');
+        console.error('   3. CORS configuration');
+        console.error('   4. Environment variables are set correctly');
+        console.groupEnd();
       }
     };
 
@@ -111,7 +178,14 @@ function App() {
       <>
         <AuthProvider
             {...oidcConfig}
-            onSigninCallback={() => {
+            onSigninCallback={(user) => {
+              const timestamp = new Date().toISOString();
+              console.group(`🎉 [${timestamp}] AuthProvider Signin Callback`);
+              console.log('👤 User received in callback:', user?.profile?.email || user?.profile?.sub);
+              console.log('🎫 Access token in callback:', user?.access_token ? 'PRESENT' : 'MISSING');
+              console.log('📍 Current location search:', location.search);
+              console.log('🧭 Navigating with replace: true');
+              console.groupEnd();
               navigate(location.search, {replace: true});
             }}
         >

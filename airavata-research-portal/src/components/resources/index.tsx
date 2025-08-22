@@ -29,6 +29,7 @@ import {
 import { useEffect, useState } from "react";
 import { unifiedApiService } from "../../lib/apiConfig";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "react-oidc-context";
 
 interface StorageResource {
   storageResourceId: string;
@@ -58,10 +59,23 @@ export const Resources = () => {
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const navigate = useNavigate();
+  const auth = useAuth();
+
+  console.log('🚀 Resources component rendered - Auth state:', {
+    isAuthenticated: auth.isAuthenticated,
+    isLoading: auth.isLoading,
+    hasUser: !!auth.user
+  });
 
   useEffect(() => {
-    fetchResources();
-  }, [activeTab]);
+    // Only fetch resources if OIDC is not loading and either authenticated or failed to authenticate
+    if (!auth.isLoading) {
+      console.log('🎯 OIDC ready, fetching resources...');
+      fetchResources();
+    } else {
+      console.log('⏳ OIDC still loading, waiting...');
+    }
+  }, [activeTab, auth.isLoading, auth.isAuthenticated]);
 
   const fetchResources = async () => {
     try {
