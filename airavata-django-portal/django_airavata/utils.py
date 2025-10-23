@@ -69,9 +69,8 @@ def create_airavata_client(transport):
 
     # Airavata currently uses Binary Protocol
     protocol = TBinaryProtocol.TBinaryProtocol(transport)
-
-    # Create a Airavata client to use the protocol encoder
-    client = Airavata.Client(protocol)
+    multiplex_prot = TMultiplexedProtocol(protocol, "AiravataAPI")
+    client = Airavata.Client(multiplex_prot)
     return client
 
 
