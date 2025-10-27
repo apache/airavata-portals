@@ -341,7 +341,7 @@ class InputDataObjectTypeSerializer(serializers.Serializer):
     applicationArgument = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     standardInput = serializers.BooleanField(default=False)
     userFriendlyDescription = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    metaData = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    metaData = StoredJSONField(allow_null=True, required=False)
     inputOrder = serializers.IntegerField(required=False, allow_null=True)
     isRequired = serializers.BooleanField(default=False)
     requiredToAddedToCommandLine = serializers.BooleanField(default=False)
@@ -370,7 +370,7 @@ class OutputDataObjectTypeSerializer(serializers.Serializer):
     searchQuery = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     outputStreaming = serializers.BooleanField(default=False)
     storageResourceId = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    metaData = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    metaData = StoredJSONField(allow_null=True, required=False)
 
     def create(self, validated_data):
         return OutputDataObjectType(**validated_data)
@@ -381,7 +381,7 @@ class OutputDataObjectTypeSerializer(serializers.Serializer):
         return instance
 
 class ApplicationInterfaceDescriptionSerializer(serializers.Serializer):
-    applicationInterfaceId = serializers.CharField(required=False)
+    applicationInterfaceId = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     applicationName = serializers.CharField()
     applicationDescription = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     applicationModules = serializers.ListField(child=serializers.CharField(), allow_null=True, required=False)
@@ -399,7 +399,27 @@ class ApplicationInterfaceDescriptionSerializer(serializers.Serializer):
     queueSettingsCalculatorId = serializers.CharField(allow_null=True, required=False)
 
     def create(self, validated_data):
-        return ApplicationInterfaceDescription(**validated_data)
+        # Convert inputs/outputs from dicts to Thrift objects
+        inputs_data = validated_data.pop('applicationInputs', None)
+        outputs_data = validated_data.pop('applicationOutputs', None)
+
+        # Remove Django specific fields
+        validated_data.pop('showQueueSettings', None)
+        validated_data.pop('queueSettingsCalculatorId', None)
+        validated_data.pop('url', None)
+        validated_data.pop('userHasWriteAccess', None)
+
+        if 'applicationInterfaceId' in validated_data and validated_data['applicationInterfaceId'] is None:
+            validated_data['applicationInterfaceId'] = ""
+
+        application_interface = ApplicationInterfaceDescription(**validated_data)
+
+        if inputs_data is not None:
+            application_interface.applicationInputs = [InputDataObjectType(**inp) for inp in inputs_data]
+        if outputs_data is not None:
+            application_interface.applicationOutputs = [OutputDataObjectType(**out) for out in outputs_data]
+
+        return application_interface
 
     def update(self, instance, validated_data):
         defaults = {}
