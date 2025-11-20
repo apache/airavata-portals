@@ -41,6 +41,7 @@ import {AddRepoMaster} from "./components/add/AddRepoMaster";
 import {Add} from "./components/add";
 import {AddProjectMaster} from "./components/add/AddProjectMaster";
 import {StarredResourcesPage} from "@/components/resources/StarredResourcesPage.tsx";
+import {ResourceManagement} from "@/components/resources/ResourceManagement.tsx";
 
 function App() {
   const colorMode = useColorMode();
@@ -120,6 +121,7 @@ function App() {
                 element={<ProtectedComponent Component={NavBarFooterLayout}/>}
             >
               <Route path="/resources/starred" element={<StarredResourcesPage/>}/>
+              <Route path="/resources/manage" element={<ResourceManagement/>}/>
               <Route path="/sessions" element={<Home/>}/>
               <Route path="/add" element={<Add/>}/>
               <Route path="/add/repo" element={<AddRepoMaster/>}/>
