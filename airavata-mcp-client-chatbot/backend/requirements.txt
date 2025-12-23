@@ -9,7 +9,7 @@ requests==2.32.4
 langchain==0.1.0
 langchain-community==0.0.13
 langchain-ollama==0.0.1
-langchain-core==0.1.0
+langchain-core==0.3.81
 
 # FastAPI (alternative server option)
 fastapi==0.104.1
