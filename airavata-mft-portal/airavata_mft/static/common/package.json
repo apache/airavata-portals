@@ -17,16 +17,16 @@
     "jquery": "^3.5.0"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "~4.3.0",
-    "@vue/cli-plugin-eslint": "~4.3.0",
-    "@vue/cli-service": "~4.3.0",
+    "@vue/cli-plugin-babel": "~5.0.9",
+    "@vue/cli-plugin-eslint": "~5.0.9",
+    "@vue/cli-service": "~5.0.9",
     "babel-eslint": "^10.1.0",
     "eslint": "^6.7.2",
     "eslint-plugin-vue": "^6.2.2",
     "vue-template-compiler": "^2.6.11",
-    "webpack": "^4.28.4",
+    "webpack": "^5.104.1",
     "webpack-bundle-tracker": "^0.4.2-beta",
-    "webpack-dev-middleware": "^3.5.1",
+    "webpack-dev-middleware": "^3.7.3",
     "webpack-dev-server": "^3.1.14"
   },
   "eslintConfig": {
