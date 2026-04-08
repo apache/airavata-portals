@@ -3,8 +3,8 @@ import logging
 from django.conf import settings
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
-from django.urls import reverse
 from django.template import Context
+from django.urls import reverse
 
 from django_airavata.apps.api.signals import user_added_to_group
 from django_airavata.utils import create_airavata_client

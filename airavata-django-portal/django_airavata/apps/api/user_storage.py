@@ -10,14 +10,13 @@ import logging
 import os
 from typing import Any, BinaryIO
 
-from django.conf import settings
-
 log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
 # Helpers to extract file paths from DataProductModel proto objects
 # ---------------------------------------------------------------------------
+
 
 def _get_replica_filepath(data_product: Any) -> str | None:
     """Return the file_path from the first GATEWAY_DATA_STORE replica location."""
@@ -38,6 +37,7 @@ def _get_replica_storage_resource_id(data_product: Any) -> str | None:
 # ---------------------------------------------------------------------------
 # File existence / metadata
 # ---------------------------------------------------------------------------
+
 
 def exists(request: Any, data_product: Any) -> bool:
     """Check whether the file backing *data_product* exists in user storage."""
@@ -80,7 +80,10 @@ def is_input_file(request: Any, data_product: Any) -> bool:
 # File / directory listing
 # ---------------------------------------------------------------------------
 
-def listdir(request: Any, path: str, experiment_id: str | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+
+def listdir(
+    request: Any, path: str, experiment_id: str | None = None
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """List the contents of *path*, returning (directories, files) dicts."""
     if experiment_id:
         return list_experiment_dir(request, experiment_id, path)
@@ -90,7 +93,9 @@ def listdir(request: Any, path: str, experiment_id: str | None = None) -> tuple[
     return directories, files
 
 
-def list_experiment_dir(request: Any, experiment_id: str, path: str = "") -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def list_experiment_dir(
+    request: Any, experiment_id: str, path: str = ""
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """List the experiment output directory."""
     resp = request.airavata_client.storage.list_experiment_dir(experiment_id, path)
     directories = _metadata_list_to_dicts(resp.directories)
@@ -102,22 +107,25 @@ def _metadata_list_to_dicts(items: Any) -> list[dict[str, Any]]:
     """Convert repeated FileMetadataResponse protos to plain dicts."""
     result: list[dict[str, Any]] = []
     for item in items:
-        result.append({
-            "name": item.name,
-            "path": item.path,
-            "size": item.size,
-            "created_time": item.created_time,
-            "modified_time": item.modified_time,
-            "data-product-uri": item.data_product_uri,
-            "mime_type": item.content_type,
-            "hidden": False,
-        })
+        result.append(
+            {
+                "name": item.name,
+                "path": item.path,
+                "size": item.size,
+                "created_time": item.created_time,
+                "modified_time": item.modified_time,
+                "data-product-uri": item.data_product_uri,
+                "mime_type": item.content_type,
+                "hidden": False,
+            }
+        )
     return result
 
 
 # ---------------------------------------------------------------------------
 # File open / download
 # ---------------------------------------------------------------------------
+
 
 def open_file(request: Any, data_product: Any) -> io.BytesIO:
     """Download the file for *data_product* and return a file-like object."""
@@ -132,6 +140,7 @@ def open_file(request: Any, data_product: Any) -> io.BytesIO:
 # ---------------------------------------------------------------------------
 # File upload / save
 # ---------------------------------------------------------------------------
+
 
 def save_input_file(request: Any, input_file: BinaryIO, name: str | None = None, content_type: str = "") -> Any:
     """Upload *input_file* to the user's input files directory.
@@ -151,7 +160,14 @@ def save_input_file(request: Any, input_file: BinaryIO, name: str | None = None,
     return request.airavata_client.research.get_data_product(resp.uri)
 
 
-def save(request: Any, path: str, file_obj: BinaryIO, name: str | None = None, content_type: str = "", experiment_id: str | None = None) -> Any:
+def save(
+    request: Any,
+    path: str,
+    file_obj: BinaryIO,
+    name: str | None = None,
+    content_type: str = "",
+    experiment_id: str | None = None,
+) -> Any:
     """Upload *file_obj* to *path* in user storage.
 
     Returns a DataProductModel proto.
@@ -170,6 +186,7 @@ def save(request: Any, path: str, file_obj: BinaryIO, name: str | None = None, c
 # ---------------------------------------------------------------------------
 # File content update
 # ---------------------------------------------------------------------------
+
 
 def update_data_product_content(request: Any, data_product: Any, fileContentText: str) -> None:
     """Replace the content of the file backing *data_product* with *fileContentText*."""
@@ -196,6 +213,7 @@ def update_file_content(request: Any, path: str, fileContentText: str) -> None:
 # ---------------------------------------------------------------------------
 # File / directory creation and deletion
 # ---------------------------------------------------------------------------
+
 
 def create_user_dir(request: Any, path: str, experiment_id: str | None = None) -> tuple[None, str]:
     """Create a directory at *path*. Returns (storage_resource_id, created_path)."""
@@ -229,6 +247,7 @@ def delete_dir(request: Any, path: str, experiment_id: str | None = None) -> Non
 # File metadata
 # ---------------------------------------------------------------------------
 
+
 def get_file_metadata(request: Any, path: str, experiment_id: str | None = None) -> dict[str, Any]:
     """Get metadata for the file at *path*. Returns a dict."""
     resp = request.airavata_client.storage.get_file_metadata(path)
@@ -244,7 +263,9 @@ def get_file_metadata(request: Any, path: str, experiment_id: str | None = None)
     }
 
 
-def get_data_product_metadata(request: Any, data_product: Any = None, data_product_uri: str | None = None) -> dict[str, Any]:
+def get_data_product_metadata(
+    request: Any, data_product: Any = None, data_product_uri: str | None = None
+) -> dict[str, Any]:
     """Get metadata for a data product. Returns a dict with path, size, etc."""
     if data_product is None and data_product_uri:
         data_product = request.airavata_client.research.get_data_product(data_product_uri)
@@ -271,10 +292,13 @@ def get_data_product_metadata(request: Any, data_product: Any = None, data_produ
 # Download URL helpers
 # ---------------------------------------------------------------------------
 
+
 def get_download_url(request: Any, data_product_uri: str | None = None) -> str:
     """Return a URL to download the file for *data_product_uri*."""
-    from django.urls import reverse
     from urllib.parse import quote
+
+    from django.urls import reverse
+
     return reverse("django_airavata_api:download_file") + f"?data-product-uri={quote(data_product_uri or '')}"
 
 

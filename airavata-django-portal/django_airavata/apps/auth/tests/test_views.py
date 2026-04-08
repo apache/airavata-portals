@@ -7,8 +7,8 @@ from django.contrib.messages.middleware import MessageMiddleware
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.core import mail
 from django.http import HttpResponseRedirect
-from django.urls import reverse
 from django.test import RequestFactory, TestCase, override_settings
+from django.urls import reverse
 
 from django_airavata.apps.auth import models, views
 from django_airavata.proto_compat import UserProfile
@@ -261,6 +261,5 @@ class ResendEmailLinkTestCase(TestCase):
 
         self.assertEqual(len(messages.get_messages(request)), 1)
         # get the first/only message
-        for message in messages.get_messages(request):
-            pass
+        message = list(messages.get_messages(request))[-1]
         self.assertIn("Email verification link sent successfully", str(message))

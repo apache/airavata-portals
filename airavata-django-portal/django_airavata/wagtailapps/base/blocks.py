@@ -630,7 +630,10 @@ class NavItem(StructBlock):
             ("yes", "Add to main menu"),
         ],
         required=False,
-        help_text="The main menu is at the top of the dashboard when a user first logs in. Horizontal alignment does not apply when added to main menu.",
+        help_text=(
+            "The main menu is at the top of the dashboard when a user first logs in."
+            " Horizontal alignment does not apply when added to main menu."
+        ),
     )
 
     class Meta:

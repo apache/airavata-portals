@@ -77,16 +77,19 @@ class Command(BaseCommand):
                 # otherwise, generate a tarball in tmpdir
                 archive_tarball_filename = f"{archive_basename}.tgz"
                 archive_tarball_filepath = os.path.join(tmpdir, archive_tarball_filename)
-                with tarfile.open(archive_tarball_filepath, "w:gz") as tarball:
-                    with open(os.path.join(tmpdir, archive_list_filename)) as archive_list_file:
-                        for line in archive_list_file:
+                with (
+                    tarfile.open(archive_tarball_filepath, "w:gz") as tarball,
+                    open(os.path.join(tmpdir, archive_list_filename)) as archive_list_file,
+                ):
+                    for line in archive_list_file:
                             tarball.add(line.strip())
 
                 minimum_bytes_size = settings.GATEWAY_USER_DATA_ARCHIVE_MINIMUM_ARCHIVE_SIZE_GB * 1024**3
                 if os.stat(archive_tarball_filepath).st_size < minimum_bytes_size:
                     self.stdout.write(
                         self.style.WARNING(
-                            "Aborting, archive size is not large enough to proceed (size less than GATEWAY_USER_DATA_ARCHIVE_MINIMUM_ARCHIVE_SIZE_GB)"
+                            "Aborting, archive size is not large enough to proceed"
+                            " (size less than GATEWAY_USER_DATA_ARCHIVE_MINIMUM_ARCHIVE_SIZE_GB)"
                         )
                     )
                     # Exit early
@@ -122,7 +125,8 @@ class Command(BaseCommand):
                             else:
                                 self.stdout.write(
                                     self.style.WARNING(
-                                        f"Cannot delete {archive_path} as it is neither a file nor directory, perhaps was already removed"
+                                        f"Cannot delete {archive_path} as it is neither"
+                                        " a file nor directory, perhaps was already removed"
                                     )
                                 )
                             archive_entry = models.UserDataArchiveEntry(
@@ -130,15 +134,20 @@ class Command(BaseCommand):
                             )
                             archive_entry.save()
             except Exception as e:
-                self.stdout.write(self.style.ERROR("Failed while deleting archived data, attempting to roll back"))
+                self.stdout.write(
+                    self.style.ERROR("Failed while deleting archived data, attempting to roll back")
+                )
                 with tarfile.open(archive_directory / archive_tarball_filename) as tf:
                     tf.extractall(path="/")
+                tarball_path = archive_directory / archive_tarball_filename
                 logger.exception(
-                    f"[archive_user_data] Failed to delete archived files, but unarchived from tarball {archive_directory / archive_tarball_filename}",
+                    "[archive_user_data] Failed to delete archived files,"
+                    " but unarchived from tarball %s",
+                    tarball_path,
                     exc_info=e,
                 )
                 raise CommandError(
-                    f"Failed to delete archived files, but unarchived from tarball {archive_directory / archive_tarball_filename}"
+                    f"Failed to delete archived files, but unarchived from tarball {tarball_path}"
                 ) from e
 
             self.stdout.write(self.style.SUCCESS("Successfully removed archived user data"))
@@ -182,7 +191,4 @@ class Command(BaseCommand):
         if not dir_entry.is_dir():
             return False
         shared_dirs = getattr(settings, "GATEWAY_DATA_SHARED_DIRECTORIES", {})
-        for shared_dir in shared_dirs.values():
-            if os.path.samefile(dir_entry.path, shared_dir["path"]):
-                return True
-        return False
+        return any(os.path.samefile(dir_entry.path, shared_dir["path"]) for shared_dir in shared_dirs.values())

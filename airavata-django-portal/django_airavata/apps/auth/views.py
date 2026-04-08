@@ -566,8 +566,8 @@ class UserViewSet(viewsets.ModelViewSet):
 
         try:
             pending_email_change = models.PendingEmailChange.objects.get(user=user, verification_code=code)
-        except models.PendingEmailChange.DoesNotExist:
-            raise Exception("Verification code is invalid. Please try again.")
+        except models.PendingEmailChange.DoesNotExist as e:
+            raise Exception("Verification code is invalid. Please try again.") from e
         pending_email_change.verified = True
         pending_email_change.save()
         user.email = pending_email_change.email_address

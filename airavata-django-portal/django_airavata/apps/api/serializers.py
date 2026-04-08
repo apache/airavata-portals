@@ -1,3 +1,4 @@
+import contextlib
 import copy
 import datetime
 import json
@@ -6,14 +7,13 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-from django_airavata.apps.api import user_storage
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.http import HttpRequest
 from django.urls import reverse
 from rest_framework import serializers
 from rest_framework.request import Request
 
+from django_airavata.apps.api import user_storage
 from django_airavata.proto_compat import (
     ApplicationDeploymentDescription,
     ApplicationInterfaceDescription,
@@ -693,25 +693,31 @@ class GroupComputeResourcePreferenceSerializer(proto_utils.create_serializer_cla
     def _convert_nested_list_fields_to_thrift(slurm_pref):
         from collections import OrderedDict
 
-        if hasattr(slurm_pref, "reservations") and slurm_pref.reservations:
-            if isinstance(slurm_pref.reservations, list):
-                converted_reservations = []
-                for res in slurm_pref.reservations:
-                    if isinstance(res, (dict, OrderedDict)):
-                        converted_reservations.append(ComputeResourceReservation(**res))
-                    else:
-                        converted_reservations.append(res)
-                slurm_pref.reservations = converted_reservations
+        if (
+            hasattr(slurm_pref, "reservations")
+            and slurm_pref.reservations
+            and isinstance(slurm_pref.reservations, list)
+        ):
+            converted_reservations = []
+            for res in slurm_pref.reservations:
+                if isinstance(res, (dict, OrderedDict)):
+                    converted_reservations.append(ComputeResourceReservation(**res))
+                else:
+                    converted_reservations.append(res)
+            slurm_pref.reservations = converted_reservations
 
-        if hasattr(slurm_pref, "groupSSHAccountProvisionerConfigs") and slurm_pref.groupSSHAccountProvisionerConfigs:
-            if isinstance(slurm_pref.groupSSHAccountProvisionerConfigs, list):
-                converted_configs = []
-                for cfg in slurm_pref.groupSSHAccountProvisionerConfigs:
-                    if isinstance(cfg, (dict, OrderedDict)):
-                        converted_configs.append(GroupAccountSSHProvisionerConfig(**cfg))
-                    else:
-                        converted_configs.append(cfg)
-                slurm_pref.groupSSHAccountProvisionerConfigs = converted_configs
+        if (
+            hasattr(slurm_pref, "groupSSHAccountProvisionerConfigs")
+            and slurm_pref.groupSSHAccountProvisionerConfigs
+            and isinstance(slurm_pref.groupSSHAccountProvisionerConfigs, list)
+        ):
+            converted_configs = []
+            for cfg in slurm_pref.groupSSHAccountProvisionerConfigs:
+                if isinstance(cfg, (dict, OrderedDict)):
+                    converted_configs.append(GroupAccountSSHProvisionerConfig(**cfg))
+                else:
+                    converted_configs.append(cfg)
+            slurm_pref.groupSSHAccountProvisionerConfigs = converted_configs
 
     @staticmethod
     def _convert_specific_preferences_dict_to_thrift(pref_instance, resource_type):
@@ -729,10 +735,7 @@ class GroupComputeResourcePreferenceSerializer(proto_utils.create_serializer_cla
                 pref_instance.specificPreferences = union_type_class()
 
                 if resource_type == ResourceType.SLURM:
-                    if "slurm" in specific_prefs_dict:
-                        slurm_data = specific_prefs_dict["slurm"]
-                    else:
-                        slurm_data = specific_prefs_dict
+                    slurm_data = specific_prefs_dict.get("slurm", specific_prefs_dict)
 
                     if slurm_data and isinstance(slurm_data, dict) and len(slurm_data) > 0:
                         try:
@@ -766,64 +769,63 @@ class GroupComputeResourcePreferenceSerializer(proto_utils.create_serializer_cla
                             slurm_pref = SlurmComputeResourcePreference(**slurm_data)
                             pref_instance.specificPreferences.slurm = slurm_pref
                             GroupComputeResourcePreferenceSerializer._convert_nested_list_fields_to_thrift(slurm_pref)
+                            cr_id = getattr(pref_instance, "computeResourceId", "unknown")
                             log.info(
-                                "GCPreference: Converted specificPreferences dict to SLURM Thrift union type, computeResourceId=%s",
-                                pref_instance.computeResourceId
-                                if hasattr(pref_instance, "computeResourceId")
-                                else "unknown",
+                                "GCPreference: Converted specificPreferences dict"
+                                " to SLURM Thrift union type, computeResourceId=%s",
+                                cr_id,
                             )
                         except Exception as e:
+                            cr_id = getattr(pref_instance, "computeResourceId", "unknown")
                             log.error(
-                                "GCPreference: Failed to create SlurmComputeResourcePreference from dict: %s, computeResourceId=%s",
+                                "GCPreference: Failed to create SlurmComputeResourcePreference"
+                                " from dict: %s, computeResourceId=%s",
                                 str(e),
-                                pref_instance.computeResourceId
-                                if hasattr(pref_instance, "computeResourceId")
-                                else "unknown",
+                                cr_id,
                                 exc_info=True,
                             )
                     else:
+                        cr_id = getattr(pref_instance, "computeResourceId", "unknown")
                         log.info(
-                            "GCPreference: specificPreferences dict is empty, created empty union type, computeResourceId=%s",
-                            pref_instance.computeResourceId
-                            if hasattr(pref_instance, "computeResourceId")
-                            else "unknown",
+                            "GCPreference: specificPreferences dict is empty,"
+                            " created empty union type, computeResourceId=%s",
+                            cr_id,
                         )
                 elif resource_type == ResourceType.AWS:
-                    if "aws" in specific_prefs_dict:
-                        aws_data = specific_prefs_dict["aws"]
-                    else:
-                        aws_data = specific_prefs_dict
+                    aws_data = specific_prefs_dict.get("aws", specific_prefs_dict)
 
                     if aws_data and isinstance(aws_data, dict) and len(aws_data) > 0:
                         try:
                             aws_pref = AwsComputeResourcePreference(**aws_data)
                             pref_instance.specificPreferences.aws = aws_pref
+                            cr_id = getattr(pref_instance, "computeResourceId", "unknown")
                             log.info(
-                                "GCPreference: Converted specificPreferences dict to AWS Thrift union type, computeResourceId=%s",
-                                pref_instance.computeResourceId
-                                if hasattr(pref_instance, "computeResourceId")
-                                else "unknown",
+                                "GCPreference: Converted specificPreferences dict"
+                                " to AWS Thrift union type, computeResourceId=%s",
+                                cr_id,
                             )
                         except Exception as e:
+                            cr_id = getattr(pref_instance, "computeResourceId", "unknown")
                             log.error(
-                                "GCPreference: Failed to create AwsComputeResourcePreference from dict: %s, computeResourceId=%s",
+                                "GCPreference: Failed to create AwsComputeResourcePreference"
+                                " from dict: %s, computeResourceId=%s",
                                 str(e),
-                                pref_instance.computeResourceId
-                                if hasattr(pref_instance, "computeResourceId")
-                                else "unknown",
+                                cr_id,
                                 exc_info=True,
                             )
                     else:
+                        cr_id = getattr(pref_instance, "computeResourceId", "unknown")
                         log.info(
-                            "GCPreference: specificPreferences dict is empty, created empty union type, computeResourceId=%s",
-                            pref_instance.computeResourceId
-                            if hasattr(pref_instance, "computeResourceId")
-                            else "unknown",
+                            "GCPreference: specificPreferences dict is empty,"
+                            " created empty union type, computeResourceId=%s",
+                            cr_id,
                         )
             else:
+                cr_id = getattr(pref_instance, "computeResourceId", "unknown")
                 log.error(
-                    "GCPreference: Could not get union type class to convert specificPreferences dict, computeResourceId=%s",
-                    pref_instance.computeResourceId if hasattr(pref_instance, "computeResourceId") else "unknown",
+                    "GCPreference: Could not get union type class to convert"
+                    " specificPreferences dict, computeResourceId=%s",
+                    cr_id,
                 )
                 union_type_created = False
                 try:
@@ -832,44 +834,46 @@ class GroupComputeResourcePreferenceSerializer(proto_utils.create_serializer_cla
                         pref_instance.specificPreferences = type(test_instance.specificPreferences)()
                         union_type_created = True
                         log.info(
-                            "GCPreference: Created empty union type from test instance, computeResourceId=%s",
-                            pref_instance.computeResourceId
-                            if hasattr(pref_instance, "computeResourceId")
-                            else "unknown",
+                            "GCPreference: Created empty union type from test instance,"
+                            " computeResourceId=%s",
+                            cr_id,
                         )
                 except Exception as e:
                     log.warning(
-                        "GCPreference: Failed to create union type from test instance: %s, trying direct construction",
+                        "GCPreference: Failed to create union type from test instance:"
+                        " %s, trying direct construction",
                         str(e),
                     )
 
-                if not union_type_created:
-                    if hasattr(pref_instance, "resourceType") and pref_instance.resourceType:
-                        try:
-                            temp = GroupComputeResourcePreference(resourceType=pref_instance.resourceType)
-                            if temp.specificPreferences is not None:
-                                pref_instance.specificPreferences = type(temp.specificPreferences)()
-                                union_type_created = True
-                                log.info(
-                                    "GCPreference: Created empty union type using pref_instance.resourceType, computeResourceId=%s",
-                                    pref_instance.computeResourceId
-                                    if hasattr(pref_instance, "computeResourceId")
-                                    else "unknown",
-                                )
-                        except Exception as e2:
-                            log.error(
-                                "GCPreference: All attempts to create union type failed: %s, computeResourceId=%s",
-                                str(e2),
-                                pref_instance.computeResourceId
-                                if hasattr(pref_instance, "computeResourceId")
-                                else "unknown",
-                                exc_info=True,
+                if (
+                    not union_type_created
+                    and hasattr(pref_instance, "resourceType")
+                    and pref_instance.resourceType
+                ):
+                    try:
+                        temp = GroupComputeResourcePreference(resourceType=pref_instance.resourceType)
+                        if temp.specificPreferences is not None:
+                            pref_instance.specificPreferences = type(temp.specificPreferences)()
+                            union_type_created = True
+                            log.info(
+                                "GCPreference: Created empty union type using"
+                                " pref_instance.resourceType, computeResourceId=%s",
+                                cr_id,
                             )
+                    except Exception as e2:
+                        log.error(
+                            "GCPreference: All attempts to create union type"
+                            " failed: %s, computeResourceId=%s",
+                            str(e2),
+                            cr_id,
+                            exc_info=True,
+                        )
 
                 if not union_type_created:
                     log.error(
-                        "GCPreference: Could not create union type at all! specificPreferences will remain as dict, computeResourceId=%s",
-                        pref_instance.computeResourceId if hasattr(pref_instance, "computeResourceId") else "unknown",
+                        "GCPreference: Could not create union type at all!"
+                        " specificPreferences will remain as dict, computeResourceId=%s",
+                        cr_id,
                     )
         else:
             if hasattr(pref_instance.specificPreferences, "slurm") and pref_instance.specificPreferences.slurm:
@@ -888,9 +892,12 @@ class GroupComputeResourcePreferenceSerializer(proto_utils.create_serializer_cla
                 slurm_pref = instance.specificPreferences.slurm
                 if hasattr(slurm_pref, "allocationProjectNumber"):
                     ret["allocationProjectNumber"] = slurm_pref.allocationProjectNumber
-                if "specificPreferences" in ret and isinstance(ret["specificPreferences"], dict):
-                    if "slurm" not in ret["specificPreferences"]:
-                        ret["specificPreferences"] = {"slurm": ret["specificPreferences"]}
+                if (
+                    "specificPreferences" in ret
+                    and isinstance(ret["specificPreferences"], dict)
+                    and "slurm" not in ret["specificPreferences"]
+                ):
+                    ret["specificPreferences"] = {"slurm": ret["specificPreferences"]}
             elif hasattr(instance.specificPreferences, "aws") and instance.specificPreferences.aws:
                 aws_pref = instance.specificPreferences.aws
                 aws_fields = {
@@ -1006,9 +1013,8 @@ class GroupComputeResourcePreferenceSerializer(proto_utils.create_serializer_cla
             if field_spec:
                 field_name = field_spec[2]
                 default_value = field_spec[4]
-                if default_value is not None:
-                    if field_name in data and data[field_name] is None:
-                        del data[field_name]
+                if default_value is not None and field_name in data and data[field_name] is None:
+                    del data[field_name]
 
         instance = GroupComputeResourcePreference(**data)
 
@@ -1227,9 +1233,12 @@ class GroupResourceProfileSerializer(proto_utils.create_serializer_class(GroupRe
                     if field_spec:
                         field_name = field_spec[2]
                         default_value = field_spec[4]
-                        if default_value is not None:
-                            if field_name in params and params[field_name] is None:
-                                del params[field_name]
+                        if (
+                            default_value is not None
+                            and field_name in params
+                            and params[field_name] is None
+                        ):
+                            del params[field_name]
 
                 return GroupResourceProfile(**params)
 
@@ -1250,26 +1259,30 @@ class GroupResourceProfileSerializer(proto_utils.create_serializer_class(GroupRe
                         )
                         thrift_pref = serializer.create(pref)
                         if isinstance(thrift_pref, GroupComputeResourcePreference):
+                            cr_id = getattr(thrift_pref, "computeResourceId", "unknown")
                             log.debug(
-                                "GCPreference create: Successfully created Thrift instance, computeResourceId=%s resourceType=%s",
-                                thrift_pref.computeResourceId
-                                if hasattr(thrift_pref, "computeResourceId")
-                                else "unknown",
+                                "GCPreference create: Successfully created Thrift"
+                                " instance, computeResourceId=%s resourceType=%s",
+                                cr_id,
                                 getattr(thrift_pref, "resourceType", None),
                             )
                             processed_compute_prefs.append(thrift_pref)
                         else:
                             log.warning(
-                                "GCPreference create: serializer.create() returned non-Thrift instance: %s, type=%s",
+                                "GCPreference create: serializer.create() returned"
+                                " non-Thrift instance: %s, type=%s",
                                 pref.get("computeResourceId", "unknown"),
                                 type(thrift_pref).__name__,
                             )
                             raise ValueError(
-                                f"serializer.create() returned {type(thrift_pref).__name__}, expected GroupComputeResourcePreference"
+                                f"serializer.create() returned"
+                                f" {type(thrift_pref).__name__},"
+                                f" expected GroupComputeResourcePreference"
                             )
                     except Exception as e:
                         log.warning(
-                            "GCPreference create: Failed to convert dict to Thrift instance using serializer.create(): %s, trying direct construction",
+                            "GCPreference create: Failed to convert dict to Thrift instance"
+                            " using serializer.create(): %s, trying direct construction",
                             str(e),
                             exc_info=True,
                         )
@@ -1299,9 +1312,8 @@ class GroupResourceProfileSerializer(proto_utils.create_serializer_class(GroupRe
             if field_spec:
                 field_name = field_spec[2]
                 default_value = field_spec[4]
-                if default_value is not None:
-                    if field_name in params and params[field_name] is None:
-                        del params[field_name]
+                if default_value is not None and field_name in params and params[field_name] is None:
+                    del params[field_name]
 
         return GroupResourceProfile(**params)
 
@@ -1333,7 +1345,7 @@ class GroupResourceProfileSerializer(proto_utils.create_serializer_class(GroupRe
         fields = self.fields
 
         for field_name, serializer in fields.items():
-            if isinstance(serializer, ListField) or isinstance(serializer, ListSerializer):
+            if isinstance(serializer, (ListField, ListSerializer)):
                 if params.get(field_name, None) is not None or not serializer.allow_null:
                     if isinstance(serializer.child, Serializer):
                         items = params[field_name]
@@ -1369,15 +1381,16 @@ class GroupResourceProfileSerializer(proto_utils.create_serializer_class(GroupRe
                         params[field_name] = processed_items
                     else:
                         params[field_name] = serializer.to_representation(params[field_name])
-            elif isinstance(serializer, Serializer):
-                if field_name in params and params[field_name] is not None:
-                    if not isinstance(params[field_name], dict):
-                        continue
-                    if hasattr(serializer, "create"):
-                        try:
+            elif (
+                isinstance(serializer, Serializer)
+                and field_name in params
+                and params[field_name] is not None
+            ):
+                if not isinstance(params[field_name], dict):
+                    continue
+                if hasattr(serializer, "create"):
+                        with contextlib.suppress(NotImplementedError):
                             params[field_name] = serializer.create(params[field_name])
-                        except NotImplementedError:
-                            pass
 
         return params
 
@@ -1395,10 +1408,11 @@ class GroupResourceProfileSerializer(proto_utils.create_serializer_class(GroupRe
                     compute_resource_id = incoming_pref.get("computeResourceId")
                     if compute_resource_id and compute_resource_id in existing_prefs_by_id:
                         existing_pref = existing_prefs_by_id[compute_resource_id]
-                        if "specificPreferences" in incoming_pref and isinstance(
-                            incoming_pref["specificPreferences"], dict
+                        if (
+                            "specificPreferences" in incoming_pref
+                            and isinstance(incoming_pref["specificPreferences"], dict)
+                            and "slurm" in incoming_pref["specificPreferences"]
                         ):
-                            if "slurm" in incoming_pref["specificPreferences"]:
                                 incoming_slurm = incoming_pref["specificPreferences"]["slurm"]
                                 if isinstance(incoming_slurm, dict):
                                     existing_slurm = None
@@ -1423,7 +1437,8 @@ class GroupResourceProfileSerializer(proto_utils.create_serializer_class(GroupRe
                                             if existing_value is not None:
                                                 incoming_slurm[field] = existing_value
                                                 log.debug(
-                                                    "GCPreference update: Preserved existing %s=%s for computeResourceId=%s",
+                                                    "GCPreference update: Preserved existing"
+                                                    " %s=%s for computeResourceId=%s",
                                                     field,
                                                     existing_value,
                                                     compute_resource_id,
@@ -1452,7 +1467,8 @@ class GroupResourceProfileSerializer(proto_utils.create_serializer_class(GroupRe
                                                                 )
                                                             except Exception as e:
                                                                 log.warning(
-                                                                    "GCPreference update: Could not serialize reservation item: %s",
+                                                                    "GCPreference update: Could not serialize"
+                                                                    " reservation item: %s",
                                                                     str(e),
                                                                 )
                                                                 item_dict = {
@@ -1472,7 +1488,8 @@ class GroupResourceProfileSerializer(proto_utils.create_serializer_class(GroupRe
                                                         converted_list.append(item)
                                                 incoming_slurm[field] = converted_list
                                                 log.debug(
-                                                    "GCPreference update: Preserved existing %s (list with %d items) for computeResourceId=%s",
+                                                    "GCPreference update: Preserved existing %s"
+                                                    " (list with %d items) for computeResourceId=%s",
                                                     field,
                                                     len(converted_list),
                                                     compute_resource_id,
@@ -1519,7 +1536,8 @@ class GroupResourceProfileSerializer(proto_utils.create_serializer_class(GroupRe
                             ):
                                 incoming_bq_policy["resourcePolicyId"] = existing_bq_policy.resourcePolicyId
                                 log.debug(
-                                    "GCPreference update: Preserved existing resourcePolicyId=%s for batchQueueResourcePolicy computeResourceId=%s queuename=%s",
+                                    "GCPreference update: Preserved existing resourcePolicyId=%s"
+                                    " for batchQueueResourcePolicy computeResourceId=%s queuename=%s",
                                     existing_bq_policy.resourcePolicyId,
                                     compute_resource_id,
                                     queuename,

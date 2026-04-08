@@ -11,14 +11,14 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from django_airavata.types import AiravataRequest
-
 from . import utils
 
 log = logging.getLogger(__name__)
 
 
-def authz_token_middleware(get_response: Callable[[HttpRequest], HttpResponse]) -> Callable[[HttpRequest], HttpResponse]:
+def authz_token_middleware(
+    get_response: Callable[[HttpRequest], HttpResponse],
+) -> Callable[[HttpRequest], HttpResponse]:
     """Automatically add the 'authz_token' to the request."""
 
     def middleware(request: Any) -> HttpResponse:
@@ -57,7 +57,9 @@ def set_admin_group_attributes(request: Any, gateway_groups: Any = None) -> None
     request.is_read_only_gateway_admin = read_only_admins_group_id in group_ids
 
 
-def gateway_groups_middleware(get_response: Callable[[HttpRequest], HttpResponse]) -> Callable[[HttpRequest], HttpResponse]:
+def gateway_groups_middleware(
+    get_response: Callable[[HttpRequest], HttpResponse],
+) -> Callable[[HttpRequest], HttpResponse]:
     """Add 'is_gateway_admin' and 'is_read_only_gateway_admin' to request."""
 
     def middleware(request: Any) -> HttpResponse:
@@ -98,7 +100,9 @@ def gateway_groups_middleware(get_response: Callable[[HttpRequest], HttpResponse
     return middleware
 
 
-def user_profile_completeness_check(get_response: Callable[[HttpRequest], HttpResponse]) -> Callable[[HttpRequest], HttpResponse]:
+def user_profile_completeness_check(
+    get_response: Callable[[HttpRequest], HttpResponse],
+) -> Callable[[HttpRequest], HttpResponse]:
     """Check if user profile is complete and if not, redirect to user profile editor."""
 
     def middleware(request: Any) -> HttpResponse:

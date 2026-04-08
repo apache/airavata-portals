@@ -6,7 +6,6 @@ import warnings
 from datetime import datetime, timedelta
 from typing import Any
 
-from django_airavata.apps.api import user_storage
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
@@ -24,6 +23,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from django_airavata.apps.admin.models import UserDataArchiveEntry
+from django_airavata.apps.api import user_storage
 from django_airavata.apps.api.view_utils import (
     APIBackedViewSet,
     APIResultIterator,
@@ -237,15 +237,15 @@ class ExperimentViewSet(
         if "outputNames" not in request.data:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         try:
-            request.airavata_client.research.get_intermediate_outputs(
-                experiment_id, request.data["outputNames"]
-            )
+            request.airavata_client.research.get_intermediate_outputs(experiment_id, request.data["outputNames"])
             return Response({"success": True})
         except Exception as e:
             log.exception("fetchIntermediateOutputs failed with the following error", extra={"request": request})
             raise e
 
-    def _update_workspace_preferences(self, project_id: str, group_resource_profile_id: str, compute_resource_id: str) -> None:
+    def _update_workspace_preferences(
+        self, project_id: str, group_resource_profile_id: str, compute_resource_id: str
+    ) -> None:
         prefs = helpers.WorkspacePreferencesHelper().get(self.request)
         prefs.most_recent_project_id = project_id
         prefs.most_recent_group_resource_profile_id = group_resource_profile_id
@@ -477,7 +477,7 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
             all_interfaces = self.request.airavata_client.research.get_all_application_interfaces(self.gateway_id)
             interface_ids = map(lambda i: i.applicationInterfaceId, all_interfaces)
             if lookup_value not in interface_ids:
-                raise Http404("Application interface does not exist")
+                raise Http404("Application interface does not exist") from None
             else:
                 raise  # re-raise
 
@@ -535,7 +535,8 @@ class ApplicationDeploymentViewSet(APIBackedViewSet):
         if (app_module_id and not group_resource_profile_id) or (not app_module_id and group_resource_profile_id):
             raise ParseError("Query params appModuleId and groupResourceProfileId are required together.")
         if app_module_id and group_resource_profile_id:
-            return self.request.airavata_client.research.get_application_deployments_for_app_module_and_group_resource_profile(
+            client = self.request.airavata_client.research
+            return client.get_application_deployments_for_app_module_and_group_resource_profile(
                 app_module_id, group_resource_profile_id
             )
         else:
@@ -775,7 +776,7 @@ def tus_upload_finish(request: Request) -> JsonResponse:
 @api_view()
 def download_file(request: Request) -> HttpResponse:
     # TODO: remove this deprecated view
-    warnings.warn("download_file view has moved to SDK", DeprecationWarning)
+    warnings.warn("download_file view has moved to SDK", DeprecationWarning, stacklevel=2)
     # redirect to /sdk/download
     data_product_uri = request.GET.get("data-product-uri", "")
     return redirect(user_storage.get_download_url(request, data_product_uri=data_product_uri))
@@ -880,16 +881,15 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
                         pref.resourceType = resource_type
 
                     resource_type = pref.resourceType if hasattr(pref, "resourceType") and pref.resourceType else None
-                    if resource_type:
-                        if (
-                            hasattr(pref, "specificPreferences")
-                            and isinstance(pref.specificPreferences, (dict, OrderedDict))
-                            or hasattr(pref, "specificPreferences")
-                            and pref.specificPreferences
-                        ):
-                            GroupComputeResourcePreferenceSerializer._convert_specific_preferences_dict_to_thrift(
-                                pref, resource_type
-                            )
+                    if resource_type and (
+                        hasattr(pref, "specificPreferences")
+                        and isinstance(pref.specificPreferences, (dict, OrderedDict))
+                        or hasattr(pref, "specificPreferences")
+                        and pref.specificPreferences
+                    ):
+                        GroupComputeResourcePreferenceSerializer._convert_specific_preferences_dict_to_thrift(
+                            pref, resource_type
+                        )
 
         from collections import OrderedDict
 
@@ -933,7 +933,8 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
                         grp.computeResourcePolicies[idx] = ComputeResourcePolicy(**policy)
                     except Exception as e:
                         log.error(
-                            "GCPreference perform_update: Failed to convert computeResourcePolicies[%d] OrderedDict to Thrift: %s, policy keys: %s",
+                            "GCPreference perform_update: Failed to convert"
+                            " computeResourcePolicies[%d] OrderedDict to Thrift: %s, policy keys: %s",
                             idx,
                             str(e),
                             list(policy.keys()) if isinstance(policy, dict) else list(policy.keys()),
@@ -970,7 +971,8 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
                         grp.batchQueueResourcePolicies[idx] = BatchQueueResourcePolicy(**policy)
                     except Exception as e:
                         log.error(
-                            "GCPreference perform_update: Failed to convert batchQueueResourcePolicies[%d] OrderedDict to Thrift: %s",
+                            "GCPreference perform_update: Failed to convert"
+                            " batchQueueResourcePolicies[%d] OrderedDict to Thrift: %s",
                             idx,
                             str(e),
                             exc_info=True,
@@ -992,32 +994,36 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
                             exc_info=True,
                         )
 
-                if isinstance(pref, GroupComputeResourcePreference):
-                    if hasattr(pref, "specificPreferences") and pref.specificPreferences:
-                        if hasattr(pref.specificPreferences, "slurm") and pref.specificPreferences.slurm:
-                            GroupComputeResourcePreferenceSerializer._convert_nested_list_fields_to_thrift(
-                                pref.specificPreferences.slurm
-                            )
-                            if (
-                                hasattr(pref.specificPreferences.slurm, "reservations")
-                                and pref.specificPreferences.slurm.reservations
-                            ):
-                                for res_idx, res in enumerate(pref.specificPreferences.slurm.reservations):
-                                    if isinstance(res, (dict, OrderedDict)):
-                                        pref.specificPreferences.slurm.reservations[res_idx] = (
-                                            ComputeResourceReservation(**res)
-                                        )
-                            if (
-                                hasattr(pref.specificPreferences.slurm, "groupSSHAccountProvisionerConfigs")
-                                and pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs
-                            ):
-                                for cfg_idx, cfg in enumerate(
-                                    pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs
-                                ):
-                                    if isinstance(cfg, (dict, OrderedDict)):
-                                        pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs[cfg_idx] = (
-                                            GroupAccountSSHProvisionerConfig(**cfg)
-                                        )
+                if (
+                    isinstance(pref, GroupComputeResourcePreference)
+                    and hasattr(pref, "specificPreferences")
+                    and pref.specificPreferences
+                    and hasattr(pref.specificPreferences, "slurm")
+                    and pref.specificPreferences.slurm
+                ):
+                    GroupComputeResourcePreferenceSerializer._convert_nested_list_fields_to_thrift(
+                        pref.specificPreferences.slurm
+                    )
+                    if (
+                        hasattr(pref.specificPreferences.slurm, "reservations")
+                        and pref.specificPreferences.slurm.reservations
+                    ):
+                        for res_idx, res in enumerate(pref.specificPreferences.slurm.reservations):
+                            if isinstance(res, (dict, OrderedDict)):
+                                pref.specificPreferences.slurm.reservations[res_idx] = (
+                                    ComputeResourceReservation(**res)
+                                )
+                    if (
+                        hasattr(pref.specificPreferences.slurm, "groupSSHAccountProvisionerConfigs")
+                        and pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs
+                    ):
+                        for cfg_idx, cfg in enumerate(
+                            pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs
+                        ):
+                            if isinstance(cfg, (dict, OrderedDict)):
+                                pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs[cfg_idx] = (
+                                    GroupAccountSSHProvisionerConfig(**cfg)
+                                )
 
         self.request.airavata_client.compute.update_group_resource_profile(grp)
 
@@ -1389,7 +1395,9 @@ class UserStoragePathView(APIView):
         experiment_id = request.query_params.get("experiment-id")
         return self._create_response(request, path, experiment_id=experiment_id)
 
-    def post(self, request: Request, path: str = "/", format: str | None = None, file_name: str | None = None) -> Response:
+    def post(
+        self, request: Request, path: str = "/", format: str | None = None, file_name: str | None = None
+    ) -> Response:
         path = request.data.get("path", path)
         experiment_id = request.data.get("experiment-id")
         if not user_storage.dir_exists(request, path, experiment_id=experiment_id):
@@ -1452,7 +1460,9 @@ class UserStoragePathView(APIView):
 
         return Response(status=204)
 
-    def _create_response(self, request: Request, path: str, uploaded: Any = None, experiment_id: str | None = None) -> Response:
+    def _create_response(
+        self, request: Request, path: str, uploaded: Any = None, experiment_id: str | None = None
+    ) -> Response:
         if user_storage.dir_exists(request, path, experiment_id=experiment_id):
             directories, files = user_storage.listdir(request, path, experiment_id=experiment_id)
             data: dict[str, Any] = {"isDir": True, "directories": directories, "files": files}
@@ -1484,7 +1494,9 @@ class UserStoragePathView(APIView):
 class ExperimentStoragePathView(APIView):
     serializer_class = serializers.ExperimentStoragePathSerializer
 
-    def get(self, request: Request, experiment_id: str | None = None, path: str = "", format: str | None = None) -> Response:
+    def get(
+        self, request: Request, experiment_id: str | None = None, path: str = "", format: str | None = None
+    ) -> Response:
         assert experiment_id is not None, "experiment_id is required"
         return self._create_response(request, experiment_id, path)
 
@@ -1496,7 +1508,11 @@ class ExperimentStoragePathView(APIView):
                 d["experiment_id"] = experiment_id
                 return d
 
-            data: dict[str, Any] = {"isDir": True, "directories": map(add_expid, directories), "files": map(add_expid, files)}
+            data: dict[str, Any] = {
+                "isDir": True,
+                "directories": map(add_expid, directories),
+                "files": map(add_expid, files),
+            }
             data["parts"] = self._split_path(path)
             serializer = self.serializer_class(data, context={"request": request})
             return Response(serializer.data)
@@ -1730,7 +1746,9 @@ class UnverifiedEmailUserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixi
         else:
             return users[0]
 
-    def _get_unverified_email_user_profiles(self, limit: int = -1, offset: int = 0, username: str | None = None) -> list[dict[str, Any]]:
+    def _get_unverified_email_user_profiles(
+        self, limit: int = -1, offset: int = 0, username: str | None = None
+    ) -> list[dict[str, Any]]:
         unverified_emails = (
             EmailVerification.objects.filter(verified=False).order_by("username").values("username").distinct()
         )

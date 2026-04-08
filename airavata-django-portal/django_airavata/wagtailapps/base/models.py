@@ -207,7 +207,8 @@ class Navbar(models.Model):
 @register_snippet
 class CustomHeaderLinks(models.Model):
     """
-    This provides feasibility for custom links inside header. Otherwise headerlinks are generated dynamically when a new page is created. The sublinks are restricted to 4 per link
+    This provides feasibility for custom links inside header. Otherwise headerlinks are generated
+    dynamically when a new page is created. The sublinks are restricted to 4 per link
     """
 
     header_link_text = models.CharField(
@@ -686,7 +687,8 @@ class RowBlankPageRelation(Orderable, BootstrapRow):
 
 class BlankPage(Page):
     """
-    The Blank Template Page. You can see if you visit your site and edit the blank page. Used to create free form content
+    The Blank Template Page. You can see if you visit your site and edit the blank page.
+    Used to create free form content
     """
 
     boolean_choices = (("yes", "Yes"), ("no", "No"))

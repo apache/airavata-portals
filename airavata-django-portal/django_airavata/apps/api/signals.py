@@ -2,10 +2,11 @@
 
 import logging
 
-from django_airavata.apps.api import user_storage
 from django.conf import settings
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import Signal, receiver
+
+from django_airavata.apps.api import user_storage
 
 log = logging.getLogger(__name__)
 

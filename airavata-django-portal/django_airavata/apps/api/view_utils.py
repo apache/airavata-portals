@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Any
 
 import pytz  # ty: ignore[unresolved-import]
-from django_airavata.apps.api import user_storage
 from django.conf import settings
 from django.http import Http404
 from django.http.request import QueryDict
@@ -17,6 +16,8 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.utils.urls import remove_query_param, replace_query_param
 from rest_framework.viewsets import GenericViewSet
+
+from django_airavata.apps.api import user_storage
 
 logger = logging.getLogger(__name__)
 
@@ -124,8 +125,7 @@ class APIResultIterator:
 
     def __iter__(self) -> Iterator[Any]:
         results = self.get_results(self.limit, self.offset)
-        for result in results:
-            yield result
+        yield from results
 
     def __getitem__(self, key: int | slice) -> Iterator[Any] | list[Any]:
         if isinstance(key, slice):
