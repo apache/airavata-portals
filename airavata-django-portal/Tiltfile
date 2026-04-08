@@ -1,0 +1,86 @@
+# Tiltfile for Airavata Django Portal
+
+# --- Infrastructure (MariaDB + Adminer from docker-compose) ---
+docker_compose('./compose/docker-compose.yaml')
+
+# --- Django backend dev server ---
+local_resource(
+    'django-server',
+    serve_cmd=' && '.join([
+        'pip install -e ".[mysql]" -q',
+        'pip install -r requirements.txt -r requirements-mysql.txt -q',
+        'python manage.py migrate --run-syncdb',
+        'python manage.py runserver 0.0.0.0:8000',
+    ]),
+    deps=['django_airavata/'],
+    ignore=[
+        '**/node_modules',
+        '**/static/django_airavata_*/*.js',
+        '**/static/django_airavata_*/*.css',
+        '**/static/common/dist',
+    ],
+    resource_deps=['db'],
+    readiness_probe=probe(
+        http_get=http_get_action(port=8000, path='/health/'),
+        initial_delay_secs=10,
+        period_secs=5,
+    ),
+    links=[
+        link('http://localhost:8000', 'Portal'),
+        link('http://localhost:18888', 'Adminer'),
+    ],
+)
+
+# --- Frontend dev servers ---
+# Build order: api (webpack) -> common -> plugin-api -> apps
+# api and common are libraries; they use `watch` mode instead of `serve`.
+
+local_resource(
+    'frontend-api',
+    serve_cmd='yarn && yarn run watch',
+    serve_dir='django_airavata/apps/api',
+    deps=['django_airavata/apps/api/static'],
+    resource_deps=['django-server'],
+    labels=['frontend'],
+)
+
+local_resource(
+    'frontend-common',
+    serve_cmd='yarn && yarn run watch',
+    serve_dir='django_airavata/static/common',
+    deps=['django_airavata/static/common/js'],
+    resource_deps=['frontend-api'],
+    labels=['frontend'],
+)
+
+local_resource(
+    'frontend-workspace-plugin-api',
+    serve_cmd='yarn && yarn run watch',
+    serve_dir='django_airavata/apps/workspace/django-airavata-workspace-plugin-api',
+    deps=['django_airavata/apps/workspace/django-airavata-workspace-plugin-api/js'],
+    resource_deps=['frontend-common'],
+    labels=['frontend'],
+)
+
+# Vue apps with HMR (vue-cli-service serve on port 9000)
+# Only one can run at a time since they all bind port 9000.
+# By default we start 'admin'. Toggle others in the Tilt UI.
+
+FRONTEND_APPS = {
+    'admin':       'django_airavata/apps/admin',
+    'auth':        'django_airavata/apps/auth',
+    'dataparsers': 'django_airavata/apps/dataparsers',
+    'groups':      'django_airavata/apps/groups',
+    'workspace':   'django_airavata/apps/workspace',
+}
+
+for name, path_prefix in FRONTEND_APPS.items():
+    local_resource(
+        'frontend-' + name,
+        serve_cmd='yarn && yarn run serve',
+        serve_dir=path_prefix,
+        resource_deps=['frontend-common', 'frontend-workspace-plugin-api'],
+        labels=['frontend-apps'],
+        auto_init=(name == 'admin'),
+        links=[link('http://localhost:9000', name + ' (HMR)')],
+    )
