@@ -29,9 +29,7 @@ class Command(BaseCommand):
     def find_root_airavata_page(self, pages):
         for page in pages:
             if (
-                isinstance(page.specific, HomePage)
-                or isinstance(page.specific, BlankPage)
-                or isinstance(page.specific, CybergatewayHomePage)
+                isinstance(page.specific, (HomePage, BlankPage, CybergatewayHomePage))
             ):
                 return page
             elif not page.is_leaf():

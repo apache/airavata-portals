@@ -1,6 +1,6 @@
 from django.core import mail
-from django.urls import reverse
 from django.test import RequestFactory, TestCase, override_settings
+from django.urls import reverse
 
 from django_airavata.apps.api.signals import user_added_to_group
 from django_airavata.apps.auth import signals  # noqa

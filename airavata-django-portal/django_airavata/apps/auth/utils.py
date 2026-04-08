@@ -153,7 +153,8 @@ def send_admin_alert_about_uninitialized_username(request, username, email, firs
         }
     )
     subject = Template(
-        "Please fix username: a user of {{portal_title}} ({{http_host}}) has been assigned an auto-generated username ({{username}})"
+        "Please fix username: a user of {{portal_title}} ({{http_host}})"
+        " has been assigned an auto-generated username ({{username}})"
     ).render(context)
     body = Template(
         """

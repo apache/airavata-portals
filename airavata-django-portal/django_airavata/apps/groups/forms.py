@@ -41,10 +41,14 @@ class CreateForm(forms.Form):
 class AddForm(forms.Form):
     def __init__(self, data=None, user_choices=None):
         super().__init__(data=data)
-        self.fields["users"] = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=user_choices or [])
+        self.fields["users"] = forms.MultipleChoiceField(
+            widget=forms.CheckboxSelectMultiple, choices=user_choices or []
+        )
 
 
 class RemoveForm(forms.Form):
     def __init__(self, data=None, user_choices=None):
         super().__init__(data=data)
-        self.fields["members"] = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=user_choices or [])
+        self.fields["members"] = forms.MultipleChoiceField(
+            widget=forms.CheckboxSelectMultiple, choices=user_choices or []
+        )

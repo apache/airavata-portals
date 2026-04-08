@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
+import contextlib
 import os
 import sys
 
@@ -567,17 +568,16 @@ WAGTAIL_CODE_BLOCK_LANGUAGES = (
 
 
 # Allow all settings to be overridden by settings_local.py file
-try:
+with contextlib.suppress(ImportError):
     from django_airavata.settings_local import *  # ty: ignore[unresolved-import]  # noqa
-except ImportError:
-    pass
 
 # NOTE: custom code must be loaded last so that the above settings take effect
 # for any views, etc. defined or imported by custom code
 
 # Add any custom apps installed in the virtual environment
 
-# Essentially this looks for the entry_points metadata in all installed Python packages. The format of the metadata in setup.py is the following:
+# Essentially this looks for the entry_points metadata in all installed Python packages.
+# The format of the metadata in setup.py is the following:
 #
 #    setuptools.setup(
 #        ...

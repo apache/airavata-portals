@@ -1,6 +1,5 @@
 import logging
 from importlib import import_module
-
 from importlib.metadata import entry_points
 
 # AppConfig instances from custom Django apps
@@ -23,7 +22,7 @@ def load(installed_apps, entry_point_group="airavata.djangoapp"):
 def merge_setting_dict(default, custom_setting):
     # FIXME: only handles dict settings, doesn't handle lists
     if isinstance(custom_setting, dict):
-        for k in custom_setting.keys():
+        for k in custom_setting:
             if k not in default:
                 default[k] = custom_setting[k]
             else:

@@ -3,8 +3,8 @@
 import django.db.models.deletion
 import modelcluster.fields
 import wagtail.blocks
-import wagtail.fields
 import wagtail.embeds.blocks
+import wagtail.fields
 import wagtail.images.blocks
 from django.db import migrations, models
 
@@ -565,9 +565,7 @@ class Migration(migrations.Migration):
                                     (
                                         (
                                             "message",
-                                            wagtail.blocks.RichTextBlock(
-                                                help_text="Enter some message inside well"
-                                            ),
+                                            wagtail.blocks.RichTextBlock(help_text="Enter some message inside well"),
                                         ),
                                         (
                                             "well_bg_color",
@@ -1124,9 +1122,7 @@ class Migration(migrations.Migration):
                                     (
                                         (
                                             "message",
-                                            wagtail.blocks.RichTextBlock(
-                                                help_text="Enter some message inside well"
-                                            ),
+                                            wagtail.blocks.RichTextBlock(help_text="Enter some message inside well"),
                                         ),
                                         (
                                             "well_bg_color",
@@ -1256,9 +1252,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "features_text",
-                    wagtail.fields.RichTextField(
-                        blank=True, help_text="Write some feature description", null=True
-                    ),
+                    wagtail.fields.RichTextField(blank=True, help_text="Write some feature description", null=True),
                 ),
                 ("feature_1_title", models.CharField(help_text="Feature Title 1", max_length=255)),
                 (
@@ -1290,9 +1284,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "custom_body_message",
-                    wagtail.fields.RichTextField(
-                        blank=True, help_text="Write some custom body message!", null=True
-                    ),
+                    wagtail.fields.RichTextField(blank=True, help_text="Write some custom body message!", null=True),
                 ),
                 (
                     "show_navbar",
@@ -1943,9 +1935,7 @@ class Migration(migrations.Migration):
                                     (
                                         (
                                             "message",
-                                            wagtail.blocks.RichTextBlock(
-                                                help_text="Enter some message inside well"
-                                            ),
+                                            wagtail.blocks.RichTextBlock(help_text="Enter some message inside well"),
                                         ),
                                         (
                                             "well_bg_color",

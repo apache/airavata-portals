@@ -97,8 +97,8 @@ class ThriftEnumField(Field):
             return None
         try:
             return self.enumClass[data]
-        except KeyError:
-            raise ValidationError(f"'{data}' is not a valid name for enum {self.enumClass.__name__}")
+        except KeyError as e:
+            raise ValidationError(f"'{data}' is not a valid name for enum {self.enumClass.__name__}") from e
 
 
 def create_serializer(thrift_data_type, enable_date_time_conversion=False, **kwargs):
@@ -141,7 +141,7 @@ def create_serializer_class(thrift_data_type, enable_date_time_conversion=False)
             fields = self.fields
             params = copy.deepcopy(validated_data)
             for field_name, serializer in fields.items():
-                if isinstance(serializer, ListField) or isinstance(serializer, ListSerializer):
+                if isinstance(serializer, (ListField, ListSerializer)):
                     if params.get(field_name, None) is not None or not serializer.allow_null:
                         if isinstance(serializer.child, Serializer):
                             if (
@@ -160,9 +160,8 @@ def create_serializer_class(thrift_data_type, enable_date_time_conversion=False)
                             params[field_name] = [serializer.child.create(item) for item in params[field_name]]
                         else:
                             params[field_name] = serializer.to_representation(params[field_name])
-                elif isinstance(serializer, Serializer):
-                    if field_name in params and params[field_name] is not None:
-                        params[field_name] = serializer.create(params[field_name])
+                elif isinstance(serializer, Serializer) and field_name in params and params[field_name] is not None:
+                    params[field_name] = serializer.create(params[field_name])
             return params
 
         def create(self, validated_data):
@@ -174,9 +173,8 @@ def create_serializer_class(thrift_data_type, enable_date_time_conversion=False)
                 if field_spec:
                     field_name = field_spec[2]
                     default_value = field_spec[4]
-                    if default_value is not None:
-                        if field_name in params and params[field_name] is None:
-                            del params[field_name]
+                    if default_value is not None and field_name in params and params[field_name] is None:
+                        del params[field_name]
 
             if (
                 thrift_data_type.__name__ == "ExperimentModel"

@@ -12,8 +12,8 @@ from django.http import HttpRequest
 from django.urls import reverse
 
 from django_airavata.app_config import AiravataAppConfig
-from django_airavata.types import AiravataRequest
 from django_airavata.apps.api.models import User_Notifications
+from django_airavata.types import AiravataRequest
 
 logger = logging.getLogger(__name__)
 

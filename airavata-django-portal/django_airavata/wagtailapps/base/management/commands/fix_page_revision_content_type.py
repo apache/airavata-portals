@@ -5,7 +5,10 @@ from wagtail.models import Revision
 
 
 class Command(BaseCommand):
-    help = "Fix the content_type id in the page revisions content_type which may be correct due to being imported from a different Django instance"
+    help = (
+        "Fix the content_type id in the page revisions content_type"
+        " which may be correct due to being imported from a different Django instance"
+    )
 
     def handle(self, **options):
         fixed_count = 0

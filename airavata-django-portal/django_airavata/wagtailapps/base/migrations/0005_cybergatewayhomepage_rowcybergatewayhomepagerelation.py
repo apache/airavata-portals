@@ -3,8 +3,8 @@
 import django.db.models.deletion
 import modelcluster.fields
 import wagtail.blocks
-import wagtail.fields
 import wagtail.embeds.blocks
+import wagtail.fields
 import wagtail.images.blocks
 from django.db import migrations, models
 
@@ -436,9 +436,7 @@ class Migration(migrations.Migration):
                                     (
                                         (
                                             "message",
-                                            wagtail.blocks.RichTextBlock(
-                                                help_text="Enter some message inside well"
-                                            ),
+                                            wagtail.blocks.RichTextBlock(help_text="Enter some message inside well"),
                                         ),
                                         (
                                             "well_bg_color",
@@ -1035,9 +1033,7 @@ class Migration(migrations.Migration):
                                     (
                                         (
                                             "message",
-                                            wagtail.blocks.RichTextBlock(
-                                                help_text="Enter some message inside well"
-                                            ),
+                                            wagtail.blocks.RichTextBlock(help_text="Enter some message inside well"),
                                         ),
                                         (
                                             "well_bg_color",
