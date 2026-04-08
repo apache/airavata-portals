@@ -10,7 +10,6 @@ import nbformat
 import papermill as pm
 from django_airavata.apps.api import user_storage
 from django.conf import settings
-from django.http import HttpRequest
 from nbconvert import HTMLExporter
 
 from django_airavata.proto_compat import DataType
@@ -28,7 +27,7 @@ class DefaultViewProvider:
     immediate = False
     name = "Default"
 
-    def generate_data(self, request: HttpRequest, experiment_output: Any, experiment: Any, output_file: Any = None, **kwargs: Any) -> dict[str, Any]:
+    def generate_data(self, request: Any, experiment_output: Any, experiment: Any, output_file: Any = None, **kwargs: Any) -> dict[str, Any]:
         return {}
 
 
@@ -37,7 +36,7 @@ class ParameterizedNotebookViewProvider:
     name = "Example Parameterized Notebook View"
     # test_output_file = os.path.join(BASE_DIR, "data", "Gaussian.log")
 
-    def generate_data(self, request: HttpRequest, experiment_output: Any, experiment: Any, output_file: Any = None, output_dir: str | None = None) -> dict[str, str]:
+    def generate_data(self, request: Any, experiment_output: Any, experiment: Any, output_file: Any = None, output_dir: str | None = None) -> dict[str, str]:
         # use papermill to generate the output notebook
         output_file_path = os.path.realpath(output_file.name)
         pm.execute_notebook(
@@ -57,7 +56,7 @@ class ParameterizedNotebookViewProvider:
 DEFAULT_VIEW_PROVIDERS: dict[str, Any] = {"default": DefaultViewProvider()}
 
 
-def get_output_views(request: HttpRequest, experiment: Any, application_interface: Any = None) -> dict[str, list[dict[str, Any]]]:
+def get_output_views(request: Any, experiment: Any, application_interface: Any = None) -> dict[str, list[dict[str, Any]]]:
     output_views: dict[str, list[dict[str, Any]]] = {}
     for output in experiment.experimentOutputs:
         output_views[output.name] = []
@@ -135,7 +134,7 @@ def _get_application_output_view_providers(application_interface: Any, output_na
     return []
 
 
-def generate_data(request: HttpRequest, output_view_provider_id: str, experiment_output_name: str, experiment_id: str, test_mode: bool = False, **kwargs: Any) -> dict[str, Any]:
+def generate_data(request: Any, output_view_provider_id: str, experiment_output_name: str, experiment_id: str, test_mode: bool = False, **kwargs: Any) -> dict[str, Any]:
     output_view_provider = _get_output_view_provider(output_view_provider_id)
     # TODO if output_view_provider is None, return 404
     experiment = request.airavata_client.research.get_experiment(experiment_id)
@@ -148,7 +147,7 @@ def generate_data(request: HttpRequest, output_view_provider_id: str, experiment
     return _generate_data(request, output_view_provider, experiment_output, experiment, test_mode=test_mode, **kwargs)
 
 
-def _generate_data(request: HttpRequest, output_view_provider: Any, experiment_output: Any, experiment: Any, test_mode: bool = False, **kwargs: Any) -> dict[str, Any]:
+def _generate_data(request: Any, output_view_provider: Any, experiment_output: Any, experiment: Any, test_mode: bool = False, **kwargs: Any) -> dict[str, Any]:
     output_files: list[Any] = []
     # test_mode can only be used in DEBUG=True mode
     if test_mode and settings.DEBUG:

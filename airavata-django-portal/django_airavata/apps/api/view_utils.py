@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import pytz
+import pytz  # ty: ignore[unresolved-import]
 from django_airavata.apps.api import user_storage
 from django.conf import settings
 from django.http import Http404
@@ -170,7 +170,7 @@ class APIResultPagination(pagination.LimitOffsetPagination):
         return super().get_limit(request)
 
     def get_paginated_response(self, data: list[Any]) -> Response:
-        has_next_link = len(data) >= self.limit
+        has_next_link = self.limit is not None and len(data) >= self.limit
         return Response(
             OrderedDict(
                 [

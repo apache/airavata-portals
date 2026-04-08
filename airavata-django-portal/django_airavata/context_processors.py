@@ -12,12 +12,13 @@ from django.http import HttpRequest
 from django.urls import reverse
 
 from django_airavata.app_config import AiravataAppConfig
+from django_airavata.types import AiravataRequest
 from django_airavata.apps.api.models import User_Notifications
 
 logger = logging.getLogger(__name__)
 
 
-def get_notifications(request: HttpRequest) -> dict[str, Any]:
+def get_notifications(request: AiravataRequest) -> dict[str, Any]:
     if request.user.is_authenticated and hasattr(request, "airavata_client"):
         unread_notifications = 0
         try:

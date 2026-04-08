@@ -9,7 +9,10 @@ and read via attribute access), simple Python classes with __init__(**kwargs)
 suffice since the SDK's gRPC facade returns these objects already.
 """
 
+from __future__ import annotations
+
 import enum
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -63,6 +66,7 @@ class ResourcePermissionType(enum.IntEnum):
     WRITE = 0
     READ = 1
     MANAGE_SHARING = 2
+    OWNER = 3
 
 
 class ResourceType(enum.IntEnum):
@@ -161,7 +165,8 @@ class SetEnvPaths(_ThriftLikeBase):
 
 
 class ApplicationInterfaceDescription(_ThriftLikeBase):
-    pass
+    applicationInputs: list[InputDataObjectType]
+    applicationOutputs: list[OutputDataObjectType]
 
 
 # -- App Catalog: compute resource --
@@ -214,7 +219,9 @@ class ComputeResourceReservation(_ThriftLikeBase):
 
 
 class GroupComputeResourcePreference(_ThriftLikeBase):
-    pass
+    resourceType: ResourceType | None
+    specificPreferences: Any
+    computeResourceId: str | None
 
 
 class GroupResourceProfile(_ThriftLikeBase):
@@ -230,7 +237,8 @@ class BatchQueueResourcePolicy(_ThriftLikeBase):
 
 
 class EnvironmentSpecificPreferences(_ThriftLikeBase):
-    pass
+    slurm: Any
+    aws: Any
 
 
 class SlurmComputeResourcePreference(_ThriftLikeBase):
@@ -315,7 +323,9 @@ class ExperimentSummaryModel(_ThriftLikeBase):
 
 
 class GroupModel(_ThriftLikeBase):
-    pass
+    name: str | None
+    id: str | None
+    ownerId: str | None
 
 
 # -- Job --

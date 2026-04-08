@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Callable
+from typing import Any
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
@@ -14,7 +15,7 @@ class AiravataClientMiddleware:
     def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
 
-    def __call__(self, request: HttpRequest) -> HttpResponse:
+    def __call__(self, request: Any) -> HttpResponse:
         access_token = _get_access_token(request)
         gateway_id = settings.GATEWAY_ID
         request.airavata_client = create_airavata_client(access_token, gateway_id)
@@ -45,5 +46,5 @@ class AiravataClientMiddleware:
 def _get_access_token(request: HttpRequest) -> str:
     """Extract access token from request auth or session."""
     if hasattr(request, "auth") and request.auth is not None:
-        return request.auth
+        return str(request.auth)
     return request.session.get("ACCESS_TOKEN", "")

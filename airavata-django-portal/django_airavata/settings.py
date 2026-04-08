@@ -568,7 +568,7 @@ WAGTAIL_CODE_BLOCK_LANGUAGES = (
 
 # Allow all settings to be overridden by settings_local.py file
 try:
-    from django_airavata.settings_local import *  # noqa
+    from django_airavata.settings_local import *  # ty: ignore[unresolved-import]  # noqa
 except ImportError:
     pass
 

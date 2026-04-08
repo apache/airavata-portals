@@ -49,7 +49,7 @@ class KeycloakBackendTestCase(TestCase):
         # Mock out request for redirect flow, and OAuth2Session: token and userinfo
         request = self.factory.get("/callback?code=abc123", secure=True)
         request.user = AnonymousUser()
-        request.session = {
+        request.session = {  # ty: ignore[invalid-assignment]
             "OAUTH2_STATE": "state",
             "OAUTH2_REDIRECT_URI": "redirect-uri",
         }
@@ -94,7 +94,7 @@ class KeycloakBackendTestCase(TestCase):
         # Mock out request for redirect flow, and OAuth2Session: token and userinfo
         request = self.factory.get("/callback?code=abc123", secure=True)
         request.user = AnonymousUser()
-        request.session = {
+        request.session = {  # ty: ignore[invalid-assignment]
             "OAUTH2_STATE": "state",
             "OAUTH2_REDIRECT_URI": "redirect-uri",
         }
@@ -141,7 +141,7 @@ class KeycloakBackendTestCase(TestCase):
         # Mock out request for redirect flow, and OAuth2Session: token and userinfo
         request = self.factory.get("/callback?code=abc123", secure=True)
         request.user = AnonymousUser()
-        request.session = {
+        request.session = {  # ty: ignore[invalid-assignment]
             "OAUTH2_STATE": "state",
             "OAUTH2_REDIRECT_URI": "redirect-uri",
         }

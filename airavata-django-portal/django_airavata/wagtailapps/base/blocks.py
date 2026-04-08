@@ -13,7 +13,7 @@ from wagtail.blocks import (
 from wagtail.documents.blocks import DocumentChooserBlock
 from wagtail.embeds.blocks import EmbedBlock
 from wagtail.images.blocks import ImageChooserBlock
-from wagtailcodeblock.blocks import CodeBlock
+from wagtailcodeblock.blocks import CodeBlock  # ty: ignore[unresolved-import]
 
 
 class ImageBlock(StructBlock):
