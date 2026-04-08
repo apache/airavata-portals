@@ -1,11 +1,11 @@
 <template>
-  <b-card :title="title" title-tag="h5">
-    <b-input-group
+  <div class="card" :title="title" title-tag="h5">
+    <div class="input-group"
       v-for="setEnvPath in data"
       :key="setEnvPath.key"
       class="mb-1 align-items-center"
     >
-      <b-form-input
+      <input class="form-control"
         type="text"
         v-model="setEnvPath.name"
         required
@@ -14,24 +14,24 @@
         :disabled="readonly"
       />
       <i class="fa fa-equals mx-1"></i>
-      <b-form-input
+      <input class="form-control"
         type="text"
         v-model="setEnvPath.value"
         required
         placeholder="VALUE"
         :disabled="readonly"
       />
-      <b-input-group-append v-if="!readonly">
-        <b-button variant="secondary" @click="deleteEnvPath(setEnvPath)">
+      <div class="input-group"-append v-if="!readonly">
+        <button class="btn" variant="secondary" @click="deleteEnvPath(setEnvPath)">
           <i class="fa fa-trash"></i>
-          <span class="sr-only">Delete</span>
-        </b-button>
-      </b-input-group-append>
-    </b-input-group>
-    <b-button v-if="!readonly" variant="secondary" @click="addEnvPath">{{
+          <span class="visually-hidden">Delete</span>
+        </button>
+      </span>
+    </div>
+    <button class="btn" v-if="!readonly" variant="secondary" @click="addEnvPath">{{
       addButtonLabel
-    }}</b-button>
-  </b-card>
+    }}</button>
+  </div></div>
 </template>
 
 <script>

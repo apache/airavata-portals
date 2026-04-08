@@ -1,20 +1,20 @@
 <template>
-  <b-form>
-    <b-form-group
+  <form>
+    <form-group
       label="Reservation name"
       label-for="reservation-name"
       :invalid-feedback="nameValidationFeedback"
       :state="nameValidationState"
     >
-      <b-form-input
+      <input class="form-control"
         id="reservation-name"
         v-model="data.reservationName"
         type="text"
         @input="nameInputBegins = true"
         :state="nameValidationState"
       />
-    </b-form-group>
-    <b-form-group
+    </div>
+    <form-group
       label="Start Time"
       label-for="start-time"
       :invalid-feedback="getValidationFeedback('startTime')"
@@ -41,8 +41,8 @@
         auto
         @input="data.startTime = stringToDate($event)"
       ></datetime>
-    </b-form-group>
-    <b-form-group
+    </div>
+    <form-group
       label="End Time"
       label-for="end-time"
       :invalid-feedback="getValidationFeedback('endTime')"
@@ -73,21 +73,21 @@
         auto
         @input="data.endTime = stringToDate($event)"
       ></datetime>
-    </b-form-group>
-    <b-form-group
+    </div>
+    <form-group
       label="Queues"
       label-for="queues"
       :invalid-feedback="getValidationFeedback('queueNames')"
       :state="getValidationState('queueNames')"
     >
-      <b-form-checkbox-group
+      <form-checkbox-group
         id="queues"
         v-model="data.queueNames"
         :options="queueNameOptions"
         :state="getValidationState('queueNames')"
       />
-    </b-form-group>
-  </b-form>
+    </div>
+  </form>
 </template>
 
 <script>

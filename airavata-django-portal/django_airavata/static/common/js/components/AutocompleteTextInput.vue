@@ -1,10 +1,10 @@
 <template>
   <div class="autocomplete-text-input">
-    <b-input-group>
-      <b-input-group-text slot="prepend">
+    <div class="input-group">
+      <div class="input-group"-text slot="prepend">
         <i class="fa fa-search"></i>
-      </b-input-group-text>
-      <b-form-input
+      </span>
+      <input class="form-control"
         type="text"
         :value="searchValue"
         :placeholder="placeholder"
@@ -12,10 +12,10 @@
         @keydown.enter="enter"
         @keydown.down="down"
         @keydown.up="up"
-      ></b-form-input>
-    </b-input-group>
-    <b-list-group class="autocomplete-suggestion-list" v-if="open">
-      <b-list-group-item
+      ></input>
+    </div>
+    <ul class="list-group" class="autocomplete-suggestion-list" v-if="open">
+      <ul class="list-group"-item
         v-for="(suggestion, index) in filtered"
         v-bind:class="{ active: isActive(index) }"
         href="#"
@@ -25,8 +25,8 @@
         <slot name="suggestion" :suggestion="suggestion">
           {{ suggestion.name }}
         </slot>
-      </b-list-group-item>
-    </b-list-group>
+      </li>
+    </ul>
   </div>
 </template>
 

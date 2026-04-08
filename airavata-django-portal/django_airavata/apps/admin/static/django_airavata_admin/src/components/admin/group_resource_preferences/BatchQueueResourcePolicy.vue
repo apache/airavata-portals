@@ -1,13 +1,13 @@
 <template>
   <div class="row">
     <div class="col">
-      <b-form-group
+      <form-group
         label="Maximum Allowed Nodes"
         label-for="max-allowed-nodes"
         :invalid-feedback="validationFeedback.maxAllowedNodes.invalidFeedback"
         :state="validationFeedback.maxAllowedNodes.state"
       >
-        <b-form-input
+        <input class="form-control"
           id="max-allowed-nodes"
           type="number"
           v-model="data.maxAllowedNodes"
@@ -19,17 +19,17 @@
           :placeholder="'Max Nodes: ' + batchQueue.maxNodes"
           :state="validationFeedback.maxAllowedNodes.state"
         >
-        </b-form-input>
-      </b-form-group>
+        </input>
+      </div>
     </div>
     <div class="col">
-      <b-form-group
+      <form-group
         label="Maximum Allowed Cores"
         label-for="max-allowed-cores"
         :invalid-feedback="validationFeedback.maxAllowedCores.invalidFeedback"
         :state="validationFeedback.maxAllowedCores.state"
       >
-        <b-form-input
+        <input class="form-control"
           id="max-allowed-cores"
           type="number"
           v-model="data.maxAllowedCores"
@@ -41,11 +41,11 @@
           :placeholder="'Max Cores: ' + batchQueue.maxProcessors"
           :state="validationFeedback.maxAllowedCores.state"
         >
-        </b-form-input>
-      </b-form-group>
+        </input>
+      </div>
     </div>
     <div class="col">
-      <b-form-group
+      <form-group
         label="Maximum Allowed Wall Time"
         label-for="max-allowed-walltime"
         :invalid-feedback="
@@ -53,7 +53,7 @@
         "
         :state="validationFeedback.maxAllowedWalltime.state"
       >
-        <b-form-input
+        <input class="form-control"
           id="max-allowed-walltime"
           type="number"
           v-model="data.maxAllowedWalltime"
@@ -65,8 +65,8 @@
           :placeholder="'Max Wall Time: ' + batchQueue.maxRunTime"
           :state="validationFeedback.maxAllowedWalltime.state"
         >
-        </b-form-input>
-      </b-form-group>
+        </input>
+      </div>
     </div>
   </div>
 </template>

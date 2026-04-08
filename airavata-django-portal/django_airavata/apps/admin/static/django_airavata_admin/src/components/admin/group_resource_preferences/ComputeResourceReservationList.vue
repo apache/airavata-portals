@@ -8,7 +8,7 @@
   >
     <template slot="additional-buttons">
       <delete-button
-        class="mr-2"
+        class="me-2"
         @delete="deleteAllExpiredReservations"
         label="Delete All Expired"
         :disabled="expiredReservations.length === 0"
@@ -17,7 +17,7 @@
       </delete-button>
     </template>
     <template slot="new-item-editor">
-      <b-card v-if="showNewItemEditor" title="New Reservation">
+      <div class="card" v-if="showNewItemEditor" title="New Reservation">
         <compute-resource-reservation-editor
           v-model="newReservation"
           :queues="queues"
@@ -32,27 +32,27 @@
         />
         <div class="row">
           <div class="col">
-            <b-button
+            <button class="btn"
               variant="primary"
               @click="saveNewReservation"
               :disabled="isSaveDisabled"
             >
               Add
-            </b-button>
-            <b-button variant="secondary" @click="cancelNewReservation">
+            </button>
+            <button class="btn" variant="secondary" @click="cancelNewReservation">
               Cancel
-            </b-button>
+            </button>
           </div>
         </div>
-      </b-card>
+      </div></div>
     </template>
     <template slot="item-list" slot-scope="slotProps">
-      <b-table hover :fields="fields" :items="slotProps.items">
+      <!-- TODO: Replace b-table with native table --><table class="table" hover :fields="fields" :items="slotProps.items">
         <template slot="cell(reservationName)" slot-scope="data">
           {{ data.value }}
-          <b-badge v-if="data.item.isExpired">Expired</b-badge>
-          <b-badge v-if="data.item.isActive" variant="success">Active</b-badge>
-          <b-badge v-if="data.item.isUpcoming" variant="info">Upcoming</b-badge>
+          <span class="badge" v-if="data.item.isExpired">Expired</span>
+          <span class="badge" v-if="data.item.isActive" variant="success">Active</span>
+          <span class="badge" v-if="data.item.isUpcoming" variant="info">Upcoming</span>
         </template>
         <template slot="cell(queueNames)" slot-scope="data">
           <ul v-for="queueName in data.item.queueNames" :key="queueName">
@@ -60,7 +60,7 @@
           </ul>
         </template>
         <template slot="cell(action)" slot-scope="data">
-          <b-link
+          <a
             v-if="!readonly"
             class="action-link"
             @click="toggleDetails(data)"
@@ -68,7 +68,7 @@
           >
             Edit
             <i class="fa fa-edit" aria-hidden="true"></i>
-          </b-link>
+          </a>
           <delete-link
             v-if="!readonly"
             class="action-link"
@@ -80,7 +80,7 @@
           </delete-link>
         </template>
         <template slot="row-details" slot-scope="row">
-          <b-card>
+          <div class="card"><div class="card-body">
             <compute-resource-reservation-editor
               :value="row.item"
               @input="updatedReservation"
@@ -88,15 +88,15 @@
               @valid="removeInvalidReservation(row.item.key)"
               @invalid="recordInvalidReservation(row.item.key)"
             />
-            <b-button
+            <button class="btn"
               size="sm"
               @click="toggleDetails(row)"
               :disabled="isReservationInvalid(row.item.key)"
               >Close</b-button
             >
-          </b-card>
+          </div></div>
         </template>
-      </b-table>
+      </table>
     </template>
   </list-layout>
 </template>

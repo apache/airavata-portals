@@ -1,29 +1,29 @@
 <template>
   <div v-if="localFullExperiment">
     <div class="row">
-      <div class="col-auto mr-auto">
+      <div class="col-auto me-auto">
         <h1 class="h4 mb-4">
           <slot name="title">Experiment Summary</slot>
         </h1>
       </div>
       <div class="col-auto">
         <share-button :entity-id="experiment.experimentId" />
-        <b-link v-if="isEditable" class="btn btn-primary" :href="editLink">
+        <a v-if="isEditable" class="btn btn-primary" :href="editLink">
           Edit
           <i class="fa fa-edit" aria-hidden="true"></i>
-        </b-link>
-        <b-link v-if="isLaunchable" class="btn btn-primary" @click="onLaunch">
+        </a>
+        <a v-if="isLaunchable" class="btn btn-primary" @click="onLaunch">
           Launch
           <i class="fa fa-running" aria-hidden="true"></i>
-        </b-link>
-        <b-btn v-if="isClonable" variant="primary" @click="onClone">
+        </a>
+        <button class="btn" v-if="isClonable" variant="primary" @click="onClone">
           Clone
           <i class="fa fa-copy" aria-hidden="true"></i>
-        </b-btn>
-        <b-btn v-if="isCancelable" variant="primary" @click="onCancel">
+        </button>
+        <button class="btn" v-if="isCancelable" variant="primary" @click="onCancel">
           Cancel
           <i class="fa fa-window-close" aria-hidden="true"></i>
-        </b-btn>
+        </button>
       </div>
     </div>
     <template v-for="output in experiment.experimentOutputs">
@@ -110,7 +110,7 @@
                       v-if="localFullExperiment.experiment.isProgressing"
                     >
                       <i class="fa fa-sync-alt fa-spin"></i>
-                      <span class="sr-only">Progressing...</span>
+                      <span class="visually-hidden">Progressing...</span>
                     </template>
                     {{ localFullExperiment.experimentStatusName }}
                   </td>
@@ -176,9 +176,9 @@
                 <tr v-if="groupResourceProfile">
                   <th scope="row">Allocation</th>
                   <td>
-                    <b-link :href="viewGroupResourceProfileLink">
+                    <a :href="viewGroupResourceProfileLink">
                       {{ groupResourceProfile.groupResourceProfileName }}
-                    </b-link>
+                    </a>
                   </td>
                 </tr>
                 <tr v-if="showQueueSettings">
@@ -259,31 +259,31 @@
                 <tr>
                   <th scope="row">Errors</th>
                   <td>
-                    <b-card
+                    <div class="card"
                       v-for="error in experiment.errors"
                       :key="error.errorId"
                       header="Error"
                     >
                       <p>{{ error.userFriendlyMessage }}</p>
-                    </b-card>
+                    </div></div>
                   </td>
                 </tr>
                 <template v-if="failedJobs.length > 0">
                   <tr v-for="job in failedJobs" :key="job.jobId">
                     <th scope="row">Job Submission Response</th>
                     <td>
-                      <b-card
+                      <div class="card"
                         v-if="job.stdOut"
                         :header="job.jobName + ' STDOUT'"
                       >
                         <pre class="pre-scrollable">{{ job.stdOut }}</pre>
-                      </b-card>
-                      <b-card
+                      </div></div>
+                      <div class="card"
                         v-if="job.stdErr"
                         :header="job.jobName + ' STDERR'"
                       >
                         <pre class="pre-scrollable">{{ job.stdErr }}</pre>
-                      </b-card>
+                      </div></div>
                     </td>
                   </tr>
                 </template>

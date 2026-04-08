@@ -23,7 +23,7 @@
       "
     />
 
-    <b-table
+    <!-- TODO: migrate to native HTML table --><table class="table"
       v-if="userStoragePath && isDir"
       :fields="fields"
       :items="items"
@@ -31,15 +31,15 @@
       :sort-compare="sortCompare"
     >
       <template slot="cell(name)" slot-scope="data">
-        <b-link
+        <a
           v-if="data.item.type === 'dir'"
           @click="directorySelected(data.item)"
         >
           <i class="fa fa-folder-open"></i> {{ data.item.name }}
           <template v-if="data.item.isSharedDir">
-            <b-badge class="ml-1">shared</b-badge>
+            <span class="badge" class="ms-1">shared</span>
           </template>
-        </b-link>
+        </a>
         <user-storage-link
           v-else
           :data-product-uri="data.item.dataProductURI"
@@ -52,31 +52,31 @@
         <human-date :date="data.item.modifiedTime" />
       </template>
       <template slot="cell(actions)" slot-scope="data">
-        <b-button
+        <button class="btn"
           v-if="includeSelectFileAction && data.item.type === 'file'"
           @click="$emit('file-selected', data.item)"
           :disabled="isAlreadySelected(data.item)"
           variant="primary"
         >
           Select
-        </b-button>
+        </button>
 
-        <b-link
+        <a
           v-if="includeDownloadAction && data.item.type === 'file'"
           class="action-link"
           :href="`${data.item.downloadURL}&download`"
         >
           Download File
           <i class="fa fa-download" aria-hidden="true"></i>
-        </b-link>
-        <b-link
+        </a>
+        <a
           v-if="includeDownloadAction && data.item.type === 'dir'"
           class="action-link"
           :href="`/sdk/download-dir/?path=${data.item.path}`"
         >
           Download Zip
           <i class="fa fa-file-archive" aria-hidden="true"></i>
-        </b-link>
+        </a>
         <delete-link
           v-if="
             includeDeleteAction &&
@@ -89,7 +89,7 @@
           >?
         </delete-link>
       </template>
-    </b-table>
+    </table>
   </div>
 </template>
 <script>

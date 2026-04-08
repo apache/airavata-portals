@@ -1,7 +1,7 @@
 <template>
   <extended-user-profile-value-editor v-bind="$props">
-    <b-form-input v-model="value" :state="validateState($v.value)" />
-    <b-form-invalid-feedback :state="validateState($v.value)"
+    <input class="form-control" v-model="value" :state="validateState($v.value)" />
+    <div class="invalid-feedback" :state="validateState($v.value)"
       >This field is required.</b-form-invalid-feedback
     >
   </extended-user-profile-value-editor>

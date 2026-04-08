@@ -2,22 +2,22 @@
   <div>
     <div class="row">
       <div class="col">
-        <b-card title="Gateway Users" title-tag="h6">
+        <div class="card" title="Gateway Users" title-tag="h6">
 
-          <b-form-group>
-            <b-input-group>
-              <b-input-group-text slot="prepend">
+          <div class="mb-3">
+            <div class="input-group">
+              <div class="input-group"-text slot="prepend">
                 <i class="fa fa-filter"></i>
-              </b-input-group-text>
-              <b-form-input
+              </span>
+              <input class="form-control"
                 v-model="userFilter"
                 placeholder="Filter list of users"
                 @change="onUserFilterChange"
               />
-            </b-input-group>
-          </b-form-group>
+            </div>
+          </div>
 
-          <b-table
+          <!-- TODO: migrate to native HTML table --><table class="table"
             hover
             selectable
             sticky-header
@@ -39,9 +39,9 @@
            </template>
 
             <template slot="cell(action)" slot-scope="data">
-              <b-button @click="toggleDetails(data)">
+              <button class="btn" @click="toggleDetails(data)">
                 {{data.detailsShowing ? 'Hide' : 'Show'}} Details
-              </b-button>
+              </button>
             </template>
 
             <template slot="row-details" slot-scope="data">
@@ -53,51 +53,51 @@
               />
             </template>
 
-          </b-table>
+          </table>
 
-        </b-card>
+        </div></div>
       </div>
 
       <div>
-        <b-button-group vertical>
+        <button class="btn"-group vertical>
 
-          <b-button
+          <button class="btn"
             style="margin-top:10px; margin-bottom:10px;"
             variant="primary"
             :disabled = "selectedUsers.length<1"
             @click="addSelectedMembers">
             <!--Add Selected Members-->
             <i class="fas fa-angle-right fa-lg"></i>
-          </b-button>
+          </button>
 
-          <b-button
+          <button class="btn"
             style="margin-top:10px; margin-bottom:10px;"
             variant="primary"
             :disabled = "nonMembers.length<1"
             @click="showAdd = true">
             <!--Add All Members-->
             <i class="fas fa-angle-double-right fa-lg"></i>
-          </b-button>
+          </button>
 
-          <b-button
+          <button class="btn"
             style="margin-top:10px; margin-bottom:10px;"
             variant="primary"
             :disabled = "membersCount<2"
             @click="showRemove = true">
             <i class="fas fa-angle-double-left fa-lg"></i>
             <!--Remove All Members-->
-          </b-button>
+          </button>
 
-          <b-button
+          <button class="btn"
             style="margin-top:10px; margin-bottom:10px;"
             variant="primary"
             :disabled = "selectedMembers.length<1"
               @click="removeSelectedMembers">
               <i class="fas fa-angle-left fa-lg"></i>
               <!--Remove Selected Members-->
-          </b-button>
+          </button>
 
-          <b-modal
+          <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
             v-model="showRemove"
             title="Are you sure?">
             <p class="my-4">
@@ -105,20 +105,20 @@
               '<strong>{{group.name}}</strong>'?
             </p>
             <div slot="modal-footer" class="w-100">
-              <b-button
-                class="float-right ml-1"
+              <button class="btn"
+                class="float-right ms-1"
                 @click="removeAllMembers">
                 Yes
-              </b-button>
-              <b-button
-                class="float-right ml-1"
+              </button>
+              <button class="btn"
+                class="float-right ms-1"
                 @click="showRemove = false">
                 No
-              </b-button>
+              </button>
             </div>
-          </b-modal>
+          </div>
 
-          <b-modal
+          <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
             v-model="showAdd"
             title="Are you sure?">
             <p class="my-4">
@@ -126,39 +126,39 @@
               '<strong>{{group.name}}</strong>'?
             </p>
             <div slot="modal-footer" class="w-100">
-              <b-button
-                class="float-right ml-1"
+              <button class="btn"
+                class="float-right ms-1"
                 @click="addAllMembers">
                 Yes
-              </b-button>
-              <b-button
-                class="float-right ml-1"
+              </button>
+              <button class="btn"
+                class="float-right ms-1"
                 @click="showAdd = false">
                 No
-              </b-button>
+              </button>
             </div>
-          </b-modal>
+          </div>
 
-        </b-button-group>
+        </div>
       </div>
 
       <div class="col">
-        <b-card title="Group Members" title-tag="h6">
+        <div class="card" title="Group Members" title-tag="h6">
 
-          <b-form-group>
-            <b-input-group>
-              <b-input-group-text slot="prepend">
+          <div class="mb-3">
+            <div class="input-group">
+              <div class="input-group"-text slot="prepend">
                 <i class="fa fa-filter"></i>
-              </b-input-group-text>
-              <b-form-input
+              </span>
+              <input class="form-control"
                 v-model="memberFilter"
                 placeholder="Filter list of members"
                 @change="onMemberFilterChange"
               />
-            </b-input-group>
-          </b-form-group>
+            </div>
+          </div>
 
-          <b-table
+          <!-- TODO: migrate to native HTML table --><table class="table"
             v-if="membersCount > 0"
             hover
             selectable
@@ -192,9 +192,9 @@
             </template>
 
             <template slot="cell(action)" slot-scope="data" >
-              <b-button @click="toggleDetails(data)">
+              <button class="btn" @click="toggleDetails(data)">
                 {{data.detailsShowing ? 'Hide' : 'Show'}} Details
-              </b-button>
+              </button>
             </template>
 
             <template slot="row-details" slot-scope="data">
@@ -208,9 +208,9 @@
               />
             </template>
 
-          </b-table>
+          </table>
 
-        </b-card>
+        </div></div>
       </div>
     </div>
   </div>

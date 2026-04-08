@@ -9,77 +9,77 @@
       <div class="col">
         <div class="card">
           <div class="card-body">
-            <b-alert
+            <div class="alert"
               :variant="showDismissibleAlert.variant"
               dismissible
               :show="showDismissibleAlert.dismissable"
               @dismissed="showDismissibleAlert.dismissable = false"
             >
               {{ showDismissibleAlert.message }}
-            </b-alert>
+            </div>
 
-            <b-form>
-              <b-form-group
+            <form>
+              <form-group
                 id="group1"
                 label="Parser Name:"
                 label-for="parser_name"
                 description="Name should only contain Alpha Characters"
               >
-                <b-form-input
+                <input class="form-control"
                   id="parser_name"
                   type="text"
                   v-model="localParser.id"
                   required
                   placeholder="Enter parser name"
                 >
-                </b-form-input>
-              </b-form-group>
+                </input>
+              </div>
 
-              <b-form-group
+              <form-group
                 id="group2"
                 label="Docker Image:"
                 label-for="docker-image"
               >
-                <b-form-input
+                <input class="form-control"
                   id="docker-image"
                   type="text"
                   v-model="localParser.imageName"
                   required
                   placeholder="Enter the Docker Image name"
                 >
-                </b-form-input>
-              </b-form-group>
+                </input>
+              </div>
 
-              <b-form-group
+              <form-group
                 id="group3"
                 label="Input Data Directory:"
                 label-for="input-path"
               >
-                <b-form-input
+                <input class="form-control"
                   id="input-path"
                   type="text"
                   v-model="localParser.inputDirPath"
                   required
                   placeholder="Enter input directory of the container"
                 >
-                </b-form-input>
-              </b-form-group>
+                </input>
+              </div>
 
-              <b-form-group
+              <form-group
                 id="group4"
                 label="Output Data Directory:"
                 label-for="output-path"
               >
-                <b-form-input
+                <input class="form-control"
                   id="output-path"
                   type="text"
                   v-model="localParser.outputDirPath"
                   required
                   placeholder="Enter output directory of the container"
                 >
-                </b-form-input>
-              </b-form-group>
-            </b-form>
+                </input>
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -96,12 +96,12 @@
               @add-new-item="createInput"
             >
               <template slot="item-list" slot-scope="slotProps">
-                <b-table
+                <!-- TODO: migrate to native HTML table --><table class="table"
                   hover
                   :fields="parserInputFields"
                   :items="slotProps.items"
                 >
-                </b-table>
+                </table>
               </template>
             </list-layout>
           </div>
@@ -120,12 +120,12 @@
               @add-new-item="createOutput"
             >
               <template slot="item-list" slot-scope="slotProps">
-                <b-table
+                <!-- TODO: migrate to native HTML table --><table class="table"
                   hover
                   :fields="parserOutputFields"
                   :items="slotProps.items"
                 >
-                </b-table>
+                </table>
               </template>
             </list-layout>
           </div>
@@ -134,15 +134,15 @@
     </div>
     <div class="row">
       <div class="col d-flex justify-content-end">
-        <b-button variant="primary" @click="saveParser">Save</b-button>
-        <b-button
+        <button class="btn" variant="primary" @click="saveParser">Save</button>
+        <button class="btn"
           v-if="parser"
-          class="ml-2"
+          class="ms-2"
           variant="danger"
           @click="removeParser"
           >Delete</b-button
         >
-        <b-button class="ml-2" variant="secondary" @click="cancel"
+        <button class="btn" class="ms-2" variant="secondary" @click="cancel"
           >Cancel</b-button
         >
       </div>

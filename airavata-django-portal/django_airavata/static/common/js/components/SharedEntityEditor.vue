@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-form-group
+    <form-group
       v-if="!readonly"
       label="Search for users/groups"
       labelFor="user-groups-autocomplete"
@@ -23,11 +23,11 @@
           </span>
         </template>
       </autocomplete-text-input>
-    </b-form-group>
+    </div>
     <h5 v-if="totalCount > 0">
       <slot name="permissions-header">Currently Shared With</slot>
     </h5>
-    <b-table
+    <!-- TODO: migrate to native HTML table --><table class="table"
       v-if="usersCount > 0"
       id="modal-user-table"
       hover
@@ -56,7 +56,7 @@
         }}</span>
       </template>
       <template slot="cell(permission)" slot-scope="data">
-        <b-form-select
+        <select class="form-select"
           v-if="!isPermissionReadOnly(data.item.permissionType)"
           v-model="data.item.permissionType"
           :options="permissionOptions"
@@ -69,15 +69,15 @@
         >
       </template>
       <template slot="cell(remove)" slot-scope="data">
-        <b-link
+        <a
           v-if="!isPermissionReadOnly(data.item.permissionType)"
           @click="removeUser(data.item.user)"
         >
           <span class="fa fa-trash"></span>
-        </b-link>
+        </a>
       </template>
-    </b-table>
-    <b-table
+    </table>
+    <!-- TODO: migrate to native HTML table --><table class="table"
       v-if="groupsCount > 0"
       id="modal-group-table"
       hover
@@ -94,7 +94,7 @@
         }}</span>
       </template>
       <template slot="cell(permission)" slot-scope="data">
-        <b-form-select
+        <select class="form-select"
           v-if="editingAllowed(data.item.group, data.item.permissionType)"
           v-model="data.item.permissionType"
           :options="permissionOptions"
@@ -104,14 +104,14 @@
         }}</span>
       </template>
       <template slot="cell(remove)" slot-scope="data">
-        <b-link
+        <a
           v-if="editingAllowed(data.item.group, data.item.permissionType)"
           @click="removeGroup(data.item.group)"
         >
           <span class="fa fa-trash"></span>
-        </b-link>
+        </a>
       </template>
-    </b-table>
+    </table>
   </div>
 </template>
 

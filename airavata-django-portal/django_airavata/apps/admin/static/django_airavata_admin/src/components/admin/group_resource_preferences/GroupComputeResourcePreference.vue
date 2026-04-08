@@ -12,8 +12,8 @@
       <div class="col">
         <div class="card">
           <div class="card-body">
-            <b-form-group label="Name" label-for="profile-name">
-              <b-form-input
+            <div class="mb-3" label="Name" label-for="profile-name">
+              <input class="form-control"
                 id="profile-name"
                 type="text"
                 v-model="data.groupResourceProfileName"
@@ -21,9 +21,9 @@
                 required
                 placeholder="Name of this Group Resource Profile"
               >
-              </b-form-input>
-            </b-form-group>
-            <b-form-group
+              </input>
+            </div>
+            <form-group
               label="Default SSH Credential"
               label-for="default-credential-store-token"
             >
@@ -33,7 +33,7 @@
                 :readonly="!userHasWriteAccess"
               >
               </ssh-credential-selector>
-            </b-form-group>
+            </div>
             <share-button ref="shareButton" :entity-id="id" />
           </div>
         </div>
@@ -47,7 +47,7 @@
       @add-new-item="createComputePreference"
     >
       <template slot="item-list" slot-scope="slotProps">
-        <b-table
+        <!-- TODO: migrate to native HTML table --><table class="table"
           hover
           :fields="computePreferencesFields"
           :items="slotProps.items"
@@ -128,11 +128,11 @@
               >?
             </delete-link>
           </template>
-        </b-table>
+        </table>
       </template>
     </list-layout>
     <div class="fixed-footer">
-      <b-button
+      <button class="btn"
         variant="primary"
         :disabled="!userHasWriteAccess"
         @click="saveGroupResourceProfile"
@@ -140,7 +140,7 @@
       >
       <delete-button
         v-if="id"
-        class="ml-2"
+        class="ms-2"
         :disabled="!userHasWriteAccess"
         @delete="removeGroupResourceProfile"
       >
@@ -148,7 +148,7 @@
         <strong>{{ data.groupResourceProfileName }}</strong
         >?
       </delete-button>
-      <b-button class="ml-2" variant="secondary" @click="cancel"
+      <button class="btn" class="ms-2" variant="secondary" @click="cancel"
         >Cancel</b-button
       >
     </div>

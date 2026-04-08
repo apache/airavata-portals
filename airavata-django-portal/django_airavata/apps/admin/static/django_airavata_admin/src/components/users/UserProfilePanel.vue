@@ -1,13 +1,13 @@
 <template>
-  <b-card header="User Profile">
-    <b-table :items="items" :fields="fields" small borderless>
+  <div class="card" header="User Profile">
+    <!-- TODO: Replace b-table with native table --><table class="table" :items="items" :fields="fields" small borderless>
       <template #cell(value)="{ value, item }">
         <i v-if="item.valid" class="fas fa-check text-success"></i>
         <i v-if="!item.valid" class="fas fa-times text-danger"></i>
         {{ value }}
       </template>
-    </b-table>
-  </b-card>
+    </table>
+  </div></div>
 </template>
 
 <script>

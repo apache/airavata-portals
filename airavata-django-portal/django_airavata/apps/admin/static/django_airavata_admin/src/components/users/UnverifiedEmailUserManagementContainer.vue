@@ -4,17 +4,17 @@
       <div class="col">
         <div class="card">
           <div class="card-body">
-            <b-table hover :fields="fields" :items="items" :fixed="true">
+            <!-- TODO: Replace b-table with native table --><table class="table" hover :fields="fields" :items="items" :fixed="true">
               <template slot="cell(creationTime)" slot-scope="data">
                 <human-date :date="data.value" />
               </template>
               <template slot="cell(action)" slot-scope="data">
-                <b-button
+                <button class="btn"
                   v-if="data.item.userHasWriteAccess"
                   @click="toggleDetails(data)"
                 >
                   Edit
-                </b-button>
+                </button>
               </template>
               <template slot="row-details" slot-scope="data">
                 <enable-user-panel
@@ -29,7 +29,7 @@
                   @delete-user="deleteUser"
                 />
               </template>
-            </b-table>
+            </table>
             <pager
               v-bind:paginator="usersPaginator"
               v-on:next="next"

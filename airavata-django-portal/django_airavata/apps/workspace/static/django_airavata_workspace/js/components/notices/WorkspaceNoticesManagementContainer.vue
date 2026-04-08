@@ -2,7 +2,7 @@
   <div class="w-100">
     <ul style="list-style: none; margin: 0px; padding: 0px;">
       <li v-for="(notice, noticeIndex) in notices" :key="noticeIndex">
-        <b-alert show>
+        <div class="alert" show>
           <div class="d-flex flex-row">
             <strong class="flex-fill" style="white-space: pre;">{{ notice.title }}</strong>
             <human-date v-if="notice.publishedTime" :date="notice.publishedTime" style="font-size: 10px;"/>
@@ -10,7 +10,7 @@
           <div style="white-space: pre;font-size: 12px;">
             <linkify>{{ notice.notificationMessage }}</linkify>
           </div>
-        </b-alert>
+        </div>
       </li>
     </ul>
   </div>

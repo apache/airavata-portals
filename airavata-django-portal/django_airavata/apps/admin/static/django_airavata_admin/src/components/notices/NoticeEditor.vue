@@ -3,30 +3,30 @@
     <div class="d-flex">
       <slot name="title"> </slot>
     </div>
-    <b-form @input="onUserInput" novalidate>
-      <b-form-group
+    <form @input="onUserInput" novalidate>
+      <form-group
         label="Notice Title"
         label-for="notice-title"
         :invalid-feedback="getValidationFeedback('title')"
         :state="getValidationState('title')"
       >
-        <b-form-input
+        <input class="form-control"
           id="notice-title"
           type="text"
           v-model="data.title"
           required
           placeholder="Notice Title"
           :state="getValidationState('title')"
-        ></b-form-input>
-      </b-form-group>
+        ></input>
+      </div>
 
-      <b-form-group
+      <form-group
         label="Notice Message"
         label-for="notice-message"
         :invalid-feedback="getValidationFeedback('notificationMessage')"
         :state="getValidationState('notificationMessage')"
       >
-        <b-form-textarea
+        <textarea class="form-control"
           id="notice-message"
           type="text"
           v-model="data.notificationMessage"
@@ -34,10 +34,10 @@
           placeholder="Notice Message"
           :state="getValidationState('notificationMessage')"
           :rows="3"
-        ></b-form-textarea>
-      </b-form-group>
+        ></textarea>
+      </div>
 
-      <b-form-group label="Publish Date" label-for="publish-date">
+      <div class="mb-3" label="Publish Date" label-for="publish-date">
         <datetime
           type="datetime"
           v-model="inputPublishedTime"
@@ -59,9 +59,9 @@
           use12-hour
           auto
         ></datetime>
-      </b-form-group>
+      </div>
 
-      <b-form-group label="Expiration Date" label-for="expiration-date">
+      <div class="mb-3" label="Expiration Date" label-for="expiration-date">
         <datetime
           type="datetime"
           v-model="inputExpirationTime"
@@ -83,53 +83,53 @@
           use12-hour
           auto
         ></datetime>
-      </b-form-group>
+      </div>
 
-      <b-form-group
+      <form-group
         label="Priority"
         label-for="priority"
         :invalid-feedback="getValidationFeedback('priority')"
         :state="getValidationState('priority')"
       >
-        <b-form-select
+        <select class="form-select"
           id="priority"
           v-model="data.priority"
           :options="select.options"
           :state="getValidationState('priority')"
         >
-        </b-form-select>
-      </b-form-group>
+        </select>
+      </div>
 
-      <b-form-group
+      <form-group
         label="Show In Dashboard"
         label-for="showInDashboard"
         :state="getValidationState('showInDashboard')"
       >
-        <b-form-checkbox
+        <form-checkbox
           id="showInDashboard"
           v-model="data.showInDashboard"
           :state="getValidationState('showInDashboard')"
         >
-        </b-form-checkbox>
-      </b-form-group>
+        </div>
+      </div>
 
       <template v-if="!editNotification">
         <div class="row">
           <div id="col-exp-buttons" class="col">
-            <b-button
+            <button class="btn"
               variant="success"
               @click="saveNewNotice"
               :disabled="isSaveDisabled"
             >
               Save
-            </b-button>
-            <b-button variant="primary" @click="cancelNewNotice">
+            </button>
+            <button class="btn" variant="primary" @click="cancelNewNotice">
               Cancel
-            </b-button>
+            </button>
           </div>
         </div>
       </template>
-    </b-form>
+    </form>
   </div>
 </template>
 <style>

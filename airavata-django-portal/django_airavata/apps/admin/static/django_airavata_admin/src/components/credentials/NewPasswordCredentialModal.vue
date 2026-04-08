@@ -1,30 +1,30 @@
 <template>
-  <b-modal
+  <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
     title="New Password Credential"
     ref="modal"
     @ok="okClicked"
     ok-title="Create"
     :ok-disabled="!valid"
   >
-    <b-form-input
+    <input class="form-control"
       type="text"
       placeholder="Username"
       required
       v-model="username"
     />
-    <b-form-input
+    <input class="form-control"
       type="password"
       placeholder="Password"
       required
       v-model="password"
     />
-    <b-form-input
+    <input class="form-control"
       type="text"
       placeholder="Description"
       required
       v-model="description"
     />
-  </b-modal>
+  </div>
 </template>
 
 <script>

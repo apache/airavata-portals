@@ -2,28 +2,28 @@
   <div class="file-input-editor">
     <div class="d-flex" v-if="isDataProductURI && dataProduct">
       <user-storage-link
-        class="mr-auto"
+        class="me-auto"
         :data-product-uri="dataProduct.productUri"
         :mime-type="dataProduct.mimeType"
         :file-name="dataProduct.productName"
       />
       <delete-link
         v-if="!readOnly && dataProduct.isInputFileUpload"
-        class="ml-2"
+        class="ms-2"
         @delete="deleteDataProduct"
       >
         Are you sure you want to delete input file
         <strong>{{ dataProduct.productName }}</strong
         >?
       </delete-link>
-      <b-link
+      <a
         v-else-if="!readOnly"
         @click="unselect"
-        class="ml-2 text-secondary"
+        class="ms-2 text-secondary"
       >
         Unselect
         <i class="fa fa-times" aria-hidden="true"></i>
-      </b-link>
+      </a>
     </div>
     <input-file-selector
       v-if="!readOnly && (!isDataProductURI || uploading)"

@@ -1,37 +1,37 @@
 <template>
-  <b-form-group
+  <form-group
     v-if="isEditing"
     label="Experiment Description"
     label-for="experiment-description"
   >
-    <b-form-textarea
+    <textarea class="form-control"
       id="experiment-description"
       v-model="data"
       rows="3"
       ref="description"
       maxlength="255"
-    ></b-form-textarea>
+    ></textarea>
     <div class="mt-1">
-      <b-button variant="success" size="sm" @click="toggleEditing"
+      <button class="btn" variant="success" size="sm" @click="toggleEditing"
         >Save description</b-button
       >
-      <b-link
+      <a
         @click="cancelEditing"
         title="Cancel editing"
-        class="text-secondary ml-3"
+        class="text-secondary ms-3"
       >
         <i class="fas fa-times"></i>
-        <span class="sr-only">Cancel editing</span>
-      </b-link>
+        <span class="visually-hidden">Cancel editing</span>
+      </a>
     </div>
-  </b-form-group>
+  </div>
   <div v-else class="mb-3">
-    <b-link @click="startEditing" class="d-inline-block text-body mb-1">
+    <a @click="startEditing" class="d-inline-block text-body mb-1">
       <i class="fas fa-align-left"></i>
       <span v-if="data"> Edit the description</span>
       <span v-else> Add a description</span>
-    </b-link>
-    <div v-if="data" class="ml-3">
+    </a>
+    <div v-if="data" class="ms-3">
       {{ data }}
     </div>
   </div>

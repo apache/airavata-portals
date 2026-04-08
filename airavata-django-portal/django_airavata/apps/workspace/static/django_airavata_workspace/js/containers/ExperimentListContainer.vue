@@ -9,14 +9,14 @@
       <div class="col">
         <div class="card">
           <div class="card-body">
-            <b-input-group class="w-100 mb-2">
-              <b-form-input
+            <div class="input-group" class="w-100 mb-2">
+              <input class="form-control"
                 v-if="defaultOptionSelected"
                 v-model="search"
                 placeholder="Search Experiments"
                 @keydown.enter="searchExperiments"
               />
-              <b-form-select
+              <select class="form-select"
                 v-if="applicationSelected"
                 v-model="applicationSelect"
                 :options="applicationNameOptions"
@@ -26,8 +26,8 @@
                     Select an application to search by
                   </option>
                 </template>
-              </b-form-select>
-              <b-form-select
+              </select>
+              <select class="form-select"
                 v-if="projectSelected"
                 v-model="projectSelect"
                 :options="projectNameOptions"
@@ -37,8 +37,8 @@
                     Select a project to search by
                   </option>
                 </template>
-              </b-form-select>
-              <b-form-select
+              </select>
+              <select class="form-select"
                 v-model="experimentAttributeSelect"
                 @input="checkSearchOptions"
               >
@@ -53,8 +53,8 @@
                 <option value="APPLICATION_ID">Application</option>
                 <option value="PROJECT_ID">Project</option>
                 <option value="JOB_ID">Job Id</option>
-              </b-form-select>
-              <b-form-select v-model="experimentStatusSelect">
+              </select>
+              <select class="form-select" v-model="experimentStatusSelect">
                 <template slot="first">
                   <option :value="null" disabled>
                     Select an experiment status to filter by
@@ -69,18 +69,18 @@
                 <option value="CANCELED">Canceled</option>
                 <option value="COMPLETED">Completed</option>
                 <option value="FAILED">Failed</option>
-              </b-form-select>
-              <b-input-group-append>
-                <b-button @click="resetSearch">Reset</b-button>
-                <b-button variant="primary" @click="searchExperiments"
+              </select>
+              <span class="input-group-text">
+                <button class="btn" @click="resetSearch">Reset</button>
+                <button class="btn" variant="primary" @click="searchExperiments"
                   >Search</b-button
                 >
-              </b-input-group-append>
-            </b-input-group>
-            <b-input-group class="w-100 mb-2">
-              <b-input-group-prepend is-text>
+              </span>
+            </div>
+            <div class="input-group" class="w-100 mb-2">
+              <div class="input-group"-prepend is-text>
                 <i class="fa fa-calendar-week" aria-hidden="true"></i>
-              </b-input-group-prepend>
+              </span>
               <flat-pickr
                 v-model="dateSelect"
                 :config="dateConfig"
@@ -88,7 +88,7 @@
                 @on-change="dateRangeChanged"
                 class="form-control"
               />
-            </b-input-group>
+            </div>
           </div>
         </div>
       </div>
@@ -114,9 +114,9 @@
                   :key="experiment.experimentId"
                 >
                   <td>
-                    <b-link :href="viewLink(experiment)">{{
+                    <a :href="viewLink(experiment)">{{
                       experiment.name
-                    }}</b-link>
+                    }}</a>
                   </td>
                   <td v-if="applicationName(experiment)">
                     {{ applicationName(experiment) }}
@@ -138,7 +138,7 @@
                     (for example, if it was deleted), then user can't edit or
                     clone experiment -->
                     <span v-if="applicationName(experiment)">
-                      <b-link
+                      <a
                         v-if="
                           experiment.isEditable && applicationName(experiment)
                         "
@@ -146,14 +146,14 @@
                         class="action-link"
                         >Edit
                         <i class="fa fa-edit" aria-hidden="true"></i>
-                      </b-link>
-                      <b-link
+                      </a>
+                      <a
                         v-else
                         @click="clone(experiment)"
                         class="action-link"
                         >Clone
                         <i class="fa fa-copy" aria-hidden="true"></i>
-                      </b-link>
+                      </a>
                     </span>
                   </td>
                 </tr>

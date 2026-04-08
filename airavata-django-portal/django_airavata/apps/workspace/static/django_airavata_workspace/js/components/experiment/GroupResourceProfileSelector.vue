@@ -1,8 +1,8 @@
 <template>
   <div class="row">
     <div class="col">
-      <b-form-group label="Allocation" label-for="group-resource-profile">
-        <b-form-select
+      <div class="mb-3" label="Allocation" label-for="group-resource-profile">
+        <select class="form-select"
           id="group-resource-profile"
           v-model="groupResourceProfileId"
           :options="groupResourceProfileOptions"
@@ -12,8 +12,8 @@
           <template slot="first">
             <option :value="null" disabled>Select an allocation</option>
           </template>
-        </b-form-select>
-      </b-form-group>
+        </select>
+      </div>
     </div>
   </div>
 </template>

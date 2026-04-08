@@ -1,15 +1,15 @@
 <template>
   <div class="share-button btn-container">
-    <b-button
+    <button class="btn"
       :variant="'outline-primary'"
       :title="title"
       :disabled="!shareButtonEnabled"
       @click="openSharingSettingsModal"
     >
       Share
-      <b-badge>{{ totalCount }}</b-badge>
-    </b-button>
-    <b-modal
+      <span class="badge">{{ totalCount }}</span>
+    </button>
+    <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
       class="modal-share-settings"
       title="Sharing Settings"
       ref="sharingSettingsModal"
@@ -44,7 +44,7 @@
           </span>
         </shared-entity-editor>
       </template>
-    </b-modal>
+    </div>
   </div>
 </template>
 

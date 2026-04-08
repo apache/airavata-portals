@@ -3,43 +3,43 @@
     <div class="row">
       <div class="col">
         <h1 class="h4 mb-4">Application Details</h1>
-        <b-form-group
+        <form-group
           label="Application Name"
           label-for="application-name"
           :invalid-feedback="validationFeedback.appModuleName.invalidFeedback"
           :state="validationFeedback.appModuleName.state"
         >
-          <b-form-input
+          <input class="form-control"
             id="application-name"
             type="text"
             v-model="data.appModuleName"
             required
             :disabled="readonly"
             :state="validationFeedback.appModuleName.state"
-          ></b-form-input>
-        </b-form-group>
-        <b-form-group
+          ></input>
+        </div>
+        <form-group
           label="Application Version"
           label-for="application-version"
         >
-          <b-form-input
+          <input class="form-control"
             id="application-version"
             type="text"
             v-model="data.appModuleVersion"
             :disabled="readonly"
-          ></b-form-input>
-        </b-form-group>
-        <b-form-group
+          ></input>
+        </div>
+        <form-group
           label="Application Description"
           label-for="application-description"
         >
-          <b-form-textarea
+          <textarea class="form-control"
             id="application-description"
             v-model="data.appModuleDescription"
             :rows="3"
             :disabled="readonly"
-          ></b-form-textarea>
-        </b-form-group>
+          ></textarea>
+        </div>
       </div>
     </div>
   </div>

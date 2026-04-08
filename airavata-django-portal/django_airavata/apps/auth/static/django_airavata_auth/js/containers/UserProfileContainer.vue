@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1 class="h4 mb-4">User Profile Editor</h1>
-    <b-alert v-if="user && !user.username_valid" show variant="danger">
+    <div class="alert" v-if="user && !user.username_valid" show variant="danger">
       <p>
         Unfortunately the username on your profile is invalid, which prevents
         creating or updating your user profile. The administrators have been
@@ -12,11 +12,11 @@
       <p>
         In the meantime, please complete as much of your profile as possible.
       </p>
-    </b-alert>
-    <b-alert v-else-if="mustComplete" show
+    </div>
+    <div class="alert" v-else-if="mustComplete" show
       >Please complete your user profile before continuing.</b-alert
     >
-    <b-card>
+    <div class="card"><div class="card-body">
       <user-profile-editor
         ref="userProfileEditor"
         @save="onSave"
@@ -28,14 +28,14 @@
         <extended-user-profile-editor ref="extendedUserProfileEditor" />
       </template>
 
-      <b-button variant="primary" @click="onSave">Save</b-button>
-      <b-button
+      <button class="btn" variant="primary" @click="onSave">Save</button>
+      <button class="btn"
         variant="success"
         v-if="!mustComplete"
         href="/workspace/dashboard"
         >Go to Dashboard</b-button
       >
-    </b-card>
+    </div></div>
   </div>
 </template>
 

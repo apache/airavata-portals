@@ -1,12 +1,12 @@
 <template>
-  <b-form-group
+  <form-group
     label="Allowed Queues"
     v-if="localComputeResourcePolicy"
     :invalid-feedback="validationFeedback.allowedBatchQueues.invalidFeedback"
     :state="validationFeedback.allowedBatchQueues.state"
   >
     <div v-for="batchQueue in batchQueues" :key="batchQueue.queueName">
-      <b-form-checkbox
+      <form-checkbox
         :checked="
           localComputeResourcePolicy.allowedBatchQueues.includes(
             batchQueue.queueName
@@ -16,7 +16,7 @@
         @input="batchQueueChecked(batchQueue, $event)"
       >
         {{ batchQueue.queueName }}
-      </b-form-checkbox>
+      </div>
       <batch-queue-resource-policy
         v-if="
           localComputeResourcePolicy.allowedBatchQueues.includes(
@@ -35,7 +35,7 @@
         @invalid="recordInvalidBatchQueueResourcePolicy(batchQueue)"
       />
     </div>
-  </b-form-group>
+  </div>
 </template>
 
 <script>

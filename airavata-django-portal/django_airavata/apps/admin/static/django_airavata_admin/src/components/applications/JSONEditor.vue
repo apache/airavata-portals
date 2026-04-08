@@ -1,5 +1,5 @@
 <template>
-  <b-form-textarea
+  <textarea class="form-control"
     :id="id"
     v-model="jsonString"
     @input="valueChanged"

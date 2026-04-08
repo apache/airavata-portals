@@ -1,7 +1,7 @@
 <template>
   <div v-if="showQueueSettings">
     <div class="card border-default">
-      <b-link
+      <a
         @click="showConfiguration = !showConfiguration"
         class="card-link text-dark"
       >
@@ -32,11 +32,11 @@
             </div>
           </div>
         </div>
-      </b-link>
+      </a>
     </div>
     <div v-if="showConfiguration">
-      <b-form-group label="Select a Queue" label-for="queue">
-        <b-form-select
+      <div class="mb-3" label="Select a Queue" label-for="queue">
+        <select class="form-select"
           id="queue"
           :value="selectedQueueName"
           :options="queueOptions"
@@ -44,13 +44,13 @@
           @change="queueChanged"
           @input.stop
         >
-        </b-form-select>
+        </select>
         <div slot="description">{{ queueDescription }}</div>
-      </b-form-group>
+      </div>
       <div class="d-flex flex-row">
         <div class="flex-fill">
-          <b-form-group label="Node Count" label-for="node-count">
-            <b-form-input
+          <div class="mb-3" label="Node Count" label-for="node-count">
+            <input class="form-control"
               id="node-count"
               type="number"
               min="1"
@@ -59,14 +59,14 @@
               required
               @input.stop="updateNodeCount"
             >
-            </b-form-input>
+            </input>
             <div slot="description">
               <i class="fa fa-info-circle" aria-hidden="true"></i>
               Max Allowed Nodes = {{ maxAllowedNodes }}
             </div>
-          </b-form-group>
-          <b-form-group label="Total Core Count" label-for="core-count">
-          <b-form-input
+          </div>
+          <div class="mb-3" label="Total Core Count" label-for="core-count">
+          <input class="form-control"
             id="core-count"
             type="number"
             min="1"
@@ -75,7 +75,7 @@
             required
             @input.stop="updateTotalCPUCount"
           >
-          </b-form-input>
+          </input>
           <div slot="description">
             <i class="fa fa-info-circle" aria-hidden="true"></i>
             Max Allowed Cores = {{ maxAllowedCores
@@ -83,23 +83,23 @@
               >. There are {{ queue.cpuPerNode }} cores per node.
             </template>
           </div>
-        </b-form-group>
+        </div>
         </div>
         <div class="d-flex flex-column" v-if="queue && queue.cpuPerNode > 0">
           <div class="flex-fill"
                style="border: 1px solid #6c757d;border-top-right-radius: 10px;margin-top: 51px;border-left-width: 0px;border-bottom-width: 0px;margin-right: 15px;"></div>
-          <b-button size="sm" pill variant="outline-secondary"
+          <button class="btn" size="sm" pill variant="outline-secondary"
                     v-on:click="enableNodeCountToCpuCheck = !enableNodeCountToCpuCheck">
             <i v-if="enableNodeCountToCpuCheck" class="fa fa-lock" aria-hidden="true"></i>
             <i v-else class="fa fa-unlock" aria-hidden="true"></i>
-          </b-button>
+          </button>
           <div class="flex-fill"
                style="border: 1px solid #6c757d;border-bottom-right-radius: 10px;margin-bottom: 57px;border-left-width: 0px;border-top-width: 0px;margin-right: 15px;"></div>
         </div>
       </div>
-      <b-form-group label="Wall Time Limit" label-for="walltime-limit">
-        <b-input-group append="minutes">
-          <b-form-input
+      <div class="mb-3" label="Wall Time Limit" label-for="walltime-limit">
+        <div class="input-group" append="minutes">
+          <input class="form-control"
             id="walltime-limit"
             type="number"
             min="1"
@@ -108,20 +108,20 @@
             required
             @input.stop="updateWallTimeLimit"
           >
-          </b-form-input>
-        </b-input-group>
+          </input>
+        </div>
         <div slot="description">
           <i class="fa fa-info-circle" aria-hidden="true"></i>
           Max Allowed Wall Time = {{ maxAllowedWalltime }} minutes
         </div>
-      </b-form-group>
-      <b-form-group
+      </div>
+      <form-group
         v-if="maxMemory > 0"
         label="Total Physical Memory"
         label-for="total-physical-memory"
       >
-        <b-input-group append="MB">
-          <b-form-input
+        <div class="input-group" append="MB">
+          <input class="form-control"
             id="total-physical-memory"
             type="number"
             min="0"
@@ -129,15 +129,15 @@
             :value="getTotalPhysicalMemory"
             @input.stop="updateTotalPhysicalMemory"
           >
-          </b-form-input>
-        </b-input-group>
+          </input>
+        </div>
         <div slot="description">
           <i class="fa fa-info-circle" aria-hidden="true"></i>
           Max Physical Memory = {{ maxMemory }} MB
         </div>
-      </b-form-group>
+      </div>
       <div>
-        <b-link class="text-secondary" @click="showConfiguration = false">
+        <a class="text-secondary" @click="showConfiguration = false">
           <i class="fa fa-times" aria-hidden="true"></i>
           Hide Settings</b-link
         >

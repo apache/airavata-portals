@@ -2,9 +2,9 @@
   <div class="custom-Uppy">
     <div ref="dragDrop" />
     <div ref="statusBar" />
-    <b-alert class="mt-1" :show="restrictionFailed" variant="danger">{{
+    <div class="alert" class="mt-1" :show="restrictionFailed" variant="danger">{{
       restrictionFailedMessage
-    }}</b-alert>
+    }}</div>
   </div>
 </template>
 

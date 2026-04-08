@@ -1,5 +1,5 @@
 <template>
-  <b-form-group :label="label" :state="state" :description="description">
+  <div class="mb-3" :label="label" :state="state" :description="description">
     <slot></slot>
     <template slot="invalid-feedback">
       <ul v-if="feedbackMessages && feedbackMessages.length > 1">
@@ -11,7 +11,7 @@
         {{ feedbackMessages[0] }}
       </div>
     </template>
-  </b-form-group>
+  </div>
 </template>
 
 <script>

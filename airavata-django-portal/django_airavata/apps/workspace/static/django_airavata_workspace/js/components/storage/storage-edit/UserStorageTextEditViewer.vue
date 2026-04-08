@@ -14,7 +14,7 @@
           :data-product-uri="dataProductUri"
           :file-name="fileName"
         />
-        <b-button
+        <button class="btn"
           v-if="editAvailable && !readOnly"
           :disabled="saved"
           @click="fileContentChanged"

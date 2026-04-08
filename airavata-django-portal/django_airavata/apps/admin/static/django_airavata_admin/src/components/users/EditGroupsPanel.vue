@@ -1,17 +1,17 @@
 <template>
-  <b-card header="Edit Groups">
+  <div class="card" header="Edit Groups">
     <user-group-membership-editor
       v-model="data"
       :editable-groups="editableGroups"
       :airavata-internal-user-id="airavataInternalUserId"
     />
-    <b-button
+    <button class="btn"
       @click="$emit('save', data)"
       variant="primary"
       :disabled="!areGroupsUpdated"
       >Save</b-button
     >
-  </b-card>
+  </div></div>
 </template>
 
 <script>

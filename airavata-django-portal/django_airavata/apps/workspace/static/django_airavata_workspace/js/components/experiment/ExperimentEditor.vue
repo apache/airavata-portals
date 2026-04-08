@@ -2,7 +2,7 @@
   <div>
     <unsaved-changes-guard :dirty="dirty" />
     <div class="row">
-      <div class="col-auto mr-auto">
+      <div class="col-auto me-auto">
         <h1 class="h4 mb-4">
           <div
             v-if="appModule"
@@ -25,24 +25,24 @@
         />
       </div>
     </div>
-    <b-form novalidate>
+    <form novalidate>
       <div class="row">
         <div class="col">
-          <b-form-group
+          <form-group
             label="Experiment Name"
             label-for="experiment-name"
             :feedback="getValidationFeedback('experimentName')"
             :state="getValidationState('experimentName')"
           >
-            <b-form-input
+            <input class="form-control"
               id="experiment-name"
               type="text"
               v-model="localExperiment.experimentName"
               required
               placeholder="Experiment name"
               :state="getValidationState('experimentName')"
-            ></b-form-input>
-          </b-form-group>
+            ></input>
+          </div>
           <experiment-description-editor
             v-model="localExperiment.description"
           />
@@ -50,13 +50,13 @@
       </div>
       <div class="row">
         <div class="col">
-          <b-form-group
+          <form-group
             label="Project"
             label-for="project"
             :feedback="getValidationFeedback('projectId')"
             :state="getValidationState('projectId')"
           >
-            <b-form-select
+            <select class="form-select"
               id="project"
               v-model="localExperiment.projectId"
               required
@@ -83,8 +83,8 @@
                   {{ project.text }}
                 </option>
               </optgroup>
-            </b-form-select>
-          </b-form-group>
+            </select>
+          </div>
         </div>
       </div>
       <div class="row">
@@ -154,32 +154,32 @@
       </div>
       <div class="row">
         <div class="col">
-          <b-form-group label="Email Settings">
-            <b-form-checkbox v-model="localExperiment.enableEmailNotification">
+          <div class="mb-3" label="Email Settings">
+            <div class="form-check"><input class="form-check-input" type="checkbox" v-model="localExperiment.enableEmailNotification">
               Receive email notification of experiment status
-            </b-form-checkbox>
-          </b-form-group>
+            </div>
+          </div>
         </div>
       </div>
       <div class="row">
         <div id="col-exp-buttons" class="col">
-          <b-button
+          <button class="btn"
             variant="success"
             @click="saveAndLaunchExperiment"
             :disabled="isSaveDisabled"
           >
             Save and Launch
-          </b-button>
-          <b-button
+          </button>
+          <button class="btn"
             variant="primary"
             @click="saveExperiment"
             :disabled="isSaveDisabled"
           >
             Save
-          </b-button>
+          </button>
         </div>
       </div>
-    </b-form>
+    </form>
   </div>
 </template>
 

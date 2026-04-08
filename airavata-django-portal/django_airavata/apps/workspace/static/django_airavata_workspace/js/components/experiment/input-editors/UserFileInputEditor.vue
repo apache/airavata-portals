@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-form-select
+    <select class="form-select"
       :id="id"
       v-model="data"
       style="width: auto"
@@ -14,7 +14,7 @@
       >
         {{ userfile.file_name }}
       </option>
-    </b-form-select>
+    </select>
   </div>
 </template>
 

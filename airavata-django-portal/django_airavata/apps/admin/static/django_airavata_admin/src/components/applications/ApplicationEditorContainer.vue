@@ -16,8 +16,8 @@
     </div>
     <div class="row">
       <div class="col">
-        <b-nav tabs class="mb-3">
-          <b-nav-item
+        <ul class="nav" tabs class="mb-3">
+          <li class="nav-item"><a class="nav-link"
             exact-active-class="active"
             exact
             :to="{
@@ -26,20 +26,20 @@
             }"
             >Details</b-nav-item
           >
-          <b-nav-item
+          <li class="nav-item"><a class="nav-link"
             exact-active-class="active"
             exact
             :to="{ name: 'application_interface', params: { id: id } }"
             :disabled="!id"
             >Interface</b-nav-item
           >
-          <b-nav-item
+          <li class="nav-item"><a class="nav-link"
             active-class="active"
             :to="{ name: 'application_deployments', params: { id: id } }"
             :disabled="!id"
             >Deployments</b-nav-item
           >
-        </b-nav>
+        </ul>
         <router-view
           name="module"
           v-if="appModule"
@@ -74,14 +74,14 @@
       </div>
     </div>
     <div class="fixed-footer">
-      <b-button
+      <button class="btn"
         class="editor-button"
         variant="primary"
         @click="saveAll"
         :disabled="readonly || !isDirty"
       >
         Save
-      </b-button>
+      </button>
       <delete-button
         class="editor-button"
         v-if="id"
@@ -92,9 +92,9 @@
         <strong>{{ appModule ? appModule.appModuleName : "" }}</strong>
         application?
       </delete-button>
-      <b-button class="editor-button" variant="secondary" @click="cancel">
+      <button class="btn" class="editor-button" variant="secondary" @click="cancel">
         Cancel
-      </b-button>
+      </button>
     </div>
   </div>
 </template>

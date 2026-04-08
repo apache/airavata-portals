@@ -1,19 +1,19 @@
 <template>
-  <b-modal
+  <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
     title="Select Compute Resource"
     ref="modal"
     @ok="onSelectComputeResource"
     :ok-disabled="modalSelectComputeResourceOkDisabled"
   >
-    <b-form-select
+    <select class="form-select"
       v-model="selectedComputeResource"
       :options="computeResourceOptions"
     >
       <template slot="first">
         <option :value="null">Please select compute resource</option>
       </template>
-    </b-form-select>
-  </b-modal>
+    </select>
+  </div>
 </template>
 
 <script>

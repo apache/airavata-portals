@@ -7,7 +7,7 @@
     />
   </div>
   <div class="d-flex align-items-center" v-else>
-    <b-button @click="isSelectingFile = true" class="input-file-option"
+    <button class="btn" @click="isSelectingFile = true" class="input-file-option"
       >Select file from storage</b-button
     >
     <span class="text-muted mx-3">OR</span>

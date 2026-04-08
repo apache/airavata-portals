@@ -1,5 +1,5 @@
 <template>
-  <b-form-group
+  <form-group
     :label="extendedUserProfileField.name"
     :description="extendedUserProfileField.help_text"
   >
@@ -11,15 +11,15 @@
         >(Optional)</small
       >
     </template>
-    <b-card
+    <div class="card"
       v-for="link in extendedUserProfileField.links"
       :key="link.id"
       :header="link.label"
-      class="ml-3 mb-3"
+      class="ms-3 mb-3"
     >
-      <b-card-text v-if="link.display_inline">
+      <div class="card"-text v-if="link.display_inline">
         <iframe :src="link.url" />
-      </b-card-text>
+      </div>
       <a
         v-if="link.display_link"
         :href="link.url"
@@ -27,9 +27,9 @@
         class="card-link"
         >Open '{{ link.label }}' in separate tab.</a
       >
-    </b-card>
+    </div></div>
     <slot />
-  </b-form-group>
+  </div>
 </template>
 
 <script>

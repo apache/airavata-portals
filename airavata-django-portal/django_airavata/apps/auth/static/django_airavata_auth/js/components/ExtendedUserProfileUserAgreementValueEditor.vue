@@ -1,14 +1,14 @@
 <template>
   <extended-user-profile-value-editor v-bind="$props">
-    <b-form-checkbox
+    <form-checkbox
       v-model="value"
       :unchecked-value="false"
       :value="true"
       :state="validateStateErrorOnly($v.value)"
     >
       {{ extendedUserProfileField.checkbox_label }}
-    </b-form-checkbox>
-    <b-form-invalid-feedback :state="validateState($v.value)"
+    </div>
+    <div class="invalid-feedback" :state="validateState($v.value)"
       >This field is required.</b-form-invalid-feedback
     >
   </extended-user-profile-value-editor>

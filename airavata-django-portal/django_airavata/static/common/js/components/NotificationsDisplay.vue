@@ -2,7 +2,7 @@
   <div id="notifications-display">
     <transition-group name="fade" tag="div">
       <template v-for="unhandledError in unhandledErrors">
-        <b-alert
+        <div class="alert"
           v-if="isUnauthenticatedError(unhandledError.error)"
           variant="warning"
           :key="unhandledError.id"
@@ -11,16 +11,16 @@
           @dismissed="dismissUnhandledError(unhandledError)"
         >
           Your login session has expired. Please
-          <b-link class="alert-link" :href="loginLinkWithNext"
+          <a class="alert-link" :href="loginLinkWithNext"
             >log in again</b-link
           >. You can also
-          <b-link class="alert-link" :href="loginLink" target="_blank"
+          <a class="alert-link" :href="loginLink" target="_blank"
             >login in a separate tab
             <i class="fa fa-external-link-alt" aria-hidden="true"></i
-          ></b-link>
+          ></a>
           and then return to this tab and try again.
-        </b-alert>
-        <b-alert
+        </div>
+        <div class="alert"
           v-else
           variant="danger"
           :key="unhandledError.id"
@@ -29,9 +29,9 @@
           @dismissed="dismissUnhandledError(unhandledError)"
         >
           {{ unhandledError.message }}
-        </b-alert>
+        </div>
       </template>
-      <b-alert
+      <div class="alert"
         v-for="notification in notifications"
         :variant="variant(notification)"
         :key="notification.id"
@@ -40,15 +40,15 @@
         @dismissed="dismissNotification(notification)"
       >
         {{ notification.message }}
-      </b-alert>
+      </div>
     </transition-group>
-    <b-alert variant="danger" :show="apiServerBackUp === false">
+    <div class="alert" variant="danger" :show="apiServerBackUp === false">
       <p>API Server is down.</p>
       <i class="fa fa-sync-alt fa-spin"></i> Checking status ...
-    </b-alert>
-    <b-alert variant="success" :show="apiServerBackUp" dismissible>
+    </div>
+    <div class="alert" variant="success" :show="apiServerBackUp" dismissible>
       API Server is back up. Please try again.
-    </b-alert>
+    </div>
   </div>
 </template>
 

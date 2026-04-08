@@ -1,16 +1,16 @@
 <template>
-  <b-card>
+  <div class="card"><div class="card-body">
     <div slot="header" class="d-flex align-items-baseline">
       <h6>{{ experimentOutput.name }}</h6>
-      <b-dropdown v-if="showMenu" :text="currentView['name']" class="ml-auto">
-        <b-dropdown-item
+      <div class="dropdown" v-if="showMenu" :text="currentView['name']" class="ms-auto">
+        <a class="dropdown-item"
           v-for="(view, index) in outputViews"
           :key="view['provider-id']"
           :active="view['provider-id'] === currentView['provider-id']"
           @click="selectView(index)"
           >{{ view["name"] }}</b-dropdown-item
         >
-      </b-dropdown>
+      </div>
     </div>
     <component
       :is="outputDisplayComponentName"
@@ -30,24 +30,24 @@
       class="d-flex justify-content-end align-items-baseline"
     >
       <template v-if="isExecuting">
-        <span class="small text-muted mr-2">
+        <span class="small text-muted me-2">
           {{ fetchIntermediateOutputStatusMessage }}</span
         >
-        <b-btn size="sm" @click="fetchLatest" :disabled="fetchLatestDisabled">
-          <b-spinner
+        <button class="btn" size="sm" @click="fetchLatest" :disabled="fetchLatestDisabled">
+          <div class="spinner-border"
             small
             v-if="currentlyRunningIntermediateOutputFetch"
-          ></b-spinner>
+          ></div>
           Fetch Latest</b-btn
         >
       </template>
       <template v-else-if="dataProducts.length === 1">
-        <b-btn size="sm" :href="dataProducts[0].downloadURL + '&download'"
+        <button class="btn" size="sm" :href="dataProducts[0].downloadURL + '&download'"
           >Download</b-btn
         >
       </template>
     </div>
-  </b-card>
+  </div></div>
 </template>
 
 <script>

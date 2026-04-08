@@ -22,18 +22,18 @@
         />
       </div>
       <div class="col">
-        <b-input-group>
-          <b-form-input
+        <div class="input-group">
+          <input class="form-control"
             v-model="dirName"
             placeholder="New directory name"
             @keydown.enter="addDirectory"
-          ></b-form-input>
-          <b-input-group-append>
-            <b-button @click="addDirectory" :disabled="!this.dirName"
+          ></input>
+          <span class="input-group-text">
+            <button class="btn" @click="addDirectory" :disabled="!this.dirName"
               >Add directory
-            </b-button>
-          </b-input-group-append>
-        </b-input-group>
+            </button>
+          </span>
+        </div>
       </div>
     </div>
   </div>

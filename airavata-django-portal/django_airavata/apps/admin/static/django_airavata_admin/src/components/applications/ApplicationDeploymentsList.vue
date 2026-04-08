@@ -8,7 +8,7 @@
       :new-button-disabled="readonly"
     >
       <template slot="item-list" slot-scope="slotProps">
-        <b-table
+        <!-- TODO: migrate to native HTML table --><table class="table"
           striped
           hover
           :fields="fields"
@@ -73,7 +73,7 @@
               deployment?
             </delete-link>
           </template>
-        </b-table>
+        </table>
       </template>
     </list-layout>
     <compute-resources-modal

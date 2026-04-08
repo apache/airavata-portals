@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="row">
-      <div class="col-auto mr-auto">
+      <div class="col-auto me-auto">
         <slot name="title">
           <h1 class="h4 mb-4">{{ title }}</h1>
         </slot>
@@ -9,14 +9,14 @@
       <div class="col-auto">
         <slot name="additional-buttons"> </slot>
         <slot name="new-item-button">
-          <b-btn
+          <button class="btn"
             variant="primary"
             @click="addNewItem"
             :disabled="newButtonDisabled"
           >
             {{ newItemButtonText }}
             <i class="fa fa-plus" aria-hidden="true"></i>
-          </b-btn>
+          </button>
         </slot>
       </div>
     </div>

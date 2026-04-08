@@ -1,36 +1,36 @@
 <template>
-  <b-form-group label="Groups">
-    <b-form-checkbox-group
+  <div class="mb-3" label="Groups">
+    <form-checkbox-group
       :checked="selected"
       :options="userDefinedGroupOptions"
       @input="groupsUpdated"
       stacked
     >
       <template slot="first">
-        <b-form-checkbox
+        <form-checkbox
           v-if="gatewayUsersGroupOption"
           :value="gatewayUsersGroupOption.value"
           :disabled="gatewayUsersGroupOption.disabled"
           >{{ gatewayUsersGroupOption.text }}
           <gateway-groups-badge :group="gatewayUsersGroup" />
-        </b-form-checkbox>
-        <b-form-checkbox
+        </div>
+        <form-checkbox
           v-if="adminsGroupOption"
           :value="adminsGroupOption.value"
           :disabled="adminsGroupOption.disabled"
           >{{ adminsGroupOption.text }}
           <gateway-groups-badge :group="adminsGroup" />
-        </b-form-checkbox>
-        <b-form-checkbox
+        </div>
+        <form-checkbox
           v-if="readOnlyAdminsGroupOption"
           :value="readOnlyAdminsGroupOption.value"
           :disabled="readOnlyAdminsGroupOption.disabled"
           >{{ readOnlyAdminsGroupOption.text }}
           <gateway-groups-badge :group="readOnlyAdminsGroup" />
-        </b-form-checkbox>
+        </div>
       </template>
-    </b-form-checkbox-group>
-  </b-form-group>
+    </div>
+  </div>
 </template>
 
 <script>

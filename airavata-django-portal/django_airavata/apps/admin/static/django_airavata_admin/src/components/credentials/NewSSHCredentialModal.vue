@@ -1,18 +1,18 @@
 <template>
-  <b-modal
+  <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
     title="New SSH Credential"
     ref="modal"
     @ok="okClicked"
     ok-title="Create"
     :ok-disabled="!valid"
   >
-    <b-form-input
+    <input class="form-control"
       type="text"
       placeholder="Description"
       required
       v-model="description"
     />
-  </b-modal>
+  </div>
 </template>
 
 <script>

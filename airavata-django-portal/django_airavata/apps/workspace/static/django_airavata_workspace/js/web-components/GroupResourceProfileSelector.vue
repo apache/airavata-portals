@@ -1,6 +1,6 @@
 <template>
-  <b-form-group :label="label" label-for="group-resource-profile">
-    <b-form-select
+  <div class="mb-3" :label="label" label-for="group-resource-profile">
+    <select class="form-select"
       id="group-resource-profile"
       :value="groupResourceProfileId"
       :options="groupResourceProfileOptions"
@@ -14,8 +14,8 @@
           <slot name="null-option">Select an allocation</slot>
         </option>
       </template>
-    </b-form-select>
-  </b-form-group>
+    </select>
+  </div>
 </template>
 
 <script>

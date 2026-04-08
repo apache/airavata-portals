@@ -1,7 +1,7 @@
 <template>
   <div class="has-fixed-footer">
     <div class="row mb-2">
-      <div class="col-auto mr-auto">
+      <div class="col-auto me-auto">
         <h1 class="h4">Extended User Profile Editor</h1>
         <p class="text-muted small">
           Add and edit additional user profile fields for gateway users to
@@ -29,26 +29,26 @@
     <div ref="bottom" />
     <div class="fixed-footer">
       <div class="d-flex">
-        <b-dropdown text="Add Field" :disabled="!isGatewayAdmin">
-          <b-dropdown-item @click="addField('text')">Text</b-dropdown-item>
-          <b-dropdown-item @click="addField('single_choice')"
+        <div class="dropdown" text="Add Field" :disabled="!isGatewayAdmin">
+          <a class="dropdown-item" @click="addField('text')">Text</a>
+          <a class="dropdown-item" @click="addField('single_choice')"
             >Single Choice</b-dropdown-item
           >
-          <b-dropdown-item @click="addField('multi_choice')"
+          <a class="dropdown-item" @click="addField('multi_choice')"
             >Multi Choice</b-dropdown-item
           >
-          <b-dropdown-item @click="addField('user_agreement')"
+          <a class="dropdown-item" @click="addField('user_agreement')"
             >User Agreement</b-dropdown-item
           >
-        </b-dropdown>
-        <b-button
+        </div>
+        <button class="btn"
           variant="primary"
           @click="save"
-          class="ml-2"
+          class="ms-2"
           :disabled="!isGatewayAdmin"
           >Save</b-button
         >
-        <b-button variant="secondary" class="ml-auto" href="/admin/users"
+        <button class="btn" variant="secondary" class="ms-auto" href="/admin/users"
           >Return to Manage Users</b-button
         >
       </div>

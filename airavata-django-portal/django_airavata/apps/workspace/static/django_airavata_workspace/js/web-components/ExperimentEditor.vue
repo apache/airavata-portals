@@ -114,15 +114,15 @@ export default {
        * Experiment Name native slot
        */
       // <slot name="experiment-name">
-      //   <b-form-group label="Experiment Name" label-for="experiment-name">
-      //     <b-form-input
+      //   <div class="mb-3" label="Experiment Name" label-for="experiment-name">
+      //     <input class="form-control"
       //       type="text"
       //       name="experiment-name"
       //       :value="experiment.experimentName"
       //       required
       //     >
-      //     </b-form-input>
-      //   </b-form-group>
+      //     </input>
+      //   </div>
       // </slot>
       const experimentNameGroupEl = document.createElement("div");
       experimentNameGroupEl.classList.add("form-group");
@@ -197,17 +197,17 @@ export default {
        */
       // <slot name="experiment-buttons">
       //   <div class="d-flex justify-content-end">
-      //     <b-button
+      //     <button class="btn"
       //       type="submit"
       //       variant="success"
       //       name="save-and-launch-experiment-button"
-      //       class="mr-2"
+      //       class="me-2"
       //     >
       //       Save and Launch
-      //     </b-button>
-      //     <b-button type="submit" variant="primary" name="save-experiment-button">
+      //     </button>
+      //     <button class="btn" type="submit" variant="primary" name="save-experiment-button">
       //       Save
-      //     </b-button>
+      //     </button>
       //   </div>
       // </slot>
       const buttonsRowEl = document.createElement("div");
@@ -218,7 +218,7 @@ export default {
         "name",
         "save-and-launch-experiment-button"
       );
-      saveAndLaunchButtonEl.classList.add("btn", "btn-success", "mr-2");
+      saveAndLaunchButtonEl.classList.add("btn", "btn-success", "me-2");
       saveAndLaunchButtonEl.textContent = "Save and Launch";
       const saveButtonEl = document.createElement("button");
       saveButtonEl.setAttribute("type", "submit");

@@ -1,31 +1,31 @@
 <template>
   <extended-user-profile-value-editor v-bind="$props">
-    <b-form-checkbox-group
+    <form-checkbox-group
       v-model="value"
       :options="options"
       stacked
       @change="onChange"
       :state="validateStateErrorOnly($v.value)"
     >
-      <b-form-checkbox
+      <form-checkbox
         :value="otherOptionValue"
         v-if="extendedUserProfileField.other"
         >Other (please specify)</b-form-checkbox
       >
 
-      <b-form-invalid-feedback :state="validateState($v.value)"
+      <div class="invalid-feedback" :state="validateState($v.value)"
         >This field is required.</b-form-invalid-feedback
       >
-    </b-form-checkbox-group>
+    </div>
     <template v-if="showOther">
-      <b-form-input
+      <input class="form-control"
         class="mt-2"
         v-model="other"
         placeholder="Please specify"
         :state="validateState($v.other)"
         @input="onInput"
       />
-      <b-form-invalid-feedback :state="validateState($v.other)"
+      <div class="invalid-feedback" :state="validateState($v.other)"
         >Please specify a value for 'Other'.</b-form-invalid-feedback
       >
     </template>

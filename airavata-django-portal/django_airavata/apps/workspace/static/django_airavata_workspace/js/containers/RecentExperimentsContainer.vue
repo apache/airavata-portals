@@ -9,7 +9,7 @@
         <experiment-status-badge :status-name="slotProps.feedItem.statusName" />
         <i
           v-if="slotProps.feedItem.isProgressing"
-          class="fa fa-sync-alt fa-spin ml-1"
+          class="fa fa-sync-alt fa-spin ms-1"
         ></i>
       </template>
     </sidebar-feed>

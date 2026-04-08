@@ -1,20 +1,20 @@
 <template>
 <div>
-    <b-card header="Details">
+    <div class="card" header="Details">
       <b>Name: </b> {{name}}<br>
       <b>Email: </b> {{userProfile.email}}<br>
       
       <span v-if="role"><b>Role: </b></span>
-      <b-form-select
+      <select class="form-select"
           v-if="isOwner && role !== 'OWNER'"
           :value="role"
           @input="changeRole($event)"
           :options="groupRoleOptions"
         >
-      </b-form-select>
+      </select>
       <span v-if="(!isOwner && role) || (isOwner && role=='OWNER')">{{ role }}</span>
 
-    </b-card>
+    </div></div>
     
 </div>
 </template>

@@ -1,5 +1,5 @@
 <template>
-  <b-card title="Parameters">
+  <div class="card" title="Parameters">
     <validated-form ref="validatedForm" :items="formItems">
       <interactive-parameter-widget-container
         slot-scope="form"
@@ -9,7 +9,7 @@
         @input="updated(form.item, $event)"
       />
     </validated-form>
-  </b-card>
+  </div></div>
 </template>
 
 <script>

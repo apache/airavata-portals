@@ -1,5 +1,5 @@
 <template>
-  <b-form-select
+  <select class="form-select"
     :value="value"
     :options="options"
     @input="$emit('input', $event)"

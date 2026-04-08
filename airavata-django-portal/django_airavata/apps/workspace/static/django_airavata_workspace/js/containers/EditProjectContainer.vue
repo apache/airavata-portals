@@ -9,10 +9,10 @@
       <share-button slot="buttons" :entity-id="projectId" />
     </project-editor>
     <div class="d-flex justify-content-end">
-      <b-button @click="saveProject" variant="primary" :disabled="!valid"
+      <button class="btn" @click="saveProject" variant="primary" :disabled="!valid"
         >Save</b-button
       >
-      <b-button @click="cancel" variant="secondary">Cancel</b-button>
+      <button class="btn" @click="cancel" variant="secondary">Cancel</button>
     </div>
   </div>
 </template>

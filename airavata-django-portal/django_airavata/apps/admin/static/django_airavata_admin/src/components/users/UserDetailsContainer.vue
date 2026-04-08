@@ -1,22 +1,22 @@
 <template>
-  <b-tabs content-class="mt-3 px-2">
-    <b-tab
+  <ul class="nav nav-tabs" content-class="mt-3 px-2">
+    <li class="nav-item"
       title="User Profile"
       :active="iamUserProfile.airavataUserProfileExists"
     >
-      <b-alert
+      <div class="alert"
         variant="warning"
         show
         v-if="!iamUserProfile.userProfileComplete"
       >
         This user has not completed their user profile. An incomplete user
         profile is shown below.
-      </b-alert>
-      <b-alert variant="danger" show v-if="isUsernameInvalid">
+      </div>
+      <div class="alert" variant="danger" show v-if="isUsernameInvalid">
         The user has an invalid username. Please use
         <strong>Change Username</strong> under the
         <strong>Troubleshooting</strong> tab to fix the user's username.
-      </b-alert>
+      </div>
       <edit-groups-panel
         v-if="iamUserProfile.airavataUserProfileExists"
         :value="localIAMUserProfile.groups"
@@ -30,8 +30,8 @@
         v-if="hasExternalIDPUserInfo"
         :externalIDPUserInfo="localIAMUserProfile.externalIDPUserInfo"
       />
-    </b-tab>
-    <b-tab
+    </li>
+    <li class="nav-item"
       title="Troubleshooting"
       :active="!iamUserProfile.airavataUserProfileExists"
     >
@@ -56,18 +56,18 @@
         :username="iamUserProfile.userId"
         @delete-user="$emit('delete-user', $event)"
       />
-      <b-alert variant="danger" show v-if="isUsernameInvalid">
+      <div class="alert" variant="danger" show v-if="isUsernameInvalid">
         The user has an invalid username. Please fix the user's username so that
         they can complete their user profile.
-      </b-alert>
+      </div>
       <change-username-panel
         :username="iamUserProfile.userId"
         :email="iamUserProfile.email"
         :airavata-user-profile-exists="iamUserProfile.airavataUserProfileExists"
         @update-username="$emit('update-username', $event)"
       />
-    </b-tab>
-  </b-tabs>
+    </li>
+  </ul>
 </template>
 <script>
 import { models } from "django-airavata-api";

@@ -1,5 +1,5 @@
 <template>
-  <b-form-group
+  <form-group
     :label="label"
     :label-for="labelFor"
     :state="state"
@@ -17,7 +17,7 @@
       </div>
     </template>
     <linkify slot="description">{{ description }}</linkify>
-  </b-form-group>
+  </div>
 </template>
 
 <script>

@@ -1,5 +1,5 @@
 <template>
-  <b-card header="Select a file">
+  <div class="card" header="Select a file">
     <user-storage-path-viewer
       v-if="userStoragePath"
       :user-storage-path="userStoragePath"
@@ -16,10 +16,10 @@
     </user-storage-path-viewer>
     <template slot="footer">
       <div class="d-flex justify-content-end">
-        <b-link class="text-secondary" @click="$emit('cancel')">Cancel</b-link>
+        <a class="text-secondary" @click="$emit('cancel')">Cancel</a>
       </div>
     </template>
-  </b-card>
+  </div></div>
 </template>
 
 <script>

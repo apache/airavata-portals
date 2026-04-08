@@ -5,115 +5,115 @@
         <h1 class="h4 mb-4">Experiment Statistics</h1>
       </div>
     </div>
-    <b-card header="Load experiment details" no-body>
-      <b-tabs card>
-        <b-tab title="By Experiment ID" active>
-          <b-card-text>
-            <b-form-group>
-              <b-input-group>
-                <b-form-input
+    <div class="card" header="Load experiment details" no-body>
+      <ul class="nav nav-tabs" card>
+        <li class="nav-item" title="By Experiment ID" active>
+          <div class="card-text">
+            <div class="mb-3">
+              <div class="input-group">
+                <input class="form-control"
                   v-model.trim="experimentId"
                   placeholder="Experiment ID"
                   @keydown.enter="
                     experimentId && showExperimentDetails(experimentId)
                   "
                 />
-                <b-input-group-append>
-                  <b-button
+                <span class="input-group-text">
+                  <button class="btn"
                     :disabled="!experimentId"
                     @click="showExperimentDetails(experimentId)"
                     variant="primary"
                     >Load</b-button
                   >
-                </b-input-group-append>
-              </b-input-group>
-            </b-form-group>
-          </b-card-text>
-        </b-tab>
-        <b-tab title="By Job ID">
-          <b-card-text>
-            <b-form-group>
-              <b-input-group>
-                <b-form-input
+                </span>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li class="nav-item" title="By Job ID">
+          <div class="card-text">
+            <div class="mb-3">
+              <div class="input-group">
+                <input class="form-control"
                   v-model.trim="jobId"
                   placeholder="Job ID"
                   @keydown.enter="
                     jobId && showExperimentDetailsForJobId(jobId)
                   "
                 />
-                <b-input-group-append>
-                  <b-button
+                <span class="input-group-text">
+                  <button class="btn"
                     :disabled="!jobId"
                     @click="showExperimentDetailsForJobId(jobId)"
                     variant="primary"
                     >Load</b-button
                   >
-                </b-input-group-append>
-              </b-input-group>
-            </b-form-group>
-          </b-card-text>
-        </b-tab>
-      </b-tabs>
-    </b-card>
-    <b-card no-body>
-      <b-tabs card v-model="activeTabIndex" ref="tabs">
-        <b-tab :title="selectedExperimentsTabTitle">
+                </span>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div></div>
+    <div class="card" no-body>
+      <ul class="nav nav-tabs" card v-model="activeTabIndex" ref="tabs">
+        <li class="nav-item" :title="selectedExperimentsTabTitle">
           <div class="row">
             <div class="col">
-              <b-card header="Filter Options">
-                <b-input-group class="w-100 mb-2">
-                  <b-input-group-prepend is-text>
+              <div class="card" header="Filter Options">
+                <div class="input-group" class="w-100 mb-2">
+                  <div class="input-group"-prepend is-text>
                     <i class="fa fa-calendar-week" aria-hidden="true"></i>
-                  </b-input-group-prepend>
+                  </span>
                   <flat-pickr
                     :value="dateRange"
                     :config="dateConfig"
                     @on-change="dateRangeChanged"
                     class="form-control"
                   />
-                  <b-input-group-append>
-                    <b-button
+                  <span class="input-group-text">
+                    <button class="btn"
                       @click="getPast24Hours"
                       variant="outline-secondary"
                       >Past 24 Hours</b-button
                     >
-                    <b-button @click="getPastWeek" variant="outline-secondary"
+                    <button class="btn" @click="getPastWeek" variant="outline-secondary"
                       >Past Week</b-button
                     >
-                  </b-input-group-append>
-                </b-input-group>
-                <b-dropdown text="Add Filters" class="mb-2">
-                  <b-dropdown-item
+                  </span>
+                </div>
+                <div class="dropdown" text="Add Filters" class="mb-2">
+                  <a class="dropdown-item"
                     v-if="!usernameFilterEnabled"
                     @click="usernameFilterEnabled = true"
                     >Username</b-dropdown-item
                   >
-                  <b-dropdown-item
+                  <a class="dropdown-item"
                     v-if="!applicationNameFilterEnabled"
                     @click="applicationNameFilterEnabled = true"
                     >Application Name</b-dropdown-item
                   >
-                  <b-dropdown-item
+                  <a class="dropdown-item"
                     v-if="!hostnameFilterEnabled"
                     @click="hostnameFilterEnabled = true"
                     >Hostname</b-dropdown-item
                   >
-                </b-dropdown>
-                <b-input-group v-if="usernameFilterEnabled" class="mb-2">
-                  <b-form-input
+                </div>
+                <div class="input-group" v-if="usernameFilterEnabled" class="mb-2">
+                  <input class="form-control"
                     v-model="usernameFilter"
                     placeholder="Username"
                     @keydown.enter="loadStatistics"
                   />
-                  <b-input-group-append>
-                    <b-button @click="removeUsernameFilter">
+                  <span class="input-group-text">
+                    <button class="btn" @click="removeUsernameFilter">
                       <i class="fa fa-times"></i>
-                      <span class="sr-only">Remove username filter</span>
-                    </b-button>
-                  </b-input-group-append>
-                </b-input-group>
-                <b-input-group v-if="applicationNameFilterEnabled" class="mb-2">
-                  <b-form-select
+                      <span class="visually-hidden">Remove username filter</span>
+                    </button>
+                  </span>
+                </div>
+                <div class="input-group" v-if="applicationNameFilterEnabled" class="mb-2">
+                  <select class="form-select"
                     v-model="applicationNameFilter"
                     :options="applicationNameOptions"
                     @input="loadStatistics"
@@ -123,18 +123,18 @@
                         Select an application to filter on
                       </option>
                     </template>
-                  </b-form-select>
-                  <b-input-group-append>
-                    <b-button @click="removeApplicationNameFilter">
+                  </select>
+                  <span class="input-group-text">
+                    <button class="btn" @click="removeApplicationNameFilter">
                       <i class="fa fa-times"></i>
-                      <span class="sr-only"
+                      <span class="visually-hidden"
                         >Remove application name filter</span
                       >
-                    </b-button>
-                  </b-input-group-append>
-                </b-input-group>
-                <b-input-group v-if="hostnameFilterEnabled" class="mb-2">
-                  <b-form-select
+                    </button>
+                  </span>
+                </div>
+                <div class="input-group" v-if="hostnameFilterEnabled" class="mb-2">
+                  <select class="form-select"
                     v-model="hostnameFilter"
                     :options="hostnameOptions"
                     @input="loadStatistics"
@@ -144,25 +144,25 @@
                         Select compute resource to filter on
                       </option>
                     </template>
-                  </b-form-select>
-                  <b-input-group-append>
-                    <b-button @click="removeHostnameFilter">
+                  </select>
+                  <span class="input-group-text">
+                    <button class="btn" @click="removeHostnameFilter">
                       <i class="fa fa-times"></i>
-                      <span class="sr-only">Remove hostname filter</span>
-                    </b-button>
-                  </b-input-group-append>
-                </b-input-group>
+                      <span class="visually-hidden">Remove hostname filter</span>
+                    </button>
+                  </span>
+                </div>
                 <template slot="footer">
                   <div class="d-flex justify-content-end">
-                    <b-button
+                    <button class="btn"
                       @click="loadStatistics"
-                      class="ml-auto"
+                      class="ms-auto"
                       variant="primary"
                       >Get Statistics</b-button
                     >
                   </div>
                 </template>
-              </b-card>
+              </div></div>
             </div>
           </div>
           <div class="row">
@@ -245,8 +245,8 @@
           </div>
           <div class="row" v-if="items.length > 0">
             <div class="col">
-              <b-card>
-                <b-table :fields="fields" :items="items">
+              <div class="card"><div class="card-body">
+                <!-- TODO: Replace b-table with native table --><table class="table" :fields="fields" :items="items">
                   <template slot="cell(executionId)" slot-scope="data">
                     <application-name :application-interface-id="data.value" />
                   </template>
@@ -260,15 +260,15 @@
                     <experiment-status-badge :status-name="data.value.name" />
                   </template>
                   <template slot="cell(actions)" slot-scope="data">
-                    <b-link
+                    <a
                       @click="showExperimentDetails(data.item.experimentId)"
                     >
                       View Details
                       <i class="far fa-chart-bar" aria-hidden="true"></i>
-                    </b-link>
+                    </a>
                   </template>
-                </b-table>
-              </b-card>
+                </table>
+              </div></div>
               <pager
                 v-if="experimentStatistics.allExperimentCount > 0"
                 :paginator="experimentStatisticsPaginator"
@@ -277,27 +277,27 @@
               ></pager>
             </div>
           </div>
-        </b-tab>
-        <b-tab
+        </li>
+        <li class="nav-item"
           v-for="experimentTab in experimentDetailTabs"
           :key="experimentTab.experiment.experimentId"
         >
           <template slot="title">
             {{ experimentTab.tabTitle }}
-            <b-link
+            <a
               @click="
                 removeExperimentDetailTab(experimentTab.experiment.experimentId)
               "
               class="text-secondary"
             >
               <i class="fas fa-times"></i>
-              <span class="sr-only">Close experiment tab</span>
-            </b-link>
+              <span class="visually-hidden">Close experiment tab</span>
+            </a>
           </template>
           <experiment-details-view :experiment="experimentTab.experiment" />
-        </b-tab>
-      </b-tabs>
-    </b-card>
+        </li>
+      </ul>
+    </div></div>
   </div>
 </template>
 <script>

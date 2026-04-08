@@ -15,40 +15,40 @@
           @saved="savedSharedEntity"
           @unsaved="unsavedSharedEntity"
         />
-        <b-form-group
+        <form-group
           label="Application Executable Path"
           label-for="executable-path"
         >
-          <b-form-input
+          <input class="form-control"
             id="executable-path"
             type="text"
             v-model="data.executablePath"
             required
             :disabled="readonly"
-          ></b-form-input>
-        </b-form-group>
-        <b-form-group
+          ></input>
+        </div>
+        <form-group
           label="Application Parallelism Type"
           label-for="parallelism-type"
         >
-          <b-form-select
+          <select class="form-select"
             id="parallelism-type"
             v-model="data.parallelism"
             :options="parallelismTypeOptions"
             :disabled="readonly"
           />
-        </b-form-group>
-        <b-form-group
+        </div>
+        <form-group
           label="Application Deployment Description"
           label-for="deployment-description"
         >
-          <b-form-textarea
+          <textarea class="form-control"
             id="deployment-description"
             v-model="data.appDeploymentDescription"
             :rows="3"
             :disabled="readonly"
-          ></b-form-textarea>
-        </b-form-group>
+          ></textarea>
+        </div>
         <command-objects-editor
           title="Module Load Commands"
           add-button-label="Add Module Load Command"
@@ -85,8 +85,8 @@
           v-model="data.postJobCommands"
           :readonly="readonly"
         />
-        <b-form-group label="Default Queue Name" label-for="default-queue-name">
-          <b-form-select
+        <div class="mb-3" label="Default Queue Name" label-for="default-queue-name">
+          <select class="form-select"
             id="default-queue-name"
             v-model="data.defaultQueueName"
             :options="queueNameOptions"
@@ -96,44 +96,44 @@
             <template slot="first">
               <option :value="null">Select a Default Queue</option>
             </template>
-          </b-form-select>
-        </b-form-group>
-        <b-form-group label="Default Node Count" label-for="default-node-count">
-          <b-form-input
+          </select>
+        </div>
+        <div class="mb-3" label="Default Node Count" label-for="default-node-count">
+          <input class="form-control"
             id="default-node-count"
             type="number"
             v-model="data.defaultNodeCount"
             min="0"
             :max="maxNodes"
             :disabled="defaultQueueAttributesDisabled"
-          ></b-form-input>
-        </b-form-group>
-        <b-form-group label="Default CPU Count" label-for="default-cpu-count">
-          <b-form-input
+          ></input>
+        </div>
+        <div class="mb-3" label="Default CPU Count" label-for="default-cpu-count">
+          <input class="form-control"
             id="default-cpu-count"
             type="number"
             v-model="data.defaultCPUCount"
             min="0"
             :max="maxCPUCount"
             :disabled="defaultQueueAttributesDisabled"
-          ></b-form-input>
+          ></input>
           <template #description v-if="cpuPerNode > 0">
             There are {{ cpuPerNode }} cores per node.
           </template>
-        </b-form-group>
-        <b-form-group
+        </div>
+        <form-group
           label="Default Walltime (in minutes)"
           label-for="default-walltime"
         >
-          <b-form-input
+          <input class="form-control"
             id="default-walltime"
             type="number"
             v-model="data.defaultWalltime"
             min="0"
             :max="maxWalltime"
             :disabled="defaultQueueAttributesDisabled"
-          ></b-form-input>
-        </b-form-group>
+          ></input>
+        </div>
       </div>
     </div>
   </div>
