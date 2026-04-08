@@ -4,11 +4,13 @@ import json
 import logging
 import os
 from functools import partial
+from typing import Any
 
 import nbformat
 import papermill as pm
 from django_airavata.apps.api import user_storage
 from django.conf import settings
+from django.http import HttpRequest
 from nbconvert import HTMLExporter
 
 from django_airavata.proto_compat import DataType
@@ -18,7 +20,7 @@ logger = logging.getLogger(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # This is populated by apps.ApiConfig.ready()
-OUTPUT_VIEW_PROVIDERS = {}
+OUTPUT_VIEW_PROVIDERS: dict[str, Any] = {}
 
 
 class DefaultViewProvider:
@@ -26,7 +28,7 @@ class DefaultViewProvider:
     immediate = False
     name = "Default"
 
-    def generate_data(self, request, experiment_output, experiment, output_file=None, **kwargs):
+    def generate_data(self, request: HttpRequest, experiment_output: Any, experiment: Any, output_file: Any = None, **kwargs: Any) -> dict[str, Any]:
         return {}
 
 
@@ -35,7 +37,7 @@ class ParameterizedNotebookViewProvider:
     name = "Example Parameterized Notebook View"
     # test_output_file = os.path.join(BASE_DIR, "data", "Gaussian.log")
 
-    def generate_data(self, request, experiment_output, experiment, output_file=None, output_dir=None):
+    def generate_data(self, request: HttpRequest, experiment_output: Any, experiment: Any, output_file: Any = None, output_dir: str | None = None) -> dict[str, str]:
         # use papermill to generate the output notebook
         output_file_path = os.path.realpath(output_file.name)
         pm.execute_notebook(
@@ -52,11 +54,11 @@ class ParameterizedNotebookViewProvider:
         return {"output": body}
 
 
-DEFAULT_VIEW_PROVIDERS = {"default": DefaultViewProvider()}
+DEFAULT_VIEW_PROVIDERS: dict[str, Any] = {"default": DefaultViewProvider()}
 
 
-def get_output_views(request, experiment, application_interface=None):
-    output_views = {}
+def get_output_views(request: HttpRequest, experiment: Any, application_interface: Any = None) -> dict[str, list[dict[str, Any]]]:
+    output_views: dict[str, list[dict[str, Any]]] = {}
     for output in experiment.experimentOutputs:
         output_views[output.name] = []
         output_view_provider_ids = _get_output_view_providers(output, application_interface)
@@ -69,7 +71,7 @@ def get_output_views(request, experiment, application_interface=None):
             else:
                 logger.warning(f"Unable to find output view provider with name '{output_view_provider_id}'")
             if output_view_provider is not None:
-                view_config = {
+                view_config: dict[str, Any] = {
                     "provider-id": output_view_provider_id,
                     "display-type": output_view_provider.display_type,
                     "name": getattr(output_view_provider, "name", output_view_provider_id),
@@ -84,7 +86,7 @@ def get_output_views(request, experiment, application_interface=None):
     return output_views
 
 
-def _get_output_view_provider(output_view_provider_id):
+def _get_output_view_provider(output_view_provider_id: str) -> Any:
 
     if output_view_provider_id in DEFAULT_VIEW_PROVIDERS:
         return DEFAULT_VIEW_PROVIDERS[output_view_provider_id]
@@ -92,8 +94,8 @@ def _get_output_view_provider(output_view_provider_id):
         return OUTPUT_VIEW_PROVIDERS[output_view_provider_id]
 
 
-def _get_output_view_providers(experiment_output, application_interface):
-    output_view_providers = []
+def _get_output_view_providers(experiment_output: Any, application_interface: Any) -> list[str]:
+    output_view_providers: list[str] = []
     logger.debug(f"experiment_output={experiment_output}")
     if experiment_output.metaData:
         try:
@@ -116,7 +118,7 @@ def _get_output_view_providers(experiment_output, application_interface):
     return output_view_providers
 
 
-def _get_application_output_view_providers(application_interface, output_name):
+def _get_application_output_view_providers(application_interface: Any, output_name: str) -> list[str]:
     app_output = [o for o in application_interface.applicationOutputs if o.name == output_name]
     if len(app_output) == 1:
         logger.debug(f"{output_name}: {app_output}")
@@ -133,7 +135,7 @@ def _get_application_output_view_providers(application_interface, output_name):
     return []
 
 
-def generate_data(request, output_view_provider_id, experiment_output_name, experiment_id, test_mode=False, **kwargs):
+def generate_data(request: HttpRequest, output_view_provider_id: str, experiment_output_name: str, experiment_id: str, test_mode: bool = False, **kwargs: Any) -> dict[str, Any]:
     output_view_provider = _get_output_view_provider(output_view_provider_id)
     # TODO if output_view_provider is None, return 404
     experiment = request.airavata_client.research.get_experiment(experiment_id)
@@ -146,8 +148,8 @@ def generate_data(request, output_view_provider_id, experiment_output_name, expe
     return _generate_data(request, output_view_provider, experiment_output, experiment, test_mode=test_mode, **kwargs)
 
 
-def _generate_data(request, output_view_provider, experiment_output, experiment, test_mode=False, **kwargs):
-    output_files = []
+def _generate_data(request: HttpRequest, output_view_provider: Any, experiment_output: Any, experiment: Any, test_mode: bool = False, **kwargs: Any) -> dict[str, Any]:
+    output_files: list[Any] = []
     # test_mode can only be used in DEBUG=True mode
     if test_mode and settings.DEBUG:
         test_output_file = getattr(output_view_provider, "test_output_file", None)
@@ -181,7 +183,7 @@ def _generate_data(request, output_view_provider, experiment_output, experiment,
     return data
 
 
-def _process_interactive_params(data):
+def _process_interactive_params(data: dict[str, Any]) -> None:
     if "interactive" in data:
         _convert_options(data)
         for param in data["interactive"]:
@@ -192,7 +194,7 @@ def _process_interactive_params(data):
                 param["step"] = 1
 
 
-def _convert_options(data):
+def _convert_options(data: dict[str, Any]) -> None:
     """Convert interactive options to explicit text/value dicts."""
     for param in data["interactive"]:
         if "options" in param and isinstance(param["options"][0], str):
@@ -201,15 +203,15 @@ def _convert_options(data):
             param["options"] = _convert_options_sequences(param["options"])
 
 
-def _convert_options_strings(options):
+def _convert_options_strings(options: list[str]) -> list[dict[str, str]]:
     return [{"text": o, "value": o} for o in options]
 
 
-def _convert_options_sequences(options):
+def _convert_options_sequences(options: list[Any]) -> list[dict[str, Any]]:
     return [{"text": o[0], "value": o[1]} for o in options]
 
 
-def _infer_interactive_param_type(param):
+def _infer_interactive_param_type(param: dict[str, Any]) -> str | None:
     v = param["value"]
     # Boolean test must come first since bools are also integers
     if isinstance(v, bool):
@@ -222,7 +224,7 @@ def _infer_interactive_param_type(param):
         return "string"
 
 
-def _convert_params_to_type(output_view_provider, params):
+def _convert_params_to_type(output_view_provider: Any, params: dict[str, Any]) -> dict[str, Any]:
     method_sig = inspect.signature(output_view_provider.generate_data)
     method_params = method_sig.parameters
     # Special query parameter _meta holds type information for interactive

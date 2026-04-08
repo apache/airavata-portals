@@ -8,8 +8,10 @@ old API) and delegates to ``request.airavata_client.storage``.
 import io
 import logging
 import os
+from typing import Any, BinaryIO
 
 from django.conf import settings
+from django.http import HttpRequest
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +20,7 @@ log = logging.getLogger(__name__)
 # Helpers to extract file paths from DataProductModel proto objects
 # ---------------------------------------------------------------------------
 
-def _get_replica_filepath(data_product):
+def _get_replica_filepath(data_product: Any) -> str | None:
     """Return the file_path from the first GATEWAY_DATA_STORE replica location."""
     for replica in data_product.replica_locations:
         if replica.file_path:
@@ -26,7 +28,7 @@ def _get_replica_filepath(data_product):
     return None
 
 
-def _get_replica_storage_resource_id(data_product):
+def _get_replica_storage_resource_id(data_product: Any) -> str | None:
     """Return the storage_resource_id from the first replica location."""
     for replica in data_product.replica_locations:
         if replica.storage_resource_id:
@@ -38,7 +40,7 @@ def _get_replica_storage_resource_id(data_product):
 # File existence / metadata
 # ---------------------------------------------------------------------------
 
-def exists(request, data_product):
+def exists(request: HttpRequest, data_product: Any) -> bool:
     """Check whether the file backing *data_product* exists in user storage."""
     path = _get_replica_filepath(data_product)
     if not path:
@@ -49,14 +51,14 @@ def exists(request, data_product):
         return False
 
 
-def dir_exists(request, path, experiment_id=None):
+def dir_exists(request: HttpRequest, path: str, experiment_id: str | None = None) -> bool:
     """Check whether *path* exists as a directory in user storage."""
     if experiment_id:
         return experiment_dir_exists(request, experiment_id, path)
     return request.airavata_client.storage.dir_exists(path)
 
 
-def experiment_dir_exists(request, experiment_id, path=""):
+def experiment_dir_exists(request: HttpRequest, experiment_id: str, path: str = "") -> bool:
     """Check whether the experiment output directory exists."""
     try:
         request.airavata_client.storage.list_experiment_dir(experiment_id, path)
@@ -65,7 +67,7 @@ def experiment_dir_exists(request, experiment_id, path=""):
         return False
 
 
-def is_input_file(request, data_product):
+def is_input_file(request: HttpRequest, data_product: Any) -> bool:
     """Return True if the data product's path is under the inputs directory."""
     path = _get_replica_filepath(data_product)
     if not path:
@@ -79,7 +81,7 @@ def is_input_file(request, data_product):
 # File / directory listing
 # ---------------------------------------------------------------------------
 
-def listdir(request, path, experiment_id=None):
+def listdir(request: HttpRequest, path: str, experiment_id: str | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """List the contents of *path*, returning (directories, files) dicts."""
     if experiment_id:
         return list_experiment_dir(request, experiment_id, path)
@@ -89,7 +91,7 @@ def listdir(request, path, experiment_id=None):
     return directories, files
 
 
-def list_experiment_dir(request, experiment_id, path=""):
+def list_experiment_dir(request: HttpRequest, experiment_id: str, path: str = "") -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """List the experiment output directory."""
     resp = request.airavata_client.storage.list_experiment_dir(experiment_id, path)
     directories = _metadata_list_to_dicts(resp.directories)
@@ -97,9 +99,9 @@ def list_experiment_dir(request, experiment_id, path=""):
     return directories, files
 
 
-def _metadata_list_to_dicts(items):
+def _metadata_list_to_dicts(items: Any) -> list[dict[str, Any]]:
     """Convert repeated FileMetadataResponse protos to plain dicts."""
-    result = []
+    result: list[dict[str, Any]] = []
     for item in items:
         result.append({
             "name": item.name,
@@ -118,7 +120,7 @@ def _metadata_list_to_dicts(items):
 # File open / download
 # ---------------------------------------------------------------------------
 
-def open_file(request, data_product):
+def open_file(request: HttpRequest, data_product: Any) -> io.BytesIO:
     """Download the file for *data_product* and return a file-like object."""
     path = _get_replica_filepath(data_product)
     resp = request.airavata_client.storage.download_file(path)
@@ -131,7 +133,7 @@ def open_file(request, data_product):
 # File upload / save
 # ---------------------------------------------------------------------------
 
-def save_input_file(request, input_file, name=None, content_type=""):
+def save_input_file(request: HttpRequest, input_file: BinaryIO, name: str | None = None, content_type: str = "") -> Any:
     """Upload *input_file* to the user's input files directory.
 
     Returns a DataProductModel proto.
@@ -149,7 +151,7 @@ def save_input_file(request, input_file, name=None, content_type=""):
     return request.airavata_client.research.get_data_product(resp.uri)
 
 
-def save(request, path, file_obj, name=None, content_type="", experiment_id=None):
+def save(request: HttpRequest, path: str, file_obj: BinaryIO, name: str | None = None, content_type: str = "", experiment_id: str | None = None) -> Any:
     """Upload *file_obj* to *path* in user storage.
 
     Returns a DataProductModel proto.
@@ -169,7 +171,7 @@ def save(request, path, file_obj, name=None, content_type="", experiment_id=None
 # File content update
 # ---------------------------------------------------------------------------
 
-def update_data_product_content(request, data_product, fileContentText):
+def update_data_product_content(request: HttpRequest, data_product: Any, fileContentText: str) -> None:
     """Replace the content of the file backing *data_product* with *fileContentText*."""
     path = _get_replica_filepath(data_product)
     name = os.path.basename(path)
@@ -180,7 +182,7 @@ def update_data_product_content(request, data_product, fileContentText):
     )
 
 
-def update_file_content(request, path, fileContentText):
+def update_file_content(request: HttpRequest, path: str, fileContentText: str) -> None:
     """Replace the content of the file at *path* with *fileContentText*."""
     name = os.path.basename(path)
     request.airavata_client.storage.upload_file(
@@ -194,30 +196,30 @@ def update_file_content(request, path, fileContentText):
 # File / directory creation and deletion
 # ---------------------------------------------------------------------------
 
-def create_user_dir(request, path, experiment_id=None):
+def create_user_dir(request: HttpRequest, path: str, experiment_id: str | None = None) -> tuple[None, str]:
     """Create a directory at *path*. Returns (storage_resource_id, created_path)."""
     resp = request.airavata_client.storage.create_dir(path)
     return None, resp.created_path
 
 
-def create_symlink(request, source_path, dest_path):
+def create_symlink(request: HttpRequest, source_path: str, dest_path: str) -> None:
     """Create a symlink from *source_path* to *dest_path*."""
     request.airavata_client.storage.create_symlink(source_path, dest_path)
 
 
-def delete(request, data_product):
+def delete(request: HttpRequest, data_product: Any) -> None:
     """Delete the file backing *data_product*."""
     path = _get_replica_filepath(data_product)
     if path:
         request.airavata_client.storage.delete_file(path)
 
 
-def delete_user_file(request, path, experiment_id=None):
+def delete_user_file(request: HttpRequest, path: str, experiment_id: str | None = None) -> None:
     """Delete a user file at *path*."""
     request.airavata_client.storage.delete_file(path)
 
 
-def delete_dir(request, path, experiment_id=None):
+def delete_dir(request: HttpRequest, path: str, experiment_id: str | None = None) -> None:
     """Delete a directory at *path*."""
     request.airavata_client.storage.delete_dir(path)
 
@@ -226,7 +228,7 @@ def delete_dir(request, path, experiment_id=None):
 # File metadata
 # ---------------------------------------------------------------------------
 
-def get_file_metadata(request, path, experiment_id=None):
+def get_file_metadata(request: HttpRequest, path: str, experiment_id: str | None = None) -> dict[str, Any]:
     """Get metadata for the file at *path*. Returns a dict."""
     resp = request.airavata_client.storage.get_file_metadata(path)
     return {
@@ -241,7 +243,7 @@ def get_file_metadata(request, path, experiment_id=None):
     }
 
 
-def get_data_product_metadata(request, data_product=None, data_product_uri=None):
+def get_data_product_metadata(request: HttpRequest, data_product: Any = None, data_product_uri: str | None = None) -> dict[str, Any]:
     """Get metadata for a data product. Returns a dict with path, size, etc."""
     if data_product is None and data_product_uri:
         data_product = request.airavata_client.research.get_data_product(data_product_uri)
@@ -268,14 +270,14 @@ def get_data_product_metadata(request, data_product=None, data_product_uri=None)
 # Download URL helpers
 # ---------------------------------------------------------------------------
 
-def get_download_url(request, data_product_uri=None):
+def get_download_url(request: HttpRequest, data_product_uri: str | None = None) -> str:
     """Return a URL to download the file for *data_product_uri*."""
     from django.urls import reverse
     from urllib.parse import quote
     return reverse("django_airavata_api:download_file") + f"?data-product-uri={quote(data_product_uri)}"
 
 
-def get_lazy_download_url(request, data_product=None, data_product_uri=None):
+def get_lazy_download_url(request: HttpRequest, data_product: Any = None, data_product_uri: str | None = None) -> str | None:
     """Return a download URL. Accepts either a data_product or data_product_uri."""
     if data_product_uri:
         return get_download_url(request, data_product_uri=data_product_uri)

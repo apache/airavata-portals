@@ -4,6 +4,7 @@ import logging
 import os
 import warnings
 from datetime import datetime, timedelta
+from typing import Any
 
 from django_airavata.apps.api import user_storage
 from django.conf import settings
@@ -18,6 +19,7 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ParseError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -71,28 +73,28 @@ class GroupViewSet(APIBackedViewSet):
     pagination_class = APIResultPagination
     pagination_viewname = "django_airavata_api:group-list"
 
-    def get_list(self):
+    def get_list(self) -> APIResultIterator:
         view = self
 
         class GroupResultsIterator(APIResultIterator):
-            def get_results(self, limit=-1, offset=0):
+            def get_results(self, limit: int = -1, offset: int = 0) -> list[Any]:
                 groups = view.request.airavata_client.sharing.get_groups()
                 end = offset + limit if limit > 0 else len(groups)
                 return groups[offset:end] if groups else []
 
         return GroupResultsIterator()
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         return self.request.airavata_client.sharing.get_group(lookup_value)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         group = serializer.save()
         group_id = self.request.airavata_client.sharing.create_group(group)
         group.id = group_id
         users_added_to_group = set(group.members) - {group.ownerId}
         self._send_users_added_to_group(users_added_to_group, group)
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         group = serializer.save()
         sharing_client = self.request.airavata_client.sharing
         if len(group._added_members) > 0:
@@ -106,10 +108,10 @@ class GroupViewSet(APIBackedViewSet):
             sharing_client.remove_group_admins(group.id, group._removed_admins)
         sharing_client.update_group(group)
 
-    def perform_destroy(self, group):
+    def perform_destroy(self, group: Any) -> None:
         self.request.airavata_client.sharing.delete_group(group.id, group.ownerId)
 
-    def _send_users_added_to_group(self, internal_user_ids, group):
+    def _send_users_added_to_group(self, internal_user_ids: set[str], group: Any) -> None:
         for internal_user_id in internal_user_ids:
             user_id, gateway_id = internal_user_id.rsplit("@", maxsplit=1)
             user_profile = self.request.airavata_client.iam.get_user_profile_by_id(user_id, gateway_id)
@@ -124,44 +126,44 @@ class ProjectViewSet(APIBackedViewSet):
     pagination_class = APIResultPagination
     pagination_viewname = "django_airavata_api:project-list"
 
-    def get_list(self):
+    def get_list(self) -> APIResultIterator:
         view = self
 
         class ProjectResultIterator(APIResultIterator):
-            def get_results(self, limit=-1, offset=0):
+            def get_results(self, limit: int = -1, offset: int = 0) -> list[Any]:
                 return view.request.airavata_client.research.get_user_projects(
                     view.gateway_id, view.username, limit, offset
                 )
 
         return ProjectResultIterator()
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         return self.request.airavata_client.research.get_project(lookup_value)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         project = serializer.save(owner=self.username, gatewayId=self.gateway_id)
         project_id = self.request.airavata_client.research.create_project(self.gateway_id, project)
         project.projectID = project_id
         self._update_most_recent_project(project_id)
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         project = serializer.save()
         self.request.airavata_client.research.update_project(project.projectID, project)
         self._update_most_recent_project(project.projectID)
 
     @action(detail=False)
-    def list_all(self, request):
+    def list_all(self, request: Request) -> Response:
         projects = self.request.airavata_client.research.get_user_projects(self.gateway_id, self.username, -1, 0)
         serializer = serializers.ProjectSerializer(projects, many=True, context={"request": request})
         return Response(serializer.data)
 
     @action(detail=True)
-    def experiments(self, request, project_id=None):
+    def experiments(self, request: Request, project_id: str | None = None) -> Response:
         experiments = request.airavata_client.research.get_experiments_in_project(project_id, -1, 0)
         serializer = serializers.ExperimentSerializer(experiments, many=True, context={"request": request})
         return Response(serializer.data)
 
-    def _update_most_recent_project(self, project_id):
+    def _update_most_recent_project(self, project_id: str) -> None:
         prefs = helpers.WorkspacePreferencesHelper().get(self.request)
         prefs.most_recent_project_id = project_id
         prefs.save()
@@ -173,10 +175,10 @@ class ExperimentViewSet(
     serializer_class = serializers.ExperimentSerializer
     lookup_field = "experiment_id"
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         return self.request.airavata_client.research.get_experiment(lookup_value)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         experiment = serializer.save(gatewayId=self.gateway_id, userName=self.username)
         experiment_id = self.request.airavata_client.research.create_experiment(self.gateway_id, experiment)
         self._update_workspace_preferences(
@@ -186,7 +188,7 @@ class ExperimentViewSet(
         )
         experiment.experimentId = experiment_id
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         experiment = serializer.save(gatewayId=self.gateway_id, userName=self.username)
         self.request.airavata_client.research.update_experiment(experiment.experimentId, experiment)
         self._update_workspace_preferences(
@@ -196,7 +198,7 @@ class ExperimentViewSet(
         )
 
     @action(methods=["post"], detail=True)
-    def launch(self, request, experiment_id=None):
+    def launch(self, request: Request, experiment_id: str | None = None) -> Response:
         try:
             experiment = request.airavata_client.research.get_experiment(experiment_id)
             if experiment.enableEmailNotification:
@@ -209,20 +211,20 @@ class ExperimentViewSet(
             return Response({"success": False, "errorMessage": str(e)})
 
     @action(methods=["get"], detail=True)
-    def jobs(self, request, experiment_id=None):
+    def jobs(self, request: Request, experiment_id: str | None = None) -> Response:
         jobs = request.airavata_client.research.get_job_details(experiment_id)
         serializer = serializers.JobSerializer(jobs, many=True, context={"request": request})
         return Response(serializer.data)
 
     @action(methods=["post"], detail=True)
-    def clone(self, request, experiment_id=None):
+    def clone(self, request: Request, experiment_id: str | None = None) -> Response:
         cloned_experiment_id = request.airavata_client.research.clone_experiment(experiment_id)
         cloned_experiment = request.airavata_client.research.get_experiment(cloned_experiment_id)
         serializer = self.serializer_class(cloned_experiment, context={"request": request})
         return Response(serializer.data)
 
     @action(methods=["post"], detail=True)
-    def cancel(self, request, experiment_id=None):
+    def cancel(self, request: Request, experiment_id: str | None = None) -> Response:
         try:
             request.airavata_client.research.terminate_experiment(experiment_id, self.gateway_id)
             return Response({"success": True})
@@ -231,7 +233,7 @@ class ExperimentViewSet(
             raise e
 
     @action(methods=["post"], detail=True)
-    def fetch_intermediate_outputs(self, request, experiment_id=None):
+    def fetch_intermediate_outputs(self, request: Request, experiment_id: str | None = None) -> Response:
         if "outputNames" not in request.data:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         try:
@@ -243,7 +245,7 @@ class ExperimentViewSet(
             log.exception("fetchIntermediateOutputs failed with the following error", extra={"request": request})
             raise e
 
-    def _update_workspace_preferences(self, project_id, group_resource_profile_id, compute_resource_id):
+    def _update_workspace_preferences(self, project_id: str, group_resource_profile_id: str, compute_resource_id: str) -> None:
         prefs = helpers.WorkspacePreferencesHelper().get(self.request)
         prefs.most_recent_project_id = project_id
         prefs.most_recent_group_resource_profile_id = group_resource_profile_id
@@ -256,10 +258,10 @@ class ExperimentSearchViewSet(mixins.ListModelMixin, GenericAPIBackedViewSet):
     pagination_class = APIResultPagination
     pagination_viewname = "django_airavata_api:experiment-search-list"
 
-    def get_list(self):
+    def get_list(self) -> APIResultIterator:
         view = self
 
-        filters = {}
+        filters: dict[Any, str] = {}
         for filter_item in self.request.query_params.items():
             if filter_item[0] in ExperimentSearchFields.__members__:
                 # Lookup enum value for this ExperimentSearchFields
@@ -267,7 +269,7 @@ class ExperimentSearchViewSet(mixins.ListModelMixin, GenericAPIBackedViewSet):
                 filters[search_field] = filter_item[1]
 
         class ExperimentSearchResultIterator(APIResultIterator):
-            def get_results(self, limit=-1, offset=0):
+            def get_results(self, limit: int = -1, offset: int = 0) -> list[Any]:
                 return view.request.airavata_client.research.search_experiments(
                     view.gateway_id, view.username, filters, limit, offset
                 )
@@ -275,7 +277,7 @@ class ExperimentSearchViewSet(mixins.ListModelMixin, GenericAPIBackedViewSet):
         # Preserve query parameters when moving to next and previous links
         return ExperimentSearchResultIterator(query_params=self.request.query_params.copy())
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         raise NotImplementedError()
 
 
@@ -283,7 +285,7 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin, GenericAPIBackedViewSet):
     serializer_class = serializers.FullExperimentSerializer
     lookup_field = "experiment_id"
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> serializers.FullExperiment:
         """Get FullExperiment instance with resolved references."""
         # TODO: move loading experiment and references to airavata_sdk?
         experimentModel = self.request.airavata_client.research.get_experiment(lookup_value)
@@ -373,26 +375,26 @@ class ApplicationModuleViewSet(APIBackedViewSet):
     serializer_class = serializers.ApplicationModuleSerializer
     lookup_field = "app_module_id"
 
-    def get_list(self):
+    def get_list(self) -> list[Any]:
         return self.request.airavata_client.research.get_accessible_app_modules(self.gateway_id)
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         return self.request.airavata_client.research.get_application_module(lookup_value)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         app_module = serializer.save()
         app_module_id = self.request.airavata_client.research.register_application_module(self.gateway_id, app_module)
         app_module.appModuleId = app_module_id
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         app_module = serializer.save()
         self.request.airavata_client.research.update_application_module(app_module.appModuleId, app_module)
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> None:
         self.request.airavata_client.research.delete_application_module(instance.appModuleId)
 
     @action(detail=True)
-    def application_interface(self, request, app_module_id):
+    def application_interface(self, request: Request, app_module_id: str) -> Response:
         all_app_interfaces = request.airavata_client.research.get_all_application_interfaces(self.gateway_id)
         app_interfaces = []
         for app_interface in all_app_interfaces:
@@ -415,7 +417,7 @@ class ApplicationModuleViewSet(APIBackedViewSet):
             raise Http404(f"No application interface found for module id {app_module_id}")
 
     @action(detail=True)
-    def application_deployments(self, request, app_module_id):
+    def application_deployments(self, request: Request, app_module_id: str) -> Response:
         all_deployments = self.request.airavata_client.research.get_all_application_deployments(self.gateway_id)
         app_deployments = [dep for dep in all_deployments if dep.appModuleId == app_module_id]
         serializer = serializers.ApplicationDeploymentDescriptionSerializer(
@@ -424,7 +426,7 @@ class ApplicationModuleViewSet(APIBackedViewSet):
         return Response(serializer.data)
 
     @action(methods=["post"], detail=True)
-    def favorite(self, request, app_module_id):
+    def favorite(self, request: Request, app_module_id: str) -> HttpResponse:
         helper = helpers.WorkspacePreferencesHelper()
         workspace_preferences = helper.get(request)
         try:
@@ -439,7 +441,7 @@ class ApplicationModuleViewSet(APIBackedViewSet):
         return HttpResponse(status=204)
 
     @action(methods=["post"], detail=True)
-    def unfavorite(self, request, app_module_id):
+    def unfavorite(self, request: Request, app_module_id: str) -> HttpResponse:
         helper = helpers.WorkspacePreferencesHelper()
         workspace_preferences = helper.get(request)
         try:
@@ -454,7 +456,7 @@ class ApplicationModuleViewSet(APIBackedViewSet):
         return HttpResponse(status=204)
 
     @action(detail=False)
-    def list_all(self, request, format=None):
+    def list_all(self, request: Request, format: str | None = None) -> Response:
         all_modules = self.request.airavata_client.research.get_all_app_modules(self.gateway_id)
         serializer = self.serializer_class(all_modules, many=True, context={"request": request})
         return Response(serializer.data)
@@ -464,10 +466,10 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
     serializer_class = serializers.ApplicationInterfaceDescriptionSerializer
     lookup_field = "app_interface_id"
 
-    def get_list(self):
+    def get_list(self) -> list[Any]:
         return self.request.airavata_client.research.get_all_application_interfaces(self.gateway_id)
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         try:
             return self.request.airavata_client.research.get_application_interface(lookup_value)
         except Exception:
@@ -479,7 +481,7 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
             else:
                 raise  # re-raise
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         application_interface = serializer.save()
         self._update_input_metadata(application_interface)
         log.debug(f"application_interface: {application_interface}")
@@ -488,17 +490,17 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
         )
         application_interface.applicationInterfaceId = app_interface_id
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         application_interface = serializer.save()
         self._update_input_metadata(application_interface)
         self.request.airavata_client.research.update_application_interface(
             application_interface.applicationInterfaceId, application_interface
         )
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> None:
         self.request.airavata_client.research.delete_application_interface(instance.applicationInterfaceId)
 
-    def _update_input_metadata(self, app_interface):
+    def _update_input_metadata(self, app_interface: Any) -> None:
         for app_input in app_interface.applicationInputs:
             if app_input.metaData:
                 metadata = json.loads(app_input.metaData)
@@ -516,7 +518,7 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
                     app_input.metaData = json.dumps(metadata)
 
     @action(detail=True)
-    def compute_resources(self, request, app_interface_id):
+    def compute_resources(self, request: Request, app_interface_id: str) -> Response:
         compute_resources = request.airavata_client.research.get_available_app_interface_compute_resources(
             app_interface_id
         )
@@ -527,7 +529,7 @@ class ApplicationDeploymentViewSet(APIBackedViewSet):
     serializer_class = serializers.ApplicationDeploymentDescriptionSerializer
     lookup_field = "app_deployment_id"
 
-    def get_list(self):
+    def get_list(self) -> list[Any]:
         app_module_id = self.request.query_params.get("appModuleId", None)
         group_resource_profile_id = self.request.query_params.get("groupResourceProfileId", None)
         if (app_module_id and not group_resource_profile_id) or (not app_module_id and group_resource_profile_id):
@@ -541,27 +543,27 @@ class ApplicationDeploymentViewSet(APIBackedViewSet):
                 self.gateway_id, ResourcePermissionType.READ
             )
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         return self.request.airavata_client.research.get_application_deployment(lookup_value)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         application_deployment = serializer.save()
         app_deployment_id = self.request.airavata_client.research.register_application_deployment(
             self.gateway_id, application_deployment
         )
         application_deployment.appDeploymentId = app_deployment_id
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         application_deployment = serializer.save()
         self.request.airavata_client.research.update_application_deployment(
             application_deployment.appDeploymentId, application_deployment
         )
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> None:
         self.request.airavata_client.research.delete_application_deployment(instance.appDeploymentId)
 
     @action(detail=True)
-    def queues(self, request, app_deployment_id):
+    def queues(self, request: Request, app_deployment_id: str) -> Response:
         """Return queues for this deployment with defaults overridden by deployment defaults if they exist"""
         app_deployment = self.request.airavata_client.research.get_application_deployment(app_deployment_id)
         compute_resource = request.airavata_client.compute.get_compute_resource(app_deployment.computeHostId)
@@ -585,16 +587,16 @@ class ComputeResourceViewSet(mixins.RetrieveModelMixin, GenericAPIBackedViewSet)
     serializer_class = serializers.ComputeResourceDescriptionSerializer
     lookup_field = "compute_resource_id"
 
-    def get_instance(self, lookup_value, format=None):
+    def get_instance(self, lookup_value: str, format: str | None = None) -> Any:
         return self.request.airavata_client.compute.get_compute_resource(lookup_value)
 
     @action(detail=False)
-    def all_names(self, request, format=None):
+    def all_names(self, request: Request, format: str | None = None) -> Response:
         """Return a map of compute resource names keyed by resource id."""
         return Response(request.airavata_client.compute.get_all_compute_resource_names())
 
     @action(detail=False)
-    def all_names_list(self, request, format=None):
+    def all_names_list(self, request: Request, format: str | None = None) -> Response:
         """Return a list of compute resource names keyed by resource id."""
         all_names = request.airavata_client.compute.get_all_compute_resource_names()
         return Response(
@@ -611,7 +613,7 @@ class ComputeResourceViewSet(mixins.RetrieveModelMixin, GenericAPIBackedViewSet)
         )
 
     @action(detail=True)
-    def queues(self, request, compute_resource_id, format=None):
+    def queues(self, request: Request, compute_resource_id: str, format: str | None = None) -> Response:
         details = request.airavata_client.compute.get_compute_resource(compute_resource_id)
         serializer = self.serializer_class(instance=details, context={"request": request})
         data = serializer.data
@@ -621,7 +623,7 @@ class ComputeResourceViewSet(mixins.RetrieveModelMixin, GenericAPIBackedViewSet)
 class LocalJobSubmissionView(APIView):
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         job_submission_id = request.query_params["id"]
         local_job_submission = request.airavata_client.compute.get_local_job_submission(job_submission_id)
         from . import proto_utils
@@ -632,7 +634,7 @@ class LocalJobSubmissionView(APIView):
 class CloudJobSubmissionView(APIView):
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         job_submission_id = request.query_params["id"]
         job_submission = request.airavata_client.compute.get_cloud_job_submission(job_submission_id)
         from . import proto_utils
@@ -643,7 +645,7 @@ class CloudJobSubmissionView(APIView):
 class GlobusJobSubmissionView(APIView):
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         job_submission_id = request.query_params["id"]
         job_submission = request.airavata_client.compute.get_globus_job_submission(job_submission_id)
         from . import proto_utils
@@ -654,7 +656,7 @@ class GlobusJobSubmissionView(APIView):
 class SshJobSubmissionView(APIView):
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         job_submission_id = request.query_params["id"]
         job_submission = request.airavata_client.compute.get_ssh_job_submission(job_submission_id)
         from . import proto_utils
@@ -665,7 +667,7 @@ class SshJobSubmissionView(APIView):
 class UnicoreJobSubmissionView(APIView):
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         job_submission_id = request.query_params["id"]
         job_submission = request.airavata_client.compute.get_unicore_job_submission(job_submission_id)
         from . import proto_utils
@@ -676,7 +678,7 @@ class UnicoreJobSubmissionView(APIView):
 class GridFtpDataMovementView(APIView):
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         data_movement_id = request.query_params["id"]
         data_movement = request.airavata_client.compute.get_grid_ftp_data_movement(data_movement_id)
         from . import proto_utils
@@ -687,7 +689,7 @@ class GridFtpDataMovementView(APIView):
 class ScpDataMovementView(APIView):
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         data_movement_id = request.query_params["id"]
         data_movement = request.airavata_client.compute.get_scp_data_movement(data_movement_id)
         from . import proto_utils
@@ -698,7 +700,7 @@ class ScpDataMovementView(APIView):
 class UnicoreDataMovementView(APIView):
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         data_movement_id = request.query_params["id"]
         data_movement = request.airavata_client.compute.get_unicore_data_movement(data_movement_id)
         from . import proto_utils
@@ -709,7 +711,7 @@ class UnicoreDataMovementView(APIView):
 class LocalDataMovementView(APIView):
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         data_movement_id = request.query_params["id"]
         data_movement = request.airavata_client.compute.get_local_data_movement(data_movement_id)
         from . import proto_utils
@@ -721,13 +723,13 @@ class DataProductView(APIView):
     serializer_class = serializers.DataProductSerializer
     permission_classes = [IsAuthenticated, DataProductSharedDirPermission]
 
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         data_product_uri = request.query_params["product-uri"]
         data_product = request.airavata_client.research.get_data_product(data_product_uri)
         serializer = self.serializer_class(data_product, context={"request": request})
         return Response(serializer.data)
 
-    def put(self, request, format=None):
+    def put(self, request: Request, format: str | None = None) -> Response:
         data_product_uri = request.query_params["product-uri"]
         data_product = request.airavata_client.research.get_data_product(data_product_uri)
         if request.data and "fileContentText" in request.data:
@@ -740,7 +742,7 @@ class DataProductView(APIView):
 
 
 @api_view(http_method_names=["POST"])
-def upload_input_file(request):
+def upload_input_file(request: Request) -> JsonResponse:
     try:
         input_file = request.FILES["file"]
         data_product = user_storage.save_input_file(request, input_file, content_type=input_file.content_type)
@@ -754,7 +756,7 @@ def upload_input_file(request):
 
 
 @api_view(http_method_names=["POST"])
-def tus_upload_finish(request):
+def tus_upload_finish(request: Request) -> JsonResponse:
     uploadURL = request.POST["uploadURL"]
 
     def save_upload(file_path, file_name, file_type):
@@ -771,7 +773,7 @@ def tus_upload_finish(request):
 
 @gzip_page
 @api_view()
-def download_file(request):
+def download_file(request: Request) -> HttpResponse:
     # TODO: remove this deprecated view
     warnings.warn("download_file view has moved to SDK", DeprecationWarning)
     # redirect to /sdk/download
@@ -781,7 +783,7 @@ def download_file(request):
 
 @api_view(http_method_names=["DELETE"])
 @permission_classes([IsAuthenticated, DataProductSharedDirPermission])
-def delete_file(request):
+def delete_file(request: Request) -> HttpResponse:
     # TODO check that user has write access to this file using sharing API
     data_product_uri = request.GET.get("data-product-uri", "")
     data_product = None
@@ -802,10 +804,10 @@ def delete_file(request):
 class UserProfileViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin, GenericAPIBackedViewSet):
     serializer_class = serializers.UserProfileSerializer
 
-    def get_list(self):
+    def get_list(self) -> list[Any]:
         return self.request.airavata_client.iam.get_all_user_profiles_in_gateway(self.gateway_id, 0, -1)
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         return self.request.airavata_client.iam.get_user_profile_by_id(self.request.user.username, self.gateway_id)
 
 
@@ -813,13 +815,13 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
     serializer_class = serializers.GroupResourceProfileSerializer
     lookup_field = "group_resource_profile_id"
 
-    def get_list(self):
+    def get_list(self) -> list[Any]:
         return self.request.airavata_client.compute.get_group_resource_list(self.gateway_id)
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         return self.request.airavata_client.compute.get_group_resource_profile(lookup_value)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         group_resource_profile = serializer.save()
         group_resource_profile.gatewayId = self.gateway_id
         group_resource_profile_id = self.request.airavata_client.compute.create_group_resource_profile(
@@ -832,7 +834,7 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
         )
         group_resource_profile.creationTime = new_group_resource_profile.creationTime
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         original_instance = serializer.instance
 
         grp = serializer.save()
@@ -1019,7 +1021,7 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
 
         self.request.airavata_client.compute.update_group_resource_profile(grp)
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> None:
         self.request.airavata_client.compute.remove_group_resource_profile(instance.groupResourceProfileId)
 
 
@@ -1027,7 +1029,7 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, Ge
     serializer_class = serializers.SharedEntitySerializer
     lookup_field = "entity_id"
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> dict[str, Any]:
         users = {}
         # Only load *directly* granted permissions since these are the only
         # ones that can be edited
@@ -1061,30 +1063,30 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, Ge
             "owner": self._load_user_profile(owner_id),
         }
 
-    def _load_accessible_users(self, entity_id, permission_type):
+    def _load_accessible_users(self, entity_id: str, permission_type: Any) -> dict[str, Any]:
         users = self.request.airavata_client.sharing.get_all_accessible_users(entity_id, permission_type)
         return {user_id: permission_type for user_id in users}
 
-    def _load_directly_accessible_users(self, entity_id, permission_type):
+    def _load_directly_accessible_users(self, entity_id: str, permission_type: Any) -> dict[str, Any]:
         users = self.request.airavata_client.sharing.get_all_directly_accessible_users(entity_id, permission_type)
         return {user_id: permission_type for user_id in users}
 
-    def _load_user_profile(self, user_id):
+    def _load_user_profile(self, user_id: str) -> Any:
         username = user_id[0 : user_id.rindex("@")]
         return self.request.airavata_client.iam.get_user_profile_by_id(username, settings.GATEWAY_ID)
 
-    def _load_accessible_groups(self, entity_id, permission_type):
+    def _load_accessible_groups(self, entity_id: str, permission_type: Any) -> dict[str, Any]:
         groups = self.request.airavata_client.sharing.get_all_accessible_groups(entity_id, permission_type)
         return {group_id: permission_type for group_id in groups}
 
-    def _load_directly_accessible_groups(self, entity_id, permission_type):
+    def _load_directly_accessible_groups(self, entity_id: str, permission_type: Any) -> dict[str, Any]:
         groups = self.request.airavata_client.sharing.get_all_directly_accessible_groups(entity_id, permission_type)
         return {group_id: permission_type for group_id in groups}
 
-    def _load_group(self, group_id):
+    def _load_group(self, group_id: str) -> Any:
         return self.request.airavata_client.sharing.get_group(group_id)
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         shared_entity = serializer.save()
         entity_id = shared_entity["entityId"]
         if len(shared_entity["_user_grant_read_permission"]) > 0:
@@ -1140,28 +1142,28 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, Ge
                 shared_entity["_group_revoke_manage_sharing_permission"],
             )
 
-    def _share_with_users(self, entity_id, permission_type, user_ids):
+    def _share_with_users(self, entity_id: str, permission_type: Any, user_ids: list[str]) -> None:
         self.request.airavata_client.sharing.share_resource_with_users(
             entity_id, {user_id: permission_type for user_id in user_ids}
         )
 
-    def _revoke_from_users(self, entity_id, permission_type, user_ids):
+    def _revoke_from_users(self, entity_id: str, permission_type: Any, user_ids: list[str]) -> None:
         self.request.airavata_client.sharing.revoke_sharing_of_resource_from_users(
             entity_id, {user_id: permission_type for user_id in user_ids}
         )
 
-    def _share_with_groups(self, entity_id, permission_type, group_ids):
+    def _share_with_groups(self, entity_id: str, permission_type: Any, group_ids: list[str]) -> None:
         self.request.airavata_client.sharing.share_resource_with_groups(
             entity_id, {group_id: permission_type for group_id in group_ids}
         )
 
-    def _revoke_from_groups(self, entity_id, permission_type, group_ids):
+    def _revoke_from_groups(self, entity_id: str, permission_type: Any, group_ids: list[str]) -> None:
         self.request.airavata_client.sharing.revoke_sharing_of_resource_from_groups(
             entity_id, {group_id: permission_type for group_id in group_ids}
         )
 
     @action(methods=["put"], detail=True)
-    def merge(self, request, entity_id=None):
+    def merge(self, request: Request, entity_id: str | None = None) -> Response:
         # Validate updated sharing settings
         updated = self.get_serializer(data=request.data)
         updated.is_valid(raise_exception=True)
@@ -1181,7 +1183,7 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, Ge
         return Response(merged_serializer.data)
 
     @action(methods=["get"], detail=True)
-    def all(self, request, entity_id=None):
+    def all(self, request: Request, entity_id: str | None = None) -> Response:
         """Load direct plus indirectly (inherited) shared permissions."""
         users = {}
         # Load accessible users in order of permission precedence: users that
@@ -1220,28 +1222,28 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, Ge
 class CredentialSummaryViewSet(APIBackedViewSet):
     serializer_class = serializers.CredentialSummarySerializer
 
-    def get_list(self):
+    def get_list(self) -> list[Any]:
         ssh_creds = self.request.airavata_client.credential.get_all_credential_summaries(SummaryType.SSH)
         pwd_creds = self.request.airavata_client.credential.get_all_credential_summaries(SummaryType.PASSWD)
         return ssh_creds + pwd_creds
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         return self.request.airavata_client.credential.get_credential_summary(lookup_value)
 
     @action(detail=False)
-    def ssh(self, request):
+    def ssh(self, request: Request) -> Response:
         summaries = self.request.airavata_client.credential.get_all_credential_summaries(SummaryType.SSH)
         serializer = self.get_serializer(summaries, many=True)
         return Response(serializer.data)
 
     @action(detail=False)
-    def password(self, request):
+    def password(self, request: Request) -> Response:
         summaries = self.request.airavata_client.credential.get_all_credential_summaries(SummaryType.PASSWD)
         serializer = self.get_serializer(summaries, many=True)
         return Response(serializer.data)
 
     @action(methods=["post"], detail=False)
-    def create_ssh(self, request):
+    def create_ssh(self, request: Request) -> Response:
         if "description" not in request.data:
             raise ParseError("'description' is required in request")
         description = request.data.get("description")
@@ -1251,7 +1253,7 @@ class CredentialSummaryViewSet(APIBackedViewSet):
         return Response(serializer.data)
 
     @action(methods=["post"], detail=False)
-    def create_password(self, request):
+    def create_password(self, request: Request) -> Response:
         if "username" not in request.data or "password" not in request.data or "description" not in request.data:
             raise ParseError("'username', 'password' and 'description' are all required in request")
         username = request.data.get("username")
@@ -1262,7 +1264,7 @@ class CredentialSummaryViewSet(APIBackedViewSet):
         serializer = self.get_serializer(credential_summary)
         return Response(serializer.data)
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> None:
         if instance.type == SummaryType.SSH:
             self.request.airavata_client.credential.delete_ssh_pub_key(instance.token)
         elif instance.type == SummaryType.PASSWD:
@@ -1270,14 +1272,14 @@ class CredentialSummaryViewSet(APIBackedViewSet):
 
 
 class CurrentGatewayResourceProfile(APIView):
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         gateway_resource_profile = request.airavata_client.compute.get_gateway_resource_profile(settings.GATEWAY_ID)
         serializer = serializers.GatewayResourceProfileSerializer(
             gateway_resource_profile, context={"request": request}
         )
         return Response(serializer.data)
 
-    def put(self, request, format=None):
+    def put(self, request: Request, format: str | None = None) -> Response:
         serializer = serializers.GatewayResourceProfileSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             gateway_resource_profile = serializer.save()
@@ -1290,7 +1292,7 @@ class CurrentGatewayResourceProfile(APIView):
 
 
 class ExperimentArchiveView(APIView):
-    def get(self, request, experiment_id=None, format=None):
+    def get(self, request: Request, experiment_id: str | None = None, format: str | None = None) -> Response:
         experiment: ExperimentModel = request.airavata_client.research.get_experiment(experiment_id)
         result = dict(
             archived=False,
@@ -1314,11 +1316,11 @@ class StorageResourceViewSet(mixins.RetrieveModelMixin, GenericAPIBackedViewSet)
     serializer_class = serializers.StorageResourceSerializer
     lookup_field = "storage_resource_id"
 
-    def get_instance(self, lookup_value, format=None):
+    def get_instance(self, lookup_value: str, format: str | None = None) -> Any:
         return self.request.airavata_client.storage.get_storage_resource(lookup_value)
 
     @action(detail=False)
-    def all_names(self, request, format=None):
+    def all_names(self, request: Request, format: str | None = None) -> Response:
         """Return a map of compute resource names keyed by resource id."""
         return Response(request.airavata_client.storage.get_all_storage_resource_names())
 
@@ -1327,25 +1329,25 @@ class StoragePreferenceViewSet(APIBackedViewSet):
     serializer_class = serializers.StoragePreferenceSerializer
     lookup_field = "storage_resource_id"
 
-    def get_list(self):
+    def get_list(self) -> list[Any]:
         return self.request.airavata_client.compute.get_all_gateway_storage_preferences(settings.GATEWAY_ID)
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         return self.request.airavata_client.compute.get_gateway_storage_preference(settings.GATEWAY_ID, lookup_value)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         storage_preference = serializer.save()
         self.request.airavata_client.compute.add_gateway_storage_preference(
             settings.GATEWAY_ID, storage_preference.storageResourceId, storage_preference
         )
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         storage_preference = serializer.save()
         self.request.airavata_client.compute.update_gateway_storage_preference(
             settings.GATEWAY_ID, storage_preference.storageResourceId, storage_preference
         )
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> None:
         self.request.airavata_client.compute.delete_gateway_storage_preference(
             settings.GATEWAY_ID, instance.storageResourceId
         )
@@ -1361,17 +1363,17 @@ class ParserViewSet(
     serializer_class = serializers.ParserSerializer
     lookup_field = "parser_id"
 
-    def get_list(self):
+    def get_list(self) -> list[Any]:
         return self.request.airavata_client.research.list_all_parsers(settings.GATEWAY_ID)
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         return self.request.airavata_client.research.get_parser(lookup_value, settings.GATEWAY_ID)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         parser = serializer.save()
         self.request.airavata_client.research.save_parser(parser)
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         parser = serializer.save()
         self.request.airavata_client.research.save_parser(parser)
 
@@ -1380,13 +1382,13 @@ class UserStoragePathView(APIView):
     serializer_class = serializers.UserStoragePathSerializer
     permission_classes = (IsAuthenticated, UserStorageSharedDirPermission)
 
-    def get(self, request, path="/", format=None):
+    def get(self, request: Request, path: str = "/", format: str | None = None) -> Response:
         # AIRAVATA-3460 Allow passing path as a query parameter instead
         path = request.query_params.get("path", path)
         experiment_id = request.query_params.get("experiment-id")
         return self._create_response(request, path, experiment_id=experiment_id)
 
-    def post(self, request, path="/", format=None):
+    def post(self, request: Request, path: str = "/", format: str | None = None) -> Response:
         path = request.data.get("path", path)
         experiment_id = request.data.get("experiment-id")
         if not user_storage.dir_exists(request, path, experiment_id=experiment_id):
@@ -1422,7 +1424,7 @@ class UserStoragePathView(APIView):
         return self._create_response(request, path, uploaded=data_product, experiment_id=experiment_id)
 
     # Accept wither to replace file or to replace file content text.
-    def put(self, request, path="/", format=None):
+    def put(self, request: Request, path: str = "/", format: str | None = None) -> Response:
         path = request.POST.get("path", path)
         # Replace the file if the request has a file upload.
         if "file" in request.FILES:
@@ -1439,7 +1441,7 @@ class UserStoragePathView(APIView):
 
         return self._create_response(request=request, path=path)
 
-    def delete(self, request, path="/", format=None):
+    def delete(self, request: Request, path: str = "/", format: str | None = None) -> Response:
         path = request.data.get("path", path)
         experiment_id = request.data.get("experiment-id")
         if user_storage.dir_exists(request, path, experiment_id=experiment_id):
@@ -1449,7 +1451,7 @@ class UserStoragePathView(APIView):
 
         return Response(status=204)
 
-    def _create_response(self, request, path, uploaded=None, experiment_id=None):
+    def _create_response(self, request: Request, path: str, uploaded: Any = None, experiment_id: str | None = None) -> Response:
         if user_storage.dir_exists(request, path, experiment_id=experiment_id):
             directories, files = user_storage.listdir(request, path, experiment_id=experiment_id)
             data = {"isDir": True, "directories": directories, "files": files}
@@ -1468,7 +1470,7 @@ class UserStoragePathView(APIView):
             serializer = self.serializer_class(data, context={"request": request})
             return Response(serializer.data)
 
-    def _split_path(self, path):
+    def _split_path(self, path: str) -> list[str]:
         head, tail = os.path.split(path)
         if head != path:
             return self._split_path(head) + [tail]
@@ -1481,10 +1483,10 @@ class UserStoragePathView(APIView):
 class ExperimentStoragePathView(APIView):
     serializer_class = serializers.ExperimentStoragePathSerializer
 
-    def get(self, request, experiment_id=None, path="", format=None):
+    def get(self, request: Request, experiment_id: str | None = None, path: str = "", format: str | None = None) -> Response:
         return self._create_response(request, experiment_id, path)
 
-    def _create_response(self, request, experiment_id, path):
+    def _create_response(self, request: Request, experiment_id: str, path: str) -> Response:
         if user_storage.experiment_dir_exists(request, experiment_id, path):
             directories, files = user_storage.list_experiment_dir(request, experiment_id, path)
 
@@ -1499,7 +1501,7 @@ class ExperimentStoragePathView(APIView):
         else:
             raise Http404(f"Path '{path}' does not exist for {experiment_id}")
 
-    def _split_path(self, path):
+    def _split_path(self, path: str) -> list[str]:
         head, tail = os.path.split(path)
         if head != "":
             return self._split_path(head) + [tail]
@@ -1512,7 +1514,7 @@ class ExperimentStoragePathView(APIView):
 class WorkspacePreferencesView(APIView):
     serializer_class = serializers.WorkspacePreferencesSerializer
 
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         helper = helpers.WorkspacePreferencesHelper()
         workspace_preferences = helper.get(request)
         serializer = self.serializer_class(workspace_preferences, context={"request": request})
@@ -1523,23 +1525,23 @@ class ManageNotificationViewSet(APIBackedViewSet):
     serializer_class = serializers.NotificationSerializer
     lookup_field = "notification_id"
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         return self.request.airavata_client.research.get_notification(settings.GATEWAY_ID, lookup_value)
 
-    def get_list(self):
+    def get_list(self) -> list[Any]:
         return self.request.airavata_client.research.get_all_notifications(self.gateway_id)
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> None:
         self.request.airavata_client.research.delete_notification(settings.GATEWAY_ID, instance.notificationId)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Any) -> None:
         notification = serializer.save(gatewayId=self.gateway_id)
         notificationId = self.request.airavata_client.research.create_notification(notification)
         notification.notificationId = notificationId
 
         serializer.update_notification_extension(self.request, notification)
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         notification = serializer.save()
         self.request.airavata_client.research.update_notification(notification)
 
@@ -1547,7 +1549,7 @@ class ManageNotificationViewSet(APIBackedViewSet):
 
 
 class AckNotificationViewSet(APIView):
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> HttpResponse:
         if "id" in request.GET:
             notification_id = request.GET["id"]
             try:
@@ -1578,21 +1580,21 @@ class IAMUserViewSet(
     )
     lookup_field = "user_id"
 
-    def get_list(self):
+    def get_list(self) -> APIResultIterator:
         search = self.request.GET.get("search", None)
 
         convert_user_profile = self._convert_user_profile
 
         class IAMUsersResultIterator(APIResultIterator):
-            def get_results(self, limit=-1, offset=0):
+            def get_results(self, limit: int = -1, offset: int = 0) -> Any:
                 return map(convert_user_profile, iam_admin_client.get_users(offset, limit, search))
 
         return IAMUsersResultIterator(query_params=self.request.query_params.copy())
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> dict[str, Any]:
         return self._convert_user_profile(iam_admin_client.get_user(lookup_value))
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: Any) -> None:
         managed_user_profile = serializer.save()
         sharing_client = self.request.airavata_client.sharing
         iam_client = self.request.airavata_client.iam
@@ -1610,18 +1612,18 @@ class IAMUserViewSet(
         for group_id in managed_user_profile["_removed_group_ids"]:
             sharing_client.remove_users_from_group([user_id], group_id)
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: dict[str, Any]) -> None:
         iam_admin_client.delete_user(instance["userId"])
 
     @action(methods=["post"], detail=True)
-    def enable(self, request, user_id=None):
+    def enable(self, request: Request, user_id: str | None = None) -> Response:
         iam_admin_client.enable_user(user_id)
         instance = self.get_instance(user_id)
         serializer = self.serializer_class(instance=instance, context={"request": request})
         return Response(serializer.data)
 
     @action(methods=["put"], detail=False)
-    def update_username(self, request):
+    def update_username(self, request: Request) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         old_username = serializer.validated_data["userId"]
@@ -1640,7 +1642,7 @@ class IAMUserViewSet(
         serializer = self.serializer_class(instance=instance, context={"request": request})
         return Response(serializer.data)
 
-    def _convert_user_profile(self, user_profile):
+    def _convert_user_profile(self, user_profile: Any) -> dict[str, Any]:
         iam_client = self.request.airavata_client.iam
         sharing_client = self.request.airavata_client.sharing
         airavata_user_profile_exists = iam_client.does_user_exist(user_profile.userId, self.gateway_id)
@@ -1666,7 +1668,7 @@ class ExperimentStatisticsView(APIView):
     # TODO: restrict to only Admins or Read Only Admins group members
     serializer_class = serializers.ExperimentStatisticsSerializer
 
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         if "fromTime" in request.GET:
             from_time = view_utils.convert_utc_iso8601_to_date(request.GET["fromTime"]).timestamp() * 1000
         else:
@@ -1709,23 +1711,23 @@ class UnverifiedEmailUserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixi
     )
     lookup_field = "user_id"
 
-    def get_list(self):
+    def get_list(self) -> APIResultIterator:
         get_users = self._get_unverified_email_user_profiles
 
         class UnverifiedEmailUsersResultIterator(APIResultIterator):
-            def get_results(self, limit=-1, offset=0):
+            def get_results(self, limit: int = -1, offset: int = 0) -> list[dict[str, Any]]:
                 return get_users(limit, offset)
 
         return UnverifiedEmailUsersResultIterator()
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> dict[str, Any]:
         users = self._get_unverified_email_user_profiles(limit=1, username=lookup_value)
         if len(users) == 0:
             raise Http404(f"No unverified email record found for user {lookup_value}")
         else:
             return users[0]
 
-    def _get_unverified_email_user_profiles(self, limit=-1, offset=0, username=None):
+    def _get_unverified_email_user_profiles(self, limit: int = -1, offset: int = 0, username: str | None = None) -> list[dict[str, Any]]:
         unverified_emails = (
             EmailVerification.objects.filter(verified=False).order_by("username").values("username").distinct()
         )
@@ -1766,7 +1768,7 @@ class UnverifiedEmailUserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixi
 class LogRecordConsumer(APIView):
     serializer_class = serializers.LogRecordSerializer
 
-    def post(self, request, format=None):
+    def post(self, request: Request, format: str | None = None) -> Response:
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         log_record = serializer.validated_data
@@ -1786,7 +1788,7 @@ class LogRecordConsumer(APIView):
 class SettingsAPIView(APIView):
     serializer_class = serializers.SettingsSerializer
 
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         data = {
             "fileUploadMaxFileSize": settings.FILE_UPLOAD_MAX_FILE_SIZE,
             "tusEndpoint": settings.TUS_ENDPOINT,
@@ -1797,7 +1799,7 @@ class SettingsAPIView(APIView):
 
 
 class APIServerStatusCheckView(APIView):
-    def get(self, request, format=None):
+    def get(self, request: Request, format: str | None = None) -> Response:
         try:
             request.airavata_client.research.get_user_projects(
                 settings.GATEWAY_ID,
@@ -1813,7 +1815,7 @@ class APIServerStatusCheckView(APIView):
 
 
 @api_view()
-def notebook_output_view(request):
+def notebook_output_view(request: Request) -> HttpResponse:
     provider_id = request.GET["provider-id"]
     experiment_id = request.GET["experiment-id"]
     experiment_output_name = request.GET["experiment-output-name"]
@@ -1822,13 +1824,13 @@ def notebook_output_view(request):
 
 
 @api_view()
-def html_output_view(request):
+def html_output_view(request: Request) -> JsonResponse:
     data = _generate_output_view_data(request)
     return JsonResponse(data)
 
 
 @api_view()
-def image_output_view(request):
+def image_output_view(request: Request) -> JsonResponse:
     data = _generate_output_view_data(request)
     # data should contain 'image' as a file-like object or raw bytes with the
     # file data and 'mime-type' with the images mimetype
@@ -1837,12 +1839,12 @@ def image_output_view(request):
 
 
 @api_view()
-def link_output_view(request):
+def link_output_view(request: Request) -> JsonResponse:
     data = _generate_output_view_data(request)
     return JsonResponse(data)
 
 
-def _generate_output_view_data(request):
+def _generate_output_view_data(request: Request) -> dict[str, Any]:
     params = request.GET.copy()
     provider_id = params.pop("provider-id")[0]
     experiment_id = params.pop("experiment-id")[0]
@@ -1856,10 +1858,10 @@ def _generate_output_view_data(request):
 class QueueSettingsCalculatorViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericAPIBackedViewSet):
     serializer_class = serializers.QueueSettingsCalculatorSerializer
 
-    def get_list(self):
+    def get_list(self) -> list[Any]:
         return queue_settings_calculators.get_all()
 
-    def get_instance(self, lookup_value):
+    def get_instance(self, lookup_value: str) -> Any:
         calcs = queue_settings_calculators.get_all()
         calc = [calc for calc in calcs if calc.id == lookup_value]
         if len(calc) == 0:
@@ -1867,7 +1869,7 @@ class QueueSettingsCalculatorViewSet(mixins.ListModelMixin, mixins.RetrieveModel
         return calc[0]
 
     @action(methods=["post"], detail=True, serializer_class=serializers.ExperimentSerializer)
-    def calculate(self, request, pk=None):
+    def calculate(self, request: Request, pk: str | None = None) -> Response:
 
         serializer = self.get_serializer(data=request.data)
         result = {}

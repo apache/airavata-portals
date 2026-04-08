@@ -6,7 +6,7 @@ from django.conf import settings
 log = logging.getLogger(__name__)
 
 
-def create_airavata_client(access_token, gateway_id):
+def create_airavata_client(access_token: str, gateway_id: str) -> AiravataClient:
     """Create an AiravataClient instance for the given auth token."""
     return AiravataClient(
         host=settings.AIRAVATA_API_HOST,

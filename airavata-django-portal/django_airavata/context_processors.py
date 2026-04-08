@@ -3,10 +3,12 @@ import datetime
 import json
 import logging
 import re
+from typing import Any
 
 from django.apps import apps
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpRequest
 from django.urls import reverse
 
 from django_airavata.app_config import AiravataAppConfig
@@ -15,7 +17,7 @@ from django_airavata.apps.api.models import User_Notifications
 logger = logging.getLogger(__name__)
 
 
-def get_notifications(request):
+def get_notifications(request: HttpRequest) -> dict[str, Any]:
     if request.user.is_authenticated and hasattr(request, "airavata_client"):
         unread_notifications = 0
         try:
@@ -24,7 +26,7 @@ def get_notifications(request):
             logger.warning("Failed to load notifications")
             notifications = []
         current_time = datetime.datetime.utcnow()
-        valid_notifications = []
+        valid_notifications: list[dict[str, Any]] = []
         for notification in notifications:
             notification_data = notification.__dict__
             expirationTime = datetime.datetime.fromtimestamp(notification.expirationTime / 1000)
@@ -55,8 +57,8 @@ def get_notifications(request):
         return {"notifications": json.dumps([])}
 
 
-def user_session_data(request):
-    data = {}
+def user_session_data(request: HttpRequest) -> dict[str, str]:
+    data: dict[str, Any] = {}
     if request.user.is_authenticated:
         data["username"] = request.user.username
         data["airavataInternalUserId"] = request.user.username + "@" + settings.GATEWAY_ID
@@ -65,9 +67,9 @@ def user_session_data(request):
     return {"user_session_data": json.dumps(data)}
 
 
-def airavata_app_registry(request):
+def airavata_app_registry(request: HttpRequest) -> dict[str, Any]:
     """Put airavata django apps into the context."""
-    airavata_apps = [
+    airavata_apps: list[AiravataAppConfig] = [
         app
         for app in apps.get_app_configs()
         if isinstance(app, AiravataAppConfig)
@@ -85,14 +87,14 @@ def airavata_app_registry(request):
     }
 
 
-def _get_current_app(request, apps):
+def _get_current_app(request: HttpRequest, apps: list[AiravataAppConfig]) -> AiravataAppConfig | None:
     current_app = [
         app for app in apps if request.resolver_match and app.url_app_name == request.resolver_match.app_name
     ]
     return current_app[0] if len(current_app) > 0 else None
 
 
-def _get_app_nav(request, current_app):
+def _get_app_nav(request: HttpRequest, current_app: AiravataAppConfig) -> list[dict[str, Any]]:
     if hasattr(current_app, "nav"):
         # Copy and filter current_app's nav items
         nav = [item for item in copy.copy(current_app.nav) if "enabled" not in item or item["enabled"](request)]
@@ -116,6 +118,6 @@ def _get_app_nav(request, current_app):
     return nav
 
 
-def google_analytics_tracking_id(request):
+def google_analytics_tracking_id(request: HttpRequest) -> dict[str, str | None]:
     """Put the Google Analytics tracking id into context."""
     return {"ga_tracking_id": getattr(settings, "GOOGLE_ANALYTICS_TRACKING_ID", None)}
