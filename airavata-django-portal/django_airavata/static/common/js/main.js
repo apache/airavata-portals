@@ -1,17 +1,15 @@
-import bootstrap from "bootstrap"; // eslint-disable-line no-unused-vars
-import $ from "jquery";
-
-// Expose jQuery on the global object
-window.$ = window.jQuery = $;
+import * as bootstrap from "bootstrap";
 
 import "bootstrap/dist/css/bootstrap.css";
 import "@fortawesome/fontawesome-free/css/all.css";
 import "../scss/main.scss";
-$(function () {
-  $('[data-toggle="tooltip"]').tooltip();
-});
 
-// CMS integration
-// $('.carousel').carousel({
-//   interval: 2000
-// })
+// Initialize Bootstrap tooltips
+document.addEventListener("DOMContentLoaded", () => {
+  const tooltipTriggerList = document.querySelectorAll(
+    '[data-bs-toggle="tooltip"]'
+  );
+  tooltipTriggerList.forEach(
+    (tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl)
+  );
+});

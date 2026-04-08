@@ -1,33 +1,18 @@
 
-import Vue from "vue";
-import { BootstrapVue } from "bootstrap-vue";
-import AsyncComputed from "vue-async-computed";
 import { utils } from "django-airavata-common-ui";
 import store from "../store";
-Vue.use(BootstrapVue);
-Vue.use(AsyncComputed);
 
 export default {
   props: {
-    value: String,
+    modelValue: String,
     name: String,
   },
-  store: store,
-  mounted() {
-    this.$nextTick(() => {
-      for (const key of Object.keys(this.$props)) {
-        // workaround for issues around setting props before WC connected,
-        // see https://github.com/vuejs/vue-web-component-wrapper/pull/81
-
-        // copy properties set on host element to wrapper component
-        // (mostly this is done so that the options array can be set by client code)
-        this.$parent.props[key] = this.$el.getRootNode().host[key];
-      }
-    })
-  },
+  emits: ["update:modelValue"],
+  // TODO: web components need Vue 3 defineCustomElement migration
+  // store: store,
   data() {
     return {
-      data: this.value,
+      data: this.modelValue,
     };
   },
   computed: {
@@ -45,6 +30,7 @@ export default {
     valueChanged(value) {
       if (value !== this.data) {
         this.data = value;
+        this.$emit("update:modelValue", this.data);
         const inputEvent = new CustomEvent("input", {
           detail: [this.data],
           composed: true,
@@ -55,7 +41,7 @@ export default {
     },
   },
   watch: {
-    value(value) {
+    modelValue(value) {
       this.data = value;
     },
   },

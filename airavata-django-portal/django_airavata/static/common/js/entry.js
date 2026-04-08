@@ -1,25 +1,21 @@
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
+import { createApp as vueCreateApp } from "vue";
 import GlobalErrorHandler from "./errors/GlobalErrorHandler";
-import AsyncComputed from "vue-async-computed";
 
 GlobalErrorHandler.init();
 
-// This is imported globally on the website (see main.js) so no need to include
-// it again in this view
-// import 'bootstrap/dist/css/bootstrap.css'
-import "bootstrap-vue/dist/bootstrap-vue.css";
-
 /**
  * Common entry point function. Sets up common entry point functionality and
- * then calls the passed function with the Vue class as the first argument.
+ * then calls the passed function with a createApp factory that auto-installs
+ * the global error handler.
  *
- * @param {Function} entryPointFunction
+ * @param {Function} entryPointFunction - receives { createApp }
  */
 export default function entry(entryPointFunction) {
-  // Common Vue configuration
-  Vue.use(BootstrapVue);
-  Vue.use(AsyncComputed)
+  function createApp(options) {
+    const app = vueCreateApp(options);
+    GlobalErrorHandler.installVueErrorHandler(app);
+    return app;
+  }
 
-  entryPointFunction(Vue);
+  entryPointFunction({ createApp });
 }

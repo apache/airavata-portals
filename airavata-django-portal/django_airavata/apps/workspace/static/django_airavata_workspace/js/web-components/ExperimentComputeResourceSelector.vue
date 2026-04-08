@@ -4,7 +4,7 @@
       :value="resourceHostId"
       :disabled="disabled"
       :includedComputeResources="computeResources"
-      @input.native.stop="computeResourceChanged"
+      @input.stop="computeResourceChanged"
     />
   </div>
 </template>

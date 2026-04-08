@@ -4,7 +4,7 @@
 import { models } from "django-airavata-api";
 export default {
   props: {
-    value: {
+    modelValue: {
       type: String,
     },
     experimentInput: {
@@ -24,50 +24,18 @@ export default {
       default: false,
     },
   },
+  emits: ["update:modelValue", "valid", "invalid"],
   data() {
     return {
-      data: this.value,
+      data: this.modelValue,
       inputHasBegun: false,
+      // TODO: asyncComputed removed in Vue 3 - these need to be converted to
+      // watch + async methods or composables
+      validationResults: { value: [] },
+      validationMessages: [],
+      valid: false,
+      componentValidState: null,
     };
-  },
-  asyncComputed: {
-    validationResults: {
-      get () {
-        let results = this.experimentInput.validate(this.data);
-        let value = []
-        if ("value" in results) {
-          value = Promise.all(results["value"]).then(
-            arr => arr.filter(x => x !== null)
-          )
-        }
-        return {
-          "value": value
-        };
-      },
-      default () {
-        return {
-          "value": []
-        }
-      }
-    },
-    validationMessages: function () {
-      return "value" in this.validationResults
-        ? this.validationResults["value"]
-        : [];
-    },
-    valid: function () {
-      if (this.validationMessages)
-        return this.validationMessages.length === 0;
-      else
-        return false;
-    },
-    componentValidState: function () {
-      if (this.inputHasBegun) {
-        return this.valid;
-      } else {
-        return null;
-      }
-    },
   },
   computed: {
     editorConfig: function () {
@@ -77,7 +45,7 @@ export default {
   methods: {
     valueChanged: function () {
       this.inputHasBegun = true;
-      this.$emit("input", this.data);
+      this.$emit("update:modelValue", this.data);
     },
     checkValidation: function () {
       if (this.valid) {
@@ -86,19 +54,30 @@ export default {
         this.$emit("invalid", this.validationMessages);
       }
     },
+    async updateValidation() {
+      const results = this.experimentInput.validate(this.data);
+      let value = [];
+      if ("value" in results) {
+        value = await Promise.all(results["value"]).then((arr) =>
+          arr.filter((x) => x !== null)
+        );
+      }
+      this.validationResults = { value };
+      this.validationMessages = value;
+      this.valid = this.validationMessages.length === 0;
+      this.componentValidState = this.inputHasBegun ? this.valid : null;
+      this.checkValidation();
+    },
   },
   created: function () {
-    this.checkValidation();
+    this.updateValidation();
   },
   watch: {
-    value(newValue) {
+    modelValue(newValue) {
       this.data = newValue;
     },
-    valid() {
-      this.checkValidation();
+    data() {
+      this.updateValidation();
     },
-    validationMessages() {
-      this.checkValidation();
-    }
   },
 };

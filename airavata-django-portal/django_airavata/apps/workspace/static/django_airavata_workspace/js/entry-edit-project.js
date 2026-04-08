@@ -1,21 +1,9 @@
+import { h } from "vue";
 import { components, entry } from "django-airavata-common-ui";
 import EditProjectContainer from "./containers/EditProjectContainer.vue";
 
-// Expect a template with id "edit-project" and project-id data attribute
-//
-//   <div id="edit-project" data-project-id="..projectID.."/>
-
-entry((Vue) => {
-  new Vue({
-    render(h) {
-      return h(components.MainLayout, [
-        h(EditProjectContainer, {
-          props: {
-            projectId: this.projectId,
-          },
-        }),
-      ]);
-    },
+entry(({ createApp }) => {
+  const app = createApp({
     data() {
       return {
         projectId: null,
@@ -24,5 +12,14 @@ entry((Vue) => {
     beforeMount() {
       this.projectId = this.$el.dataset.projectId;
     },
-  }).$mount("#edit-project");
+    render() {
+      return h(components.MainLayout, null, {
+        default: () =>
+          h(EditProjectContainer, {
+            projectId: this.projectId,
+          }),
+      });
+    },
+  });
+  app.mount("#edit-project");
 });

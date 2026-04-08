@@ -1,25 +1,32 @@
+import { h } from "vue";
 import { components, entry } from "django-airavata-common-ui";
-import VueResource from "vue-resource";
-import VueRouter from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 import VueFlatPickr from "vue-flatpickr-component";
 import App from "./App.vue";
-import router from "./router";
-
-import "flatpickr/dist/flatpickr.css";
+import { routes } from "./router";
 import createStore from "./store";
 
-entry((Vue) => {
-  Vue.config.productionTip = false;
+import "flatpickr/dist/flatpickr.css";
 
-  Vue.use(VueResource);
-  Vue.use(VueRouter);
-  Vue.use(VueFlatPickr);
+entry(({ createApp }) => {
+  const router = createRouter({
+    history: createWebHistory("/admin/"),
+    routes,
+  });
 
-  const store = createStore(Vue);
+  const store = createStore();
 
-  new Vue({
-    store,
-    render: (h) => h(components.MainLayout, [h(App)]),
-    router,
-  }).$mount("#app");
+  const app = createApp({
+    render() {
+      return h(components.MainLayout, null, {
+        default: () => h(App),
+      });
+    },
+  });
+
+  app.use(router);
+  app.use(store);
+  app.use(VueFlatPickr);
+
+  app.mount("#app");
 });

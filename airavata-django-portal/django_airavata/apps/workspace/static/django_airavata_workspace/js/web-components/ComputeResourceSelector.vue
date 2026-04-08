@@ -6,7 +6,7 @@
       :options="computeResourceOptions"
       required
       @input="computeResourceChanged"
-      @input.native.stop
+      @input.stop
       :disabled="disabled || computeResourceOptions.length === 0"
     >
       <template slot="first">
