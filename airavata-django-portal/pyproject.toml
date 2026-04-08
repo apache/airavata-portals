@@ -40,6 +40,11 @@ dependencies = [
     "nbconvert>=7.16",
     "grpcio>=1.70",
     "airavata-python-sdk>=3.0",
+    "django-vite>=3.0",
+    "wagtail-draftail-anchors>=0.5",
+    "wagtailcodeblock>=1.28,<1.29",
+    "setuptools<81",
+    "pytz",
 ]
 
 [project.optional-dependencies]
