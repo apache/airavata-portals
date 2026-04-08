@@ -67,7 +67,7 @@ INSTALLED_APPS = [
     # wagtail third party dependencies
     "modelcluster",
     "taggit",
-    "wagtailfontawesome",
+    # "wagtailfontawesome",  # Removed: incompatible with Wagtail 6
     "wagtail_draftail_anchors",
     "wagtailcodeblock",
     # wagtail custom apps
@@ -593,3 +593,9 @@ _load_dynamic_apps(INSTALLED_APPS, "airavata.djangoapp")
 # Merge DJANGO_VITE settings from custom Django apps
 settings_module = sys.modules[__name__]
 _merge_dynamic_settings(settings_module)
+
+# --- Airavata Server Connection ---
+AIRAVATA_API_HOST = os.environ.get('AIRAVATA_API_HOST', 'localhost')
+AIRAVATA_API_PORT = int(os.environ.get('AIRAVATA_API_PORT', '9090'))
+AIRAVATA_API_SECURE = os.environ.get('AIRAVATA_API_SECURE', 'false').lower() == 'true'
+GATEWAY_ID = os.environ.get('GATEWAY_ID', 'default')
