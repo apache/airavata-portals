@@ -1,6 +1,0 @@
-site_name: Airavata Django Portal SDK
-
-theme: readthedocs
-
-markdown_extensions:
-  - mkautodoc

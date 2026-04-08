@@ -35,7 +35,7 @@ from airavata_django_portal_sdk import (
     experiment_util,
     user_storage
 )
-from airavata_django_portal_sdk import queue_settings_calculators
+from . import queue_settings as queue_settings_calculators
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
@@ -1759,8 +1759,7 @@ class IAMUserViewSet(mixins.RetrieveModelMixin,
                 groups=added_groups,
                 request=self.request)
         for group_id in managed_user_profile['_removed_group_ids']:
-            group_manager_client.removeUsersFromGroup(
-                self.authz_token, [user_id], group_id)
+            sharing_client.remove_users_from_group([user_id], group_id)
 
     def perform_destroy(self, instance):
         iam_admin_client.delete_user(instance['userId'])
@@ -1795,14 +1794,14 @@ class IAMUserViewSet(mixins.RetrieveModelMixin,
         return Response(serializer.data)
 
     def _convert_user_profile(self, user_profile):
-        user_profile_client = self.request.profile_service['user_profile']
-        group_manager_client = self.request.profile_service['group_manager']
-        airavata_user_profile_exists = user_profile_client.doesUserExist(
-            self.authz_token, user_profile.userId, self.gateway_id)
+        iam_client = self.request.airavata_client.iam
+        sharing_client = self.request.airavata_client.sharing
+        airavata_user_profile_exists = iam_client.does_user_exist(
+            user_profile.userId, self.gateway_id)
         groups = []
         if airavata_user_profile_exists:
-            groups = group_manager_client.getAllGroupsUserBelongs(
-                self.authz_token, user_profile.airavataInternalUserId)
+            groups = sharing_client.get_all_groups_user_belongs(
+                user_profile.airavataInternalUserId)
         return {
             'airavataInternalUserId': user_profile.airavataInternalUserId,
             'userId': user_profile.userId,
@@ -1843,8 +1842,8 @@ class ExperimentStatisticsView(APIView):
         limit = int(request.GET.get('limit', '50'))
         offset = int(request.GET.get('offset', '0'))
 
-        statistics = request.airavata_client.getExperimentStatistics(
-            request.authz_token, settings.GATEWAY_ID, from_time, to_time,
+        statistics = request.airavata_client.research.get_experiment_statistics(
+            settings.GATEWAY_ID, from_time, to_time,
             username, application_name, resource_hostname, limit, offset)
         serializer = self.serializer_class(statistics, context={'request': request})
 
@@ -1961,7 +1960,7 @@ class APIServerStatusCheckView(APIView):
 
     def get(self, request, format=None):
         try:
-            request.airavata_client.getUserProjects(request.authz_token,
+            request.airavata_client.research.get_user_projects(
                                                     settings.GATEWAY_ID,
                                                     request.user.username,
                                                     1,  # limit

@@ -65,7 +65,9 @@ class GenericAPIBackedViewSet(GenericViewSet):
 
     @property
     def authz_token(self):
-        return self.request.authz_token
+        # Deprecated: SDK facade handles auth internally.
+        # Kept for backward compatibility with code that references self.authz_token.
+        return getattr(self.request, 'authz_token', None)
 
 
 class ReadOnlyAPIBackedViewSet(mixins.RetrieveModelMixin,

@@ -1,18 +1,13 @@
 import logging
 import sys
 
-from airavata.api.error.ttypes import (
-    AuthorizationException,
-    ExperimentNotFoundException
-)
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
-from thrift.Thrift import TException
-from thrift.transport import TTransport
+from grpc import RpcError, StatusCode
 
 log = logging.getLogger(__name__)
 
@@ -22,31 +17,28 @@ def custom_exception_handler(exc, context):
     # to get the standard error response.
     response = exception_handler(exc, context)
 
-    if isinstance(exc, AuthorizationException):
-        log.warning("AuthorizationException", exc_info=exc)
-        return Response(
-            {'detail': str(exc)},
-            status=status.HTTP_403_FORBIDDEN)
-
-    if isinstance(exc, ExperimentNotFoundException):
-        log.warning("ExperimentNotFoundException", exc_info=exc)
-        return Response(
-            {'detail': str(exc)},
-            status=status.HTTP_404_NOT_FOUND)
-
-    if isinstance(exc, TTransport.TTransportException):
-        log.warning("TTransportException", exc_info=exc)
-        return Response(
-            {'detail': str(exc), 'apiServerDown': True},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # Default TException handler, should come after more specific subclasses of
-    # TException
-    if isinstance(exc, TException):
-        log.error("TException", exc_info=exc, extra={'request': context['request']})
-        return Response(
-            {'detail': str(exc)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if isinstance(exc, RpcError):
+        code = exc.code() if hasattr(exc, 'code') else None
+        if code == StatusCode.PERMISSION_DENIED:
+            log.warning("gRPC PermissionDenied", exc_info=exc)
+            return Response(
+                {'detail': str(exc)},
+                status=status.HTTP_403_FORBIDDEN)
+        elif code == StatusCode.NOT_FOUND:
+            log.warning("gRPC NotFound", exc_info=exc)
+            return Response(
+                {'detail': str(exc)},
+                status=status.HTTP_404_NOT_FOUND)
+        elif code == StatusCode.UNAVAILABLE:
+            log.warning("gRPC Unavailable (API server down)", exc_info=exc)
+            return Response(
+                {'detail': str(exc), 'apiServerDown': True},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            log.error("gRPC error", exc_info=exc, extra={'request': context['request']})
+            return Response(
+                {'detail': str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     if isinstance(exc, ObjectDoesNotExist):
         log.warning("ObjectDoesNotExist", exc_info=exc)

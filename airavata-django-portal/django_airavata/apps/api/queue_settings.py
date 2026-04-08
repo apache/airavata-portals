@@ -1,3 +1,9 @@
+"""
+Queue settings calculators — inlined from airavata_django_portal_sdk.
+
+Provides a registry of queue settings calculator functions that can be
+used to automatically compute batch queue parameters for experiments.
+"""
 from typing import Callable, NamedTuple
 
 QUEUE_SETTINGS_CALCULATORS = []
@@ -12,7 +18,6 @@ class QueueSettingsCalculator(NamedTuple):
 def queue_settings_calculator(_func=None, *, id=None, name=None, **kwargs):
     """Decorator for registering queue settings calculator functions."""
     def decorator(func):
-        # Register decorator
         name_ = name
         if name_ is None:
             name_ = func.__name__
