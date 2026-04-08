@@ -32,8 +32,7 @@ urlpatterns = [
     re_path(r'^api/', include('django_airavata.apps.api.urls')),
     re_path(r'^groups/', include('django_airavata.apps.groups.urls')),
     re_path(r'^dataparsers/', include('django_airavata.apps.dataparsers.urls')),
-    path('sdk/', include('airavata_django_portal_sdk.urls')),
-    re_path(r'^home$', views.home, name='home'),
+re_path(r'^home$', views.home, name='home'),
     re_path(r'^cms/', include(wagtailadmin_urls)),
     re_path(r'^documents/', include(wagtaildocs_urls)),
     # For testing, developing error pages
@@ -41,7 +40,7 @@ urlpatterns = [
     re_path(r'^403/', views.error403),
     re_path(r'^404/', views.error404),
     re_path(r'^500/', views.error500),
-    path('', include('airavata_django_portal_commons.dynamic_apps.urls')),
+    path('', include('django_airavata.dynamic_apps.urls')),
     path('', include(wagtail_urls)),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

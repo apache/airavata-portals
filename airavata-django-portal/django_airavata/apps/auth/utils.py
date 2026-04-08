@@ -2,7 +2,6 @@
 
 import time
 
-from airavata.model.security.ttypes import AuthzToken
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.mail import EmailMessage
@@ -15,7 +14,13 @@ from . import models
 
 
 def get_authz_token(request, user=None, access_token=None):
-    """Construct AuthzToken instance from session; refresh token if needed."""
+    """Get an access token dict from session; refresh token if needed.
+
+    Returns a dict with 'accessToken', 'gatewayID', and 'userName' for
+    backwards compatibility with code that reads these fields. The SDK
+    handles auth via gRPC metadata, so this is mainly used for checking
+    whether the user is still authenticated.
+    """
     if access_token is not None:
         return _create_authz_token(request, user=user, access_token=access_token)
     elif is_request_access_token(request):
@@ -48,10 +53,10 @@ def get_service_account_authz_token():
         verify=verify)
 
     access_token = token.get('access_token')
-    return AuthzToken(
-        accessToken=access_token,
-        # This is a service account, so leaving out userName for now
-        claimsMap={'gatewayID': settings.GATEWAY_ID})
+    return {
+        'accessToken': access_token,
+        'claimsMap': {'gatewayID': settings.GATEWAY_ID},
+    }
 
 
 def _create_authz_token(request, user=None, access_token=None):
@@ -61,9 +66,10 @@ def _create_authz_token(request, user=None, access_token=None):
         user = request.user
     username = user.username
     gateway_id = settings.GATEWAY_ID
-    return AuthzToken(accessToken=access_token,
-                      claimsMap={'gatewayID': gateway_id,
-                                 'userName': username})
+    return {
+        'accessToken': access_token,
+        'claimsMap': {'gatewayID': gateway_id, 'userName': username},
+    }
 
 
 def _get_access_token_source(request):

@@ -13,7 +13,8 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 import os
 import sys
 
-from airavata_django_portal_commons import dynamic_apps
+from django_airavata.dynamic_apps import load as _load_dynamic_apps
+from django_airavata.dynamic_apps import merge_settings as _merge_dynamic_settings
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -77,8 +78,6 @@ INSTALLED_APPS = [
     # django-webpack-loader
     'webpack_loader',
 
-    # Airavata Django Portal SDK
-    'airavata_django_portal_sdk',
 ]
 
 # List of app labels for Airavata apps that should be hidden from menus
@@ -95,9 +94,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_airavata.apps.auth.middleware.authz_token_middleware',
     'django_airavata.middleware.AiravataClientMiddleware',
-    'django_airavata.middleware.profile_service_client',
-    # Needs to come after authz_token_middleware, airavata_client and
-    # profile_service_client
+    # Needs to come after authz_token_middleware and AiravataClientMiddleware
     'django_airavata.apps.auth.middleware.gateway_groups_middleware',
     # Wagtail related middleware
     'wagtail.contrib.redirects.middleware.RedirectMiddleware',
@@ -118,7 +115,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django_airavata.context_processors.airavata_app_registry',
-                'airavata_django_portal_commons.dynamic_apps.context_processors.custom_app_registry',
+                'django_airavata.dynamic_apps.context_processors.custom_app_registry',
                 'django_airavata.context_processors.get_notifications',
                 'django_airavata.context_processors.user_session_data',
                 'django_airavata.context_processors.google_analytics_tracking_id',
@@ -277,10 +274,6 @@ AUTHENTICATION_OPTIONS = {
 # for the access token parameter (defaults to 'access_token').
 ACCESS_TOKEN_REDIRECT_ALLOWED_URIS = []
 
-# Seconds each connection in the pool is able to stay alive. If open connection
-# has lived longer than this period, it will be closed.
-# (https://github.com/Thriftpy/thrift_connector)
-THRIFT_CLIENT_POOL_KEEPALIVE = 5
 
 # Webpack loader
 WEBPACK_LOADER = {
@@ -636,8 +629,8 @@ except ImportError:
 #        ...
 #    )
 #
-dynamic_apps.load(INSTALLED_APPS, "airavata.djangoapp")
+_load_dynamic_apps(INSTALLED_APPS, "airavata.djangoapp")
 
 # Merge WEBPACK_LOADER settings from custom Django apps
 settings_module = sys.modules[__name__]
-dynamic_apps.merge_settings(settings_module)
+_merge_dynamic_settings(settings_module)
