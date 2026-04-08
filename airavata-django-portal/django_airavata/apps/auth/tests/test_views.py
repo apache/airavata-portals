@@ -7,7 +7,7 @@ from django.contrib.messages.middleware import MessageMiddleware
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.core import mail
 from django.http import HttpResponseRedirect
-from django.shortcuts import reverse
+from django.urls import reverse
 from django.test import RequestFactory, TestCase, override_settings
 
 from django_airavata.apps.auth import models, views

@@ -3,11 +3,11 @@ import logging
 from django.conf import settings
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
-from django.shortcuts import reverse
+from django.urls import reverse
 from django.template import Context
 
 from django_airavata.apps.api.signals import user_added_to_group
-from django_airavata.utils import user_profile_client_pool
+from django_airavata.utils import create_airavata_client
 
 from . import models, utils
 
@@ -39,9 +39,10 @@ def initialize_user_profile(sender, request, user, **kwargs):
     # following is necessary for users coming from federated login who don't
     # need to verify their email.
     if request.authz_token is not None:
-        if not user_profile_client_pool.doesUserExist(request.authz_token, user.username, settings.GATEWAY_ID):
+        iam_client = create_airavata_client(request.authz_token["accessToken"], settings.GATEWAY_ID).iam
+        if not iam_client.does_user_exist(user.username, settings.GATEWAY_ID):
             if user.user_profile.is_complete:
-                user_profile_client_pool.initializeUserProfile(request.authz_token)
+                iam_client.initialize_user_profile()
                 log.info(f"initialized user profile for {user.username}")
                 # Since user profile created, inform admins of new user
                 utils.send_new_user_email(request, user.username, user.email, user.first_name, user.last_name)
