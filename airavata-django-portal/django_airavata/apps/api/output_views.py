@@ -7,7 +7,7 @@ from functools import partial
 
 import nbformat
 import papermill as pm
-from airavata.model.application.io.ttypes import DataType
+from django_airavata.proto_compat import DataType
 from airavata_django_portal_sdk import user_storage
 from django.conf import settings
 from nbconvert import HTMLExporter

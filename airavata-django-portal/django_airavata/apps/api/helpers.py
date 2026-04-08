@@ -1,6 +1,6 @@
 import logging
 
-from airavata.model.group.ttypes import ResourcePermissionType
+from django_airavata.proto_compat import ResourcePermissionType
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 

@@ -5,32 +5,29 @@ import os
 import warnings
 from datetime import datetime, timedelta
 
-# TODO: verify proto import paths once SDK generated stubs are finalized
-from airavata.model.appcatalog.computeresource.ttypes import (
+from django_airavata.proto_compat import (
+    BatchQueueResourcePolicy,
     CloudJobSubmission,
-    GlobusJobSubmission,
-    LOCALSubmission,
-    SSHJobSubmission,
-    UnicoreJobSubmission
-)
-from airavata.model.application.io.ttypes import DataType
-from airavata.model.credential.store.ttypes import SummaryType
-from airavata.model.data.movement.ttypes import (
-    GridFTPDataMovement,
-    LOCALDataMovement,
-    SCPDataMovement,
-    UnicoreDataMovement
-)
-from airavata.model.experiment.ttypes import (
+    ComputeResourcePolicy,
+    ComputeResourceReservation,
+    DataType,
     ExperimentModel,
-    ExperimentSearchFields
-)
-from airavata.model.appcatalog.groupresourceprofile.ttypes import (
+    ExperimentSearchFields,
+    GlobusJobSubmission,
+    GridFTPDataMovement,
+    GroupAccountSSHProvisionerConfig,
     GroupComputeResourcePreference,
-    ResourceType
+    LOCALDataMovement,
+    LOCALSubmission,
+    ResourcePermissionType,
+    ResourceType,
+    SCPDataMovement,
+    SSHJobSubmission,
+    Status,
+    SummaryType,
+    UnicoreDataMovement,
+    UnicoreJobSubmission,
 )
-from airavata.model.group.ttypes import ResourcePermissionType
-from airavata.model.user.ttypes import Status
 from airavata_django_portal_sdk import (
     experiment_util,
     user_storage
@@ -691,9 +688,9 @@ class LocalJobSubmissionView(APIView):
         job_submission_id = request.query_params["id"]
         local_job_submission = request.airavata_client.compute.get_local_job_submission(
             job_submission_id)
-        from . import thrift_utils
+        from . import proto_utils
         return Response(
-            thrift_utils.create_serializer(
+            proto_utils.create_serializer(
                 LOCALSubmission,
                 instance=local_job_submission).data)
 
@@ -705,9 +702,9 @@ class CloudJobSubmissionView(APIView):
         job_submission_id = request.query_params["id"]
         job_submission = request.airavata_client.compute.get_cloud_job_submission(
             job_submission_id)
-        from . import thrift_utils
+        from . import proto_utils
         return Response(
-            thrift_utils.create_serializer(
+            proto_utils.create_serializer(
                 CloudJobSubmission,
                 instance=job_submission).data)
 
@@ -719,9 +716,9 @@ class GlobusJobSubmissionView(APIView):
         job_submission_id = request.query_params["id"]
         job_submission = request.airavata_client.compute.get_globus_job_submission(
             job_submission_id)
-        from . import thrift_utils
+        from . import proto_utils
         return Response(
-            thrift_utils.create_serializer(
+            proto_utils.create_serializer(
                 GlobusJobSubmission,
                 instance=job_submission).data)
 
@@ -733,9 +730,9 @@ class SshJobSubmissionView(APIView):
         job_submission_id = request.query_params["id"]
         job_submission = request.airavata_client.compute.get_ssh_job_submission(
             job_submission_id)
-        from . import thrift_utils
+        from . import proto_utils
         return Response(
-            thrift_utils.create_serializer(
+            proto_utils.create_serializer(
                 SSHJobSubmission,
                 instance=job_submission).data)
 
@@ -747,9 +744,9 @@ class UnicoreJobSubmissionView(APIView):
         job_submission_id = request.query_params["id"]
         job_submission = request.airavata_client.compute.get_unicore_job_submission(
             job_submission_id)
-        from . import thrift_utils
+        from . import proto_utils
         return Response(
-            thrift_utils.create_serializer(
+            proto_utils.create_serializer(
                 UnicoreJobSubmission,
                 instance=job_submission).data)
 
@@ -761,9 +758,9 @@ class GridFtpDataMovementView(APIView):
         data_movement_id = request.query_params["id"]
         data_movement = request.airavata_client.compute.get_grid_ftp_data_movement(
             data_movement_id)
-        from . import thrift_utils
+        from . import proto_utils
         return Response(
-            thrift_utils.create_serializer(
+            proto_utils.create_serializer(
                 GridFTPDataMovement,
                 instance=data_movement).data)
 
@@ -775,9 +772,9 @@ class ScpDataMovementView(APIView):
         data_movement_id = request.query_params["id"]
         data_movement = request.airavata_client.compute.get_scp_data_movement(
             data_movement_id)
-        from . import thrift_utils
+        from . import proto_utils
         return Response(
-            thrift_utils.create_serializer(
+            proto_utils.create_serializer(
                 SCPDataMovement,
                 instance=data_movement).data)
 
@@ -789,9 +786,9 @@ class UnicoreDataMovementView(APIView):
         data_movement_id = request.query_params["id"]
         data_movement = request.airavata_client.compute.get_unicore_data_movement(
             data_movement_id)
-        from . import thrift_utils
+        from . import proto_utils
         return Response(
-            thrift_utils.create_serializer(
+            proto_utils.create_serializer(
                 UnicoreDataMovement,
                 instance=data_movement).data)
 
@@ -803,9 +800,9 @@ class LocalDataMovementView(APIView):
         data_movement_id = request.query_params["id"]
         data_movement = request.airavata_client.compute.get_local_data_movement(
             data_movement_id)
-        from . import thrift_utils
+        from . import proto_utils
         return Response(
-            thrift_utils.create_serializer(
+            proto_utils.create_serializer(
                 LOCALDataMovement,
                 instance=data_movement).data)
 
@@ -998,10 +995,6 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
                             )
 
         from collections import OrderedDict
-        from airavata.model.appcatalog.groupresourceprofile.ttypes import (
-            ComputeResourcePolicy,
-            BatchQueueResourcePolicy
-        )
 
         if hasattr(grp, 'computeResourcePolicies') and grp.computeResourcePolicies:
             existing_policies_by_resource_id = {}
@@ -1101,12 +1094,10 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
                             if hasattr(pref.specificPreferences.slurm, 'reservations') and pref.specificPreferences.slurm.reservations:
                                 for res_idx, res in enumerate(pref.specificPreferences.slurm.reservations):
                                     if isinstance(res, (dict, OrderedDict)):
-                                        from airavata.model.appcatalog.groupresourceprofile.ttypes import ComputeResourceReservation
                                         pref.specificPreferences.slurm.reservations[res_idx] = ComputeResourceReservation(**res)
                             if hasattr(pref.specificPreferences.slurm, 'groupSSHAccountProvisionerConfigs') and pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs:
                                 for cfg_idx, cfg in enumerate(pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs):
                                     if isinstance(cfg, (dict, OrderedDict)):
-                                        from airavata.model.appcatalog.groupresourceprofile.ttypes import GroupAccountSSHProvisionerConfig
                                         pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs[cfg_idx] = GroupAccountSSHProvisionerConfig(**cfg)
 
         self.request.airavata_client.compute.update_group_resource_profile(grp)

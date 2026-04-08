@@ -4,66 +4,46 @@ import json
 import logging
 from pathlib import Path
 from urllib.parse import quote
-from airavata.model.application.io.ttypes import DataType
-
-from airavata.model.appcatalog.appdeployment.ttypes import (
+from django_airavata.proto_compat import (
     ApplicationDeploymentDescription,
+    ApplicationInterfaceDescription,
     ApplicationModule,
-    CommandObject,
-    SetEnvPaths
-)
-from airavata.model.appcatalog.appinterface.ttypes import (
-    ApplicationInterfaceDescription
-)
-from airavata.model.appcatalog.computeresource.ttypes import (
+    AwsComputeResourcePreference,
     BatchQueue,
-    ComputeResourceDescription
-)
-from airavata.model.appcatalog.gatewayprofile.ttypes import (
-    GatewayResourceProfile,
-    StoragePreference
-)
-from airavata.model.appcatalog.groupresourceprofile.ttypes import (
+    CommandObject,
+    ComputeResourceDescription,
     ComputeResourceReservation,
-    GroupComputeResourcePreference,
-    GroupResourceProfile,
-    ResourceType,
-    SlurmComputeResourcePreference,
-    AwsComputeResourcePreference
-)
-from airavata.model.appcatalog.parser.ttypes import Parser
-from airavata.model.appcatalog.storageresource.ttypes import (
-    StorageResourceDescription
-)
-from airavata.model.application.io.ttypes import (
-    InputDataObjectType,
-    OutputDataObjectType
-)
-from airavata.model.credential.store.ttypes import (
     CredentialSummary,
-    SummaryType
-)
-from airavata.model.data.replica.ttypes import (
     DataProductModel,
-    DataReplicaLocationModel
-)
-from airavata.model.experiment.ttypes import (
+    DataReplicaLocationModel,
+    DataType,
+    EnvironmentSpecificPreferences,
     ExperimentModel,
-    ExperimentStatistics,
-    ExperimentSummaryModel
-)
-from airavata.model.group.ttypes import GroupModel, ResourcePermissionType
-from airavata.model.job.ttypes import JobModel
-from airavata.model.status.ttypes import (
     ExperimentState,
+    ExperimentStatistics,
     ExperimentStatus,
-    ProcessStatus
-)
-from airavata.model.user.ttypes import UserProfile
-from airavata.model.workspace.ttypes import (
+    ExperimentSummaryModel,
+    GatewayResourceProfile,
+    GroupAccountSSHProvisionerConfig,
+    GroupComputeResourcePreference,
+    GroupModel,
+    GroupResourceProfile,
+    InputDataObjectType,
+    JobModel,
     Notification,
     NotificationPriority,
-    Project
+    OutputDataObjectType,
+    Parser,
+    ProcessStatus,
+    Project,
+    ResourcePermissionType,
+    ResourceType,
+    SetEnvPaths,
+    SlurmComputeResourcePreference,
+    StoragePreference,
+    StorageResourceDescription,
+    SummaryType,
+    UserProfile,
 )
 from airavata_django_portal_sdk import (
     experiment_util,
@@ -74,7 +54,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import serializers
 
-from . import models, thrift_utils, view_utils
+from . import models, proto_utils, view_utils
 
 log = logging.getLogger(__name__)
 
@@ -168,7 +148,7 @@ class OrderedListField(serializers.ListField):
         return validated_data
 
 
-class GroupSerializer(thrift_utils.create_serializer_class(GroupModel)):
+class GroupSerializer(proto_utils.create_serializer_class(GroupModel)):
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:group-detail',
         lookup_field='id',
@@ -252,7 +232,7 @@ class GroupSerializer(thrift_utils.create_serializer_class(GroupModel)):
 
 
 class ProjectSerializer(
-        thrift_utils.create_serializer_class(Project)):
+        proto_utils.create_serializer_class(Project)):
     class Meta:
         required = ('name',)
         read_only = ('owner', 'gatewayId')
@@ -290,7 +270,7 @@ class ProjectSerializer(
 
 
 class ApplicationModuleSerializer(
-        thrift_utils.create_serializer_class(ApplicationModule)):
+        proto_utils.create_serializer_class(ApplicationModule)):
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:application-detail',
         lookup_field='appModuleId',
@@ -452,17 +432,17 @@ class ApplicationInterfaceDescriptionSerializer(serializers.Serializer):
 
 
 class CommandObjectSerializer(
-        thrift_utils.create_serializer_class(CommandObject)):
+        proto_utils.create_serializer_class(CommandObject)):
     pass
 
 
 class SetEnvPathsSerializer(
-        thrift_utils.create_serializer_class(SetEnvPaths)):
+        proto_utils.create_serializer_class(SetEnvPaths)):
     pass
 
 
 class ApplicationDeploymentDescriptionSerializer(
-    thrift_utils.create_serializer_class(
+    proto_utils.create_serializer_class(
         ApplicationDeploymentDescription)):
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:application-deployment-detail',
@@ -508,26 +488,26 @@ class ApplicationDeploymentDescriptionSerializer(
 
 
 class ComputeResourceDescriptionSerializer(
-        thrift_utils.create_serializer_class(ComputeResourceDescription)):
+        proto_utils.create_serializer_class(ComputeResourceDescription)):
     pass
 
 
-class BatchQueueSerializer(thrift_utils.create_serializer_class(BatchQueue)):
+class BatchQueueSerializer(proto_utils.create_serializer_class(BatchQueue)):
     pass
 
 
 class ExperimentStatusSerializer(
-        thrift_utils.create_serializer_class(ExperimentStatus)):
+        proto_utils.create_serializer_class(ExperimentStatus)):
     timeOfStateChange = UTCPosixTimestampDateTimeField()
 
 
 class ProcessStatusSerializer(
-        thrift_utils.create_serializer_class(ProcessStatus)):
+        proto_utils.create_serializer_class(ProcessStatus)):
     timeOfStateChange = UTCPosixTimestampDateTimeField()
 
 
 class ExperimentSerializer(
-        thrift_utils.create_serializer_class(ExperimentModel)):
+        proto_utils.create_serializer_class(ExperimentModel)):
     class Meta:
         required = ('projectId', 'experimentType', 'experimentName')
         read_only = ('userName', 'gatewayId')
@@ -602,13 +582,13 @@ class ExperimentSerializer(
 
 
 class DataReplicaLocationSerializer(
-        thrift_utils.create_serializer_class(DataReplicaLocationModel)):
+        proto_utils.create_serializer_class(DataReplicaLocationModel)):
     creationTime = UTCPosixTimestampDateTimeField()
     lastModifiedTime = UTCPosixTimestampDateTimeField()
 
 
 class DataProductSerializer(
-        thrift_utils.create_serializer_class(DataProductModel)):
+        proto_utils.create_serializer_class(DataProductModel)):
     creationTime = UTCPosixTimestampDateTimeField()
     modifiedTime = UTCPosixTimestampDateTimeField()
     lastModifiedTime = UTCPosixTimestampDateTimeField()
@@ -676,7 +656,7 @@ class FullExperiment:
         self.outputViews = outputViews
 
 
-class JobSerializer(thrift_utils.create_serializer_class(JobModel)):
+class JobSerializer(proto_utils.create_serializer_class(JobModel)):
     creationTime = UTCPosixTimestampDateTimeField()
 
 
@@ -703,7 +683,7 @@ class FullExperimentSerializer(serializers.Serializer):
 
 
 class BaseExperimentSummarySerializer(
-        thrift_utils.create_serializer_class(ExperimentSummaryModel)):
+        proto_utils.create_serializer_class(ExperimentSummaryModel)):
     creationTime = UTCPosixTimestampDateTimeField()
     statusUpdateTime = UTCPosixTimestampDateTimeField()
     url = FullyEncodedHyperlinkedIdentityField(
@@ -727,19 +707,19 @@ class ExperimentSummarySerializer(BaseExperimentSummarySerializer):
 
 
 class UserProfileSerializer(
-        thrift_utils.create_serializer_class(UserProfile)):
+        proto_utils.create_serializer_class(UserProfile)):
     creationTime = UTCPosixTimestampDateTimeField()
     lastAccessTime = UTCPosixTimestampDateTimeField()
 
 
 class ComputeResourceReservationSerializer(
-        thrift_utils.create_serializer_class(ComputeResourceReservation)):
+        proto_utils.create_serializer_class(ComputeResourceReservation)):
     startTime = UTCPosixTimestampDateTimeField(allow_null=True)
     endTime = UTCPosixTimestampDateTimeField(allow_null=True)
 
 
 class GroupComputeResourcePreferenceSerializer(
-        thrift_utils.create_serializer_class(GroupComputeResourcePreference)):
+        proto_utils.create_serializer_class(GroupComputeResourcePreference)):
     reservations = serializers.SerializerMethodField()
 
     # Check if the object (e.g. SLURM type) has the 'reservations' attribute
@@ -754,10 +734,6 @@ class GroupComputeResourcePreferenceSerializer(
     @staticmethod
     def _convert_nested_list_fields_to_thrift(slurm_pref):
         from collections import OrderedDict
-        from airavata.model.appcatalog.groupresourceprofile.ttypes import (
-            ComputeResourceReservation,
-            GroupAccountSSHProvisionerConfig
-        )
 
         if hasattr(slurm_pref, 'reservations') and slurm_pref.reservations:
             if isinstance(slurm_pref.reservations, list):
@@ -789,22 +765,7 @@ class GroupComputeResourcePreferenceSerializer(
         if isinstance(pref_instance.specificPreferences, (dict, OrderedDict)):
             specific_prefs_dict = pref_instance.specificPreferences
 
-            union_type_class = None
-            try:
-                from airavata.model.appcatalog.groupresourceprofile.ttypes import (
-                    EnvironmentSpecificPreferences
-                )
-                union_type_class = EnvironmentSpecificPreferences
-                log.debug(
-                    "GCPreference: Got union type class from import: %s",
-                    union_type_class.__name__,
-                )
-            except ImportError as e:
-                log.error(
-                    "GCPreference: Failed to import EnvironmentSpecificPreferences: %s",
-                    str(e),
-                    exc_info=True,
-                )
+            union_type_class = EnvironmentSpecificPreferences
 
             if union_type_class:
                 pref_instance.specificPreferences = union_type_class()
@@ -818,10 +779,6 @@ class GroupComputeResourcePreferenceSerializer(
                     if slurm_data and isinstance(slurm_data, dict) and len(slurm_data) > 0:
                         try:
                             from collections import OrderedDict
-                            from airavata.model.appcatalog.groupresourceprofile.ttypes import (
-                                ComputeResourceReservation,
-                                GroupAccountSSHProvisionerConfig
-                            )
 
                             if 'reservations' in slurm_data and slurm_data['reservations']:
                                 reservations_list = slurm_data['reservations']
@@ -1060,24 +1017,11 @@ class GroupComputeResourcePreferenceSerializer(
         instance.resourceType = resource_type
 
         union_type_class = None
-        try:
-            from airavata.model.appcatalog.groupresourceprofile.ttypes import (
-                EnvironmentSpecificPreferences
-            )
-            union_type_class = EnvironmentSpecificPreferences
-        except ImportError as e:
-            log.error(
-                "GCPreference create: Failed to import EnvironmentSpecificPreferences: %s",
-                str(e),
-                exc_info=True,
-            )
+        union_type_class = EnvironmentSpecificPreferences
 
         if specific_prefs is None:
             if resource_type == ResourceType.SLURM and slurm_data:
                 from collections import OrderedDict
-                from airavata.model.appcatalog.groupresourceprofile.ttypes import (
-                    GroupAccountSSHProvisionerConfig
-                )
 
                 if 'reservations' in slurm_data and slurm_data['reservations']:
                     reservations_list = slurm_data['reservations']
@@ -1143,9 +1087,6 @@ class GroupComputeResourcePreferenceSerializer(
                 slurm_dict = specific_prefs['slurm'].copy() if isinstance(specific_prefs['slurm'], dict) else {}
                 slurm_dict.update(slurm_data)
                 from collections import OrderedDict
-                from airavata.model.appcatalog.groupresourceprofile.ttypes import (
-                    GroupAccountSSHProvisionerConfig
-                )
 
                 if 'reservations' in slurm_dict and slurm_dict['reservations']:
                     reservations_list = slurm_dict['reservations']
@@ -1180,9 +1121,6 @@ class GroupComputeResourcePreferenceSerializer(
                     instance.specificPreferences.aws = aws_pref
             elif slurm_data:
                 from collections import OrderedDict
-                from airavata.model.appcatalog.groupresourceprofile.ttypes import (
-                    GroupAccountSSHProvisionerConfig
-                )
 
                 if 'reservations' in slurm_data and slurm_data['reservations']:
                     reservations_list = slurm_data['reservations']
@@ -1237,27 +1175,18 @@ class GroupComputeResourcePreferenceSerializer(
 
         if hasattr(instance, 'resourceType') and instance.resourceType:
             if instance.specificPreferences is None:
-                try:
-                    from airavata.model.appcatalog.groupresourceprofile.ttypes import (
-                        EnvironmentSpecificPreferences
-                    )
-                    instance.specificPreferences = EnvironmentSpecificPreferences()
-                    log.debug(
-                        "GCPreference create: Initialized empty specificPreferences union type, computeResourceId=%s",
-                        instance.computeResourceId if hasattr(instance, 'computeResourceId') else 'unknown',
-                    )
-                except ImportError as e:
-                    log.warning(
-                        "GCPreference create: Could not initialize empty specificPreferences: %s",
-                        str(e),
-                    )
+                instance.specificPreferences = EnvironmentSpecificPreferences()
+                log.debug(
+                    "GCPreference create: Initialized empty specificPreferences union type, computeResourceId=%s",
+                    instance.computeResourceId if hasattr(instance, 'computeResourceId') else 'unknown',
+                )
             self._convert_specific_preferences_dict_to_thrift(instance, instance.resourceType)
 
         return instance
 
 
 class GroupResourceProfileSerializer(
-    thrift_utils.create_serializer_class(GroupResourceProfile)):
+    proto_utils.create_serializer_class(GroupResourceProfile)):
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:group-resource-profile-detail',
         lookup_field='groupResourceProfileId',
@@ -1794,8 +1723,8 @@ class SharedEntitySerializer(serializers.Serializer):
 
 
 class CredentialSummarySerializer(
-        thrift_utils.create_serializer_class(CredentialSummary)):
-    type = thrift_utils.ThriftEnumField(SummaryType)
+        proto_utils.create_serializer_class(CredentialSummary)):
+    type = proto_utils.ThriftEnumField(SummaryType)
     persistedTime = UTCPosixTimestampDateTimeField()
     userHasWriteAccess = serializers.SerializerMethodField()
 
@@ -1807,7 +1736,7 @@ class CredentialSummarySerializer(
 
 
 class StoragePreferenceSerializer(
-        thrift_utils.create_serializer_class(StoragePreference)):
+        proto_utils.create_serializer_class(StoragePreference)):
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:storage-preference-detail',
         lookup_field='storageResourceId',
@@ -1822,7 +1751,7 @@ class StoragePreferenceSerializer(
 
 
 class GatewayResourceProfileSerializer(
-        thrift_utils.create_serializer_class(GatewayResourceProfile)):
+        proto_utils.create_serializer_class(GatewayResourceProfile)):
     storagePreferences = StoragePreferenceSerializer(many=True)
     userHasWriteAccess = serializers.SerializerMethodField()
 
@@ -1832,7 +1761,7 @@ class GatewayResourceProfileSerializer(
 
 
 class StorageResourceSerializer(
-        thrift_utils.create_serializer_class(StorageResourceDescription)):
+        proto_utils.create_serializer_class(StorageResourceDescription)):
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:storage-resource-detail',
         lookup_field='storageResourceId',
@@ -1841,7 +1770,7 @@ class StorageResourceSerializer(
     updateTime = UTCPosixTimestampDateTimeField()
 
 
-class ParserSerializer(thrift_utils.create_serializer_class(Parser)):
+class ParserSerializer(proto_utils.create_serializer_class(Parser)):
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:parser-detail',
         lookup_field='id',
@@ -2039,12 +1968,12 @@ class AckNotificationSerializer(serializers.ModelSerializer):
         model = models.User_Notifications
 
 
-class NotificationSerializer(thrift_utils.create_serializer_class(Notification)):
+class NotificationSerializer(proto_utils.create_serializer_class(Notification)):
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:manage-notifications-detail',
         lookup_field='notificationId',
         lookup_url_kwarg='notification_id')
-    priority = thrift_utils.ThriftEnumField(NotificationPriority)
+    priority = proto_utils.ThriftEnumField(NotificationPriority)
     creationTime = UTCPosixTimestampDateTimeField(allow_null=True)
     publishedTime = UTCPosixTimestampDateTimeField()
     expirationTime = UTCPosixTimestampDateTimeField()
@@ -2084,7 +2013,7 @@ class NotificationSerializer(thrift_utils.create_serializer_class(Notification))
 
 
 class ExperimentStatisticsSerializer(
-        thrift_utils.create_serializer_class(ExperimentStatistics)):
+        proto_utils.create_serializer_class(ExperimentStatistics)):
     allExperiments = BaseExperimentSummarySerializer(many=True)
     completedExperiments = BaseExperimentSummarySerializer(many=True)
     failedExperiments = BaseExperimentSummarySerializer(many=True)
