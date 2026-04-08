@@ -173,8 +173,8 @@ def generate_data(request,
                   **kwargs):
     output_view_provider = _get_output_view_provider(output_view_provider_id)
     # TODO if output_view_provider is None, return 404
-    experiment = request.airavata_client.getExperiment(
-        request.authz_token, experiment_id)
+    experiment = request.airavata_client.research.get_experiment(
+        experiment_id)
     experiment_output = [o
                          for o in experiment.experimentOutputs
                          if o.name == experiment_output_name]
@@ -217,8 +217,7 @@ def _generate_data(request,
             experiment_output.value.startswith("airavata-dp")):
         data_product_uris = experiment_output.value.split(",")
         data_products = map(lambda dpid:
-                            request.airavata_client.getDataProduct(request.authz_token,
-                                                                   dpid),
+                            request.airavata_client.research.get_data_product(dpid),
                             data_product_uris)
         for data_product in data_products:
             if user_storage.exists(request, data_product):

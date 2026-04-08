@@ -67,7 +67,6 @@ from airavata.model.workspace.ttypes import (
 )
 from airavata_django_portal_sdk import (
     experiment_util,
-    queue_settings_calculators,
     user_storage
 )
 from django.conf import settings
@@ -218,8 +217,7 @@ class GroupSerializer(thrift_utils.create_serializer_class(GroupModel)):
 
     def get_isAdmin(self, group):
         request = self.context['request']
-        return request.profile_service['group_manager'].hasAdminAccess(
-            request.authz_token,
+        return request.airavata_client.sharing.has_admin_access(
             group.id,
             request.user.username + "@" + settings.GATEWAY_ID)
 
@@ -249,8 +247,7 @@ class GroupSerializer(thrift_utils.create_serializer_class(GroupModel)):
         if 'GATEWAY_GROUPS' in request.session:
             return request.session['GATEWAY_GROUPS']
         else:
-            gateway_groups = request.airavata_client.getGatewayGroups(
-                request.authz_token)
+            gateway_groups = request.airavata_client.iam.get_gateway_groups()
             return copy.deepcopy(gateway_groups.__dict__)
 
 
@@ -283,8 +280,8 @@ class ProjectSerializer(
 
     def get_userHasWriteAccess(self, project):
         request = self.context['request']
-        return request.airavata_client.userHasAccess(
-            request.authz_token, project.projectID,
+        return request.airavata_client.sharing.user_has_access(
+            project.projectID,
             ResourcePermissionType.WRITE)
 
     def get_isOwner(self, project):
@@ -505,8 +502,8 @@ class ApplicationDeploymentDescriptionSerializer(
 
     def get_userHasWriteAccess(self, appDeployment):
         request = self.context['request']
-        return request.airavata_client.userHasAccess(
-            request.authz_token, appDeployment.appDeploymentId,
+        return request.airavata_client.sharing.user_has_access(
+            appDeployment.appDeploymentId,
             ResourcePermissionType.WRITE)
 
 
@@ -568,8 +565,8 @@ class ExperimentSerializer(
 
     def get_userHasWriteAccess(self, experiment):
         request = self.context['request']
-        return request.airavata_client.userHasAccess(
-            request.authz_token, experiment.experimentId,
+        return request.airavata_client.sharing.user_has_access(
+            experiment.experimentId,
             ResourcePermissionType.WRITE)
 
     def to_representation(self, experiment):
@@ -724,8 +721,8 @@ class ExperimentSummarySerializer(BaseExperimentSummarySerializer):
 
     def get_userHasWriteAccess(self, experiment):
         request = self.context['request']
-        return request.airavata_client.userHasAccess(
-            request.authz_token, experiment.experimentId,
+        return request.airavata_client.sharing.user_has_access(
+            experiment.experimentId,
             ResourcePermissionType.WRITE)
 
 
@@ -1622,8 +1619,8 @@ class GroupResourceProfileSerializer(
 
     def get_userHasWriteAccess(self, groupResourceProfile):
         request = self.context['request']
-        write_access = request.airavata_client.userHasAccess(
-            request.authz_token, groupResourceProfile.groupResourceProfileId,
+        write_access = request.airavata_client.sharing.user_has_access(
+            groupResourceProfile.groupResourceProfileId,
             ResourcePermissionType.WRITE)
         if not write_access:
             return False
@@ -1634,8 +1631,8 @@ class GroupResourceProfileSerializer(
                       for cp in groupResourceProfile.computePreferences])
 
         def check_token(token):
-            return token is None or request.airavata_client.userHasAccess(
-                request.authz_token, token, ResourcePermissionType.READ)
+            return token is None or request.airavata_client.sharing.user_has_access(
+                token, ResourcePermissionType.READ)
 
         return all(map(check_token, tokens))
 
@@ -1791,8 +1788,8 @@ class SharedEntitySerializer(serializers.Serializer):
 
     def get_hasSharingPermission(self, shared_entity):
         request = self.context['request']
-        return request.airavata_client.userHasAccess(
-            request.authz_token, shared_entity['entityId'],
+        return request.airavata_client.sharing.user_has_access(
+            shared_entity['entityId'],
             ResourcePermissionType.MANAGE_SHARING)
 
 
@@ -1804,8 +1801,8 @@ class CredentialSummarySerializer(
 
     def get_userHasWriteAccess(self, credential_summary):
         request = self.context['request']
-        return request.airavata_client.userHasAccess(
-            request.authz_token, credential_summary.token,
+        return request.airavata_client.sharing.user_has_access(
+            credential_summary.token,
             ResourcePermissionType.WRITE)
 
 
