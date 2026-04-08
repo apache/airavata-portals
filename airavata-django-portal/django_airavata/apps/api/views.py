@@ -5,7 +5,7 @@ import os
 import warnings
 from datetime import datetime, timedelta
 
-from airavata_django_portal_sdk import experiment_util, user_storage
+from django_airavata.apps.api import user_storage
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
@@ -202,7 +202,7 @@ class ExperimentViewSet(
             if experiment.enableEmailNotification:
                 experiment.emailAddresses = [request.user.email]
             request.airavata_client.research.update_experiment(experiment_id, experiment)
-            experiment_util.launch(request, experiment_id)
+            request.airavata_client.research.launch_experiment(experiment_id, settings.GATEWAY_ID)
             return Response({"success": True})
         except Exception as e:
             log.exception(f"Failed to launch experiment {experiment_id}", extra={"request": request})
@@ -216,7 +216,7 @@ class ExperimentViewSet(
 
     @action(methods=["post"], detail=True)
     def clone(self, request, experiment_id=None):
-        cloned_experiment_id = experiment_util.clone(request, experiment_id)
+        cloned_experiment_id = request.airavata_client.research.clone_experiment(experiment_id)
         cloned_experiment = request.airavata_client.research.get_experiment(cloned_experiment_id)
         serializer = self.serializer_class(cloned_experiment, context={"request": request})
         return Response(serializer.data)
@@ -235,8 +235,8 @@ class ExperimentViewSet(
         if "outputNames" not in request.data:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         try:
-            experiment_util.intermediate_output.fetch_intermediate_output(
-                request, experiment_id, *request.data["outputNames"]
+            request.airavata_client.research.get_intermediate_outputs(
+                experiment_id, request.data["outputNames"]
             )
             return Response({"success": True})
         except Exception as e:

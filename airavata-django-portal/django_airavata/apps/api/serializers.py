@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from urllib.parse import quote
 
-from airavata_django_portal_sdk import experiment_util, user_storage
+from django_airavata.apps.api import user_storage
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -517,19 +517,18 @@ class ExperimentSerializer(proto_utils.create_serializer_class(ExperimentModel))
             for output in representation["experimentOutputs"]:
                 output["intermediateOutput"] = {"processStatus": None}
                 try:
-                    can_fetch = experiment_util.intermediate_output.can_fetch_intermediate_output(
-                        request, experiment, output["name"]
-                    )
-                    output["intermediateOutput"]["canFetch"] = can_fetch
-                    process_status = experiment_util.intermediate_output.get_intermediate_output_process_status(
-                        request, experiment, output["name"]
+                    # Intermediate outputs can be fetched when experiment is EXECUTING
+                    output["intermediateOutput"]["canFetch"] = True
+                    process_status = request.airavata_client.research.get_intermediate_output_process_status(
+                        experiment.experimentId
                     )
                     if process_status:
                         serializer = ProcessStatusSerializer(process_status, context={"request": request})
                         output["intermediateOutput"]["processStatus"] = serializer.data
-                    data_products = experiment_util.intermediate_output.get_intermediate_output_data_products(
-                        request, experiment=experiment, output_name=output["name"]
+                    intermediate_resp = request.airavata_client.research.get_intermediate_outputs(
+                        experiment.experimentId, [output["name"]]
                     )
+                    data_products = list(getattr(intermediate_resp, "data_products", []))
                     data_product_serializer = DataProductSerializer(
                         data_products, context={"request": request}, many=True
                     )
@@ -568,8 +567,7 @@ class DataProductSerializer(proto_utils.create_serializer_class(DataProductModel
 
     def get_filesize(self, data_product):
         request = self.context["request"]
-        # For backwards compatibility with older user_storage, can be eventually removed
-        if hasattr(user_storage, "get_data_product_metadata") and user_storage.exists(request, data_product):
+        if user_storage.exists(request, data_product):
             metadata = user_storage.get_data_product_metadata(request, data_product)
             return metadata["size"]
         else:

@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytz
-from airavata_django_portal_sdk import user_storage
+from django_airavata.apps.api import user_storage
 from django.conf import settings
 from django.http import Http404
 from django.http.request import QueryDict
