@@ -1,6 +1,5 @@
 from django_airavata.dynamic_apps import CUSTOM_DJANGO_APPS
-from django.conf.urls import include
-from django.urls import path
+from django.urls import include, path
 
 urlpatterns = []
 for custom_django_app in CUSTOM_DJANGO_APPS:
