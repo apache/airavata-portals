@@ -4,11 +4,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_airavata_auth', '0009_alter_emailverification_next'),
-        ('django_airavata_auth', '0011_remove_userprofile_username_locked'),
+        ("django_airavata_auth", "0009_alter_emailverification_next"),
+        ("django_airavata_auth", "0011_remove_userprofile_username_locked"),
     ]
 
-    operations = [
-    ]
+    operations = []

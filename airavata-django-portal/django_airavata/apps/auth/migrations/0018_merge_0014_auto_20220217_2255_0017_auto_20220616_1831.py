@@ -4,11 +4,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_airavata_auth', '0014_auto_20220217_2255'),
-        ('django_airavata_auth', '0017_auto_20220616_1831'),
+        ("django_airavata_auth", "0014_auto_20220217_2255"),
+        ("django_airavata_auth", "0017_auto_20220616_1831"),
     ]
 
-    operations = [
-    ]
+    operations = []

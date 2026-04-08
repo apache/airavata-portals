@@ -4,8 +4,8 @@ import os
 import shutil
 import tarfile
 import tempfile
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -21,21 +21,27 @@ class Command(BaseCommand):
     help = "Create an archive of user data directories and optionally clean them up"
 
     def add_arguments(self, parser):
-        parser.add_argument('--dry-run',
-                            action='store_true',
-                            help="Print the list of files/directories that would be archived then exit",
-                            default=False)
-        parser.add_argument('--max-age',
-                            help="Max age of files/directories in days. Any that are older will be archived.",
-                            type=int,
-                            default=getattr(settings, "GATEWAY_USER_DATA_ARCHIVE_MAX_AGE_DAYS", None))
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Print the list of files/directories that would be archived then exit",
+            default=False,
+        )
+        parser.add_argument(
+            "--max-age",
+            help="Max age of files/directories in days. Any that are older will be archived.",
+            type=int,
+            default=getattr(settings, "GATEWAY_USER_DATA_ARCHIVE_MAX_AGE_DAYS", None),
+        )
 
     def handle(self, *args, **options):
         try:
             # Take --max-age from the command line first, then from the setting
-            max_age_setting = options['max_age']
+            max_age_setting = options["max_age"]
             if max_age_setting is None:
-                raise CommandError("Setting GATEWAY_USER_DATA_ARCHIVE_MAX_AGE_DAYS is not configured and --max-age option missing.")
+                raise CommandError(
+                    "Setting GATEWAY_USER_DATA_ARCHIVE_MAX_AGE_DAYS is not configured and --max-age option missing."
+                )
 
             max_age = timezone.now() - datetime.timedelta(days=max_age_setting)
             entries_to_archive = self.get_archive_entries(older_than=max_age)
@@ -49,7 +55,7 @@ class Command(BaseCommand):
                 archive_list_filename = f"{archive_basename}.txt"
                 archive_list_filepath = os.path.join(tmpdir, archive_list_filename)
                 entry_count = 0
-                with open(archive_list_filepath, "wt") as archive_list_file:
+                with open(archive_list_filepath, "w") as archive_list_file:
                     for entry in entries_to_archive:
                         entry_count = entry_count + 1
                         archive_list_file.write(f"{entry.path}\n")
@@ -60,7 +66,7 @@ class Command(BaseCommand):
                     return
 
                 # if dry run, just print file and exit
-                if options['dry_run']:
+                if options["dry_run"]:
                     self.stdout.write(f"DRY RUN: printing {archive_list_filename}, then exiting")
                     with open(os.path.join(tmpdir, archive_list_filename)) as archive_list_file:
                         for line in archive_list_file:
@@ -76,9 +82,13 @@ class Command(BaseCommand):
                         for line in archive_list_file:
                             tarball.add(line.strip())
 
-                minimum_bytes_size = settings.GATEWAY_USER_DATA_ARCHIVE_MINIMUM_ARCHIVE_SIZE_GB * 1024 ** 3
+                minimum_bytes_size = settings.GATEWAY_USER_DATA_ARCHIVE_MINIMUM_ARCHIVE_SIZE_GB * 1024**3
                 if os.stat(archive_tarball_filepath).st_size < minimum_bytes_size:
-                    self.stdout.write(self.style.WARNING("Aborting, archive size is not large enough to proceed (size less than GATEWAY_USER_DATA_ARCHIVE_MINIMUM_ARCHIVE_SIZE_GB)"))
+                    self.stdout.write(
+                        self.style.WARNING(
+                            "Aborting, archive size is not large enough to proceed (size less than GATEWAY_USER_DATA_ARCHIVE_MINIMUM_ARCHIVE_SIZE_GB)"
+                        )
+                    )
                     # Exit early
                     return
 
@@ -86,7 +96,9 @@ class Command(BaseCommand):
                 shutil.move(archive_list_filepath, archive_directory / archive_list_filename)
                 shutil.move(archive_tarball_filepath, archive_directory / archive_tarball_filename)
 
-                self.stdout.write(self.style.SUCCESS(f"Created tarball: {archive_directory / archive_tarball_filename}"))
+                self.stdout.write(
+                    self.style.SUCCESS(f"Created tarball: {archive_directory / archive_tarball_filename}")
+                )
 
             # Now we'll remove any files/directories that were in the archive
             # and create database records for the archive
@@ -96,7 +108,8 @@ class Command(BaseCommand):
                     user_data_archive = models.UserDataArchive(
                         archive_name=archive_tarball_filename,
                         archive_path=os.fspath(archive_directory / archive_tarball_filename),
-                        max_modification_time=max_age)
+                        max_modification_time=max_age,
+                    )
                     user_data_archive.save()
                     # delete archived entries
                     with open(archive_directory / archive_list_filename) as archive_list_file:
@@ -107,15 +120,26 @@ class Command(BaseCommand):
                             elif os.path.isdir(archive_path):
                                 shutil.rmtree(archive_path)
                             else:
-                                self.stdout.write(self.style.WARNING(f"Cannot delete {archive_path} as it is neither a file nor directory, perhaps was already removed"))
-                            archive_entry = models.UserDataArchiveEntry(user_data_archive=user_data_archive, entry_path=archive_path)
+                                self.stdout.write(
+                                    self.style.WARNING(
+                                        f"Cannot delete {archive_path} as it is neither a file nor directory, perhaps was already removed"
+                                    )
+                                )
+                            archive_entry = models.UserDataArchiveEntry(
+                                user_data_archive=user_data_archive, entry_path=archive_path
+                            )
                             archive_entry.save()
             except Exception as e:
                 self.stdout.write(self.style.ERROR("Failed while deleting archived data, attempting to roll back"))
                 with tarfile.open(archive_directory / archive_tarball_filename) as tf:
                     tf.extractall(path="/")
-                logger.exception(f"[archive_user_data] Failed to delete archived files, but unarchived from tarball {archive_directory / archive_tarball_filename}", exc_info=e)
-                raise CommandError(f"Failed to delete archived files, but unarchived from tarball {archive_directory / archive_tarball_filename}") from e
+                logger.exception(
+                    f"[archive_user_data] Failed to delete archived files, but unarchived from tarball {archive_directory / archive_tarball_filename}",
+                    exc_info=e,
+                )
+                raise CommandError(
+                    f"Failed to delete archived files, but unarchived from tarball {archive_directory / archive_tarball_filename}"
+                ) from e
 
             self.stdout.write(self.style.SUCCESS("Successfully removed archived user data"))
         except CommandError:
@@ -125,7 +149,7 @@ class Command(BaseCommand):
 
     def get_archive_entries(self, older_than: datetime.datetime) -> Iterator[os.DirEntry]:
 
-        GATEWAY_USER_DIR = settings.USER_STORAGES['default']['OPTIONS']['directory']
+        GATEWAY_USER_DIR = settings.USER_STORAGES["default"]["OPTIONS"]["directory"]
 
         with os.scandir(GATEWAY_USER_DIR) as user_dirs:
             for user_dir_entry in user_dirs:
@@ -138,10 +162,12 @@ class Command(BaseCommand):
                 with os.scandir(user_dir_entry.path) as project_dirs:
                     for project_dir_entry in project_dirs:
                         yield from self._scan_project_dir_for_archive_entries(
-                            project_dir_entry=project_dir_entry,
-                            older_than=older_than)
+                            project_dir_entry=project_dir_entry, older_than=older_than
+                        )
 
-    def _scan_project_dir_for_archive_entries(self, project_dir_entry: os.DirEntry, older_than: datetime.datetime) -> Iterator[os.DirEntry]:
+    def _scan_project_dir_for_archive_entries(
+        self, project_dir_entry: os.DirEntry, older_than: datetime.datetime
+    ) -> Iterator[os.DirEntry]:
         # archive files here but not directories
         if project_dir_entry.is_file() and project_dir_entry.stat().st_mtime < older_than.timestamp():
             yield project_dir_entry

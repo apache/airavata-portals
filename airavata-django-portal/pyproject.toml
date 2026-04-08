@@ -43,8 +43,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "flake8",
-    "flake8-isort",
+    "ruff",
 ]
 mysql = [
     "mysqlclient",
@@ -56,19 +55,9 @@ Homepage = "https://github.com/apache/airavata-django-portal"
 [tool.setuptools.packages.find]
 include = ["django_airavata*"]
 
-[tool.flake8]
-exclude = [
-    "venv",
-    "./airavata",
-    "node_modules",
-    "settings_local.py",
-    "*/migrations",
-    ".tox",
-]
-ignore = ["E501", "W504"]
+[tool.ruff]
+target-version = "py312"
+line-length = 120
 
-[tool.isort]
-multi_line_output = 3
-skip = ["migrations", ".git"]
-skip_gitignore = true
-known_third_party = ["airavata_sdk", "airavata_django_portal_sdk"]
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import os
 
 from django.db import models
@@ -27,27 +25,24 @@ class Announcements(models.Model):
     accessible on the template via a template tag defined in base/templatetags/
     navigation_tags.py
     """
+
     announcement_text = models.CharField(
-        max_length=255,
-        help_text='Provide an announcement text',
-        default='Announcement Text'
+        max_length=255, help_text="Provide an announcement text", default="Announcement Text"
     )
     announcement_link = models.CharField(
-        max_length=255,
-        help_text='Give a redirect link for announcement',
-        default='Announcement Link'
+        max_length=255, help_text="Give a redirect link for announcement", default="Announcement Link"
     )
 
     panels = [
-        FieldPanel('announcement_text'),
-        FieldPanel('announcement_link'),
+        FieldPanel("announcement_text"),
+        FieldPanel("announcement_link"),
     ]
 
     def __str__(self):
         return "Announcement"
 
     class Meta:
-        verbose_name_plural = 'Announcement'
+        verbose_name_plural = "Announcement"
 
 
 @register_snippet
@@ -58,18 +53,22 @@ class NavExtra(models.Model):
     it to be accessible via the admin. It is made accessible on the template
     via a template tag defined in base/templatetags/navigation_tags.py
     """
-    nav = StreamField([
-        ('nav', Nav(max_num=1)),
-    ], use_json_field=True)
+
+    nav = StreamField(
+        [
+            ("nav", Nav(max_num=1)),
+        ],
+        use_json_field=True,
+    )
     panels = [
-        FieldPanel('nav'),
+        FieldPanel("nav"),
     ]
 
     def __str__(self):
         return "Nav extra"
 
     class Meta:
-        verbose_name_plural = 'Nav extra'
+        verbose_name_plural = "Nav extra"
 
 
 @register_snippet
@@ -85,17 +84,18 @@ class CustomCss(models.Model):
         null=True,
         help_text="Write custom css and give comments as necessary",
         default="",
-        use_json_field=True)
+        use_json_field=True,
+    )
 
     panels = [
-        FieldPanel('css'),
+        FieldPanel("css"),
     ]
 
     def __str__(self):
         return "Custom Css"
 
     class Meta:
-        verbose_name_plural = 'Custom CSS'
+        verbose_name_plural = "Custom CSS"
 
 
 @register_snippet
@@ -106,22 +106,20 @@ class FooterText(models.Model):
     accessible on the template via a template tag defined in base/templatetags/
     navigation_tags.py
     """
+
     footer = StreamField(
-        BaseStreamBlock(),
-        verbose_name="Footer content block",
-        blank=True,
-        null=True,
-        use_json_field=True)
+        BaseStreamBlock(), verbose_name="Footer content block", blank=True, null=True, use_json_field=True
+    )
 
     panels = [
-        FieldPanel('footer'),
+        FieldPanel("footer"),
     ]
 
     def __str__(self):
         return "Footer"
 
     class Meta:
-        verbose_name_plural = 'Footer'
+        verbose_name_plural = "Footer"
 
 
 @register_snippet
@@ -132,84 +130,78 @@ class Navbar(models.Model):
     accessible on the template via a template tag defined in base/templatetags/
     navigation_tags.py
     """
+
     logo = models.ForeignKey(
-        'wagtailimages.Image',
+        "wagtailimages.Image",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='+',
-        help_text='Brand Logo'
+        related_name="+",
+        help_text="Brand Logo",
     )
 
     logo_redirect_link = models.CharField(
         max_length=255,
-        help_text='Provide a redirection link for the logo or logo text Eg. (https://www.google.com/)',
+        help_text="Provide a redirection link for the logo or logo text Eg. (https://www.google.com/)",
         null=True,
         blank=True,
-        default='#',
+        default="#",
     )
 
-    boolean_choices = (
-        ("yes", "Yes"),
-        ("no", "No")
-    )
+    boolean_choices = (("yes", "Yes"), ("no", "No"))
 
     logo_with_text = models.CharField(
         choices=boolean_choices,
         max_length=5,
         help_text="Choose yes if you want to display the text next to the logo",
-        default="no")
+        default="no",
+    )
 
     logo_width = models.IntegerField(
-        help_text='Provide a width for the logo',
+        help_text="Provide a width for the logo",
         null=True,
         blank=True,
-        default='144',
+        default="144",
     )
 
-    logo_height = models.IntegerField(
-        help_text='Provide a height for the logo',
-        null=True,
-        blank=True,
-        default='43'
-    )
+    logo_height = models.IntegerField(help_text="Provide a height for the logo", null=True, blank=True, default="43")
 
     logo_text = models.CharField(
         max_length=255,
-        help_text='Give a title text as an alternative to logo. Eg.(SEAGRID)',
+        help_text="Give a title text as an alternative to logo. Eg.(SEAGRID)",
         null=True,
         blank=True,
     )
 
     logo_text_color = models.CharField(
         max_length=100,
-        help_text='Give a color for logo text if you have a logo text Eg.(#FFFFFF)',
+        help_text="Give a color for logo text if you have a logo text Eg.(#FFFFFF)",
         null=True,
         blank=True,
     )
 
     logo_text_size = models.IntegerField(
-        help_text='Give a text size as number of pixels Eg.(30)',
+        help_text="Give a text size as number of pixels Eg.(30)",
         null=True,
         blank=True,
     )
 
     panels = [
-        FieldPanel('logo'),
-        FieldPanel('logo_redirect_link'),
-        FieldPanel('logo_width'),
-        FieldPanel('logo_height'),
-        FieldPanel('logo_text'),
-        FieldPanel('logo_with_text'),
-        FieldPanel('logo_text_size'),
-        FieldPanel('logo_text_color'),
+        FieldPanel("logo"),
+        FieldPanel("logo_redirect_link"),
+        FieldPanel("logo_width"),
+        FieldPanel("logo_height"),
+        FieldPanel("logo_text"),
+        FieldPanel("logo_with_text"),
+        FieldPanel("logo_text_size"),
+        FieldPanel("logo_text_color"),
     ]
 
     def __str__(self):
         return "Navbar"
 
     class Meta:
-        verbose_name_plural = 'Navbar'
+        verbose_name_plural = "Navbar"
 
 
 @register_snippet
@@ -217,109 +209,122 @@ class CustomHeaderLinks(models.Model):
     """
     This provides feasibility for custom links inside header. Otherwise headerlinks are generated dynamically when a new page is created. The sublinks are restricted to 4 per link
     """
+
     header_link_text = models.CharField(
         max_length=25,
-        help_text='Give a Link text',
+        help_text="Give a Link text",
     )
 
     header_link = models.CharField(
         max_length=255,
-        help_text='Provide a redirect Link',
+        help_text="Provide a redirect Link",
         null=True,
         blank=True,
     )
 
     header_sub_link_text1 = models.CharField(
         max_length=25,
-        help_text='Give a Sub Link 1 text',
+        help_text="Give a Sub Link 1 text",
         null=True,
         blank=True,
     )
 
     header_sub_link_text2 = models.CharField(
         max_length=25,
-        help_text='Give a Sub Link 2 text',
+        help_text="Give a Sub Link 2 text",
         null=True,
         blank=True,
     )
 
     header_sub_link_text3 = models.CharField(
         max_length=25,
-        help_text='Give a Sub Link 3 text',
+        help_text="Give a Sub Link 3 text",
         null=True,
         blank=True,
     )
 
     header_sub_link_text4 = models.CharField(
         max_length=25,
-        help_text='Give a Sub Link 4 text',
+        help_text="Give a Sub Link 4 text",
         null=True,
         blank=True,
     )
 
     header_sub_link1 = models.CharField(
         max_length=255,
-        help_text='Provide a redirect Link for sublink 1',
+        help_text="Provide a redirect Link for sublink 1",
         null=True,
         blank=True,
     )
 
     header_sub_link2 = models.CharField(
         max_length=255,
-        help_text='Provide a redirect Link for sublink 2',
+        help_text="Provide a redirect Link for sublink 2",
         null=True,
         blank=True,
     )
 
     header_sub_link3 = models.CharField(
         max_length=255,
-        help_text='Provide a redirect Link for sublink 3',
+        help_text="Provide a redirect Link for sublink 3",
         null=True,
         blank=True,
     )
 
     header_sub_link4 = models.CharField(
         max_length=255,
-        help_text='Provide a redirect Link for sublink 4',
+        help_text="Provide a redirect Link for sublink 4",
         null=True,
         blank=True,
     )
 
     body = models.CharField(
         max_length=255,
-        help_text='Give a title text',
+        help_text="Give a title text",
         null=True,
         blank=True,
     )
 
     panels = [
-        FieldPanel('header_link_text'),
-        FieldPanel('header_link'),
-        MultiFieldPanel([
-            MultiFieldPanel([
-                FieldPanel('header_sub_link_text1'),
-                FieldPanel('header_sub_link1'),
-            ]),
-            MultiFieldPanel([
-                FieldPanel('header_sub_link_text2'),
-                FieldPanel('header_sub_link2'),
-            ]),
-            MultiFieldPanel([
-                FieldPanel('header_sub_link_text3'),
-                FieldPanel('header_sub_link3'),
-            ]),
-            MultiFieldPanel([
-                FieldPanel('header_sub_link_text4'),
-                FieldPanel('header_sub_link4'),
-            ])
-        ], heading="Sub Links section", classname="collapsible"),
+        FieldPanel("header_link_text"),
+        FieldPanel("header_link"),
+        MultiFieldPanel(
+            [
+                MultiFieldPanel(
+                    [
+                        FieldPanel("header_sub_link_text1"),
+                        FieldPanel("header_sub_link1"),
+                    ]
+                ),
+                MultiFieldPanel(
+                    [
+                        FieldPanel("header_sub_link_text2"),
+                        FieldPanel("header_sub_link2"),
+                    ]
+                ),
+                MultiFieldPanel(
+                    [
+                        FieldPanel("header_sub_link_text3"),
+                        FieldPanel("header_sub_link3"),
+                    ]
+                ),
+                MultiFieldPanel(
+                    [
+                        FieldPanel("header_sub_link_text4"),
+                        FieldPanel("header_sub_link4"),
+                    ]
+                ),
+            ],
+            heading="Sub Links section",
+            classname="collapsible",
+        ),
     ]
 
     def __str__(self):
         return "Header Custom Links"
 
     class Meta:
-        verbose_name_plural = 'Header Custom Links'
+        verbose_name_plural = "Header Custom Links"
 
 
 @register_snippet
@@ -329,29 +334,29 @@ class GatewayIcon(models.Model):
     """
 
     icon = models.ForeignKey(
-        'wagtailimages.Image',
+        "wagtailimages.Image",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='+',
-        help_text='Choose Gateway Icon with dimensions 70x70'
+        related_name="+",
+        help_text="Choose Gateway Icon with dimensions 70x70",
     )
     background_color = models.CharField(
         max_length=10,
         default="#EEEEEE",
-        help_text='Background color for icon (e.g. #FFFFFF)',
+        help_text="Background color for icon (e.g. #FFFFFF)",
     )
 
     panels = [
-        FieldPanel('icon'),
-        FieldPanel('background_color'),
+        FieldPanel("icon"),
+        FieldPanel("background_color"),
     ]
 
     def __str__(self):
         return "Gateway Icon"
 
     class Meta:
-        verbose_name_plural = 'Gateway Icon'
+        verbose_name_plural = "Gateway Icon"
 
 
 @register_snippet
@@ -362,18 +367,18 @@ class GatewayTitle(models.Model):
 
     title_text = models.CharField(
         max_length=100,
-        help_text='Title to display to logged in users.',
+        help_text="Title to display to logged in users.",
     )
 
     panels = [
-        FieldPanel('title_text'),
+        FieldPanel("title_text"),
     ]
 
     def __str__(self):
-        return "Gateway Title: {}".format(self.title_text)
+        return f"Gateway Title: {self.title_text}"
 
     class Meta:
-        verbose_name_plural = 'Gateway Title'
+        verbose_name_plural = "Gateway Title"
 
 
 @register_snippet
@@ -383,52 +388,45 @@ class ExtraWebResources(ClusterableModel):
     """
 
     panels = [
-        InlinePanel('css_links', label="CSS Links"),
-        InlinePanel('js_links', label="JS Links"),
+        InlinePanel("css_links", label="CSS Links"),
+        InlinePanel("js_links", label="JS Links"),
     ]
 
     def __str__(self):
         try:
-            return "Extra Web Resources: {}".format(", ".join(
-                [os.path.basename(link.url) for link in self.css_links.all()] +
-                [os.path.basename(link.url) for link in self.js_links.all()]))
+            return "Extra Web Resources: {}".format(
+                ", ".join(
+                    [os.path.basename(link.url) for link in self.css_links.all()]
+                    + [os.path.basename(link.url) for link in self.js_links.all()]
+                )
+            )
         except Exception:
             return "Extra Web Resources"
 
     class Meta:
-        verbose_name_plural = 'Extra Web Resources'
+        verbose_name_plural = "Extra Web Resources"
 
 
 class CssLink(Orderable):
-    url = models.CharField(
-        max_length=255,
-        help_text='URL of CSS stylesheet.'
-    )
+    url = models.CharField(max_length=255, help_text="URL of CSS stylesheet.")
     panels = [
-        FieldPanel('url'),
+        FieldPanel("url"),
     ]
-    extra_web_resources = ParentalKey(ExtraWebResources,
-                                      on_delete=models.CASCADE,
-                                      related_name="css_links")
+    extra_web_resources = ParentalKey(ExtraWebResources, on_delete=models.CASCADE, related_name="css_links")
 
     class Meta:
-        verbose_name = 'CSS Link'
+        verbose_name = "CSS Link"
 
 
 class JsLink(Orderable):
-    url = models.CharField(
-        max_length=255,
-        help_text='URL of JavaScript script.'
-    )
+    url = models.CharField(max_length=255, help_text="URL of JavaScript script.")
     panels = [
-        FieldPanel('url'),
+        FieldPanel("url"),
     ]
-    extra_web_resources = ParentalKey(ExtraWebResources,
-                                      on_delete=models.CASCADE,
-                                      related_name="js_links")
+    extra_web_resources = ParentalKey(ExtraWebResources, on_delete=models.CASCADE, related_name="js_links")
 
     class Meta:
-        verbose_name = 'JS Link'
+        verbose_name = "JS Link"
 
 
 class HomePage(Page):
@@ -444,229 +442,197 @@ class HomePage(Page):
 
     # Hero section of HomePage
     image = models.ForeignKey(
-        'wagtailimages.Image',
+        "wagtailimages.Image",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='+',
-        help_text='Homepage image'
+        related_name="+",
+        help_text="Homepage image",
     )
     hero_text = models.CharField(
         max_length=255,
-        help_text='Write an introduction for the bakery',
+        help_text="Write an introduction for the bakery",
         null=True,
         blank=True,
     )
     hero_cta = models.CharField(
-        verbose_name='Hero CTA',
+        verbose_name="Hero CTA",
         max_length=255,
-        help_text='Text to display on Call to Action',
+        help_text="Text to display on Call to Action",
         null=True,
         blank=True,
     )
     hero_cta_link = models.ForeignKey(
-        'wagtailcore.Page',
+        "wagtailcore.Page",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='+',
-        verbose_name='Hero CTA link',
-        help_text='Choose a page to link to for the Call to Action'
+        related_name="+",
+        verbose_name="Hero CTA link",
+        help_text="Choose a page to link to for the Call to Action",
     )
 
     # Body section of the HomePage
-    body = StreamField(
-        BaseStreamBlock(),
-        verbose_name="Home content block",
-        blank=True,
-        null=True,
-        use_json_field=True)
+    body = StreamField(BaseStreamBlock(), verbose_name="Home content block", blank=True, null=True, use_json_field=True)
 
     # Promo section of the HomePage
     site_logo = models.ForeignKey(
-        'wagtailimages.Image',
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name='+',
-        help_text='Site Logo'
+        "wagtailimages.Image", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", help_text="Site Logo"
     )
 
-    features_text = RichTextField(
-        null=True,
-        blank=True,
-        help_text='Write some feature description'
-    )
+    features_text = RichTextField(null=True, blank=True, help_text="Write some feature description")
 
     feature_logo_1 = models.ForeignKey(
-        'wagtailimages.Image',
+        "wagtailimages.Image",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='+',
-        help_text='Feature Logo 1'
+        related_name="+",
+        help_text="Feature Logo 1",
     )
 
-    feature_1_title = models.CharField(
-        max_length=255,
-        help_text='Feature Title 1'
-    )
+    feature_1_title = models.CharField(max_length=255, help_text="Feature Title 1")
 
-    feature_1_text = RichTextField(
-        null=True,
-        blank=True,
-        help_text='Write some feature 1 text description'
-    )
+    feature_1_text = RichTextField(null=True, blank=True, help_text="Write some feature 1 text description")
 
     feature_logo_2 = models.ForeignKey(
-        'wagtailimages.Image',
+        "wagtailimages.Image",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='+',
-        help_text='Feature Logo 2'
+        related_name="+",
+        help_text="Feature Logo 2",
     )
 
-    feature_2_title = models.CharField(
-        max_length=255,
-        help_text='Feature Title 2'
-    )
+    feature_2_title = models.CharField(max_length=255, help_text="Feature Title 2")
 
-    feature_2_text = RichTextField(
-        null=True,
-        blank=True,
-        help_text='Write some feature 2 text description'
-    )
+    feature_2_text = RichTextField(null=True, blank=True, help_text="Write some feature 2 text description")
 
     feature_logo_3 = models.ForeignKey(
-        'wagtailimages.Image',
+        "wagtailimages.Image",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='+',
-        help_text='Feature Logo 3'
+        related_name="+",
+        help_text="Feature Logo 3",
     )
 
-    feature_3_title = models.CharField(
-        max_length=255,
-        help_text='Feature Title 3'
-    )
+    feature_3_title = models.CharField(max_length=255, help_text="Feature Title 3")
 
-    feature_3_text = RichTextField(
-        null=True,
-        blank=True,
-        help_text='Write some feature 3 text description'
-    )
+    feature_3_text = RichTextField(null=True, blank=True, help_text="Write some feature 3 text description")
 
     feature_logo_4 = models.ForeignKey(
-        'wagtailimages.Image',
+        "wagtailimages.Image",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='+',
-        help_text='Feature Logo 4'
+        related_name="+",
+        help_text="Feature Logo 4",
     )
 
-    feature_4_title = models.CharField(
-        max_length=255,
-        help_text='Feature Title 4'
-    )
+    feature_4_title = models.CharField(max_length=255, help_text="Feature Title 4")
 
-    feature_4_text = RichTextField(
-        null=True,
-        blank=True,
-        help_text='Write some feature 4 text description'
-    )
+    feature_4_text = RichTextField(null=True, blank=True, help_text="Write some feature 4 text description")
 
-    custom_body_message = RichTextField(
-        null=True,
-        blank=True,
-        help_text='Write some custom body message!'
-    )
+    custom_body_message = RichTextField(null=True, blank=True, help_text="Write some custom body message!")
 
     banner_image = models.ForeignKey(
-        'wagtailimages.Image',
+        "wagtailimages.Image",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='+',
-        help_text='Choose Banner Image'
+        related_name="+",
+        help_text="Choose Banner Image",
     )
 
-    boolean_choices = (
-        ("yes", "Yes"),
-        ("no", "No")
-    )
+    boolean_choices = (("yes", "Yes"), ("no", "No"))
 
     show_navbar = models.CharField(
         choices=boolean_choices,
         max_length=5,
         help_text="Choose yes if you want to display the navbar on home page and no if you don't want to.",
-        default=True)
+        default=True,
+    )
 
     show_nav_extra = models.CharField(
         choices=boolean_choices,
         max_length=5,
         help_text="Choose yes if you want the secondary navbar to show on home page or no if you don't want to",
-        default=True)
+        default=True,
+    )
 
     show_footer = models.CharField(
         choices=boolean_choices,
         max_length=5,
         help_text="Choose yes if you want the Footer to show on home page or no if you don't want to",
-        default="yes")
+        default="yes",
+    )
 
     content_panels = Page.content_panels + [
-        MultiFieldPanel([
-            FieldPanel('image'),
-            FieldPanel('hero_text', classname="full"),
-            MultiFieldPanel([
-                FieldPanel('hero_cta'),
-                FieldPanel('hero_cta_link'),
-            ])
-        ], heading="Hero section"),
-        FieldPanel('body'),
-        MultiFieldPanel([
-            FieldPanel('site_logo'),
-            FieldPanel('features_text'),
-            MultiFieldPanel([
-                FieldPanel('feature_logo_1'),
-                FieldPanel('feature_1_title'),
-                FieldPanel('feature_1_text'),
-            ]),
-            MultiFieldPanel([
-                FieldPanel('feature_logo_2'),
-                FieldPanel('feature_2_title'),
-                FieldPanel('feature_2_text'),
-            ]),
-            MultiFieldPanel([
-                FieldPanel('feature_logo_3'),
-                FieldPanel('feature_3_title'),
-                FieldPanel('feature_3_text'),
-            ]),
-            MultiFieldPanel([
-                FieldPanel('feature_logo_4'),
-                FieldPanel('feature_4_title'),
-                FieldPanel('feature_4_text'),
-            ])
-        ], heading="Feature section", classname="collapsible"),
-        FieldPanel('custom_body_message'),
-        FieldPanel('banner_image')
+        MultiFieldPanel(
+            [
+                FieldPanel("image"),
+                FieldPanel("hero_text", classname="full"),
+                MultiFieldPanel(
+                    [
+                        FieldPanel("hero_cta"),
+                        FieldPanel("hero_cta_link"),
+                    ]
+                ),
+            ],
+            heading="Hero section",
+        ),
+        FieldPanel("body"),
+        MultiFieldPanel(
+            [
+                FieldPanel("site_logo"),
+                FieldPanel("features_text"),
+                MultiFieldPanel(
+                    [
+                        FieldPanel("feature_logo_1"),
+                        FieldPanel("feature_1_title"),
+                        FieldPanel("feature_1_text"),
+                    ]
+                ),
+                MultiFieldPanel(
+                    [
+                        FieldPanel("feature_logo_2"),
+                        FieldPanel("feature_2_title"),
+                        FieldPanel("feature_2_text"),
+                    ]
+                ),
+                MultiFieldPanel(
+                    [
+                        FieldPanel("feature_logo_3"),
+                        FieldPanel("feature_3_title"),
+                        FieldPanel("feature_3_text"),
+                    ]
+                ),
+                MultiFieldPanel(
+                    [
+                        FieldPanel("feature_logo_4"),
+                        FieldPanel("feature_4_title"),
+                        FieldPanel("feature_4_text"),
+                    ]
+                ),
+            ],
+            heading="Feature section",
+            classname="collapsible",
+        ),
+        FieldPanel("custom_body_message"),
+        FieldPanel("banner_image"),
     ]
 
-    customization_panels = [
-        FieldPanel('show_navbar'),
-        FieldPanel('show_nav_extra'),
-        FieldPanel('show_footer')
-    ]
+    customization_panels = [FieldPanel("show_navbar"), FieldPanel("show_nav_extra"), FieldPanel("show_footer")]
 
-    edit_handler = TabbedInterface([
-        ObjectList(content_panels, heading='Content'),
-        ObjectList(customization_panels, heading='Customization'),
-        ObjectList(Page.promote_panels, heading='Promote'),
-        ObjectList(Page.settings_panels, heading='Settings',
-                   classname="settings"),
-    ])
+    edit_handler = TabbedInterface(
+        [
+            ObjectList(content_panels, heading="Content"),
+            ObjectList(customization_panels, heading="Customization"),
+            ObjectList(Page.promote_panels, heading="Promote"),
+            ObjectList(Page.settings_panels, heading="Settings", classname="settings"),
+        ]
+    )
 
     def __str__(self):
         return self.title
@@ -674,12 +640,15 @@ class HomePage(Page):
 
 class Row(models.Model):
     body = StreamField(
-        BaseStreamBlock(), verbose_name="Row Content", blank=True, null=True,
+        BaseStreamBlock(),
+        verbose_name="Row Content",
+        blank=True,
+        null=True,
         use_json_field=True,
     )
 
     panels = [
-        FieldPanel('body'),
+        FieldPanel("body"),
     ]
 
     class Meta:
@@ -691,17 +660,20 @@ class BootstrapRow(Row):
         ContainerChoiceBlock(),
         null=True,
         blank=True,
-        help_text="(Optional) Create a new Bootstrap container for this "
-                  "and following rows.",
-        use_json_field=True)
+        help_text="(Optional) Create a new Bootstrap container for this and following rows.",
+        use_json_field=True,
+    )
     body = StreamField(
-        BaseStreamBlock(), verbose_name="Row Content", blank=True, null=True,
+        BaseStreamBlock(),
+        verbose_name="Row Content",
+        blank=True,
+        null=True,
         use_json_field=True,
     )
 
     panels = [
-        FieldPanel('container'),
-        FieldPanel('body'),
+        FieldPanel("container"),
+        FieldPanel("body"),
     ]
 
     class Meta:
@@ -709,8 +681,7 @@ class BootstrapRow(Row):
 
 
 class RowBlankPageRelation(Orderable, BootstrapRow):
-    page = ParentalKey('django_airavata_wagtail_base.BlankPage',
-                       on_delete=models.CASCADE, related_name='row')
+    page = ParentalKey("django_airavata_wagtail_base.BlankPage", on_delete=models.CASCADE, related_name="row")
 
 
 class BlankPage(Page):
@@ -718,61 +689,62 @@ class BlankPage(Page):
     The Blank Template Page. You can see if you visit your site and edit the blank page. Used to create free form content
     """
 
-    boolean_choices = (
-        ("yes", "Yes"),
-        ("no", "No")
-    )
+    boolean_choices = (("yes", "Yes"), ("no", "No"))
 
     show_navbar = models.CharField(
         choices=boolean_choices,
         max_length=5,
         help_text="Choose yes if you want to display the navbar on home page and no if you don't want to.",
-        default="yes")
+        default="yes",
+    )
 
     show_nav_extra = models.CharField(
         choices=boolean_choices,
         max_length=5,
         help_text="Choose yes if you want the secondary navbar to show on home page or no if you don't want to",
-        default="yes")
+        default="yes",
+    )
 
     show_footer = models.CharField(
         choices=boolean_choices,
         max_length=5,
         help_text="Choose yes if you want the Footer to show on home page or no if you don't want to",
-        default="yes")
+        default="yes",
+    )
 
     show_announcements = models.CharField(
         choices=boolean_choices,
         max_length=5,
         help_text="Choose yes if you want the Announcements to show up on home page or no if you don't want to",
-        default="yes")
+        default="yes",
+    )
 
-    content_panels = Page.content_panels + [
-        InlinePanel("row", label="row")
-    ]
+    content_panels = Page.content_panels + [InlinePanel("row", label="row")]
 
     customization_panels = [
-        FieldPanel('show_navbar'),
-        FieldPanel('show_nav_extra'),
-        FieldPanel('show_footer'),
-        FieldPanel('show_announcements')
+        FieldPanel("show_navbar"),
+        FieldPanel("show_nav_extra"),
+        FieldPanel("show_footer"),
+        FieldPanel("show_announcements"),
     ]
 
-    edit_handler = TabbedInterface([
-        ObjectList(content_panels, heading='Content'),
-        ObjectList(customization_panels, heading='Customization'),
-        ObjectList(Page.promote_panels, heading='Promote'),
-        ObjectList(Page.settings_panels, heading='Settings',
-                   classname="settings"),
-    ])
+    edit_handler = TabbedInterface(
+        [
+            ObjectList(content_panels, heading="Content"),
+            ObjectList(customization_panels, heading="Customization"),
+            ObjectList(Page.promote_panels, heading="Promote"),
+            ObjectList(Page.settings_panels, heading="Settings", classname="settings"),
+        ]
+    )
 
     def __str__(self):
         return self.title
 
 
 class RowCybergatewayHomePageRelation(Orderable, Row):
-    page = ParentalKey('django_airavata_wagtail_base.CybergatewayHomePage',
-                       on_delete=models.CASCADE, related_name='row')
+    page = ParentalKey(
+        "django_airavata_wagtail_base.CybergatewayHomePage", on_delete=models.CASCADE, related_name="row"
+    )
 
 
 class CybergatewayHomePage(Page):
@@ -782,133 +754,131 @@ class CybergatewayHomePage(Page):
 
     # Hero section of HomePage
     site_logo = models.ForeignKey(
-        'wagtailimages.Image',
+        "wagtailimages.Image",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='+',
-        help_text='Site Logo Image'
+        related_name="+",
+        help_text="Site Logo Image",
     )
 
     site_link = models.CharField(
         max_length=255,
         default="#",
-        help_text='Give a site redirect link',
+        help_text="Give a site redirect link",
     )
 
     site_text = models.CharField(
         max_length=50,
         default="#",
-        help_text='Give a Site Name',
+        help_text="Give a Site Name",
     )
 
     site_header = models.CharField(
         max_length=70,
         default="#",
-        help_text='Give a Site Header Name',
+        help_text="Give a Site Header Name",
     )
 
     site_link1 = models.CharField(
         max_length=70,
         default="#",
-        help_text='Give a Site Nav Link [1]',
+        help_text="Give a Site Nav Link [1]",
     )
 
     site_link_text1 = models.CharField(
         max_length=70,
-        help_text='Give a Site Nav Link Text [1]',
+        help_text="Give a Site Nav Link Text [1]",
     )
 
     site_link2 = models.CharField(
         max_length=70,
-        default='#',
-        help_text='Give a Site Nav Link [2]',
+        default="#",
+        help_text="Give a Site Nav Link [2]",
     )
 
     site_link_text2 = models.CharField(
         max_length=70,
-        help_text='Give a Site Nav Link Text [2]',
+        help_text="Give a Site Nav Link Text [2]",
     )
 
     site_link3 = models.CharField(
         max_length=70,
         default="#",
-        help_text='Give a Site Nav Link [3]',
+        help_text="Give a Site Nav Link [3]",
     )
 
     site_link_text3 = models.CharField(
         max_length=70,
-        help_text='Give a Site Nav Link Text [3]',
+        help_text="Give a Site Nav Link Text [3]",
     )
 
     contact = StreamField(
-        BaseStreamBlock(),
-        verbose_name="Contact Info Block",
-        blank=True,
-        null=True,
-        use_json_field=True)
+        BaseStreamBlock(), verbose_name="Contact Info Block", blank=True, null=True, use_json_field=True
+    )
 
     footer = StreamField(
-        BaseStreamBlock(),
-        verbose_name="Footer Content Block",
-        blank=True,
-        null=True,
-        use_json_field=True)
-
-    boolean_choices = (
-        ("yes", "Yes"),
-        ("no", "No")
+        BaseStreamBlock(), verbose_name="Footer Content Block", blank=True, null=True, use_json_field=True
     )
+
+    boolean_choices = (("yes", "Yes"), ("no", "No"))
 
     show_navbar = models.CharField(
         choices=boolean_choices,
         max_length=5,
         help_text="Choose yes if you want to display the navbar on home page and no if you don't want to.",
-        default="yes")
+        default="yes",
+    )
 
     show_nav_extra = models.CharField(
         choices=boolean_choices,
         max_length=5,
         help_text="Choose yes if you want the secondary navbar to show on home page or no if you don't want to",
-        default="yes")
+        default="yes",
+    )
 
     show_footer = models.CharField(
         choices=boolean_choices,
         max_length=5,
         help_text="Choose yes if you want the Footer to show on home page or no if you don't want to",
-        default="yes")
+        default="yes",
+    )
 
     content_panels = Page.content_panels + [
-        MultiFieldPanel([
-            FieldPanel('site_logo'),
-            FieldPanel('site_link'),
-            FieldPanel('site_text'),
-            FieldPanel('site_header'),
-            FieldPanel('site_link1'),
-            FieldPanel('site_link_text1'),
-            FieldPanel('site_link2'),
-            FieldPanel('site_link_text2'),
-            FieldPanel('site_link3'),
-            FieldPanel('site_link_text3'),
-        ], heading="Navbar Section"),
+        MultiFieldPanel(
+            [
+                FieldPanel("site_logo"),
+                FieldPanel("site_link"),
+                FieldPanel("site_text"),
+                FieldPanel("site_header"),
+                FieldPanel("site_link1"),
+                FieldPanel("site_link_text1"),
+                FieldPanel("site_link2"),
+                FieldPanel("site_link_text2"),
+                FieldPanel("site_link3"),
+                FieldPanel("site_link_text3"),
+            ],
+            heading="Navbar Section",
+        ),
         InlinePanel("row", label="row"),
-        FieldPanel('contact'),
-        FieldPanel('footer'),
+        FieldPanel("contact"),
+        FieldPanel("footer"),
     ]
 
     customization_panels = [
-        FieldPanel('show_navbar'),
-        FieldPanel('show_nav_extra'),
-        FieldPanel('show_footer'),
+        FieldPanel("show_navbar"),
+        FieldPanel("show_nav_extra"),
+        FieldPanel("show_footer"),
     ]
 
-    edit_handler = TabbedInterface([
-        ObjectList(content_panels, heading='Content'),
-        ObjectList(customization_panels, heading='Customization'),
-        ObjectList(Page.promote_panels, heading='Promote'),
-        ObjectList(Page.settings_panels, heading='Settings',
-                   classname="settings"),
-    ])
+    edit_handler = TabbedInterface(
+        [
+            ObjectList(content_panels, heading="Content"),
+            ObjectList(customization_panels, heading="Customization"),
+            ObjectList(Page.promote_panels, heading="Promote"),
+            ObjectList(Page.settings_panels, heading="Settings", classname="settings"),
+        ]
+    )
 
     def __str__(self):
         return self.title

@@ -22,7 +22,7 @@ class GenericAPIBackedViewSet(GenericViewSet):
     # Make lookup_value_regex to any set of non-forward-slash characters. Many
     # Airavata ids contains period ('.') which the default lookup_value_regex
     # in DRF doesn't allow.
-    lookup_value_regex = '[^/]+'
+    lookup_value_regex = "[^/]+"
 
     def get_list(self):
         """
@@ -67,12 +67,10 @@ class GenericAPIBackedViewSet(GenericViewSet):
     def authz_token(self):
         # Deprecated: SDK facade handles auth internally.
         # Kept for backward compatibility with code that references self.authz_token.
-        return getattr(self.request, 'authz_token', None)
+        return getattr(self.request, "authz_token", None)
 
 
-class ReadOnlyAPIBackedViewSet(mixins.RetrieveModelMixin,
-                               mixins.ListModelMixin,
-                               GenericAPIBackedViewSet):
+class ReadOnlyAPIBackedViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin, GenericAPIBackedViewSet):
     """
     A viewset that provides default `retrieve()` and `list()` actions.
 
@@ -80,15 +78,18 @@ class ReadOnlyAPIBackedViewSet(mixins.RetrieveModelMixin,
     * get_list(self)
     * get_instance(self, lookup_value)
     """
+
     pass
 
 
-class APIBackedViewSet(mixins.CreateModelMixin,
-                       mixins.RetrieveModelMixin,
-                       mixins.UpdateModelMixin,
-                       mixins.DestroyModelMixin,
-                       mixins.ListModelMixin,
-                       GenericAPIBackedViewSet):
+class APIBackedViewSet(
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    mixins.ListModelMixin,
+    GenericAPIBackedViewSet,
+):
     """
     A viewset that provides default `create()`, `retrieve()`, `update()`,
     `partial_update()`, `destroy()` and `list()` actions.
@@ -100,10 +101,11 @@ class APIBackedViewSet(mixins.CreateModelMixin,
     * perform_update(self, serializer)
     * perform_destroy(self, instance)
     """
+
     pass
 
 
-class APIResultIterator(object):
+class APIResultIterator:
     """
     Iterable container over API results which allow limit/offset style slicing.
     """
@@ -137,11 +139,11 @@ class APIResultPagination(pagination.LimitOffsetPagination):
     have a known count, so it isn't always possible to know how many pages there
     are.
     """
+
     default_limit = 10
 
     def paginate_queryset(self, queryset, request, view=None):
-        assert isinstance(
-            queryset, APIResultIterator), "queryset is not an APIResultIterator: {}".format(queryset)
+        assert isinstance(queryset, APIResultIterator), f"queryset is not an APIResultIterator: {queryset}"
         self.query_params = queryset.query_params.copy()
         self.limit = self.get_limit(request)
         if self.limit is None:
@@ -153,27 +155,30 @@ class APIResultPagination(pagination.LimitOffsetPagination):
         # When a paged view is called from another view (for example, to get the
         # initial data to display), this pagination class needs to know the name
         # of the view being paginated.
-        if view and hasattr(view, 'pagination_viewname'):
+        if view and hasattr(view, "pagination_viewname"):
             self.viewname = view.pagination_viewname
 
-        return list(queryset[self.offset:self.offset + self.limit])
+        return list(queryset[self.offset : self.offset + self.limit])
 
     def get_limit(self, request):
         # If limit <= 0 then don't paginate
-        if self.limit_query_param in request.query_params and int(
-                request.query_params[self.limit_query_param]) <= 0:
+        if self.limit_query_param in request.query_params and int(request.query_params[self.limit_query_param]) <= 0:
             return None
         return super().get_limit(request)
 
     def get_paginated_response(self, data):
         has_next_link = len(data) >= self.limit
-        return Response(OrderedDict([
-            ('next', self.get_next_link() if has_next_link else None),
-            ('previous', self.get_previous_link()),
-            ('results', data),
-            ('limit', self.limit),
-            ('offset', self.offset)
-        ]))
+        return Response(
+            OrderedDict(
+                [
+                    ("next", self.get_next_link() if has_next_link else None),
+                    ("previous", self.get_previous_link()),
+                    ("results", data),
+                    ("limit", self.limit),
+                    ("offset", self.offset),
+                ]
+            )
+        )
 
     def get_next_link(self):
         url = self.get_base_url()
@@ -196,7 +201,7 @@ class APIResultPagination(pagination.LimitOffsetPagination):
         return replace_query_param(url, self.offset_query_param, offset)
 
     def get_base_url(self):
-        if hasattr(self, 'viewname'):
+        if hasattr(self, "viewname"):
             base_url = self.request.build_absolute_uri(reverse(self.viewname))
             if len(self.query_params) > 0:
                 base_url += f"?{self.query_params.urlencode()}"
@@ -208,11 +213,9 @@ class APIResultPagination(pagination.LimitOffsetPagination):
 def convert_utc_iso8601_to_date(iso8601_utc_string):
     # This is meant to convert a JavaScript `new Date().toJSON()` into a
     # datetime instance
-    timestamp = datetime.strptime(
-        iso8601_utc_string, "%Y-%m-%dT%H:%M:%S.%fZ")
+    timestamp = datetime.strptime(iso8601_utc_string, "%Y-%m-%dT%H:%M:%S.%fZ")
     timestamp = timestamp.replace(tzinfo=pytz.UTC)
-    logger.debug("convert_utc_iso8601_to_date({})={}".format(
-        iso8601_utc_string, timestamp))
+    logger.debug(f"convert_utc_iso8601_to_date({iso8601_utc_string})={timestamp}")
     return timestamp
 
 
@@ -222,8 +225,7 @@ class IsInAdminsGroupPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         # Read Only Admins can make GET requests only
         if request.method in permissions.SAFE_METHODS:
-            return (request.is_gateway_admin or
-                    request.is_read_only_gateway_admin)
+            return request.is_gateway_admin or request.is_read_only_gateway_admin
         else:
             return request.is_gateway_admin
 
@@ -234,12 +236,12 @@ class ReadOnly(permissions.BasePermission):
 
 
 def is_shared_dir(path):
-    shared_dirs: dict = getattr(settings, 'GATEWAY_DATA_SHARED_DIRECTORIES', {})
+    shared_dirs: dict = getattr(settings, "GATEWAY_DATA_SHARED_DIRECTORIES", {})
     return any(map(lambda n: Path(n) == Path(path), shared_dirs.keys()))
 
 
 def is_shared_path(path):
-    shared_dirs: dict = getattr(settings, 'GATEWAY_DATA_SHARED_DIRECTORIES', {})
+    shared_dirs: dict = getattr(settings, "GATEWAY_DATA_SHARED_DIRECTORIES", {})
     # FIXME: path returned when creating a new directory in user storage is an
     # absolute path. Assume that when an absolute path is given that it was for
     # a newly created directory and so it is not a shared path
@@ -264,7 +266,7 @@ class BaseSharedDirPermission(permissions.BasePermission):
         shared_dir = is_shared_dir(path)
         if shared_path:
             # No user can delete a shared directory
-            if shared_dir and request.method == 'DELETE':
+            if shared_dir and request.method == "DELETE":
                 return False
             # Only admins can create/update/delete files/directories in a shared directory
             return request.is_gateway_admin
@@ -274,16 +276,16 @@ class BaseSharedDirPermission(permissions.BasePermission):
 
 class DataProductSharedDirPermission(BaseSharedDirPermission):
     def get_path(self, request, view) -> str:
-        data_product_uri = request.query_params.get('data-product-uri', request.query_params.get('product-uri', ''))
+        data_product_uri = request.query_params.get("data-product-uri", request.query_params.get("product-uri", ""))
         file_metadata = user_storage.get_data_product_metadata(request, data_product_uri=data_product_uri)
         return file_metadata["path"]
 
     def has_permission(self, request, view):
         # Special handling for remote API, just get the userHasWriteAccess attribute and use that
-        if hasattr(settings, 'GATEWAY_DATA_STORE_REMOTE_API'):
+        if hasattr(settings, "GATEWAY_DATA_STORE_REMOTE_API"):
             if request.method in permissions.SAFE_METHODS:
                 return True
-            data_product_uri = request.query_params.get('data-product-uri', request.query_params.get('product-uri', ''))
+            data_product_uri = request.query_params.get("data-product-uri", request.query_params.get("product-uri", ""))
             file_metadata = user_storage.get_data_product_metadata(request, data_product_uri=data_product_uri)
             return file_metadata["userHasWriteAccess"]
         else:
@@ -291,7 +293,6 @@ class DataProductSharedDirPermission(BaseSharedDirPermission):
 
 
 class UserStorageSharedDirPermission(BaseSharedDirPermission):
-
     def get_path(self, request, view):
         # 'path' can be a url path parameter, query parameter or in the request body (data)
-        return request.query_params.get('path', request.data.get('path', view.kwargs.get('path')))
+        return request.query_params.get("path", request.data.get("path", view.kwargs.get("path")))

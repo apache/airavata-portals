@@ -12,10 +12,10 @@ KEYCLOAK_TOKEN_URL = "https://example.org/auth"
 KEYCLOAK_USERINFO_URL = "https://example.org/userinfo"
 KEYCLOAK_VERIFY_SSL = True
 AUTHENTICATION_OPTIONS = {
-    'external': [
+    "external": [
         {
-            'idp_alias': 'oidc',
-            'name': 'Some OIDC compliant IDP',
+            "idp_alias": "oidc",
+            "name": "Some OIDC compliant IDP",
         }
     ]
 }
@@ -30,10 +30,9 @@ GATEWAY_ID = "gateway-id"
     KEYCLOAK_VERIFY_SSL=KEYCLOAK_VERIFY_SSL,
     AUTHENTICATION_OPTIONS=AUTHENTICATION_OPTIONS,
     GATEWAY_ID=GATEWAY_ID,
-    PORTAL_ADMINS=[('Admin Name', 'admin@example.org')],
+    PORTAL_ADMINS=[("Admin Name", "admin@example.org")],
 )
 class KeycloakBackendTestCase(TestCase):
-
     def setUp(self):
         self.factory = RequestFactory()
 
@@ -51,26 +50,26 @@ class KeycloakBackendTestCase(TestCase):
         request = self.factory.get("/callback?code=abc123", secure=True)
         request.user = AnonymousUser()
         request.session = {
-            'OAUTH2_STATE': 'state',
-            'OAUTH2_REDIRECT_URI': 'redirect-uri',
+            "OAUTH2_STATE": "state",
+            "OAUTH2_REDIRECT_URI": "redirect-uri",
         }
         mock_oauth2_session = MagicMock()
         MockOAuth2Session.return_value = mock_oauth2_session
         mock_oauth2_session.fetch_token.return_value = {
-            'access_token': 'the-access-token',
-            'expires_in': 900,
-            'refresh_token': 'the-refresh-token',
-            'refresh_expires_in': 86400,
+            "access_token": "the-access-token",
+            "expires_in": 900,
+            "refresh_token": "the-refresh-token",
+            "refresh_expires_in": 86400,
         }
         mock_userinfo = MagicMock()
         mock_oauth2_session.get.return_value = mock_userinfo
-        email = 'testuser@example.org'
+        email = "testuser@example.org"
         mock_userinfo.json.return_value = {
-            'sub': 'sub-123',
-            'preferred_username': email,
-            'email': email,
-            'given_name': 'Test',
-            'family_name': 'User',
+            "sub": "sub-123",
+            "preferred_username": email,
+            "email": email,
+            "given_name": "Test",
+            "family_name": "User",
         }
 
         # Mock out fetching IDP userinfo: AUTHENTICATION_OPTIONS: request to
@@ -96,26 +95,26 @@ class KeycloakBackendTestCase(TestCase):
         request = self.factory.get("/callback?code=abc123", secure=True)
         request.user = AnonymousUser()
         request.session = {
-            'OAUTH2_STATE': 'state',
-            'OAUTH2_REDIRECT_URI': 'redirect-uri',
+            "OAUTH2_STATE": "state",
+            "OAUTH2_REDIRECT_URI": "redirect-uri",
         }
         mock_oauth2_session = MagicMock()
         MockOAuth2Session.return_value = mock_oauth2_session
         mock_oauth2_session.fetch_token.return_value = {
-            'access_token': 'the-access-token',
-            'expires_in': 900,
-            'refresh_token': 'the-refresh-token',
-            'refresh_expires_in': 86400,
+            "access_token": "the-access-token",
+            "expires_in": 900,
+            "refresh_token": "the-refresh-token",
+            "refresh_expires_in": 86400,
         }
         mock_userinfo = MagicMock()
         mock_oauth2_session.get.return_value = mock_userinfo
         # email = 'testuser@example.org'
         mock_userinfo.json.return_value = {
-            'sub': 'sub-123',
-            'preferred_username': 'some-random-&invalid//-username',
+            "sub": "sub-123",
+            "preferred_username": "some-random-&invalid//-username",
             # 'email': email,
-            'given_name': 'Test',
-            'family_name': 'User',
+            "given_name": "Test",
+            "family_name": "User",
         }
 
         # Mock out fetching IDP userinfo: AUTHENTICATION_OPTIONS: request to
@@ -125,7 +124,7 @@ class KeycloakBackendTestCase(TestCase):
         idp_alias = "oidc"
         user = backend.authenticate(request, idp_alias=idp_alias)
 
-        self.assertFalse(user.user_profile.userinfo_set.filter(claim='email').exists())
+        self.assertFalse(user.user_profile.userinfo_set.filter(claim="email").exists())
         self.assertFalse(user.user_profile.username_initialized)
         self.assertEqual(1, len(mail.outbox))
         self.assertTrue(mail.outbox[0].subject.startswith("Please fix username"))
@@ -143,26 +142,26 @@ class KeycloakBackendTestCase(TestCase):
         request = self.factory.get("/callback?code=abc123", secure=True)
         request.user = AnonymousUser()
         request.session = {
-            'OAUTH2_STATE': 'state',
-            'OAUTH2_REDIRECT_URI': 'redirect-uri',
+            "OAUTH2_STATE": "state",
+            "OAUTH2_REDIRECT_URI": "redirect-uri",
         }
         mock_oauth2_session = MagicMock()
         MockOAuth2Session.return_value = mock_oauth2_session
         mock_oauth2_session.fetch_token.return_value = {
-            'access_token': 'the-access-token',
-            'expires_in': 900,
-            'refresh_token': 'the-refresh-token',
-            'refresh_expires_in': 86400,
+            "access_token": "the-access-token",
+            "expires_in": 900,
+            "refresh_token": "the-refresh-token",
+            "refresh_expires_in": 86400,
         }
         mock_userinfo = MagicMock()
         mock_oauth2_session.get.return_value = mock_userinfo
-        email = 'testuser@example.org'
+        email = "testuser@example.org"
         mock_userinfo.json.return_value = {
-            'sub': 'sub-123',
-            'preferred_username': 'some-random-&invalid//-username',
-            'email': email,
-            'given_name': 'Test',
-            'family_name': 'User',
+            "sub": "sub-123",
+            "preferred_username": "some-random-&invalid//-username",
+            "email": email,
+            "given_name": "Test",
+            "family_name": "User",
         }
 
         # Mock out fetching IDP userinfo: AUTHENTICATION_OPTIONS: request to
@@ -172,7 +171,7 @@ class KeycloakBackendTestCase(TestCase):
         idp_alias = "oidc"
         user = backend.authenticate(request, idp_alias=idp_alias)
 
-        self.assertTrue(user.user_profile.userinfo_set.filter(claim='email').exists())
+        self.assertTrue(user.user_profile.userinfo_set.filter(claim="email").exists())
         self.assertFalse(user.user_profile.username_initialized)
         self.assertEqual(1, len(mail.outbox))
         self.assertTrue(mail.outbox[0].subject.startswith("Please fix username"))

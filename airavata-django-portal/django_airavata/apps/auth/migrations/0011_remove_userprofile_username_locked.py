@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_airavata_auth', '0010_userprofile_username_initialized'),
+        ("django_airavata_auth", "0010_userprofile_username_initialized"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='userprofile',
-            name='username_locked',
+            model_name="userprofile",
+            name="username_locked",
         ),
     ]

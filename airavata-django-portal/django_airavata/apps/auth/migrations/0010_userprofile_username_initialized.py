@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_airavata_auth', '0009_auto_20210625_1725'),
+        ("django_airavata_auth", "0009_auto_20210625_1725"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='userprofile',
-            name='username_initialized',
+            model_name="userprofile",
+            name="username_initialized",
             field=models.BooleanField(default=False),
         ),
     ]

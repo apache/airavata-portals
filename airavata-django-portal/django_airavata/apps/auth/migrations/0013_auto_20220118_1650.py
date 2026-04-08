@@ -10,11 +10,8 @@ def default_username_initialized(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_airavata_auth', '0012_merge_20211210_2041'),
+        ("django_airavata_auth", "0012_merge_20211210_2041"),
     ]
 
-    operations = [
-        migrations.RunPython(default_username_initialized, migrations.RunPython.noop)
-    ]
+    operations = [migrations.RunPython(default_username_initialized, migrations.RunPython.noop)]

@@ -1,4 +1,3 @@
-
 import json
 
 from django.core.management.base import BaseCommand
@@ -12,8 +11,8 @@ class Command(BaseCommand):
         fixed_count = 0
         for pr in PageRevision.objects.all():
             content_json = json.loads(pr.content_json)
-            if content_json['content_type'] != pr.page.content_type.id:
-                content_json['content_type'] = pr.page.content_type.id
+            if content_json["content_type"] != pr.page.content_type.id:
+                content_json["content_type"] = pr.page.content_type.id
                 pr.content_json = json.dumps(content_json)
                 pr.save()
                 fixed_count = fixed_count + 1

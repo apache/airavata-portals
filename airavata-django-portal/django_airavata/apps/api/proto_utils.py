@@ -4,6 +4,7 @@ Used to create Django Rest Framework serializers for Airavata data types.
 Migrated from thrift_utils.py -- now works with proto-compatible data classes
 from django_airavata.proto_compat instead of Thrift-generated types.
 """
+
 import copy
 import datetime
 import enum
@@ -21,8 +22,9 @@ from rest_framework.serializers import (
     ListSerializer,
     Serializer,
     SerializerMetaclass,
-    ValidationError
+    ValidationError,
 )
+
 from django_airavata.proto_compat import (
     ApplicationParallelismType,
     DataType,
@@ -59,7 +61,6 @@ mapping = {
 
 
 class UTCPosixTimestampDateTimeField(DateTimeField):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.default = self.current_time_ms
@@ -67,7 +68,7 @@ class UTCPosixTimestampDateTimeField(DateTimeField):
         self.required = False
 
     def to_representation(self, obj):
-        dt = datetime.datetime.fromtimestamp(obj / 1000, datetime.timezone.utc)
+        dt = datetime.datetime.fromtimestamp(obj / 1000, datetime.UTC)
         return super().to_representation(dt)
 
     def to_internal_value(self, data):
@@ -82,7 +83,6 @@ class UTCPosixTimestampDateTimeField(DateTimeField):
 
 
 class ThriftEnumField(Field):
-
     def __init__(self, enumClass, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.enumClass = enumClass
@@ -114,22 +114,21 @@ def create_serializer(thrift_data_type, enable_date_time_conversion=False, **kwa
 
 def create_serializer_class(thrift_data_type, enable_date_time_conversion=False):
     class CustomSerializerMeta(SerializerMetaclass):
-
         def __new__(cls, name, bases, attrs):
-            meta = attrs.get('Meta', None)
+            meta = attrs.get("Meta", None)
             thrift_spec = thrift_data_type.thrift_spec
             for field in thrift_spec:
                 if field and field[2] not in attrs:
-                    required = (field[2] in meta.required
-                                if meta and hasattr(meta, 'required')
-                                else False)
-                    read_only = (field[2] in meta.read_only
-                                 if meta and hasattr(meta, 'read_only')
-                                 else False)
+                    required = field[2] in meta.required if meta and hasattr(meta, "required") else False
+                    read_only = field[2] in meta.read_only if meta and hasattr(meta, "read_only") else False
                     allow_null = not required
                     field_serializer = process_field(
-                        field, enable_date_time_conversion, required=required, read_only=read_only,
-                        allow_null=allow_null)
+                        field,
+                        enable_date_time_conversion,
+                        required=required,
+                        read_only=read_only,
+                        allow_null=allow_null,
+                    )
                     attrs[field[2]] = field_serializer
             return super().__new__(cls, name, bases, attrs)
 
@@ -142,32 +141,28 @@ def create_serializer_class(thrift_data_type, enable_date_time_conversion=False)
             fields = self.fields
             params = copy.deepcopy(validated_data)
             for field_name, serializer in fields.items():
-                if (isinstance(serializer, ListField) or
-                        isinstance(serializer, ListSerializer)):
-                    if (params.get(field_name, None) is not None or
-                            not serializer.allow_null):
+                if isinstance(serializer, ListField) or isinstance(serializer, ListSerializer):
+                    if params.get(field_name, None) is not None or not serializer.allow_null:
                         if isinstance(serializer.child, Serializer):
-                            if field_name == 'experimentInputs' and 'type' in serializer.child.fields:
+                            if (
+                                field_name == "experimentInputs"
+                                and "type" in serializer.child.fields
+                                or field_name == "experimentOutputs"
+                                and "type" in serializer.child.fields
+                            ):
                                 for item in params[field_name]:
-                                    if 'type' in item and isinstance(item['type'], int):
-                                        item['type'] = DataType(item['type'])
-                            elif field_name == 'experimentOutputs' and 'type' in serializer.child.fields:
+                                    if "type" in item and isinstance(item["type"], int):
+                                        item["type"] = DataType(item["type"])
+                            elif field_name == "experimentStatus" and "state" in serializer.child.fields:
                                 for item in params[field_name]:
-                                    if 'type' in item and isinstance(item['type'], int):
-                                        item['type'] = DataType(item['type'])
-                            elif field_name == 'experimentStatus' and 'state' in serializer.child.fields:
-                                for item in params[field_name]:
-                                    if 'state' in item and isinstance(item['state'], int):
-                                        item['state'] = ExperimentState(item['state'])
-                            params[field_name] = [serializer.child.create(
-                                item) for item in params[field_name]]
+                                    if "state" in item and isinstance(item["state"], int):
+                                        item["state"] = ExperimentState(item["state"])
+                            params[field_name] = [serializer.child.create(item) for item in params[field_name]]
                         else:
-                            params[field_name] = serializer.to_representation(
-                                params[field_name])
+                            params[field_name] = serializer.to_representation(params[field_name])
                 elif isinstance(serializer, Serializer):
                     if field_name in params and params[field_name] is not None:
-                        params[field_name] = serializer.create(
-                            params[field_name])
+                        params[field_name] = serializer.create(params[field_name])
             return params
 
         def create(self, validated_data):
@@ -183,13 +178,19 @@ def create_serializer_class(thrift_data_type, enable_date_time_conversion=False)
                         if field_name in params and params[field_name] is None:
                             del params[field_name]
 
-            if (thrift_data_type.__name__ == 'ExperimentModel' and
-                'experimentType' in params and isinstance(params['experimentType'], int)):
-                params['experimentType'] = ExperimentType(params['experimentType'])
+            if (
+                thrift_data_type.__name__ == "ExperimentModel"
+                and "experimentType" in params
+                and isinstance(params["experimentType"], int)
+            ):
+                params["experimentType"] = ExperimentType(params["experimentType"])
 
-            if (thrift_data_type.__name__ == 'ApplicationDeploymentDescription' and
-                'parallelism' in params and isinstance(params['parallelism'], int)):
-                params['parallelism'] = ApplicationParallelismType(params['parallelism'])
+            if (
+                thrift_data_type.__name__ == "ApplicationDeploymentDescription"
+                and "parallelism" in params
+                and isinstance(params["parallelism"], int)
+            ):
+                params["parallelism"] = ApplicationParallelismType(params["parallelism"])
 
             return thrift_data_type(**params)
 
@@ -204,12 +205,17 @@ def process_field(field, enable_date_time_conversion, required=False, read_only=
         field_class = mapping[field[1]]
         kwargs = dict(required=required, read_only=read_only)
         if field_class not in (BooleanField,):
-            kwargs['allow_null'] = allow_null
+            kwargs["allow_null"] = allow_null
         if field_class == CharField:
-            kwargs['allow_blank'] = allow_null
+            kwargs["allow_blank"] = allow_null
         thrift_model_class = mapping[field[1]]
 
-        if thrift_model_class == IntegerField and field[3] is not None and isinstance(field[3], type) and issubclass(field[3], enum.IntEnum):
+        if (
+            thrift_model_class == IntegerField
+            and field[3] is not None
+            and isinstance(field[3], type)
+            and issubclass(field[3], enum.IntEnum)
+        ):
             return ThriftEnumField(field[3], required=required, read_only=read_only, allow_null=allow_null)
 
         if enable_date_time_conversion and thrift_model_class == IntegerField and field[2].lower().endswith("time"):
@@ -217,15 +223,9 @@ def process_field(field, enable_date_time_conversion, required=False, read_only=
         return thrift_model_class(**kwargs)
     elif field[1] == TTYPE_LIST:
         list_field_serializer = process_list_field(field)
-        return ListField(child=list_field_serializer,
-                         required=required,
-                         read_only=read_only,
-                         allow_null=allow_null)
+        return ListField(child=list_field_serializer, required=required, read_only=read_only, allow_null=allow_null)
     elif field[1] == TTYPE_STRUCT:
-        return create_serializer(field[3][0],
-                                 required=required,
-                                 read_only=read_only,
-                                 allow_null=allow_null)
+        return create_serializer(field[3][0], required=required, read_only=read_only, allow_null=allow_null)
 
 
 def process_list_field(field):
@@ -233,10 +233,12 @@ def process_list_field(field):
     item_ttype = list_details[0]
     item_type_info = list_details[1]
 
-    if (item_ttype == TTYPE_I32 and
-        item_type_info is not None and
-        isinstance(item_type_info, type) and
-        issubclass(item_type_info, enum.IntEnum)):
+    if (
+        item_ttype == TTYPE_I32
+        and item_type_info is not None
+        and isinstance(item_type_info, type)
+        and issubclass(item_type_info, enum.IntEnum)
+    ):
         return ThriftEnumField(item_type_info)
 
     if item_ttype in mapping:

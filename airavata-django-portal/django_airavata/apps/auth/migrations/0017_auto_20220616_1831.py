@@ -40,16 +40,14 @@ def default_templates(apps, schema_editor):
             {% endfor %}
             </table>
             {% endif %}
-        """.strip())
+        """.strip(),
+    )
     user_profile_completed_template.save()
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_airavata_auth', '0016_extendeduserprofilefield_required'),
+        ("django_airavata_auth", "0016_extendeduserprofilefield_required"),
     ]
 
-    operations = [
-        migrations.RunPython(default_templates)
-    ]
+    operations = [migrations.RunPython(default_templates)]

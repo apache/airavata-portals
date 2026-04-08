@@ -6,10 +6,8 @@ from django.db import models
 class WorkspacePreferences(models.Model):
     username = models.CharField(max_length=64, primary_key=True)
     most_recent_project_id = models.CharField(max_length=255, null=True)
-    most_recent_group_resource_profile_id = models.CharField(max_length=255,
-                                                             null=True)
-    most_recent_compute_resource_id = models.CharField(max_length=255,
-                                                       null=True)
+    most_recent_group_resource_profile_id = models.CharField(max_length=255, null=True)
+    most_recent_compute_resource_id = models.CharField(max_length=255, null=True)
 
     @classmethod
     def create(cls, username):
@@ -20,16 +18,15 @@ class ApplicationPreferences(models.Model):
     username = models.CharField(max_length=64)
     application_id = models.CharField(max_length=64)
     favorite = models.BooleanField(default=False)
-    workspace_preferences = models.ForeignKey(WorkspacePreferences,
-                                              on_delete=models.CASCADE)
+    workspace_preferences = models.ForeignKey(WorkspacePreferences, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = (('username', 'application_id'),)
+        unique_together = (("username", "application_id"),)
 
 
 class NotificationExtension(models.Model):
     class Meta:
-        unique_together = (('notification_id', ),)
+        unique_together = (("notification_id",),)
 
     notification_id = models.CharField(max_length=255)
     showInDashboard = models.BooleanField(default=False)
@@ -37,7 +34,7 @@ class NotificationExtension(models.Model):
 
 class User_Notifications(models.Model):
     class Meta:
-        unique_together = (('username', 'notification_id'),)
+        unique_together = (("username", "notification_id"),)
 
     username = models.CharField(max_length=64)
     notification_id = models.CharField(max_length=255)
@@ -57,13 +54,15 @@ class ApplicationTemplate(models.Model):
 
 
 class ApplicationTemplateContextProcessor(models.Model):
-    application_template = models.ForeignKey(ApplicationTemplate, on_delete=models.CASCADE, related_name="context_processors")
+    application_template = models.ForeignKey(
+        ApplicationTemplate, on_delete=models.CASCADE, related_name="context_processors"
+    )
     # Use django.util.module_loading.import_string to import
     # https://docs.djangoproject.com/en/3.2/ref/utils/#module-django.utils.module_loading
     callable_path = models.CharField(max_length=255)
 
     class Meta:
-        unique_together = (('application_template', 'callable_path'),)
+        unique_together = (("application_template", "callable_path"),)
 
     def __str__(self):
         return self.callable_path

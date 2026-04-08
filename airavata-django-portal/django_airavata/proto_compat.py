@@ -11,10 +11,10 @@ suffice since the SDK's gRPC facade returns these objects already.
 
 import enum
 
-
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
+
 
 class DataType(enum.IntEnum):
     STRING = 0
@@ -109,6 +109,7 @@ class Status(enum.IntEnum):
 # instances in serializers.
 # ---------------------------------------------------------------------------
 
+
 class _ThriftLikeBase:
     """Base that accepts **kwargs and sets them as attributes, with a
     thrift_spec class variable for backward compat with the serializer
@@ -122,11 +123,12 @@ class _ThriftLikeBase:
             setattr(self, key, value)
 
     def __repr__(self):
-        attrs = ', '.join(f'{k}={v!r}' for k, v in self.__dict__.items())
-        return f'{self.__class__.__name__}({attrs})'
+        attrs = ", ".join(f"{k}={v!r}" for k, v in self.__dict__.items())
+        return f"{self.__class__.__name__}({attrs})"
 
 
 # -- Application IO --
+
 
 class InputDataObjectType(_ThriftLikeBase):
     pass
@@ -137,6 +139,7 @@ class OutputDataObjectType(_ThriftLikeBase):
 
 
 # -- App Catalog: deployment --
+
 
 class ApplicationDeploymentDescription(_ThriftLikeBase):
     pass
@@ -156,11 +159,13 @@ class SetEnvPaths(_ThriftLikeBase):
 
 # -- App Catalog: interface --
 
+
 class ApplicationInterfaceDescription(_ThriftLikeBase):
     pass
 
 
 # -- App Catalog: compute resource --
+
 
 class ComputeResourceDescription(_ThriftLikeBase):
     pass
@@ -192,6 +197,7 @@ class UnicoreJobSubmission(_ThriftLikeBase):
 
 # -- App Catalog: gateway profile --
 
+
 class GatewayResourceProfile(_ThriftLikeBase):
     pass
 
@@ -201,6 +207,7 @@ class StoragePreference(_ThriftLikeBase):
 
 
 # -- App Catalog: group resource profile --
+
 
 class ComputeResourceReservation(_ThriftLikeBase):
     pass
@@ -240,11 +247,13 @@ class GroupAccountSSHProvisionerConfig(_ThriftLikeBase):
 
 # -- App Catalog: parser --
 
+
 class Parser(_ThriftLikeBase):
     pass
 
 
 # -- App Catalog: storage resource --
+
 
 class StorageResourceDescription(_ThriftLikeBase):
     pass
@@ -252,11 +261,13 @@ class StorageResourceDescription(_ThriftLikeBase):
 
 # -- Credential store --
 
+
 class CredentialSummary(_ThriftLikeBase):
     pass
 
 
 # -- Data replica --
+
 
 class DataProductModel(_ThriftLikeBase):
     pass
@@ -267,6 +278,7 @@ class DataReplicaLocationModel(_ThriftLikeBase):
 
 
 # -- Data movement --
+
 
 class GridFTPDataMovement(_ThriftLikeBase):
     pass
@@ -286,6 +298,7 @@ class UnicoreDataMovement(_ThriftLikeBase):
 
 # -- Experiment --
 
+
 class ExperimentModel(_ThriftLikeBase):
     pass
 
@@ -300,17 +313,20 @@ class ExperimentSummaryModel(_ThriftLikeBase):
 
 # -- Group --
 
+
 class GroupModel(_ThriftLikeBase):
     pass
 
 
 # -- Job --
 
+
 class JobModel(_ThriftLikeBase):
     pass
 
 
 # -- Status --
+
 
 class ExperimentStatus(_ThriftLikeBase):
     pass
@@ -322,11 +338,13 @@ class ProcessStatus(_ThriftLikeBase):
 
 # -- User --
 
+
 class UserProfile(_ThriftLikeBase):
     pass
 
 
 # -- Workspace --
+
 
 class Notification(_ThriftLikeBase):
     pass
@@ -337,6 +355,7 @@ class Project(_ThriftLikeBase):
 
 
 # -- Gateway groups --
+
 
 class GatewayGroups(_ThriftLikeBase):
     pass

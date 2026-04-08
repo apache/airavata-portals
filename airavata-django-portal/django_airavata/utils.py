@@ -1,8 +1,7 @@
 import logging
 
-from django.conf import settings
-
 from airavata_sdk import AiravataClient
+from django.conf import settings
 
 log = logging.getLogger(__name__)
 
@@ -14,5 +13,5 @@ def create_airavata_client(access_token, gateway_id):
         port=settings.AIRAVATA_API_PORT,
         token=access_token,
         gateway_id=gateway_id,
-        secure=getattr(settings, 'AIRAVATA_API_SECURE', False),
+        secure=getattr(settings, "AIRAVATA_API_SECURE", False),
     )

@@ -18,7 +18,7 @@ class AiravataClientMiddleware:
         request.airavata_client = create_airavata_client(access_token, gateway_id)
         try:
             response = self.get_response(request)
-        except Exception as e:
+        except Exception:
             logger.exception("Error during request processing")
             raise
         finally:
@@ -30,16 +30,18 @@ class AiravataClientMiddleware:
         if isinstance(exception, ConnectionError):
             return render(
                 request,
-                'django_airavata/error_page.html',
+                "django_airavata/error_page.html",
                 status=500,
                 context={
-                    'title': 'Airavata is down',
-                    'text': """The Airavata API server is not reachable. Please try again."""})
+                    "title": "Airavata is down",
+                    "text": """The Airavata API server is not reachable. Please try again.""",
+                },
+            )
         return None
 
 
 def _get_access_token(request):
     """Extract access token from request auth or session."""
-    if hasattr(request, 'auth') and request.auth is not None:
+    if hasattr(request, "auth") and request.auth is not None:
         return request.auth
-    return request.session.get('ACCESS_TOKEN', '')
+    return request.session.get("ACCESS_TOKEN", "")
