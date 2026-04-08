@@ -564,7 +564,8 @@ def access_token_redirect(request):
 @login_required
 def user_profile(request):
     return render(request, "django_airavata_auth/base.html", {
-        'bundle_name': "user-profile"
+        'bundle_name': "user-profile",
+        'entry_point': "static/django_airavata_auth/js/entry-user-profile.js",
     })
 
 

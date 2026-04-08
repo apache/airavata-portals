@@ -1,5 +1,5 @@
 {% load navigation_tags static %}
-{% load render_bundle from webpack_loader %}
+{% load django_vite %}
 {% load humanize %}
 <!DOCTYPE html>
 
@@ -7,8 +7,7 @@
   {% favicon %}
   {% include "./django_airavata/google_analytics.html" %}
 
-  {% render_bundle 'chunk-vendors' 'css' 'COMMON' %}
-  {% render_bundle 'app' 'css' 'COMMON' %}
+  {% vite_asset "js/main.js" app="default" %}
   {% block css %}
 
   {% endblock %}
@@ -155,15 +154,15 @@
     {% if user.is_authenticated %}
     <div class=c-header__controls>
       <div id="gateway-notices" data-unread-count="{{ unread_notifications }}" data-notices="{{ notifications }}"></div>
-      <div class="btn-group ml-3">
+      <div class="btn-group ms-3">
         <div class=dropdown>
-          <a href=# class="dropdown-toggle text-dark" id=appDropdownMenuButton data-toggle=dropdown aria-haspopup=true
+          <a href=# class="dropdown-toggle text-dark" id=appDropdownMenuButton data-bs-toggle=dropdown aria-haspopup=true
             aria-expanded=false>
             {% if current_airavata_app %}
-            <i class="fa {{ current_airavata_app.fa_icon_class }} mr-2"></i>
+            <i class="fa {{ current_airavata_app.fa_icon_class }} me-2"></i>
             {{ current_airavata_app.verbose_name }}
             {% elif current_custom_app %}
-            <i class="fa {{ current_custom_app.fa_icon_class }} mr-2"></i>
+            <i class="fa {{ current_custom_app.fa_icon_class }} me-2"></i>
             {{ current_custom_app.verbose_name }}
             {% else %}
             Menu
@@ -173,11 +172,11 @@
             {% for app in airavata_apps %}
             {% if app == current_airavata_app %}
             <a class="dropdown-item active" href="{% url app.url_home %}">
-              <i class="fa {{ app.fa_icon_class }} mr-2"></i>{{ app.verbose_name }}
+              <i class="fa {{ app.fa_icon_class }} me-2"></i>{{ app.verbose_name }}
             </a>
             {% else %}
             <a class="dropdown-item" href="{% url app.url_home %}">
-              <i class="fa {{ app.fa_icon_class }} mr-2"></i>{{ app.verbose_name }}
+              <i class="fa {{ app.fa_icon_class }} me-2"></i>{{ app.verbose_name }}
             </a>
             {% endif %}
             {% endfor %}
@@ -186,11 +185,11 @@
               {% for app in custom_apps %}
                 {% if current_custom_app and app.label == current_custom_app.label %}
                 <a class="dropdown-item active" href="{% url app.url_home %}">
-                  <i class="fa {{ app.fa_icon_class }} mr-2"></i>{{ app.verbose_name }}
+                  <i class="fa {{ app.fa_icon_class }} me-2"></i>{{ app.verbose_name }}
                 </a>
                 {% else %}
                 <a class="dropdown-item" href="{% url app.url_home %}">
-                  <i class="fa {{ app.fa_icon_class }} mr-2"></i>{{ app.verbose_name }}
+                  <i class="fa {{ app.fa_icon_class }} me-2"></i>{{ app.verbose_name }}
                 </a>
                 {% endif %}
               {% endfor %}
@@ -199,11 +198,11 @@
           </div>
         </div>
       </div>
-      <div class="btn-group ml-3">
+      <div class="btn-group ms-3">
         <div class=dropdown>
-          <a href=# class="dropdown-toggle text-dark" id=dropdownMenuButton data-toggle=dropdown aria-haspopup=true
+          <a href=# class="dropdown-toggle text-dark" id=dropdownMenuButton data-bs-toggle=dropdown aria-haspopup=true
             aria-expanded=false>
-            <i class="fa fa-user mr-2"></i>
+            <i class="fa fa-user me-2"></i>
             {{ request.user.first_name }} {{ request.user.last_name }}
           </a>
           <div class=dropdown-menu aria-labelledby=dropdownMenuButton>
@@ -233,13 +232,13 @@
     <nav class=c-nav>
       {% block nav-items %}
         {% for nav_item in airavata_app_nav %}
-          <a href="{% url nav_item.url %}" class="c-nav__item {% if nav_item.active %}is-active{% endif %}" data-toggle=tooltip data-placement=right title="{{ nav_item.label }}">
-              <i class="{{ nav_item.icon }}"></i> <span class=sr-only>{{ nav_item.label }}</span>
+          <a href="{% url nav_item.url %}" class="c-nav__item {% if nav_item.active %}is-active{% endif %}" data-bs-toggle=tooltip data-bs-placement=right title="{{ nav_item.label }}">
+              <i class="{{ nav_item.icon }}"></i> <span class=visually-hidden>{{ nav_item.label }}</span>
           </a>
         {% endfor %}
         {% for nav_item in custom_app_nav %}
-          <a href="{% url nav_item.url %}" class="c-nav__item {% if nav_item.active %}is-active{% endif %}" data-toggle=tooltip data-placement=right title="{{ nav_item.label }}">
-              <i class="{{ nav_item.icon }}"></i> <span class=sr-only>{{ nav_item.label }}</span>
+          <a href="{% url nav_item.url %}" class="c-nav__item {% if nav_item.active %}is-active{% endif %}" data-bs-toggle=tooltip data-bs-placement=right title="{{ nav_item.label }}">
+              <i class="{{ nav_item.icon }}"></i> <span class=visually-hidden>{{ nav_item.label }}</span>
           </a>
         {% endfor %}
       {% endblock %}
@@ -256,10 +255,8 @@
     // provide data for initializing api's session.Session
     window.AiravataPortalSessionData = {{ user_session_data|safe }};
   </script>
-  {% render_bundle 'chunk-vendors' 'js' 'COMMON' %}
-  {% render_bundle 'app' 'js' 'COMMON' %}
   {% if user.is_authenticated %}
-    {% render_bundle 'notices' 'js' 'COMMON' %}
+    {% vite_asset "js/notices.js" app="default" %}
   {% endif %}
   {% block scripts %}
   {% endblock %}

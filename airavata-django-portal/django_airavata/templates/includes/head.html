@@ -1,5 +1,5 @@
 {% load static navigation_tags %}
-{% load render_bundle from webpack_loader %}
+{% load django_vite %}
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -22,7 +22,6 @@
     {% include "../django_airavata/google_analytics.html" %}
 
     <!-- Bootstrap Core + Font awesome CSS (see common/js/cms.js) -->
-    {% render_bundle 'chunk-vendors' 'css' 'COMMON' %}
 
     {% block head-extra %}
       {% include "includes/head-extra.html" %}
