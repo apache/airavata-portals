@@ -1,10 +1,9 @@
 import logging
 
-import thrift
-import thrift.transport.TTransport
+from django.conf import settings
 from django.shortcuts import render
 
-from . import utils
+from .utils import create_airavata_client
 
 logger = logging.getLogger(__name__)
 
@@ -14,14 +13,21 @@ class AiravataClientMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        with utils.airavata_api_client_pool.connection() as airavata_client:
-            request.airavata_client = airavata_client
+        access_token = _get_access_token(request)
+        gateway_id = settings.GATEWAY_ID
+        request.airavata_client = create_airavata_client(access_token, gateway_id)
+        try:
             response = self.get_response(request)
-
+        except Exception as e:
+            logger.exception("Error during request processing")
+            raise
+        finally:
+            request.airavata_client.close()
         return response
 
     def process_exception(self, request, exception):
-        if isinstance(exception, thrift.transport.TTransport.TTransportException):
+        # Handle connection errors to the Airavata API server
+        if isinstance(exception, ConnectionError):
             return render(
                 request,
                 'django_airavata/error_page.html',
@@ -29,27 +35,11 @@ class AiravataClientMiddleware:
                 context={
                     'title': 'Airavata is down',
                     'text': """The Airavata API server is not reachable. Please try again."""})
-        else:
-            return None
+        return None
 
 
-def profile_service_client(get_response):
-    """Open and close Profile Service client for each request.
-
-    Usage:
-        request.profile_service['group_manager'].getGroup(
-            request.authz_token, groupId)
-    """
-
-    def middleware(request):
-        request.profile_service = {
-            'group_manager': utils.group_manager_client_pool,
-            'iam_admin': utils.iamadmin_client_pool,
-            'tenant_profile': utils.tenant_profile_client_pool,
-            'user_profile': utils.user_profile_client_pool,
-        }
-        response = get_response(request)
-
-        return response
-
-    return middleware
+def _get_access_token(request):
+    """Extract access token from request auth or session."""
+    if hasattr(request, 'auth') and request.auth is not None:
+        return request.auth
+    return request.session.get('ACCESS_TOKEN', '')

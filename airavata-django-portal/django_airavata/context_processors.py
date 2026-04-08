@@ -19,8 +19,8 @@ def get_notifications(request):
     if request.user.is_authenticated and hasattr(request, 'airavata_client'):
         unread_notifications = 0
         try:
-            notifications = request.airavata_client.getAllNotifications(
-                request.authz_token, settings.GATEWAY_ID)
+            notifications = request.airavata_client.research.get_all_notifications(
+                settings.GATEWAY_ID)
         except Exception:
             logger.warning("Failed to load notifications")
             notifications = []
