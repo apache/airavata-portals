@@ -25,6 +25,7 @@ from wagtail.documents import urls as wagtaildocs_urls
 from . import views
 
 urlpatterns = [
+    path('health/', views.health, name='health'),
     re_path(r'^djadmin/', admin.site.urls),
     re_path(r'^admin/', include('django_airavata.apps.admin.urls')),
     re_path(r'^auth/', include('django_airavata.apps.auth.urls')),
