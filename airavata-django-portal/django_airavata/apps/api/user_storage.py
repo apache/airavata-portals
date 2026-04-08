@@ -1,0 +1,284 @@
+"""Thin compatibility layer over the SDK facade's StorageClient.
+
+Replaces the deleted ``airavata_django_portal_sdk.user_storage`` module.
+Every function here accepts ``request`` as its first argument (to mirror the
+old API) and delegates to ``request.airavata_client.storage``.
+"""
+
+import io
+import logging
+import os
+
+from django.conf import settings
+
+log = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Helpers to extract file paths from DataProductModel proto objects
+# ---------------------------------------------------------------------------
+
+def _get_replica_filepath(data_product):
+    """Return the file_path from the first GATEWAY_DATA_STORE replica location."""
+    for replica in data_product.replica_locations:
+        if replica.file_path:
+            return replica.file_path
+    return None
+
+
+def _get_replica_storage_resource_id(data_product):
+    """Return the storage_resource_id from the first replica location."""
+    for replica in data_product.replica_locations:
+        if replica.storage_resource_id:
+            return replica.storage_resource_id
+    return None
+
+
+# ---------------------------------------------------------------------------
+# File existence / metadata
+# ---------------------------------------------------------------------------
+
+def exists(request, data_product):
+    """Check whether the file backing *data_product* exists in user storage."""
+    path = _get_replica_filepath(data_product)
+    if not path:
+        return False
+    try:
+        return request.airavata_client.storage.file_exists(path)
+    except Exception:
+        return False
+
+
+def dir_exists(request, path, experiment_id=None):
+    """Check whether *path* exists as a directory in user storage."""
+    if experiment_id:
+        return experiment_dir_exists(request, experiment_id, path)
+    return request.airavata_client.storage.dir_exists(path)
+
+
+def experiment_dir_exists(request, experiment_id, path=""):
+    """Check whether the experiment output directory exists."""
+    try:
+        request.airavata_client.storage.list_experiment_dir(experiment_id, path)
+        return True
+    except Exception:
+        return False
+
+
+def is_input_file(request, data_product):
+    """Return True if the data product's path is under the inputs directory."""
+    path = _get_replica_filepath(data_product)
+    if not path:
+        return False
+    # Input files are stored under a path that contains "/inputs/" or starts with "inputs/"
+    normalized = path.replace("\\", "/")
+    return "/inputs/" in normalized or normalized.startswith("inputs/")
+
+
+# ---------------------------------------------------------------------------
+# File / directory listing
+# ---------------------------------------------------------------------------
+
+def listdir(request, path, experiment_id=None):
+    """List the contents of *path*, returning (directories, files) dicts."""
+    if experiment_id:
+        return list_experiment_dir(request, experiment_id, path)
+    resp = request.airavata_client.storage.list_dir(path)
+    directories = _metadata_list_to_dicts(resp.directories)
+    files = _metadata_list_to_dicts(resp.files)
+    return directories, files
+
+
+def list_experiment_dir(request, experiment_id, path=""):
+    """List the experiment output directory."""
+    resp = request.airavata_client.storage.list_experiment_dir(experiment_id, path)
+    directories = _metadata_list_to_dicts(resp.directories)
+    files = _metadata_list_to_dicts(resp.files)
+    return directories, files
+
+
+def _metadata_list_to_dicts(items):
+    """Convert repeated FileMetadataResponse protos to plain dicts."""
+    result = []
+    for item in items:
+        result.append({
+            "name": item.name,
+            "path": item.path,
+            "size": item.size,
+            "created_time": item.created_time,
+            "modified_time": item.modified_time,
+            "data-product-uri": item.data_product_uri,
+            "mime_type": item.content_type,
+            "hidden": False,
+        })
+    return result
+
+
+# ---------------------------------------------------------------------------
+# File open / download
+# ---------------------------------------------------------------------------
+
+def open_file(request, data_product):
+    """Download the file for *data_product* and return a file-like object."""
+    path = _get_replica_filepath(data_product)
+    resp = request.airavata_client.storage.download_file(path)
+    f = io.BytesIO(resp.content)
+    f.name = resp.name or os.path.basename(path)
+    return f
+
+
+# ---------------------------------------------------------------------------
+# File upload / save
+# ---------------------------------------------------------------------------
+
+def save_input_file(request, input_file, name=None, content_type=""):
+    """Upload *input_file* to the user's input files directory.
+
+    Returns a DataProductModel proto.
+    """
+    file_name = name or getattr(input_file, "name", "uploaded_file")
+    content = input_file.read()
+    resp = request.airavata_client.storage.upload_file(
+        path="inputs",
+        content=content,
+        name=file_name,
+        content_type=content_type or "",
+    )
+    # The upload returns a FileUploadResponse with a data product URI.
+    # Fetch and return the full DataProductModel.
+    return request.airavata_client.research.get_data_product(resp.uri)
+
+
+def save(request, path, file_obj, name=None, content_type="", experiment_id=None):
+    """Upload *file_obj* to *path* in user storage.
+
+    Returns a DataProductModel proto.
+    """
+    file_name = name or getattr(file_obj, "name", "uploaded_file")
+    content = file_obj.read()
+    resp = request.airavata_client.storage.upload_file(
+        path=path,
+        content=content,
+        name=file_name,
+        content_type=content_type or "",
+    )
+    return request.airavata_client.research.get_data_product(resp.uri)
+
+
+# ---------------------------------------------------------------------------
+# File content update
+# ---------------------------------------------------------------------------
+
+def update_data_product_content(request, data_product, fileContentText):
+    """Replace the content of the file backing *data_product* with *fileContentText*."""
+    path = _get_replica_filepath(data_product)
+    name = os.path.basename(path)
+    request.airavata_client.storage.upload_file(
+        path=os.path.dirname(path),
+        content=fileContentText.encode("utf-8"),
+        name=name,
+    )
+
+
+def update_file_content(request, path, fileContentText):
+    """Replace the content of the file at *path* with *fileContentText*."""
+    name = os.path.basename(path)
+    request.airavata_client.storage.upload_file(
+        path=os.path.dirname(path),
+        content=fileContentText.encode("utf-8"),
+        name=name,
+    )
+
+
+# ---------------------------------------------------------------------------
+# File / directory creation and deletion
+# ---------------------------------------------------------------------------
+
+def create_user_dir(request, path, experiment_id=None):
+    """Create a directory at *path*. Returns (storage_resource_id, created_path)."""
+    resp = request.airavata_client.storage.create_dir(path)
+    return None, resp.created_path
+
+
+def create_symlink(request, source_path, dest_path):
+    """Create a symlink from *source_path* to *dest_path*."""
+    request.airavata_client.storage.create_symlink(source_path, dest_path)
+
+
+def delete(request, data_product):
+    """Delete the file backing *data_product*."""
+    path = _get_replica_filepath(data_product)
+    if path:
+        request.airavata_client.storage.delete_file(path)
+
+
+def delete_user_file(request, path, experiment_id=None):
+    """Delete a user file at *path*."""
+    request.airavata_client.storage.delete_file(path)
+
+
+def delete_dir(request, path, experiment_id=None):
+    """Delete a directory at *path*."""
+    request.airavata_client.storage.delete_dir(path)
+
+
+# ---------------------------------------------------------------------------
+# File metadata
+# ---------------------------------------------------------------------------
+
+def get_file_metadata(request, path, experiment_id=None):
+    """Get metadata for the file at *path*. Returns a dict."""
+    resp = request.airavata_client.storage.get_file_metadata(path)
+    return {
+        "name": resp.name,
+        "path": resp.path,
+        "size": resp.size,
+        "created_time": resp.created_time,
+        "modified_time": resp.modified_time,
+        "data-product-uri": resp.data_product_uri,
+        "mime_type": resp.content_type,
+        "hidden": False,
+    }
+
+
+def get_data_product_metadata(request, data_product=None, data_product_uri=None):
+    """Get metadata for a data product. Returns a dict with path, size, etc."""
+    if data_product is None and data_product_uri:
+        data_product = request.airavata_client.research.get_data_product(data_product_uri)
+    path = _get_replica_filepath(data_product)
+    if not path:
+        return {"path": "", "size": 0, "userHasWriteAccess": False}
+    try:
+        resp = request.airavata_client.storage.get_file_metadata(path)
+        return {
+            "name": resp.name,
+            "path": resp.path,
+            "size": resp.size,
+            "created_time": resp.created_time,
+            "modified_time": resp.modified_time,
+            "data-product-uri": resp.data_product_uri,
+            "mime_type": resp.content_type,
+            "userHasWriteAccess": True,
+        }
+    except Exception:
+        return {"path": path, "size": 0, "userHasWriteAccess": False}
+
+
+# ---------------------------------------------------------------------------
+# Download URL helpers
+# ---------------------------------------------------------------------------
+
+def get_download_url(request, data_product_uri=None):
+    """Return a URL to download the file for *data_product_uri*."""
+    from django.urls import reverse
+    from urllib.parse import quote
+    return reverse("django_airavata_api:download_file") + f"?data-product-uri={quote(data_product_uri)}"
+
+
+def get_lazy_download_url(request, data_product=None, data_product_uri=None):
+    """Return a download URL. Accepts either a data_product or data_product_uri."""
+    if data_product_uri:
+        return get_download_url(request, data_product_uri=data_product_uri)
+    if data_product:
+        return get_download_url(request, data_product_uri=data_product.product_uri)
+    return None
