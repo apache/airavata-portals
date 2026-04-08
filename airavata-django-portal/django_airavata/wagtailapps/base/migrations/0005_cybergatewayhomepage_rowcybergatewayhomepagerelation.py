@@ -2,8 +2,8 @@
 
 import django.db.models.deletion
 import modelcluster.fields
-import wagtail.core.blocks
-import wagtail.core.fields
+import wagtail.blocks
+import wagtail.fields
 import wagtail.embeds.blocks
 import wagtail.images.blocks
 from django.db import migrations, models
@@ -42,35 +42,35 @@ class Migration(migrations.Migration):
                 ("site_link_text3", models.CharField(help_text="Give a Site Nav Link Text [3]", max_length=70)),
                 (
                     "footer",
-                    wagtail.core.fields.StreamField(
+                    wagtail.fields.StreamField(
                         (
                             (
                                 "paragraph_block",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
                                             ),
                                         ),
-                                        ("body", wagtail.core.blocks.RichTextBlock()),
+                                        ("body", wagtail.blocks.RichTextBlock()),
                                     )
                                 ),
                             ),
                             (
                                 "image_block",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         ("image", wagtail.images.blocks.ImageChooserBlock(required=True)),
-                                        ("caption", wagtail.core.blocks.CharBlock(required=False)),
-                                        ("width", wagtail.core.blocks.CharBlock(required=False)),
-                                        ("height", wagtail.core.blocks.IntegerBlock(required=False)),
+                                        ("caption", wagtail.blocks.CharBlock(required=False)),
+                                        ("width", wagtail.blocks.CharBlock(required=False)),
+                                        ("height", wagtail.blocks.IntegerBlock(required=False)),
                                         (
                                             "redirect_url",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="Give a redirect link on clicking the image",
                                                 null=True,
@@ -79,7 +79,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -90,12 +90,12 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "embed_block",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         ("embed", wagtail.embeds.blocks.EmbedBlock()),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -106,15 +106,15 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "heading_block",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "heading_text",
-                                            wagtail.core.blocks.CharBlock(classname="title", required=True),
+                                            wagtail.blocks.CharBlock(classname="title", required=True),
                                         ),
                                         (
                                             "size",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("", "Select a header size"),
@@ -128,7 +128,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -139,15 +139,15 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_jumbotron",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
-                                        ("title", wagtail.core.blocks.TextBlock()),
-                                        ("body", wagtail.core.blocks.RichTextBlock()),
-                                        ("button_text", wagtail.core.blocks.TextBlock(required=False)),
-                                        ("button_link", wagtail.core.blocks.TextBlock(required=False)),
+                                        ("title", wagtail.blocks.TextBlock()),
+                                        ("body", wagtail.blocks.RichTextBlock()),
+                                        ("button_text", wagtail.blocks.TextBlock(required=False)),
+                                        ("button_link", wagtail.blocks.TextBlock(required=False)),
                                         (
                                             "button_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("btn-primary", "DEFAULT"),
@@ -162,7 +162,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "button_size",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[("", "DEFAULT"), ("btn-lg", "LARGE"), ("btn-sm", "SMALL")],
                                                 help_text="select a button size",
@@ -171,7 +171,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -182,12 +182,12 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_alert",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
-                                        ("alert_text", wagtail.core.blocks.TextBlock()),
+                                        ("alert_text", wagtail.blocks.TextBlock()),
                                         (
                                             "alert_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("alert-primary", "DEFAULT"),
@@ -202,11 +202,11 @@ class Migration(migrations.Migration):
                                                 required=False,
                                             ),
                                         ),
-                                        ("is_link", wagtail.core.blocks.BooleanBlock(required=False)),
-                                        ("alert_link", wagtail.core.blocks.TextBlock(required=False)),
+                                        ("is_link", wagtail.blocks.BooleanBlock(required=False)),
+                                        ("alert_link", wagtail.blocks.TextBlock(required=False)),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -217,13 +217,13 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_button",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
-                                        ("button_text", wagtail.core.blocks.TextBlock()),
-                                        ("button_link", wagtail.core.blocks.TextBlock()),
+                                        ("button_text", wagtail.blocks.TextBlock()),
+                                        ("button_link", wagtail.blocks.TextBlock()),
                                         (
                                             "button_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("btn-primary", "DEFAULT"),
@@ -238,7 +238,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "button_size",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[("", "DEFAULT"), ("btn-lg", "LARGE"), ("btn-sm", "SMALL")],
                                                 help_text="select a button size",
@@ -247,7 +247,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -258,39 +258,39 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_card",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "card_width",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 blank=True, help_text="18 works best for card", required=False
                                             ),
                                         ),
-                                        ("is_card_img", wagtail.core.blocks.BooleanBlock(required=False)),
+                                        ("is_card_img", wagtail.blocks.BooleanBlock(required=False)),
                                         ("card_img", wagtail.images.blocks.ImageChooserBlock(required=False)),
                                         (
                                             "card_img_width",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 help_text="provide an image width", required=False
                                             ),
                                         ),
                                         (
                                             "card_img_height",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 help_text="provide an image height", required=False
                                             ),
                                         ),
                                         (
                                             "card_title",
-                                            wagtail.core.blocks.TextBlock(blank=True, null=True, required=False),
+                                            wagtail.blocks.TextBlock(blank=True, null=True, required=False),
                                         ),
                                         (
                                             "card_text",
-                                            wagtail.core.blocks.RichTextBlock(blank=True, null=True, required=False),
+                                            wagtail.blocks.RichTextBlock(blank=True, null=True, required=False),
                                         ),
                                         (
                                             "card_bg_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("bg-primary", "DEFAULT"),
@@ -307,7 +307,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "card_text_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("text-primary", "DEFAULT"),
@@ -322,10 +322,10 @@ class Migration(migrations.Migration):
                                                 required=False,
                                             ),
                                         ),
-                                        ("btn_text", wagtail.core.blocks.TextBlock(required=False)),
+                                        ("btn_text", wagtail.blocks.TextBlock(required=False)),
                                         (
                                             "btn_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("btn-primary", "DEFAULT"),
@@ -338,10 +338,10 @@ class Migration(migrations.Migration):
                                                 required=False,
                                             ),
                                         ),
-                                        ("btn_link", wagtail.core.blocks.TextBlock(required=False)),
+                                        ("btn_link", wagtail.blocks.TextBlock(required=False)),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -352,76 +352,76 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_carousel",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         ("c_image1", wagtail.images.blocks.ImageChooserBlock(required=True)),
                                         (
                                             "c_image1_title",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a title for image 1", required=False
                                             ),
                                         ),
                                         (
                                             "c_image1_body",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a body for image 1", required=False
                                             ),
                                         ),
                                         ("c_image2", wagtail.images.blocks.ImageChooserBlock(required=False)),
                                         (
                                             "c_image2_title",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a title for image 2", required=False
                                             ),
                                         ),
                                         (
                                             "c_image2_body",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a body for image 2", required=False
                                             ),
                                         ),
                                         ("c_image3", wagtail.images.blocks.ImageChooserBlock(required=False)),
                                         (
                                             "c_image3_title",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a title for image 3", required=False
                                             ),
                                         ),
                                         (
                                             "c_image3_body",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a body for image 3", required=False
                                             ),
                                         ),
                                         ("c_image4", wagtail.images.blocks.ImageChooserBlock(required=False)),
                                         (
                                             "c_image4_title",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a title for image 4", required=False
                                             ),
                                         ),
                                         (
                                             "c_image4_body",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a body for image 4", required=False
                                             ),
                                         ),
                                         ("c_image5", wagtail.images.blocks.ImageChooserBlock(required=False)),
                                         (
                                             "c_image5_title",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a title for image 5", required=False
                                             ),
                                         ),
                                         (
                                             "c_image5_body",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a body for image 5", required=False
                                             ),
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -432,17 +432,17 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_well",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "message",
-                                            wagtail.core.blocks.RichTextBlock(
+                                            wagtail.blocks.RichTextBlock(
                                                 help_text="Enter some message inside well"
                                             ),
                                         ),
                                         (
                                             "well_bg_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("bg-primary", "DEFAULT"),
@@ -459,7 +459,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -470,11 +470,11 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "horizontal_rule",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "thickness",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 blank=True,
                                                 help_text="Enter a thickness integer value. Eg(10)",
                                                 required=False,
@@ -482,14 +482,14 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "bg_color",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 help_text="Enter a hexcode color for the rule Eg(#000000)",
                                                 required=True,
                                             ),
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -500,13 +500,13 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_media_object",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         ("media_img", wagtail.images.blocks.ImageChooserBlock(required=True)),
-                                        ("media_img_alt", wagtail.core.blocks.TextBlock(required=True)),
+                                        ("media_img_alt", wagtail.blocks.TextBlock(required=True)),
                                         (
                                             "media_img_width",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 blank=True,
                                                 help_text="Enter an image width as an integer value. Eg(50)",
                                                 required=False,
@@ -514,7 +514,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "media_img_height",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 blank=True,
                                                 help_text="Enter an image height as an integer value Eg(50)",
                                                 required=False,
@@ -522,7 +522,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "heading_text",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="enter some heading text for media object",
                                                 required=False,
@@ -530,13 +530,13 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "body_text",
-                                            wagtail.core.blocks.RichTextBlock(
+                                            wagtail.blocks.RichTextBlock(
                                                 help_text="Enter some message for the media object", required=True
                                             ),
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -547,11 +547,11 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "placeholder_block",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -562,11 +562,11 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "font_awesome_icon_block",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "icon_tag",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=False,
                                                 help_text="Provide a font awesome icon class text",
                                                 required=True,
@@ -574,7 +574,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "icon_size",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 blank=True,
                                                 default=2,
                                                 help_text="Provide a icon size in number type",
@@ -584,7 +584,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -641,35 +641,35 @@ class Migration(migrations.Migration):
                 ("sort_order", models.IntegerField(blank=True, editable=False, null=True)),
                 (
                     "body",
-                    wagtail.core.fields.StreamField(
+                    wagtail.fields.StreamField(
                         (
                             (
                                 "paragraph_block",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
                                             ),
                                         ),
-                                        ("body", wagtail.core.blocks.RichTextBlock()),
+                                        ("body", wagtail.blocks.RichTextBlock()),
                                     )
                                 ),
                             ),
                             (
                                 "image_block",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         ("image", wagtail.images.blocks.ImageChooserBlock(required=True)),
-                                        ("caption", wagtail.core.blocks.CharBlock(required=False)),
-                                        ("width", wagtail.core.blocks.CharBlock(required=False)),
-                                        ("height", wagtail.core.blocks.IntegerBlock(required=False)),
+                                        ("caption", wagtail.blocks.CharBlock(required=False)),
+                                        ("width", wagtail.blocks.CharBlock(required=False)),
+                                        ("height", wagtail.blocks.IntegerBlock(required=False)),
                                         (
                                             "redirect_url",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="Give a redirect link on clicking the image",
                                                 null=True,
@@ -678,7 +678,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -689,12 +689,12 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "embed_block",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         ("embed", wagtail.embeds.blocks.EmbedBlock()),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -705,15 +705,15 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "heading_block",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "heading_text",
-                                            wagtail.core.blocks.CharBlock(classname="title", required=True),
+                                            wagtail.blocks.CharBlock(classname="title", required=True),
                                         ),
                                         (
                                             "size",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("", "Select a header size"),
@@ -727,7 +727,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -738,15 +738,15 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_jumbotron",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
-                                        ("title", wagtail.core.blocks.TextBlock()),
-                                        ("body", wagtail.core.blocks.RichTextBlock()),
-                                        ("button_text", wagtail.core.blocks.TextBlock(required=False)),
-                                        ("button_link", wagtail.core.blocks.TextBlock(required=False)),
+                                        ("title", wagtail.blocks.TextBlock()),
+                                        ("body", wagtail.blocks.RichTextBlock()),
+                                        ("button_text", wagtail.blocks.TextBlock(required=False)),
+                                        ("button_link", wagtail.blocks.TextBlock(required=False)),
                                         (
                                             "button_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("btn-primary", "DEFAULT"),
@@ -761,7 +761,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "button_size",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[("", "DEFAULT"), ("btn-lg", "LARGE"), ("btn-sm", "SMALL")],
                                                 help_text="select a button size",
@@ -770,7 +770,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -781,12 +781,12 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_alert",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
-                                        ("alert_text", wagtail.core.blocks.TextBlock()),
+                                        ("alert_text", wagtail.blocks.TextBlock()),
                                         (
                                             "alert_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("alert-primary", "DEFAULT"),
@@ -801,11 +801,11 @@ class Migration(migrations.Migration):
                                                 required=False,
                                             ),
                                         ),
-                                        ("is_link", wagtail.core.blocks.BooleanBlock(required=False)),
-                                        ("alert_link", wagtail.core.blocks.TextBlock(required=False)),
+                                        ("is_link", wagtail.blocks.BooleanBlock(required=False)),
+                                        ("alert_link", wagtail.blocks.TextBlock(required=False)),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -816,13 +816,13 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_button",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
-                                        ("button_text", wagtail.core.blocks.TextBlock()),
-                                        ("button_link", wagtail.core.blocks.TextBlock()),
+                                        ("button_text", wagtail.blocks.TextBlock()),
+                                        ("button_link", wagtail.blocks.TextBlock()),
                                         (
                                             "button_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("btn-primary", "DEFAULT"),
@@ -837,7 +837,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "button_size",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[("", "DEFAULT"), ("btn-lg", "LARGE"), ("btn-sm", "SMALL")],
                                                 help_text="select a button size",
@@ -846,7 +846,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -857,39 +857,39 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_card",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "card_width",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 blank=True, help_text="18 works best for card", required=False
                                             ),
                                         ),
-                                        ("is_card_img", wagtail.core.blocks.BooleanBlock(required=False)),
+                                        ("is_card_img", wagtail.blocks.BooleanBlock(required=False)),
                                         ("card_img", wagtail.images.blocks.ImageChooserBlock(required=False)),
                                         (
                                             "card_img_width",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 help_text="provide an image width", required=False
                                             ),
                                         ),
                                         (
                                             "card_img_height",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 help_text="provide an image height", required=False
                                             ),
                                         ),
                                         (
                                             "card_title",
-                                            wagtail.core.blocks.TextBlock(blank=True, null=True, required=False),
+                                            wagtail.blocks.TextBlock(blank=True, null=True, required=False),
                                         ),
                                         (
                                             "card_text",
-                                            wagtail.core.blocks.RichTextBlock(blank=True, null=True, required=False),
+                                            wagtail.blocks.RichTextBlock(blank=True, null=True, required=False),
                                         ),
                                         (
                                             "card_bg_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("bg-primary", "DEFAULT"),
@@ -906,7 +906,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "card_text_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("text-primary", "DEFAULT"),
@@ -921,10 +921,10 @@ class Migration(migrations.Migration):
                                                 required=False,
                                             ),
                                         ),
-                                        ("btn_text", wagtail.core.blocks.TextBlock(required=False)),
+                                        ("btn_text", wagtail.blocks.TextBlock(required=False)),
                                         (
                                             "btn_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("btn-primary", "DEFAULT"),
@@ -937,10 +937,10 @@ class Migration(migrations.Migration):
                                                 required=False,
                                             ),
                                         ),
-                                        ("btn_link", wagtail.core.blocks.TextBlock(required=False)),
+                                        ("btn_link", wagtail.blocks.TextBlock(required=False)),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -951,76 +951,76 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_carousel",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         ("c_image1", wagtail.images.blocks.ImageChooserBlock(required=True)),
                                         (
                                             "c_image1_title",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a title for image 1", required=False
                                             ),
                                         ),
                                         (
                                             "c_image1_body",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a body for image 1", required=False
                                             ),
                                         ),
                                         ("c_image2", wagtail.images.blocks.ImageChooserBlock(required=False)),
                                         (
                                             "c_image2_title",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a title for image 2", required=False
                                             ),
                                         ),
                                         (
                                             "c_image2_body",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a body for image 2", required=False
                                             ),
                                         ),
                                         ("c_image3", wagtail.images.blocks.ImageChooserBlock(required=False)),
                                         (
                                             "c_image3_title",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a title for image 3", required=False
                                             ),
                                         ),
                                         (
                                             "c_image3_body",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a body for image 3", required=False
                                             ),
                                         ),
                                         ("c_image4", wagtail.images.blocks.ImageChooserBlock(required=False)),
                                         (
                                             "c_image4_title",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a title for image 4", required=False
                                             ),
                                         ),
                                         (
                                             "c_image4_body",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a body for image 4", required=False
                                             ),
                                         ),
                                         ("c_image5", wagtail.images.blocks.ImageChooserBlock(required=False)),
                                         (
                                             "c_image5_title",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a title for image 5", required=False
                                             ),
                                         ),
                                         (
                                             "c_image5_body",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True, help_text="Give a body for image 5", required=False
                                             ),
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -1031,17 +1031,17 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_well",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "message",
-                                            wagtail.core.blocks.RichTextBlock(
+                                            wagtail.blocks.RichTextBlock(
                                                 help_text="Enter some message inside well"
                                             ),
                                         ),
                                         (
                                             "well_bg_color",
-                                            wagtail.core.blocks.ChoiceBlock(
+                                            wagtail.blocks.ChoiceBlock(
                                                 blank=True,
                                                 choices=[
                                                     ("bg-primary", "DEFAULT"),
@@ -1058,7 +1058,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -1069,11 +1069,11 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "horizontal_rule",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "thickness",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 blank=True,
                                                 help_text="Enter a thickness integer value. Eg(10)",
                                                 required=False,
@@ -1081,14 +1081,14 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "bg_color",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 help_text="Enter a hexcode color for the rule Eg(#000000)",
                                                 required=True,
                                             ),
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -1099,13 +1099,13 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "bootstrap_media_object",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         ("media_img", wagtail.images.blocks.ImageChooserBlock(required=True)),
-                                        ("media_img_alt", wagtail.core.blocks.TextBlock(required=True)),
+                                        ("media_img_alt", wagtail.blocks.TextBlock(required=True)),
                                         (
                                             "media_img_width",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 blank=True,
                                                 help_text="Enter an image width as an integer value. Eg(50)",
                                                 required=False,
@@ -1113,7 +1113,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "media_img_height",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 blank=True,
                                                 help_text="Enter an image height as an integer value Eg(50)",
                                                 required=False,
@@ -1121,7 +1121,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "heading_text",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="enter some heading text for media object",
                                                 required=False,
@@ -1129,13 +1129,13 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "body_text",
-                                            wagtail.core.blocks.RichTextBlock(
+                                            wagtail.blocks.RichTextBlock(
                                                 help_text="Enter some message for the media object", required=True
                                             ),
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -1146,11 +1146,11 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "placeholder_block",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
@@ -1161,11 +1161,11 @@ class Migration(migrations.Migration):
                             ),
                             (
                                 "font_awesome_icon_block",
-                                wagtail.core.blocks.StructBlock(
+                                wagtail.blocks.StructBlock(
                                     (
                                         (
                                             "icon_tag",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=False,
                                                 help_text="Provide a font awesome icon class text",
                                                 required=True,
@@ -1173,7 +1173,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "icon_size",
-                                            wagtail.core.blocks.IntegerBlock(
+                                            wagtail.blocks.IntegerBlock(
                                                 blank=True,
                                                 default=2,
                                                 help_text="Provide a icon size in number type",
@@ -1183,7 +1183,7 @@ class Migration(migrations.Migration):
                                         ),
                                         (
                                             "custom_class",
-                                            wagtail.core.blocks.TextBlock(
+                                            wagtail.blocks.TextBlock(
                                                 blank=True,
                                                 help_text="control this element by giving unique class names separated by space and styling the class in css",
                                                 required=False,
