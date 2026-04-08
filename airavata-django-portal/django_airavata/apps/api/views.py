@@ -5,6 +5,7 @@ import os
 import warnings
 from datetime import datetime, timedelta
 
+# TODO: verify proto import paths once SDK generated stubs are finalized
 from airavata.model.appcatalog.computeresource.ttypes import (
     CloudJobSubmission,
     GlobusJobSubmission,
@@ -32,9 +33,9 @@ from airavata.model.group.ttypes import ResourcePermissionType
 from airavata.model.user.ttypes import Status
 from airavata_django_portal_sdk import (
     experiment_util,
-    queue_settings_calculators,
     user_storage
 )
+from airavata_django_portal_sdk import queue_settings_calculators
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
@@ -70,7 +71,6 @@ from . import (
     output_views,
     serializers,
     signals,
-    thrift_utils,
     tus,
     view_utils
 )
@@ -91,53 +91,44 @@ class GroupViewSet(APIBackedViewSet):
 
         class GroupResultsIterator(APIResultIterator):
             def get_results(self, limit=-1, offset=0):
-                group_manager = view.request.profile_service['group_manager']
-                groups = group_manager.getGroups(view.authz_token)
+                groups = view.request.airavata_client.sharing.get_groups()
                 end = offset + limit if limit > 0 else len(groups)
                 return groups[offset:end] if groups else []
 
         return GroupResultsIterator()
 
     def get_instance(self, lookup_value):
-        return self.request.profile_service['group_manager'].getGroup(
-            self.authz_token, lookup_value)
+        return self.request.airavata_client.sharing.get_group(lookup_value)
 
     def perform_create(self, serializer):
         group = serializer.save()
-        group_id = self.request.profile_service['group_manager'].createGroup(
-            self.authz_token, group)
+        group_id = self.request.airavata_client.sharing.create_group(group)
         group.id = group_id
         users_added_to_group = set(group.members) - {group.ownerId}
         self._send_users_added_to_group(users_added_to_group, group)
 
     def perform_update(self, serializer):
         group = serializer.save()
-        group_manager_client = self.request.profile_service['group_manager']
+        sharing_client = self.request.airavata_client.sharing
         if len(group._added_members) > 0:
-            group_manager_client.addUsersToGroup(
-                self.authz_token, group._added_members, group.id)
+            sharing_client.add_users_to_group(group._added_members, group.id)
             self._send_users_added_to_group(group._added_members, group)
         if len(group._removed_members) > 0:
-            group_manager_client.removeUsersFromGroup(
-                self.authz_token, group._removed_members, group.id)
+            sharing_client.remove_users_from_group(group._removed_members, group.id)
         if len(group._added_admins) > 0:
-            group_manager_client.addGroupAdmins(
-                self.authz_token, group.id, group._added_admins)
+            sharing_client.add_group_admins(group.id, group._added_admins)
         if len(group._removed_admins) > 0:
-            group_manager_client.removeGroupAdmins(
-                self.authz_token, group.id, group._removed_admins)
-        group_manager_client.updateGroup(self.authz_token, group)
+            sharing_client.remove_group_admins(group.id, group._removed_admins)
+        sharing_client.update_group(group)
 
     def perform_destroy(self, group):
-        group_manager_client = self.request.profile_service['group_manager']
-        group_manager_client.deleteGroup(
-            self.authz_token, group.id, group.ownerId)
+        self.request.airavata_client.sharing.delete_group(group.id, group.ownerId)
 
     def _send_users_added_to_group(self, internal_user_ids, group):
         for internal_user_id in internal_user_ids:
             user_id, gateway_id = internal_user_id.rsplit("@", maxsplit=1)
-            user_profile = self.request.profile_service['user_profile'].getUserProfileById(
-                self.authz_token, user_id, gateway_id)
+            user_profile = self.request.airavata_client.iam.get_user_profile_by_id(
+                user_id, gateway_id)
             signals.user_added_to_group.send(
                 sender=self.__class__,
                 user=user_profile,
@@ -156,42 +147,41 @@ class ProjectViewSet(APIBackedViewSet):
 
         class ProjectResultIterator(APIResultIterator):
             def get_results(self, limit=-1, offset=0):
-                return view.request.airavata_client.getUserProjects(
-                    view.authz_token, view.gateway_id, view.username, limit, offset)
+                return view.request.airavata_client.research.get_user_projects(
+                    view.gateway_id, view.username, limit, offset)
 
         return ProjectResultIterator()
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getProject(
-            self.authz_token, lookup_value)
+        return self.request.airavata_client.research.get_project(lookup_value)
 
     def perform_create(self, serializer):
         project = serializer.save(
             owner=self.username,
             gatewayId=self.gateway_id)
-        project_id = self.request.airavata_client.createProject(
-            self.authz_token, self.gateway_id, project)
+        project_id = self.request.airavata_client.research.create_project(
+            self.gateway_id, project)
         project.projectID = project_id
         self._update_most_recent_project(project_id)
 
     def perform_update(self, serializer):
         project = serializer.save()
-        self.request.airavata_client.updateProject(
-            self.authz_token, project.projectID, project)
+        self.request.airavata_client.research.update_project(
+            project.projectID, project)
         self._update_most_recent_project(project.projectID)
 
     @action(detail=False)
     def list_all(self, request):
-        projects = self.request.airavata_client.getUserProjects(
-            self.authz_token, self.gateway_id, self.username, -1, 0)
+        projects = self.request.airavata_client.research.get_user_projects(
+            self.gateway_id, self.username, -1, 0)
         serializer = serializers.ProjectSerializer(
             projects, many=True, context={'request': request})
         return Response(serializer.data)
 
     @action(detail=True)
     def experiments(self, request, project_id=None):
-        experiments = request.airavata_client.getExperimentsInProject(
-            self.authz_token, project_id, -1, 0)
+        experiments = request.airavata_client.research.get_experiments_in_project(
+            project_id, -1, 0)
         serializer = serializers.ExperimentSerializer(
             experiments, many=True, context={'request': request})
         return Response(serializer.data)
@@ -210,15 +200,14 @@ class ExperimentViewSet(mixins.CreateModelMixin,
     lookup_field = 'experiment_id'
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getExperiment(
-            self.authz_token, lookup_value)
+        return self.request.airavata_client.research.get_experiment(lookup_value)
 
     def perform_create(self, serializer):
         experiment = serializer.save(
             gatewayId=self.gateway_id,
             userName=self.username)
-        experiment_id = self.request.airavata_client.createExperiment(
-            self.authz_token, self.gateway_id, experiment)
+        experiment_id = self.request.airavata_client.research.create_experiment(
+            self.gateway_id, experiment)
         self._update_workspace_preferences(
             project_id=experiment.projectId,
             group_resource_profile_id=experiment.userConfigurationData.groupResourceProfileId,
@@ -229,8 +218,8 @@ class ExperimentViewSet(mixins.CreateModelMixin,
         experiment = serializer.save(
             gatewayId=self.gateway_id,
             userName=self.username)
-        self.request.airavata_client.updateExperiment(
-            self.authz_token, experiment.experimentId, experiment)
+        self.request.airavata_client.research.update_experiment(
+            experiment.experimentId, experiment)
         self._update_workspace_preferences(
             project_id=experiment.projectId,
             group_resource_profile_id=experiment.userConfigurationData.groupResourceProfileId,
@@ -239,12 +228,12 @@ class ExperimentViewSet(mixins.CreateModelMixin,
     @action(methods=['post'], detail=True)
     def launch(self, request, experiment_id=None):
         try:
-            experiment = request.airavata_client.getExperiment(
-                self.authz_token, experiment_id)
+            experiment = request.airavata_client.research.get_experiment(
+                experiment_id)
             if (experiment.enableEmailNotification):
                 experiment.emailAddresses = [request.user.email]
-            request.airavata_client.updateExperiment(
-                self.authz_token, experiment_id, experiment)
+            request.airavata_client.research.update_experiment(
+                experiment_id, experiment)
             experiment_util.launch(request, experiment_id)
             return Response({'success': True})
         except Exception as e:
@@ -253,8 +242,7 @@ class ExperimentViewSet(mixins.CreateModelMixin,
 
     @action(methods=['get'], detail=True)
     def jobs(self, request, experiment_id=None):
-        jobs = request.airavata_client.getJobDetails(
-            self.authz_token, experiment_id)
+        jobs = request.airavata_client.research.get_job_details(experiment_id)
         serializer = serializers.JobSerializer(
             jobs, many=True, context={'request': request})
         return Response(serializer.data)
@@ -262,8 +250,8 @@ class ExperimentViewSet(mixins.CreateModelMixin,
     @action(methods=['post'], detail=True)
     def clone(self, request, experiment_id=None):
         cloned_experiment_id = experiment_util.clone(request, experiment_id)
-        cloned_experiment = request.airavata_client.getExperiment(
-            self.authz_token, cloned_experiment_id)
+        cloned_experiment = request.airavata_client.research.get_experiment(
+            cloned_experiment_id)
         serializer = self.serializer_class(
             cloned_experiment, context={'request': request})
         return Response(serializer.data)
@@ -271,8 +259,8 @@ class ExperimentViewSet(mixins.CreateModelMixin,
     @action(methods=['post'], detail=True)
     def cancel(self, request, experiment_id=None):
         try:
-            request.airavata_client.terminateExperiment(
-                request.authz_token, experiment_id, self.gateway_id)
+            request.airavata_client.research.terminate_experiment(
+                experiment_id, self.gateway_id)
             return Response({'success': True})
         except Exception as e:
             log.exception("Cancel action has thrown the following error", extra={'request': request})
@@ -317,8 +305,8 @@ class ExperimentSearchViewSet(mixins.ListModelMixin, GenericAPIBackedViewSet):
 
         class ExperimentSearchResultIterator(APIResultIterator):
             def get_results(self, limit=-1, offset=0):
-                return view.request.airavata_client.searchExperiments(
-                    view.authz_token, view.gateway_id, view.username, filters,
+                return view.request.airavata_client.research.search_experiments(
+                    view.gateway_id, view.username, filters,
                     limit, offset)
 
         # Preserve query parameters when moving to next and previous links
@@ -336,11 +324,10 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
     def get_instance(self, lookup_value):
         """Get FullExperiment instance with resolved references."""
         # TODO: move loading experiment and references to airavata_sdk?
-        experimentModel = self.request.airavata_client.getExperiment(
-            self.authz_token, lookup_value)
+        experimentModel = self.request.airavata_client.research.get_experiment(
+            lookup_value)
         outputDataProducts = [
-            self.request.airavata_client.getDataProduct(self.authz_token,
-                                                        output.value)
+            self.request.airavata_client.research.get_data_product(output.value)
             for output in experimentModel.experimentOutputs
             if (output.value and
                 output.value.startswith('airavata-dp') and
@@ -348,7 +335,7 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
                                 DataType.STDOUT,
                                 DataType.STDERR))]
         outputDataProducts += [
-            self.request.airavata_client.getDataProduct(self.authz_token, dp)
+            self.request.airavata_client.research.get_data_product(dp)
             for output in experimentModel.experimentOutputs
             if (output.value and
                 output.type == DataType.URI_COLLECTION)
@@ -356,16 +343,15 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
             if output.value.startswith('airavata-dp')]
         appInterfaceId = experimentModel.executionId
         try:
-            applicationInterface = self.request.airavata_client \
-                .getApplicationInterface(self.authz_token, appInterfaceId)
+            applicationInterface = self.request.airavata_client.research \
+                .get_application_interface(appInterfaceId)
         except Exception as e:
             log.warning(f"Failed to load app interface: {e}")
             applicationInterface = None
         exp_output_views = output_views.get_output_views(
             self.request, experimentModel, applicationInterface)
         inputDataProducts = [
-            self.request.airavata_client.getDataProduct(self.authz_token,
-                                                        inp.value)
+            self.request.airavata_client.research.get_data_product(inp.value)
             for inp in experimentModel.experimentInputs
             if (inp.value and
                 inp.value.startswith('airavata-dp') and
@@ -373,7 +359,7 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
                              DataType.STDOUT,
                              DataType.STDERR))]
         inputDataProducts += [
-            self.request.airavata_client.getDataProduct(self.authz_token, dp)
+            self.request.airavata_client.research.get_data_product(dp)
             for inp in experimentModel.experimentInputs
             if (inp.value and
                 inp.type == DataType.URI_COLLECTION)
@@ -383,8 +369,8 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
         try:
             if applicationInterface is not None:
                 appModuleId = applicationInterface.applicationModules[0]
-                applicationModule = self.request.airavata_client \
-                    .getApplicationModule(self.authz_token, appModuleId)
+                applicationModule = self.request.airavata_client.research \
+                    .get_application_module(appModuleId)
             else:
                 log.warning(
                     "Cannot load application model since app interface failed to load")
@@ -397,24 +383,23 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
             comp_res_sched = user_conf.computationalResourceScheduling
             compute_resource_id = comp_res_sched.resourceHostId
         try:
-            compute_resource = self.request.airavata_client.getComputeResource(
-                self.authz_token, compute_resource_id) \
+            compute_resource = self.request.airavata_client.compute.get_compute_resource(
+                compute_resource_id) \
                 if compute_resource_id else None
         except Exception:
             log.exception("Failed to load compute resource for {}".format(
                 compute_resource_id), extra={'request': self.request})
             compute_resource = None
-        if self.request.airavata_client.userHasAccess(
-                self.authz_token,
+        if self.request.airavata_client.sharing.user_has_access(
                 experimentModel.projectId,
                 ResourcePermissionType.READ):
-            project = self.request.airavata_client.getProject(
-                self.authz_token, experimentModel.projectId)
+            project = self.request.airavata_client.research.get_project(
+                experimentModel.projectId)
         else:
             # User may not have access to project, only experiment
             project = None
-        job_details = self.request.airavata_client.getJobDetails(
-            self.authz_token, lookup_value)
+        job_details = self.request.airavata_client.research.get_job_details(
+            lookup_value)
         full_experiment = serializers.FullExperiment(
             experimentModel,
             project=project,
@@ -432,32 +417,32 @@ class ApplicationModuleViewSet(APIBackedViewSet):
     lookup_field = 'app_module_id'
 
     def get_list(self):
-        return self.request.airavata_client.getAccessibleAppModules(
-            self.authz_token, self.gateway_id)
+        return self.request.airavata_client.research.get_accessible_app_modules(
+            self.gateway_id)
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getApplicationModule(
-            self.authz_token, lookup_value)
+        return self.request.airavata_client.research.get_application_module(
+            lookup_value)
 
     def perform_create(self, serializer):
         app_module = serializer.save()
-        app_module_id = self.request.airavata_client.registerApplicationModule(
-            self.authz_token, self.gateway_id, app_module)
+        app_module_id = self.request.airavata_client.research.register_application_module(
+            self.gateway_id, app_module)
         app_module.appModuleId = app_module_id
 
     def perform_update(self, serializer):
         app_module = serializer.save()
-        self.request.airavata_client.updateApplicationModule(
-            self.authz_token, app_module.appModuleId, app_module)
+        self.request.airavata_client.research.update_application_module(
+            app_module.appModuleId, app_module)
 
     def perform_destroy(self, instance):
-        self.request.airavata_client.deleteApplicationModule(
-            self.authz_token, instance.appModuleId)
+        self.request.airavata_client.research.delete_application_module(
+            instance.appModuleId)
 
     @action(detail=True)
     def application_interface(self, request, app_module_id):
-        all_app_interfaces = request.airavata_client.getAllApplicationInterfaces(
-            self.authz_token, self.gateway_id)
+        all_app_interfaces = request.airavata_client.research.get_all_application_interfaces(
+            self.gateway_id)
         app_interfaces = []
         for app_interface in all_app_interfaces:
             if not app_interface.applicationModules:
@@ -482,8 +467,8 @@ class ApplicationModuleViewSet(APIBackedViewSet):
 
     @action(detail=True)
     def application_deployments(self, request, app_module_id):
-        all_deployments = self.request.airavata_client.getAllApplicationDeployments(
-            self.authz_token, self.gateway_id)
+        all_deployments = self.request.airavata_client.research.get_all_application_deployments(
+            self.gateway_id)
         app_deployments = [
             dep for dep in all_deployments if dep.appModuleId == app_module_id]
         serializer = serializers.ApplicationDeploymentDescriptionSerializer(
@@ -528,8 +513,8 @@ class ApplicationModuleViewSet(APIBackedViewSet):
 
     @action(detail=False)
     def list_all(self, request, format=None):
-        all_modules = self.request.airavata_client.getAllAppModules(
-            self.authz_token, self.gateway_id)
+        all_modules = self.request.airavata_client.research.get_all_app_modules(
+            self.gateway_id)
         serializer = self.serializer_class(
             all_modules, many=True, context={'request': request})
         return Response(serializer.data)
@@ -540,17 +525,17 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
     lookup_field = 'app_interface_id'
 
     def get_list(self):
-        return self.request.airavata_client.getAllApplicationInterfaces(
-            self.authz_token, self.gateway_id)
+        return self.request.airavata_client.research.get_all_application_interfaces(
+            self.gateway_id)
 
     def get_instance(self, lookup_value):
         try:
-            return self.request.airavata_client.getApplicationInterface(
-                self.authz_token, lookup_value)
+            return self.request.airavata_client.research.get_application_interface(
+                lookup_value)
         except Exception:
             # If it failed to load, check to see if it exists at all
-            all_interfaces = self.request.airavata_client.getAllApplicationInterfaces(
-                self.authz_token, self.gateway_id)
+            all_interfaces = self.request.airavata_client.research.get_all_application_interfaces(
+                self.gateway_id)
             interface_ids = map(lambda i: i.applicationInterfaceId, all_interfaces)
             if lookup_value not in interface_ids:
                 raise Http404("Application interface does not exist")
@@ -561,21 +546,20 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
         application_interface = serializer.save()
         self._update_input_metadata(application_interface)
         log.debug("application_interface: {}".format(application_interface))
-        app_interface_id = self.request.airavata_client.registerApplicationInterface(
-            self.authz_token, self.gateway_id, application_interface)
+        app_interface_id = self.request.airavata_client.research.register_application_interface(
+            self.gateway_id, application_interface)
         application_interface.applicationInterfaceId = app_interface_id
 
     def perform_update(self, serializer):
         application_interface = serializer.save()
         self._update_input_metadata(application_interface)
-        self.request.airavata_client.updateApplicationInterface(
-            self.authz_token,
+        self.request.airavata_client.research.update_application_interface(
             application_interface.applicationInterfaceId,
             application_interface)
 
     def perform_destroy(self, instance):
-        self.request.airavata_client.deleteApplicationInterface(
-            self.authz_token, instance.applicationInterfaceId)
+        self.request.airavata_client.research.delete_application_interface(
+            instance.applicationInterfaceId)
 
     def _update_input_metadata(self, app_interface):
         for app_input in app_interface.applicationInputs:
@@ -594,8 +578,8 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
 
     @action(detail=True)
     def compute_resources(self, request, app_interface_id):
-        compute_resources = request.airavata_client.getAvailableAppInterfaceComputeResources(
-            self.authz_token, app_interface_id)
+        compute_resources = request.airavata_client.research.get_available_app_interface_compute_resources(
+            app_interface_id)
         return Response(compute_resources)
 
 
@@ -612,38 +596,38 @@ class ApplicationDeploymentViewSet(APIBackedViewSet):
             raise ParseError("Query params appModuleId and "
                              "groupResourceProfileId are required together.")
         if app_module_id and group_resource_profile_id:
-            return self.request.airavata_client.getApplicationDeploymentsForAppModuleAndGroupResourceProfile(
-                self.authz_token, app_module_id, group_resource_profile_id)
+            return self.request.airavata_client.research.get_application_deployments_for_app_module_and_group_resource_profile(
+                app_module_id, group_resource_profile_id)
         else:
-            return self.request.airavata_client.getAccessibleApplicationDeployments(
-                self.authz_token, self.gateway_id, ResourcePermissionType.READ)
+            return self.request.airavata_client.research.get_accessible_application_deployments(
+                self.gateway_id, ResourcePermissionType.READ)
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getApplicationDeployment(
-            self.authz_token, lookup_value)
+        return self.request.airavata_client.research.get_application_deployment(
+            lookup_value)
 
     def perform_create(self, serializer):
         application_deployment = serializer.save()
-        app_deployment_id = self.request.airavata_client.registerApplicationDeployment(
-            self.authz_token, self.gateway_id, application_deployment)
+        app_deployment_id = self.request.airavata_client.research.register_application_deployment(
+            self.gateway_id, application_deployment)
         application_deployment.appDeploymentId = app_deployment_id
 
     def perform_update(self, serializer):
         application_deployment = serializer.save()
-        self.request.airavata_client.updateApplicationDeployment(
-            self.authz_token, application_deployment.appDeploymentId, application_deployment)
+        self.request.airavata_client.research.update_application_deployment(
+            application_deployment.appDeploymentId, application_deployment)
 
     def perform_destroy(self, instance):
-        self.request.airavata_client.deleteApplicationDeployment(
-            self.authz_token, instance.appDeploymentId)
+        self.request.airavata_client.research.delete_application_deployment(
+            instance.appDeploymentId)
 
     @action(detail=True)
     def queues(self, request, app_deployment_id):
         """Return queues for this deployment with defaults overridden by deployment defaults if they exist"""
-        app_deployment = self.request.airavata_client.getApplicationDeployment(
-            self.authz_token, app_deployment_id)
-        compute_resource = request.airavata_client.getComputeResource(
-            request.authz_token, app_deployment.computeHostId)
+        app_deployment = self.request.airavata_client.research.get_application_deployment(
+            app_deployment_id)
+        compute_resource = request.airavata_client.compute.get_compute_resource(
+            app_deployment.computeHostId)
         # Override defaults with app deployment default queue, if defined
         batch_queues = []
         for batch_queue in compute_resource.batchQueues:
@@ -667,21 +651,19 @@ class ComputeResourceViewSet(mixins.RetrieveModelMixin,
     lookup_field = 'compute_resource_id'
 
     def get_instance(self, lookup_value, format=None):
-        return self.request.airavata_client.getComputeResource(
-            self.authz_token, lookup_value)
+        return self.request.airavata_client.compute.get_compute_resource(
+            lookup_value)
 
     @action(detail=False)
     def all_names(self, request, format=None):
         """Return a map of compute resource names keyed by resource id."""
         return Response(
-            request.airavata_client.getAllComputeResourceNames(
-                request.authz_token))
+            request.airavata_client.compute.get_all_compute_resource_names())
 
     @action(detail=False)
     def all_names_list(self, request, format=None):
         """Return a list of compute resource names keyed by resource id."""
-        all_names = request.airavata_client.getAllComputeResourceNames(
-            request.authz_token)
+        all_names = request.airavata_client.compute.get_all_compute_resource_names()
         return Response([
             {
                 'host_id': host_id,
@@ -694,8 +676,8 @@ class ComputeResourceViewSet(mixins.RetrieveModelMixin,
 
     @action(detail=True)
     def queues(self, request, compute_resource_id, format=None):
-        details = request.airavata_client.getComputeResource(
-            request.authz_token, compute_resource_id)
+        details = request.airavata_client.compute.get_compute_resource(
+            compute_resource_id)
         serializer = self.serializer_class(instance=details,
                                            context={'request': request})
         data = serializer.data
@@ -707,8 +689,9 @@ class LocalJobSubmissionView(APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        local_job_submission = request.airavata_client.getLocalJobSubmission(
-            request.authz_token, job_submission_id)
+        local_job_submission = request.airavata_client.compute.get_local_job_submission(
+            job_submission_id)
+        from . import thrift_utils
         return Response(
             thrift_utils.create_serializer(
                 LOCALSubmission,
@@ -720,8 +703,9 @@ class CloudJobSubmissionView(APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        job_submission = request.airavata_client.getCloudJobSubmission(
-            request.authz_token, job_submission_id)
+        job_submission = request.airavata_client.compute.get_cloud_job_submission(
+            job_submission_id)
+        from . import thrift_utils
         return Response(
             thrift_utils.create_serializer(
                 CloudJobSubmission,
@@ -733,8 +717,9 @@ class GlobusJobSubmissionView(APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        job_submission = request.airavata_client.getClo(
-            request.authz_token, job_submission_id)
+        job_submission = request.airavata_client.compute.get_globus_job_submission(
+            job_submission_id)
+        from . import thrift_utils
         return Response(
             thrift_utils.create_serializer(
                 GlobusJobSubmission,
@@ -746,8 +731,9 @@ class SshJobSubmissionView(APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        job_submission = request.airavata_client.getSSHJobSubmission(
-            request.authz_token, job_submission_id)
+        job_submission = request.airavata_client.compute.get_ssh_job_submission(
+            job_submission_id)
+        from . import thrift_utils
         return Response(
             thrift_utils.create_serializer(
                 SSHJobSubmission,
@@ -759,8 +745,9 @@ class UnicoreJobSubmissionView(APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        job_submission = request.airavata_client.getUnicoreJobSubmission(
-            request.authz_token, job_submission_id)
+        job_submission = request.airavata_client.compute.get_unicore_job_submission(
+            job_submission_id)
+        from . import thrift_utils
         return Response(
             thrift_utils.create_serializer(
                 UnicoreJobSubmission,
@@ -772,8 +759,9 @@ class GridFtpDataMovementView(APIView):
 
     def get(self, request, format=None):
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.getGridFTPDataMovement(
-            request.authz_token, data_movement_id)
+        data_movement = request.airavata_client.compute.get_grid_ftp_data_movement(
+            data_movement_id)
+        from . import thrift_utils
         return Response(
             thrift_utils.create_serializer(
                 GridFTPDataMovement,
@@ -785,8 +773,9 @@ class ScpDataMovementView(APIView):
 
     def get(self, request, format=None):
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.getSCPDataMovement(
-            request.authz_token, data_movement_id)
+        data_movement = request.airavata_client.compute.get_scp_data_movement(
+            data_movement_id)
+        from . import thrift_utils
         return Response(
             thrift_utils.create_serializer(
                 SCPDataMovement,
@@ -798,8 +787,9 @@ class UnicoreDataMovementView(APIView):
 
     def get(self, request, format=None):
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.getUnicoreDataMovement(
-            request.authz_token, data_movement_id)
+        data_movement = request.airavata_client.compute.get_unicore_data_movement(
+            data_movement_id)
+        from . import thrift_utils
         return Response(
             thrift_utils.create_serializer(
                 UnicoreDataMovement,
@@ -811,8 +801,9 @@ class LocalDataMovementView(APIView):
 
     def get(self, request, format=None):
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.getLocalDataMovement(
-            request.authz_token, data_movement_id)
+        data_movement = request.airavata_client.compute.get_local_data_movement(
+            data_movement_id)
+        from . import thrift_utils
         return Response(
             thrift_utils.create_serializer(
                 LOCALDataMovement,
@@ -826,16 +817,16 @@ class DataProductView(APIView):
 
     def get(self, request, format=None):
         data_product_uri = request.query_params['product-uri']
-        data_product = request.airavata_client.getDataProduct(
-            request.authz_token, data_product_uri)
+        data_product = request.airavata_client.research.get_data_product(
+            data_product_uri)
         serializer = self.serializer_class(
             data_product, context={'request': request})
         return Response(serializer.data)
 
     def put(self, request, format=None):
         data_product_uri = request.query_params['product-uri']
-        data_product = request.airavata_client.getDataProduct(
-            request.authz_token, data_product_uri)
+        data_product = request.airavata_client.research.get_data_product(
+            data_product_uri)
         if request.data and "fileContentText" in request.data:
             user_storage.update_data_product_content(
                 request=request,
@@ -898,8 +889,8 @@ def delete_file(request):
     data_product_uri = request.GET.get('data-product-uri', '')
     data_product = None
     try:
-        data_product = request.airavata_client.getDataProduct(
-            request.authz_token, data_product_uri)
+        data_product = request.airavata_client.research.get_data_product(
+            data_product_uri)
     except Exception as e:
         log.warning("Failed to load DataProduct for {}"
                     .format(data_product_uri), exc_info=True)
@@ -920,14 +911,12 @@ class UserProfileViewSet(mixins.RetrieveModelMixin,
     serializer_class = serializers.UserProfileSerializer
 
     def get_list(self):
-        user_profile_client = self.request.profile_service['user_profile']
-        return user_profile_client.getAllUserProfilesInGateway(
-            self.authz_token, self.gateway_id, 0, -1)
+        return self.request.airavata_client.iam.get_all_user_profiles_in_gateway(
+            self.gateway_id, 0, -1)
 
     def get_instance(self, lookup_value):
-        user_profile_client = self.request.profile_service['user_profile']
-        return user_profile_client.getUserProfileById(
-            self.authz_token, self.request.user.username, self.gateway_id)
+        return self.request.airavata_client.iam.get_user_profile_by_id(
+            self.request.user.username, self.gateway_id)
 
 
 class GroupResourceProfileViewSet(APIBackedViewSet):
@@ -935,22 +924,22 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
     lookup_field = 'group_resource_profile_id'
 
     def get_list(self):
-        return self.request.airavata_client.getGroupResourceList(
-            self.authz_token, self.gateway_id)
+        return self.request.airavata_client.compute.get_group_resource_list(
+            self.gateway_id)
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getGroupResourceProfile(
-            self.authz_token, lookup_value)
+        return self.request.airavata_client.compute.get_group_resource_profile(
+            lookup_value)
 
     def perform_create(self, serializer):
         group_resource_profile = serializer.save()
         group_resource_profile.gatewayId = self.gateway_id
-        group_resource_profile_id = self.request.airavata_client.createGroupResourceProfile(
-            authzToken=self.authz_token, groupResourceProfile=group_resource_profile)
+        group_resource_profile_id = self.request.airavata_client.compute.create_group_resource_profile(
+            group_resource_profile=group_resource_profile)
         group_resource_profile.groupResourceProfileId = group_resource_profile_id
         # Update the creationTime field on the group resource profile
-        new_group_resource_profile = self.request.airavata_client.getGroupResourceProfile(
-            self.authz_token, group_resource_profile_id)
+        new_group_resource_profile = self.request.airavata_client.compute.get_group_resource_profile(
+            group_resource_profile_id)
         group_resource_profile.creationTime = new_group_resource_profile.creationTime
 
     def perform_update(self, serializer):
@@ -959,19 +948,16 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
         grp = serializer.save()
         for removed_compute_resource_preference \
                 in grp._removed_compute_resource_preferences:
-            self.request.airavata_client.removeGroupComputePrefs(
-                self.authz_token,
+            self.request.airavata_client.compute.remove_group_compute_prefs(
                 removed_compute_resource_preference.computeResourceId,
                 removed_compute_resource_preference.groupResourceProfileId)
         for removed_compute_resource_policy \
                 in grp._removed_compute_resource_policies:
-            self.request.airavata_client.removeGroupComputeResourcePolicy(
-                self.authz_token,
+            self.request.airavata_client.compute.remove_group_compute_resource_policy(
                 removed_compute_resource_policy.resourcePolicyId)
         for removed_batch_queue_resource_policy \
                 in grp._removed_batch_queue_resource_policies:
-            self.request.airavata_client.removeGroupBatchQueueResourcePolicy(
-                self.authz_token,
+            self.request.airavata_client.compute.remove_group_batch_queue_resource_policy(
                 removed_batch_queue_resource_policy.resourcePolicyId)
         if hasattr(grp, 'computePreferences') and grp.computePreferences:
             from collections import OrderedDict
@@ -1123,12 +1109,11 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
                                         from airavata.model.appcatalog.groupresourceprofile.ttypes import GroupAccountSSHProvisionerConfig
                                         pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs[cfg_idx] = GroupAccountSSHProvisionerConfig(**cfg)
 
-        self.request.airavata_client.updateGroupResourceProfile(
-            self.authz_token, grp)
+        self.request.airavata_client.compute.update_group_resource_profile(grp)
 
     def perform_destroy(self, instance):
-        self.request.airavata_client.removeGroupResourceProfile(
-            self.authz_token, instance.groupResourceProfileId)
+        self.request.airavata_client.compute.remove_group_resource_profile(
+            instance.groupResourceProfileId)
 
 
 class SharedEntityViewSet(mixins.RetrieveModelMixin,
@@ -1179,35 +1164,32 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
                 'owner': self._load_user_profile(owner_id)}
 
     def _load_accessible_users(self, entity_id, permission_type):
-        users = self.request.airavata_client.getAllAccessibleUsers(
-            self.authz_token, entity_id, permission_type)
+        users = self.request.airavata_client.sharing.get_all_accessible_users(
+            entity_id, permission_type)
         return {user_id: permission_type for user_id in users}
 
     def _load_directly_accessible_users(self, entity_id, permission_type):
-        users = self.request.airavata_client.getAllDirectlyAccessibleUsers(
-            self.authz_token, entity_id, permission_type)
+        users = self.request.airavata_client.sharing.get_all_directly_accessible_users(
+            entity_id, permission_type)
         return {user_id: permission_type for user_id in users}
 
     def _load_user_profile(self, user_id):
-        user_profile_client = self.request.profile_service['user_profile']
         username = user_id[0:user_id.rindex('@')]
-        return user_profile_client.getUserProfileById(self.authz_token,
-                                                      username,
-                                                      settings.GATEWAY_ID)
+        return self.request.airavata_client.iam.get_user_profile_by_id(
+            username, settings.GATEWAY_ID)
 
     def _load_accessible_groups(self, entity_id, permission_type):
-        groups = self.request.airavata_client.getAllAccessibleGroups(
-            self.authz_token, entity_id, permission_type)
+        groups = self.request.airavata_client.sharing.get_all_accessible_groups(
+            entity_id, permission_type)
         return {group_id: permission_type for group_id in groups}
 
     def _load_directly_accessible_groups(self, entity_id, permission_type):
-        groups = self.request.airavata_client.getAllDirectlyAccessibleGroups(
-            self.authz_token, entity_id, permission_type)
+        groups = self.request.airavata_client.sharing.get_all_directly_accessible_groups(
+            entity_id, permission_type)
         return {group_id: permission_type for group_id in groups}
 
     def _load_group(self, group_id):
-        group_manager_client = self.request.profile_service['group_manager']
-        return group_manager_client.getGroup(self.authz_token, group_id)
+        return self.request.airavata_client.sharing.get_group(group_id)
 
     def perform_update(self, serializer):
         shared_entity = serializer.save()
@@ -1262,23 +1244,23 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
                 shared_entity['_group_revoke_manage_sharing_permission'])
 
     def _share_with_users(self, entity_id, permission_type, user_ids):
-        self.request.airavata_client.shareResourceWithUsers(
-            self.authz_token, entity_id,
+        self.request.airavata_client.sharing.share_resource_with_users(
+            entity_id,
             {user_id: permission_type for user_id in user_ids})
 
     def _revoke_from_users(self, entity_id, permission_type, user_ids):
-        self.request.airavata_client.revokeSharingOfResourceFromUsers(
-            self.authz_token, entity_id,
+        self.request.airavata_client.sharing.revoke_sharing_of_resource_from_users(
+            entity_id,
             {user_id: permission_type for user_id in user_ids})
 
     def _share_with_groups(self, entity_id, permission_type, group_ids):
-        self.request.airavata_client.shareResourceWithGroups(
-            self.authz_token, entity_id,
+        self.request.airavata_client.sharing.share_resource_with_groups(
+            entity_id,
             {group_id: permission_type for group_id in group_ids})
 
     def _revoke_from_groups(self, entity_id, permission_type, group_ids):
-        self.request.airavata_client.revokeSharingOfResourceFromGroups(
-            self.authz_token, entity_id,
+        self.request.airavata_client.sharing.revoke_sharing_of_resource_from_groups(
+            entity_id,
             {group_id: permission_type for group_id in group_ids})
 
     @action(methods=['put'], detail=True)
@@ -1353,29 +1335,27 @@ class CredentialSummaryViewSet(APIBackedViewSet):
     serializer_class = serializers.CredentialSummarySerializer
 
     def get_list(self):
-        ssh_creds = self.request.airavata_client.getAllCredentialSummaries(
-            self.authz_token, SummaryType.SSH)
-        pwd_creds = self.request.airavata_client.getAllCredentialSummaries(
-            self.authz_token, SummaryType.PASSWD)
+        ssh_creds = self.request.airavata_client.credential.get_all_credential_summaries(
+            SummaryType.SSH)
+        pwd_creds = self.request.airavata_client.credential.get_all_credential_summaries(
+            SummaryType.PASSWD)
         return ssh_creds + pwd_creds
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getCredentialSummary(
-            self.authz_token, lookup_value)
+        return self.request.airavata_client.credential.get_credential_summary(
+            lookup_value)
 
     @action(detail=False)
     def ssh(self, request):
-        summaries = self.request.airavata_client.getAllCredentialSummaries(
-            self.authz_token, SummaryType.SSH
-        )
+        summaries = self.request.airavata_client.credential.get_all_credential_summaries(
+            SummaryType.SSH)
         serializer = self.get_serializer(summaries, many=True)
         return Response(serializer.data)
 
     @action(detail=False)
     def password(self, request):
-        summaries = self.request.airavata_client.getAllCredentialSummaries(
-            self.authz_token, SummaryType.PASSWD
-        )
+        summaries = self.request.airavata_client.credential.get_all_credential_summaries(
+            SummaryType.PASSWD)
         serializer = self.get_serializer(summaries, many=True)
         return Response(serializer.data)
 
@@ -1384,10 +1364,10 @@ class CredentialSummaryViewSet(APIBackedViewSet):
         if 'description' not in request.data:
             raise ParseError("'description' is required in request")
         description = request.data.get('description')
-        token_id = self.request.airavata_client.generateAndRegisterSSHKeys(
-            request.authz_token, description)
-        credential_summary = self.request.airavata_client.getCredentialSummary(
-            request.authz_token, token_id)
+        token_id = self.request.airavata_client.credential.generate_and_register_ssh_keys(
+            description)
+        credential_summary = self.request.airavata_client.credential.get_credential_summary(
+            token_id)
         serializer = self.get_serializer(credential_summary)
         return Response(serializer.data)
 
@@ -1401,28 +1381,28 @@ class CredentialSummaryViewSet(APIBackedViewSet):
         username = request.data.get('username')
         password = request.data.get('password')
         description = request.data.get('description')
-        token_id = self.request.airavata_client.registerPwdCredential(
-            request.authz_token, username, password, description)
-        credential_summary = self.request.airavata_client.getCredentialSummary(
-            request.authz_token, token_id)
+        token_id = self.request.airavata_client.credential.register_pwd_credential(
+            username, password, description)
+        credential_summary = self.request.airavata_client.credential.get_credential_summary(
+            token_id)
         serializer = self.get_serializer(credential_summary)
         return Response(serializer.data)
 
     def perform_destroy(self, instance):
         if instance.type == SummaryType.SSH:
-            self.request.airavata_client.deleteSSHPubKey(
-                self.authz_token, instance.token)
+            self.request.airavata_client.credential.delete_ssh_pub_key(
+                instance.token)
         elif instance.type == SummaryType.PASSWD:
-            self.request.airavata_client.deletePWDCredential(
-                self.authz_token, instance.token)
+            self.request.airavata_client.credential.delete_pwd_credential(
+                instance.token)
 
 
 class CurrentGatewayResourceProfile(APIView):
 
     def get(self, request, format=None):
         gateway_resource_profile = \
-            request.airavata_client.getGatewayResourceProfile(
-                request.authz_token, settings.GATEWAY_ID)
+            request.airavata_client.compute.get_gateway_resource_profile(
+                settings.GATEWAY_ID)
         serializer = serializers.GatewayResourceProfileSerializer(
             gateway_resource_profile, context={'request': request})
         return Response(serializer.data)
@@ -1432,8 +1412,7 @@ class CurrentGatewayResourceProfile(APIView):
             data=request.data, context={'request': request})
         if serializer.is_valid():
             gateway_resource_profile = serializer.save()
-            request.airavata_client.updateGatewayResourceProfile(
-                request.authz_token,
+            request.airavata_client.compute.update_gateway_resource_profile(
                 settings.GATEWAY_ID,
                 gateway_resource_profile)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -1444,8 +1423,8 @@ class CurrentGatewayResourceProfile(APIView):
 class ExperimentArchiveView(APIView):
 
     def get(self, request, experiment_id=None, format=None):
-        experiment: ExperimentModel = request.airavata_client.getExperiment(
-            request.authz_token, experiment_id)
+        experiment: ExperimentModel = request.airavata_client.research.get_experiment(
+            experiment_id)
         result = dict(archived=False, archive_name=None, created_date=None,
                       max_age=settings.GATEWAY_USER_DATA_ARCHIVE_MAX_AGE_DAYS)
         try:
@@ -1466,15 +1445,14 @@ class StorageResourceViewSet(mixins.RetrieveModelMixin,
     lookup_field = 'storage_resource_id'
 
     def get_instance(self, lookup_value, format=None):
-        return self.request.airavata_client.getStorageResource(
-            self.authz_token, lookup_value)
+        return self.request.airavata_client.storage.get_storage_resource(
+            lookup_value)
 
     @action(detail=False)
     def all_names(self, request, format=None):
         """Return a map of compute resource names keyed by resource id."""
         return Response(
-            request.airavata_client.getAllStorageResourceNames(
-                request.authz_token))
+            request.airavata_client.storage.get_all_storage_resource_names())
 
 
 class StoragePreferenceViewSet(APIBackedViewSet):
@@ -1482,32 +1460,30 @@ class StoragePreferenceViewSet(APIBackedViewSet):
     lookup_field = 'storage_resource_id'
 
     def get_list(self):
-        return self.request.airavata_client.getAllGatewayStoragePreferences(
-            self.authz_token, settings.GATEWAY_ID)
+        return self.request.airavata_client.compute.get_all_gateway_storage_preferences(
+            settings.GATEWAY_ID)
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getGatewayStoragePreference(
-            self.authz_token, settings.GATEWAY_ID, lookup_value)
+        return self.request.airavata_client.compute.get_gateway_storage_preference(
+            settings.GATEWAY_ID, lookup_value)
 
     def perform_create(self, serializer):
         storage_preference = serializer.save()
-        self.request.airavata_client.addGatewayStoragePreference(
-            self.authz_token,
+        self.request.airavata_client.compute.add_gateway_storage_preference(
             settings.GATEWAY_ID,
             storage_preference.storageResourceId,
             storage_preference)
 
     def perform_update(self, serializer):
         storage_preference = serializer.save()
-        self.request.airavata_client.updateGatewayStoragePreference(
-            self.authz_token,
+        self.request.airavata_client.compute.update_gateway_storage_preference(
             settings.GATEWAY_ID,
             storage_preference.storageResourceId,
             storage_preference)
 
     def perform_destroy(self, instance):
-        self.request.airavata_client.deleteGatewayStoragePreference(
-            self.authz_token, settings.GATEWAY_ID, instance.storageResourceId)
+        self.request.airavata_client.compute.delete_gateway_storage_preference(
+            settings.GATEWAY_ID, instance.storageResourceId)
 
 
 class ParserViewSet(mixins.CreateModelMixin,
@@ -1519,20 +1495,20 @@ class ParserViewSet(mixins.CreateModelMixin,
     lookup_field = 'parser_id'
 
     def get_list(self):
-        return self.request.airavata_client.listAllParsers(
-            self.authz_token, settings.GATEWAY_ID)
+        return self.request.airavata_client.research.list_all_parsers(
+            settings.GATEWAY_ID)
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getParser(
-            self.authz_token, lookup_value, settings.GATEWAY_ID)
+        return self.request.airavata_client.research.get_parser(
+            lookup_value, settings.GATEWAY_ID)
 
     def perform_create(self, serializer):
         parser = serializer.save()
-        self.request.airavata_client.saveParser(self.authz_token, parser)
+        self.request.airavata_client.research.save_parser(parser)
 
     def perform_update(self, serializer):
         parser = serializer.save()
-        self.request.airavata_client.saveParser(self.authz_token, parser)
+        self.request.airavata_client.research.save_parser(parser)
 
 
 class UserStoragePathView(APIView):
@@ -1694,29 +1670,28 @@ class ManageNotificationViewSet(APIBackedViewSet):
     lookup_field = 'notification_id'
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getNotification(
-            self.authz_token, settings.GATEWAY_ID, lookup_value)
+        return self.request.airavata_client.research.get_notification(
+            settings.GATEWAY_ID, lookup_value)
 
     def get_list(self):
-        return self.request.airavata_client.getAllNotifications(
-            self.authz_token, self.gateway_id)
+        return self.request.airavata_client.research.get_all_notifications(
+            self.gateway_id)
 
     def perform_destroy(self, instance):
-        self.request.airavata_client.deleteNotification(
-            self.authz_token, settings.GATEWAY_ID, instance.notificationId)
+        self.request.airavata_client.research.delete_notification(
+            settings.GATEWAY_ID, instance.notificationId)
 
     def perform_create(self, serializer):
         notification = serializer.save(gatewayId=self.gateway_id)
-        notificationId = self.request.airavata_client.createNotification(
-            self.authz_token, notification)
+        notificationId = self.request.airavata_client.research.create_notification(
+            notification)
         notification.notificationId = notificationId
 
         serializer.update_notification_extension(self.request, notification)
 
     def perform_update(self, serializer):
         notification = serializer.save()
-        self.request.airavata_client.updateNotification(
-            self.authz_token, notification)
+        self.request.airavata_client.research.update_notification(notification)
 
         serializer.update_notification_extension(self.request, notification)
 
@@ -1766,18 +1741,16 @@ class IAMUserViewSet(mixins.RetrieveModelMixin,
 
     def perform_update(self, serializer):
         managed_user_profile = serializer.save()
-        group_manager_client = self.request.profile_service['group_manager']
-        user_profile_client = self.request.profile_service['user_profile']
+        sharing_client = self.request.airavata_client.sharing
+        iam_client = self.request.airavata_client.iam
         user_id = managed_user_profile['airavataInternalUserId']
         added_groups = []
         for group_id in managed_user_profile['_added_group_ids']:
-            group = group_manager_client.getGroup(self.authz_token, group_id)
-            group_manager_client.addUsersToGroup(
-                self.authz_token, [user_id], group_id)
+            group = sharing_client.get_group(group_id)
+            sharing_client.add_users_to_group([user_id], group_id)
             added_groups.append(group)
         if len(added_groups) > 0:
-            user_profile = user_profile_client.getUserProfileById(
-                self.authz_token,
+            user_profile = iam_client.get_user_profile_by_id(
                 managed_user_profile['userId'],
                 settings.GATEWAY_ID)
             signals.user_added_to_group.send(
