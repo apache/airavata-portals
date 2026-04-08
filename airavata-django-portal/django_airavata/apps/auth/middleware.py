@@ -2,9 +2,12 @@
 
 import copy
 import logging
+from collections.abc import Callable
+from typing import Any
 
 from django.conf import settings
 from django.contrib.auth import logout
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
@@ -13,10 +16,10 @@ from . import utils
 log = logging.getLogger(__name__)
 
 
-def authz_token_middleware(get_response):
+def authz_token_middleware(get_response: Callable[[HttpRequest], HttpResponse]) -> Callable[[HttpRequest], HttpResponse]:
     """Automatically add the 'authz_token' to the request."""
 
-    def middleware(request):
+    def middleware(request: HttpRequest) -> HttpResponse:
 
         authz_token = None
         if request.user.is_authenticated:
@@ -33,7 +36,7 @@ def authz_token_middleware(get_response):
     return middleware
 
 
-def set_admin_group_attributes(request, gateway_groups=None):
+def set_admin_group_attributes(request: HttpRequest, gateway_groups: Any = None) -> None:
     """Set is_gateway_admin and is_read_only_gateway_admin request attrs."""
     if gateway_groups is None:
         gateway_groups = request.airavata_client.iam.get_gateway_groups()
@@ -52,10 +55,10 @@ def set_admin_group_attributes(request, gateway_groups=None):
     request.is_read_only_gateway_admin = read_only_admins_group_id in group_ids
 
 
-def gateway_groups_middleware(get_response):
+def gateway_groups_middleware(get_response: Callable[[HttpRequest], HttpResponse]) -> Callable[[HttpRequest], HttpResponse]:
     """Add 'is_gateway_admin' and 'is_read_only_gateway_admin' to request."""
 
-    def middleware(request):
+    def middleware(request: HttpRequest) -> HttpResponse:
 
         request.is_gateway_admin = False
         request.is_read_only_gateway_admin = False
@@ -93,10 +96,10 @@ def gateway_groups_middleware(get_response):
     return middleware
 
 
-def user_profile_completeness_check(get_response):
+def user_profile_completeness_check(get_response: Callable[[HttpRequest], HttpResponse]) -> Callable[[HttpRequest], HttpResponse]:
     """Check if user profile is complete and if not, redirect to user profile editor."""
 
-    def middleware(request):
+    def middleware(request: HttpRequest) -> HttpResponse:
 
         if not request.user.is_authenticated:
             return get_response(request)

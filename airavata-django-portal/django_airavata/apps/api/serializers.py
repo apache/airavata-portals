@@ -3,13 +3,16 @@ import datetime
 import json
 import logging
 from pathlib import Path
+from typing import Any
 from urllib.parse import quote
 
 from django_airavata.apps.api import user_storage
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.http import HttpRequest
 from django.urls import reverse
 from rest_framework import serializers
+from rest_framework.request import Request
 
 from django_airavata.proto_compat import (
     ApplicationDeploymentDescription,
@@ -59,7 +62,7 @@ log = logging.getLogger(__name__)
 
 
 class FullyEncodedHyperlinkedIdentityField(serializers.HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):
+    def get_url(self, obj: Any, view_name: str, request: Request, format: str | None) -> str:
         if hasattr(obj, self.lookup_field):
             lookup_value = getattr(obj, self.lookup_field)
         else:
@@ -87,27 +90,27 @@ class UTCPosixTimestampDateTimeField(serializers.DateTimeField):
         self.initial = self.initial_value
         self.required = False
 
-    def to_representation(self, obj):
+    def to_representation(self, obj: int) -> str:
         # Create datetime instance from milliseconds that is aware of timezon
         dt = datetime.datetime.fromtimestamp(obj / 1000, datetime.UTC)
         return super().to_representation(dt)
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: str) -> int:
         dt = super().to_internal_value(data)
         return int(dt.timestamp() * 1000)
 
-    def initial_value(self):
+    def initial_value(self) -> str:
         return self.to_representation(self.current_time_ms())
 
-    def current_time_ms(self):
+    def current_time_ms(self) -> int:
         return int(datetime.datetime.utcnow().timestamp() * 1000)
 
 
 class StoredJSONField(serializers.JSONField):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-    def to_representation(self, value):
+    def to_representation(self, value: str | None) -> Any:
         try:
             if value:
                 return json.loads(value)
@@ -116,7 +119,7 @@ class StoredJSONField(serializers.JSONField):
         except Exception:
             return value
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: Any) -> str:
         try:
             return json.dumps(data)
         except (TypeError, ValueError):
@@ -124,17 +127,17 @@ class StoredJSONField(serializers.JSONField):
 
 
 class OrderedListField(serializers.ListField):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.order_by = kwargs.pop("order_by", None)
         super().__init__(*args, **kwargs)
 
-    def to_representation(self, instance):
+    def to_representation(self, instance: list[Any]) -> list[dict[str, Any]] | None:
         rep = super().to_representation(instance)
         if rep is not None:
             rep.sort(key=lambda item: item[self.order_by])
         return rep
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: list[Any]) -> list[Any]:
         validated_data = super().to_internal_value(data)
         # Update order field based on order in array
         items = validated_data if validated_data else []
@@ -158,12 +161,12 @@ class GroupSerializer(proto_utils.create_serializer_class(GroupModel)):
         required = ("name",)
         read_only = ("ownerId",)
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict[str, Any]) -> Any:
         group = super().create(validated_data)
         group.ownerId = self.context["request"].user.username + "@" + settings.GATEWAY_ID
         return group
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: dict[str, Any]) -> Any:
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
         # Calculate added and removed members
@@ -187,31 +190,31 @@ class GroupSerializer(proto_utils.create_serializer_class(GroupModel)):
         instance.members.extend(list(added_admins - new_members))
         return instance
 
-    def get_isAdmin(self, group):
+    def get_isAdmin(self, group: Any) -> bool:
         request = self.context["request"]
         return request.airavata_client.sharing.has_admin_access(
             group.id, request.user.username + "@" + settings.GATEWAY_ID
         )
 
-    def get_isOwner(self, group):
+    def get_isOwner(self, group: Any) -> bool:
         request = self.context["request"]
         return group.ownerId == (request.user.username + "@" + settings.GATEWAY_ID)
 
-    def get_isMember(self, group):
+    def get_isMember(self, group: Any) -> bool:
         request = self.context["request"]
         username = request.user.username + "@" + settings.GATEWAY_ID
         return group.members and username in group.members
 
-    def get_isGatewayAdminsGroup(self, group):
+    def get_isGatewayAdminsGroup(self, group: Any) -> bool:
         return group.id == self._gateway_groups()["adminsGroupId"]
 
-    def get_isReadOnlyGatewayAdminsGroup(self, group):
+    def get_isReadOnlyGatewayAdminsGroup(self, group: Any) -> bool:
         return group.id == self._gateway_groups()["readOnlyAdminsGroupId"]
 
-    def get_isDefaultGatewayUsersGroup(self, group):
+    def get_isDefaultGatewayUsersGroup(self, group: Any) -> bool:
         return group.id == self._gateway_groups()["defaultGatewayUsersGroupId"]
 
-    def _gateway_groups(self):
+    def _gateway_groups(self) -> dict[str, Any]:
         request = self.context["request"]
         # gateway_groups_middleware sets this session variable
         if "GATEWAY_GROUPS" in request.session:
@@ -236,19 +239,19 @@ class ProjectSerializer(proto_utils.create_serializer_class(Project)):
     userHasWriteAccess = serializers.SerializerMethodField()
     isOwner = serializers.SerializerMethodField()
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict[str, Any]) -> Any:
         return Project(**validated_data)
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Any, validated_data: dict[str, Any]) -> Any:
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
         return instance
 
-    def get_userHasWriteAccess(self, project):
+    def get_userHasWriteAccess(self, project: Any) -> bool:
         request = self.context["request"]
         return request.airavata_client.sharing.user_has_access(project.projectID, ResourcePermissionType.WRITE)
 
-    def get_isOwner(self, project):
+    def get_isOwner(self, project: Any) -> bool:
         request = self.context["request"]
         return project.owner == request.user.username
 
@@ -278,12 +281,12 @@ class ApplicationModuleSerializer(proto_utils.create_serializer_class(Applicatio
 
 
 class EnumChoiceField(serializers.ChoiceField):
-    def __init__(self, enum_class, **kwargs):
+    def __init__(self, enum_class: type, **kwargs: Any) -> None:
         self.enum_class = enum_class
         kwargs["choices"] = [(member.name, member.name) for member in enum_class]
         super().__init__(**kwargs)
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: str | int) -> Any:
         if isinstance(data, int):
             try:
                 return self.enum_class(data)
@@ -294,7 +297,7 @@ class EnumChoiceField(serializers.ChoiceField):
         except KeyError:
             self.fail("invalid_choice", input=data)
 
-    def to_representation(self, value):
+    def to_representation(self, value: Any) -> str:
         return value.name
 
 
@@ -552,7 +555,7 @@ class DataProductSerializer(proto_utils.create_serializer_class(DataProductModel
     filesize = serializers.SerializerMethodField()
     userHasWriteAccess = serializers.SerializerMethodField()
 
-    def get_downloadURL(self, data_product):
+    def get_downloadURL(self, data_product: Any) -> str | None:
         """Getter for downloadURL field. Returns None if file is not available."""
         request = self.context["request"]
         if user_storage.exists(request, data_product):
@@ -560,12 +563,12 @@ class DataProductSerializer(proto_utils.create_serializer_class(DataProductModel
         else:
             return None
 
-    def get_isInputFileUpload(self, data_product):
+    def get_isInputFileUpload(self, data_product: Any) -> bool:
         """Return True if this is an uploaded input file."""
         request = self.context["request"]
         return user_storage.is_input_file(request, data_product)
 
-    def get_filesize(self, data_product):
+    def get_filesize(self, data_product: Any) -> int:
         request = self.context["request"]
         if user_storage.exists(request, data_product):
             metadata = user_storage.get_data_product_metadata(request, data_product)
@@ -573,7 +576,7 @@ class DataProductSerializer(proto_utils.create_serializer_class(DataProductModel
         else:
             return 0
 
-    def get_userHasWriteAccess(self, data_product: DataProductModel):
+    def get_userHasWriteAccess(self, data_product: DataProductModel) -> bool:
         request = self.context["request"]
         if user_storage.exists(request, data_product):
             file_metadata = user_storage.get_data_product_metadata(request, data_product=data_product)
@@ -597,15 +600,15 @@ class FullExperiment:
 
     def __init__(
         self,
-        experimentModel,
-        project=None,
-        outputDataProducts=None,
-        inputDataProducts=None,
-        applicationModule=None,
-        computeResource=None,
-        jobDetails=None,
-        outputViews=None,
-    ):
+        experimentModel: Any,
+        project: Any = None,
+        outputDataProducts: list[Any] | None = None,
+        inputDataProducts: list[Any] | None = None,
+        applicationModule: Any = None,
+        computeResource: Any = None,
+        jobDetails: list[Any] | None = None,
+        outputViews: dict[str, list[dict[str, Any]]] | None = None,
+    ) -> None:
         self.experiment = experimentModel
         self.experimentId = experimentModel.experimentId
         self.project = project
@@ -1726,11 +1729,11 @@ class SharedEntitySerializer(serializers.Serializer):
         # return tuple: permissions to revoke and permissions to grant
         return (current_permissions_set - new_permissions_set, new_permissions_set - current_permissions_set)
 
-    def get_isOwner(self, shared_entity):
+    def get_isOwner(self, shared_entity: dict[str, Any]) -> bool:
         request = self.context["request"]
         return shared_entity["owner"].userId == request.user.username
 
-    def get_hasSharingPermission(self, shared_entity):
+    def get_hasSharingPermission(self, shared_entity: dict[str, Any]) -> bool:
         request = self.context["request"]
         return request.airavata_client.sharing.user_has_access(
             shared_entity["entityId"], ResourcePermissionType.MANAGE_SHARING
