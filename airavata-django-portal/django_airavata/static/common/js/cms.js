@@ -1,9 +1,14 @@
-import bootstrap from "bootstrap"; // eslint-disable-line no-unused-vars
-import $ from "jquery";
+import * as bootstrap from "bootstrap";
 
 import "bootstrap/dist/css/bootstrap.css";
 import "@fortawesome/fontawesome-free/css/all.css";
 
-$(function () {
-  $('[data-toggle="tooltip"]').tooltip();
+// Initialize Bootstrap tooltips
+document.addEventListener("DOMContentLoaded", () => {
+  const tooltipTriggerList = document.querySelectorAll(
+    '[data-bs-toggle="tooltip"]'
+  );
+  tooltipTriggerList.forEach(
+    (tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl)
+  );
 });

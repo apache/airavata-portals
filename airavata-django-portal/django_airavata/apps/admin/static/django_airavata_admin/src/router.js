@@ -16,9 +16,7 @@ import IdentityServiceUserManagementContainer from "./components/users/IdentityS
 import UnverifiedEmailUserManagementContainer from "./components/users/UnverifiedEmailUserManagementContainer.vue";
 import UserManagementContainer from "./components/users/UserManagementContainer.vue";
 import NoticesManagementContainer from "./components/notices/NoticesManagementContainer.vue";
-import VueRouter from "vue-router";
-
-const routes = [
+export const routes = [
   {
     path: "/applications/new",
     component: ApplicationEditorContainer,
@@ -162,8 +160,4 @@ const routes = [
     name: "developers",
   }
 ];
-export default new VueRouter({
-  mode: "history",
-  base: "/admin/",
-  routes: routes,
-});
+export default routes;

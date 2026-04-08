@@ -1,18 +1,9 @@
+import { h } from "vue";
 import { components, entry } from "django-airavata-common-ui";
 import GroupEditContainer from "./containers/GroupEditContainer.vue";
 
-entry((Vue) => {
-  new Vue({
-    render(h) {
-      return h(components.MainLayout, [
-        h(GroupEditContainer, {
-          props: {
-            groupId: this.groupId,
-            next: this.next,
-          },
-        }),
-      ]);
-    },
+entry(({ createApp }) => {
+  const app = createApp({
     data() {
       return {
         groupId: null,
@@ -27,5 +18,15 @@ entry((Vue) => {
         this.next = this.$el.dataset.next;
       }
     },
-  }).$mount("#group-edit");
+    render() {
+      return h(components.MainLayout, null, {
+        default: () =>
+          h(GroupEditContainer, {
+            groupId: this.groupId,
+            next: this.next,
+          }),
+      });
+    },
+  });
+  app.mount("#group-edit");
 });

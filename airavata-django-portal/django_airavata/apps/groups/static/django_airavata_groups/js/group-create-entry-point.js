@@ -1,17 +1,9 @@
+import { h } from "vue";
 import { components, entry } from "django-airavata-common-ui";
 import GroupCreateContainer from "./containers/GroupCreateContainer.vue";
 
-entry((Vue) => {
-  new Vue({
-    render(h) {
-      return h(components.MainLayout, [
-        h(GroupCreateContainer, {
-          props: {
-            next: this.next,
-          },
-        }),
-      ]);
-    },
+entry(({ createApp }) => {
+  const app = createApp({
     data() {
       return {
         next: "/groups/",
@@ -22,5 +14,14 @@ entry((Vue) => {
         this.next = this.$el.dataset.next;
       }
     },
-  }).$mount("#group-create");
+    render() {
+      return h(components.MainLayout, null, {
+        default: () =>
+          h(GroupCreateContainer, {
+            next: this.next,
+          }),
+      });
+    },
+  });
+  app.mount("#group-create");
 });

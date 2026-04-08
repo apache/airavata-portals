@@ -34,12 +34,10 @@
 </template>
 
 <script>
-import Vue from "vue";
+
 import store from "./store";
 import { mapGetters } from "vuex";
-import { BootstrapVue } from "bootstrap-vue";
 import urls from "../utils/urls";
-Vue.use(BootstrapVue);
 
 export default {
   props: {

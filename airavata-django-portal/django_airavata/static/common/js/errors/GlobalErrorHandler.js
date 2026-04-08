@@ -1,11 +1,17 @@
-import Vue from "vue";
 import { errors } from "django-airavata-api";
 
 class GlobalErrorHandler {
   init() {
     console.log("Initializing GlobalErrorHandler..."); // eslint-disable-line no-console
     window.onerror = this.handleGlobalError;
-    Vue.config.errorHandler = this.vueGlobalErrorHandler;
+  }
+
+  /**
+   * Install the Vue error handler on a Vue 3 app instance.
+   * Call this after createApp() to attach the Vue error handler.
+   */
+  installVueErrorHandler(app) {
+    app.config.errorHandler = this.vueGlobalErrorHandler;
   }
 
   handleGlobalError(msg, url, lineNo, columnNo, error) {

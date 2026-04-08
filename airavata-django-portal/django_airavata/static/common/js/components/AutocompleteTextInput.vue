@@ -9,9 +9,9 @@
         :value="searchValue"
         :placeholder="placeholder"
         @input="updateSearchValue"
-        @keydown.native.enter="enter"
-        @keydown.native.down="down"
-        @keydown.native.up="up"
+        @keydown.enter="enter"
+        @keydown.down="down"
+        @keydown.up="up"
       ></b-form-input>
     </b-input-group>
     <b-list-group class="autocomplete-suggestion-list" v-if="open">

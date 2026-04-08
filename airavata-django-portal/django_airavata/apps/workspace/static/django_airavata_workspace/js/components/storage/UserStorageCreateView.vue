@@ -26,7 +26,7 @@
           <b-form-input
             v-model="dirName"
             placeholder="New directory name"
-            @keydown.native.enter="addDirectory"
+            @keydown.enter="addDirectory"
           ></b-form-input>
           <b-input-group-append>
             <b-button @click="addDirectory" :disabled="!this.dirName"

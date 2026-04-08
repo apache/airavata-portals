@@ -14,7 +14,7 @@
                 v-if="defaultOptionSelected"
                 v-model="search"
                 placeholder="Search Experiments"
-                @keydown.native.enter="searchExperiments"
+                @keydown.enter="searchExperiments"
               />
               <b-form-select
                 v-if="applicationSelected"

@@ -27,11 +27,9 @@
 </template>
 
 <script>
-import Vue from "vue";
+
 import store from "./store";
 import { mapGetters } from "vuex";
-import { BootstrapVue } from "bootstrap-vue";
-Vue.use(BootstrapVue);
 
 export default {
   props: {

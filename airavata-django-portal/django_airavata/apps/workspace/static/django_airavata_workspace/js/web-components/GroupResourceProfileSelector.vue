@@ -6,7 +6,7 @@
       :options="groupResourceProfileOptions"
       required
       @change="groupResourceProfileChanged"
-      @input.native.stop
+      @input.stop
       :disabled="disabled"
     >
       <template slot="first">
@@ -19,11 +19,9 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { BootstrapVue } from "bootstrap-vue";
+
 import store from "./store";
 import { mapGetters } from "vuex";
-Vue.use(BootstrapVue);
 
 export default {
   name: "group-resource-profile-selector",

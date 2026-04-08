@@ -1,11 +1,10 @@
-import Vuex from "vuex";
+import { createStore } from "vuex";
 import extendedUserProfile from "./modules/extendedUserProfile";
 
 const debug = process.env.NODE_ENV !== "production";
 
-function createStore(Vue) {
-  Vue.use(Vuex);
-  return new Vuex.Store({
+function makeStore() {
+  return createStore({
     modules: {
       extendedUserProfile,
     },
@@ -13,4 +12,4 @@ function createStore(Vue) {
   });
 }
 
-export default createStore;
+export default makeStore;

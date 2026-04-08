@@ -42,7 +42,7 @@
           :options="queueOptions"
           required
           @change="queueChanged"
-          @input.native.stop
+          @input.stop
         >
         </b-form-select>
         <div slot="description">{{ queueDescription }}</div>
@@ -57,7 +57,7 @@
               :max="maxAllowedNodes"
               :value="getNodeCount"
               required
-              @input.native.stop="updateNodeCount"
+              @input.stop="updateNodeCount"
             >
             </b-form-input>
             <div slot="description">
@@ -73,7 +73,7 @@
             :max="maxAllowedCores"
             :value="getTotalCPUCount"
             required
-            @input.native.stop="updateTotalCPUCount"
+            @input.stop="updateTotalCPUCount"
           >
           </b-form-input>
           <div slot="description">
@@ -106,7 +106,7 @@
             :max="maxAllowedWalltime"
             :value="getWallTimeLimit"
             required
-            @input.native.stop="updateWallTimeLimit"
+            @input.stop="updateWallTimeLimit"
           >
           </b-form-input>
         </b-input-group>
@@ -127,7 +127,7 @@
             min="0"
             :max="maxMemory"
             :value="getTotalPhysicalMemory"
-            @input.native.stop="updateTotalPhysicalMemory"
+            @input.stop="updateTotalPhysicalMemory"
           >
           </b-form-input>
         </b-input-group>
@@ -148,11 +148,9 @@
 
 <script>
 import { utils } from "django-airavata-api";
-import Vue from "vue";
+
 import store from "./store";
 import { mapGetters } from "vuex";
-import { BootstrapVue } from "bootstrap-vue";
-Vue.use(BootstrapVue);
 
 export default {
   store: store,

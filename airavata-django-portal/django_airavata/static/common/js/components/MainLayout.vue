@@ -20,7 +20,7 @@ export default {
   name: "main-layout",
   computed: {
     hasSidebar() {
-      return this.$slots.sidebar;
+      return !!this.$slots.sidebar;
     },
   },
   components: {

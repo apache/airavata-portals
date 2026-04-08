@@ -1,8 +1,5 @@
 import { errors, services, utils } from "django-airavata-api";
-import Vue from "vue";
-import Vuex from "vuex";
-
-Vue.use(Vuex);
+import { createStore } from "vuex";
 
 const PROMISES = {
   workspacePreferences: null,
@@ -836,7 +833,7 @@ export const getters = {
       : false,
 };
 
-export default new Vuex.Store({
+export default createStore({
   strict: process.env.NODE_ENV !== "production",
   state: {
     experiment: null,

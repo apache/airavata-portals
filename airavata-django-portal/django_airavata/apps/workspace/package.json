@@ -27,7 +27,7 @@
     "vue-flatpickr-component": "^11.0.0",
     "vue-router": "^4.3.0",
     "vue-slider-component": "^4.1.0",
-    "pinia": "^2.2.0"
+    "vuex": "^4.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",
