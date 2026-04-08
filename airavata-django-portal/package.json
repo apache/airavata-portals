@@ -1,0 +1,22 @@
+{
+  "private": true,
+  "workspaces": [
+    "django_airavata/static/common",
+    "django_airavata/apps/admin",
+    "django_airavata/apps/api",
+    "django_airavata/apps/auth",
+    "django_airavata/apps/dataparsers",
+    "django_airavata/apps/groups",
+    "django_airavata/apps/workspace",
+    "django_airavata/apps/workspace/django-airavata-workspace-plugin-api"
+  ],
+  "scripts": {
+    "build": "yarn workspaces run build",
+    "dev": "echo 'Use tilt up for dev servers'",
+    "lint": "yarn workspaces run lint",
+    "test": "yarn workspaces run test"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
