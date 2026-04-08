@@ -6,7 +6,7 @@
           class="card border-default"
           :class="{ 'border-danger': !valid, 'is-disabled': disabled }"
         >
-          <b-link
+          <a
             @click="showConfiguration = !showConfiguration"
             class="card-link text-dark"
             :disabled="disabled"
@@ -38,20 +38,20 @@
                 </div>
               </div>
             </div>
-          </b-link>
+          </a>
         </div>
       </div>
     </div>
     <div v-if="showConfiguration">
       <div class="row">
         <div class="col">
-          <b-form-group
+          <form-group
             label="Select a Queue"
             label-for="queue"
             :invalid-feedback="getValidationFeedback('queueName')"
             :state="getValidationState('queueName')"
           >
-            <b-form-select
+            <select class="form-select"
               id="queue"
               v-model="data.queueName"
               :options="queueOptions"
@@ -59,20 +59,20 @@
               @change="queueChanged"
               :state="getValidationState('queueName')"
             >
-            </b-form-select>
+            </select>
             <div slot="description">
               {{ queueDescription }}
             </div>
-          </b-form-group>
+          </div>
           <div class="d-flex flex-row">
             <div class="flex-fill">
-              <b-form-group
+              <form-group
                 label="Node Count"
                 label-for="node-count"
                 :invalid-feedback="getValidationFeedback('nodeCount')"
                 :state="getValidationState('nodeCount', true)"
               >
-                <b-form-input
+                <input class="form-control"
                   id="node-count"
                   type="number"
                   min="1"
@@ -82,19 +82,19 @@
                   @input="nodeCountChanged"
                   :state="getValidationState('nodeCount', true)"
                 >
-                </b-form-input>
+                </input>
                 <div slot="description">
                   <i class="fa fa-info-circle" aria-hidden="true"></i>
                   Max Allowed Nodes = {{ maxNodes }}
                 </div>
-              </b-form-group>
-              <b-form-group
+              </div>
+              <form-group
                 label="Total Core Count"
                 label-for="core-count"
                 :invalid-feedback="getValidationFeedback('totalCPUCount')"
                 :state="getValidationState('totalCPUCount', true)"
               >
-                <b-form-input
+                <input class="form-control"
                   id="core-count"
                   type="number"
                   min="1"
@@ -104,7 +104,7 @@
                   @input="cpuCountChanged"
                   :state="getValidationState('totalCPUCount', true)"
                 >
-                </b-form-input>
+                </input>
                 <div slot="description">
                   <i class="fa fa-info-circle" aria-hidden="true"></i>
                   Max Allowed Cores = {{ maxCPUCount
@@ -117,7 +117,7 @@
                     node.
                   </template>
                 </div>
-              </b-form-group>
+              </div>
             </div>
             <div
               class="d-flex flex-column"
@@ -134,7 +134,7 @@
                   margin-right: 15px;
                 "
               ></div>
-              <b-button
+              <button class="btn"
                 size="sm"
                 pill
                 variant="outline-secondary"
@@ -148,7 +148,7 @@
                   aria-hidden="true"
                 ></i>
                 <i v-else class="fa fa-unlock" aria-hidden="true"></i>
-              </b-button>
+              </button>
               <div
                 class="flex-fill"
                 style="
@@ -162,14 +162,14 @@
               ></div>
             </div>
           </div>
-          <b-form-group
+          <form-group
             label="Wall Time Limit"
             label-for="walltime-limit"
             :invalid-feedback="getValidationFeedback('wallTimeLimit')"
             :state="getValidationState('wallTimeLimit', true)"
           >
-            <b-input-group append="minutes">
-              <b-form-input
+            <div class="input-group" append="minutes">
+              <input class="form-control"
                 id="walltime-limit"
                 type="number"
                 min="1"
@@ -178,22 +178,22 @@
                 required
                 :state="getValidationState('wallTimeLimit', true)"
               >
-              </b-form-input>
-            </b-input-group>
+              </input>
+            </div>
             <div slot="description">
               <i class="fa fa-info-circle" aria-hidden="true"></i>
               Max Allowed Wall Time = {{ maxWalltime }} minutes
             </div>
-          </b-form-group>
-          <b-form-group
+          </div>
+          <form-group
             v-if="maxPhysicalMemory > 0"
             label="Total Physical Memory"
             label-for="total-physical-memory"
             :invalid-feedback="getValidationFeedback('totalPhysicalMemory')"
             :state="getValidationState('totalPhysicalMemory', true)"
           >
-            <b-input-group append="MB">
-              <b-form-input
+            <div class="input-group" append="MB">
+              <input class="form-control"
                 id="total-physical-memory"
                 type="number"
                 min="0"
@@ -201,13 +201,13 @@
                 v-model="data.totalPhysicalMemory"
                 :state="getValidationState('totalPhysicalMemory', true)"
               >
-              </b-form-input>
-            </b-input-group>
+              </input>
+            </div>
             <div slot="description">
               <i class="fa fa-info-circle" aria-hidden="true"></i>
               Max Physical Memory = {{ maxPhysicalMemory }} MB
             </div>
-          </b-form-group>
+          </div>
           <div>
             <a
               class="text-secondary action-link"

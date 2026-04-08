@@ -1,33 +1,33 @@
 <template>
   <div>
-    <b-alert
+    <div class="alert"
       :variant="showDismissibleAlert.variant"
       dismissible
       :show="showDismissibleAlert.dismissable"
       @dismissed="showDismissibleAlert.dismissable = false"
     >
       {{ showDismissibleAlert.message }}
-    </b-alert>
+    </div>
 
-    <b-form >
-      <b-form-group
+    <form >
+      <form-group
         id="group1"
         label="Group Name:"
         label-for="group_name"
         description="Name should only contain Alpha Characters"
       >
-        <b-form-input
+        <input class="form-control"
           id="group_name"
           type="text"
           v-model="localGroup.name"
           required
           placeholder="Enter group name"
         >
-        </b-form-input>
-      </b-form-group>
+        </input>
+      </div>
 
-      <b-form-group id="group2" label="Description:" label-for="description">
-        <b-form-textarea
+      <div class="mb-3" id="group2" label="Description:" label-for="description">
+        <textarea class="form-control"
           id="description"
           type="text"
           :rows="6"
@@ -35,10 +35,10 @@
           required
           placeholder="Enter description of the group"
         >
-        </b-form-textarea>
-      </b-form-group>
+        </textarea>
+      </div>
 
-      <b-card title="Manage Group Members" title-tag="h5">
+      <div class="card" title="Manage Group Members" title-tag="h5">
         <group-members-editor
           :group="localGroup"
           @add-member="addGroupMember"
@@ -46,10 +46,10 @@
           @change-role-to-member="changeRoleToMember"
           @change-role-to-admin="changeRoleToAdmin"
         />
-      </b-card>
-    </b-form>
+      </div></div>
+    </form>
     <div class="fixed-footer">
-      <b-button @click="submitForm" variant="primary">Submit</b-button>  
+      <button class="btn" @click="submitForm" variant="primary">Submit</button>  
     </div>
   </div>
 </template>

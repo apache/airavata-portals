@@ -1,9 +1,9 @@
 <template>
   <div>
-    <b-btn v-b-modal.modal-new-project variant="primary">
+    <button class="btn" v-b-modal.modal-new-project variant="primary">
       <slot> New Project <i class="fa fa-plus" aria-hidden="true"></i> </slot>
-    </b-btn>
-    <b-modal
+    </button>
+    <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
       id="modal-new-project"
       ref="modalNewProject"
       title="Create New Project"
@@ -20,7 +20,7 @@
       >
         <div slot="title"></div>
       </project-editor>
-    </b-modal>
+    </div>
   </div>
 </template>
 

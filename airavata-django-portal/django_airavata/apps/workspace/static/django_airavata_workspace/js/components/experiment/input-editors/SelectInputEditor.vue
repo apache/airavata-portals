@@ -1,5 +1,5 @@
 <template>
-  <b-form-select
+  <select class="form-select"
     :id="id"
     v-model="data"
     :options="selectOptions"

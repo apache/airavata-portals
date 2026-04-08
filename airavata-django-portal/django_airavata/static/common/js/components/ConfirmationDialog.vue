@@ -1,5 +1,5 @@
 <template>
-  <b-modal
+  <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
     :title="title"
     ref="modal"
     @ok="$emit('ok')"
@@ -11,7 +11,7 @@
     ok-variant="danger"
   >
     <slot></slot>
-  </b-modal>
+  </div>
 </template>
 
 <script>

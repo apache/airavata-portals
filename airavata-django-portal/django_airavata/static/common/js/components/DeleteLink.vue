@@ -1,9 +1,9 @@
 <template>
   <div class="delete-link">
-    <b-link class="text-danger action-link" @click="$refs.modal.show()">
+    <a class="text-danger action-link" @click="$refs.modal.show()">
       Delete
       <i class="fa fa-trash" aria-hidden="true"></i>
-    </b-link>
+    </a>
     <confirmation-dialog ref="modal" :title="dialogTitle" @ok="$emit('delete')">
       <slot></slot>
     </confirmation-dialog>

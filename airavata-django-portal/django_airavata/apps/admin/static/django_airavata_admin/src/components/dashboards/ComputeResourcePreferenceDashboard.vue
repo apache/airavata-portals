@@ -6,7 +6,7 @@
     new-item-button-text="New Group Resource Profile"
   >
     <template slot="item-list" slot-scope="slotProps">
-      <b-table striped hover :fields="fields" :items="slotProps.items">
+      <!-- TODO: Replace b-table with native table --><table class="table" striped hover :fields="fields" :items="slotProps.items">
         <template slot="cell(updatedTime)" slot-scope="data">
           <human-date :date="data.value" />
         </template>
@@ -49,7 +49,7 @@
             >?
           </delete-link>
         </template>
-      </b-table>
+      </table>
     </template>
   </list-layout>
 </template>

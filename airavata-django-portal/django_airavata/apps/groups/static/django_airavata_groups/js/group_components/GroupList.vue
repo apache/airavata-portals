@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-alert
+    <div class="alert"
       dismissible
       :variant="alertVariant"
       :show="showDismissibleAlert"

@@ -4,19 +4,19 @@
       <div class="col">
         <div class="card">
           <div class="card-body">
-            <b-input-group>
-              <b-form-input
+            <div class="input-group">
+              <input class="form-control"
                 v-model="search"
                 placeholder="Search by name, email or username"
                 @keydown.enter="searchUsers"
               />
-              <b-input-group-append>
-                <b-button @click="resetSearch">Reset</b-button>
-                <b-button variant="primary" @click="searchUsers"
+              <span class="input-group-text">
+                <button class="btn" @click="resetSearch">Reset</button>
+                <button class="btn" variant="primary" @click="searchUsers"
                   >Search</b-button
                 >
-              </b-input-group-append>
-            </b-input-group>
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -25,7 +25,7 @@
       <div class="col">
         <div class="card">
           <div class="card-body">
-            <b-table hover :fields="fields" :items="items" :fixed="true">
+            <!-- TODO: Replace b-table with native table --><table class="table" hover :fields="fields" :items="items" :fixed="true">
               <template slot="cell(creationTime)" slot-scope="data">
                 <human-date :date="data.value" />
               </template>
@@ -33,12 +33,12 @@
                 <group-membership-display :groups="data.item.groups" />
               </template>
               <template slot="cell(action)" slot-scope="data">
-                <b-button
+                <button class="btn"
                   v-if="data.item.userHasWriteAccess"
                   @click="toggleDetails(data)"
                 >
                   Edit
-                </b-button>
+                </button>
               </template>
               <template slot="row-details" slot-scope="data">
                 <user-details-container
@@ -50,7 +50,7 @@
                   @update-username="updateUsername(data.item, ...$event)"
                 />
               </template>
-            </b-table>
+            </table>
             <pager
               v-bind:paginator="usersPaginator"
               v-on:next="next"

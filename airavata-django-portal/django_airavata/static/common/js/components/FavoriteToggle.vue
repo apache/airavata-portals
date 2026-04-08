@@ -1,14 +1,14 @@
 <template>
-  <b-link
+  <a
     class="text-primary"
     @click.stop="toggleFavorite"
     v-b-tooltip
     :title="titleText"
   >
     <i class="fa fa-star favorite-toggle" :class="classes"
-      ><span class="sr-only">Toggle favorite</span></i
+      ><span class="visually-hidden">Toggle favorite</span></i
     >
-  </b-link>
+  </a>
 </template>
 
 <script>

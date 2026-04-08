@@ -1,9 +1,9 @@
 <template>
-  <b-card>
+  <div class="card"><div class="card-body">
     <template #header>
       <div class="d-flex justify-content-between">
         <h6 class="mb-0">Experiment Data Directory</h6>
-        <b-link
+        <a
           v-if="canDownloadDataDirectory"
           :href="`/sdk/download-experiment-dir/${encodeURIComponent(
             experimentId
@@ -11,7 +11,7 @@
         >
           Download Zip
           <i class="fa fa-file-archive" aria-hidden="true"></i>
-        </b-link>
+        </a>
       </div>
     </template>
     <experiment-storage-path-viewer
@@ -22,18 +22,18 @@
       :download-in-new-window="true"
     ></experiment-storage-path-viewer>
 
-    <b-alert v-else-if="archived" show variant="warning">
+    <div class="alert" v-else-if="archived" show variant="warning">
       This experiment was archived on {{ experimentArchive.created_date }}.
-    </b-alert>
-    <b-alert v-else-if="experimentDataDirNotFound" show variant="warning">
+    </div>
+    <div class="alert" v-else-if="experimentDataDirNotFound" show variant="warning">
       Experiment Data Directory does not exist in storage.
-    </b-alert>
+    </div>
 
     <!-- <small class="text-muted" v-if="archiveMaxAge > 0">
       Data is retained for {{ archiveMaxAge }} days before it is removed and
       archived.
     </small> -->
-  </b-card>
+  </div></div>
 </template>
 
 <script>

@@ -1,6 +1,6 @@
 <template>
-  <b-form-group label="Project">
-    <b-form-select v-model="projectId" required>
+  <div class="mb-3" label="Project">
+    <select class="form-select" v-model="projectId" required>
       <template slot="first">
         <option :value="null" disabled>Select a Project</option>
       </template>
@@ -22,8 +22,8 @@
           {{ project.text }}
         </option>
       </optgroup>
-    </b-form-select>
-  </b-form-group>
+    </select>
+  </div>
 </template>
 
 <script>

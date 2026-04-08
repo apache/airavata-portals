@@ -1,10 +1,10 @@
 <template>
-  <div v-if="value" class="d-flex pl-3">
+  <div v-if="value" class="d-flex ps-3">
     {{ text }}
-    <b-link @click="cancel" class="ml-auto text-danger"
+    <a @click="cancel" class="ms-auto text-danger"
       >Cancel
       <i class="fa fa-times" aria-hidden="true"></i>
-    </b-link>
+    </a>
   </div>
   <div v-else>
     <autocomplete-text-input

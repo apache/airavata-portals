@@ -1,17 +1,17 @@
 <template>
-  <b-input-group>
-    <b-form-input
+  <div class="input-group">
+    <input class="form-control"
       ref="textInput"
       :value="value"
       @input="currentValue = $event"
       @keydown.enter="enterKeyPressed"
     />
-    <b-input-group-append>
-      <b-button variant="primary" :disabled="disabled" @click="submit"
+    <span class="input-group-text">
+      <button class="btn" variant="primary" :disabled="disabled" @click="submit"
         >Submit</b-button
       >
-    </b-input-group-append>
-  </b-input-group>
+    </span>
+  </div>
 </template>
 
 <script>

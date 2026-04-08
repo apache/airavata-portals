@@ -30,7 +30,7 @@
       >
         Delete <i class="fa fa-trash"></i>
       </a>
-      <b-modal
+      <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
         :header-bg-variant="headerBgVariant"
         :header-text-variant="headerTextVariant"
         :body-bg-variant="bodyBgVariant"
@@ -45,22 +45,22 @@
           >'?
         </p>
         <div slot="modal-footer" class="w-100">
-          <b-button
-            class="float-right ml-1"
+          <button class="btn"
+            class="float-right ms-1"
             :variant="yesButtonVariant"
             :disabled="deleting"
             @click="deleteGroup(group.id)"
             >Yes</b-button
           >
-          <b-button
-            class="float-right ml-1"
+          <button class="btn"
+            class="float-right ms-1"
             :variant="noButtonVariant"
             :disabled="deleting"
             @click="show = false"
             >No</b-button
           >
         </div>
-      </b-modal>
+      </div>
     </td>
   </tr>
 </template>

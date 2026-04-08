@@ -1,5 +1,5 @@
 <template>
-  <b-button :href="downloadUrl" :download="fileName">Download</b-button>
+  <button class="btn" :href="downloadUrl" :download="fileName">Download</button>
 </template>
 
 <script>

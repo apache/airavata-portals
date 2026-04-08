@@ -1,11 +1,11 @@
 <template>
-  <div class="btn-group ml-3">
+  <div class="btn-group ms-3">
     <div class="dropdown">
       <a
         href="#"
         class="dropdown-toggle text-dark"
         id="dropdownNoticeButton"
-        data-toggle="dropdown"
+        data-bs-toggle="dropdown"
         title="Notifications"
         aria-haspopup="true"
         aria-expanded="false"
@@ -38,8 +38,8 @@
                 <a
                   v-if="!notice.is_read"
                   class="fas fa-dot-circle"
-                  data-toggle="tooltip"
-                  data-placement="left"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="left"
                   title="Mark as read"
                   :id="notice.notificationId"
                   @click="ackNotification(notice)"

@@ -1,5 +1,5 @@
 <template>
-  <b-card
+  <div class="card"
     :bg-variant="bgVariant"
     body-bg-variant="white"
     :header-text-variant="headerTextVariant"
@@ -11,15 +11,15 @@
       </div>
       <div>{{ title }}</div>
     </div>
-    <b-link
+    <a
       :class="'text-decoration-none text-' + linkVariant"
       @click="$emit('click')"
     >
       <slot name="link-text">
         <div v-for="state in states" :key="state.value">{{ state.name }}</div>
       </slot>
-    </b-link>
-  </b-card>
+    </a>
+  </div></div>
 </template>
 
 <script>

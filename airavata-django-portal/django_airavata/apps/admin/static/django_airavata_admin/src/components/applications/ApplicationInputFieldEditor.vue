@@ -1,125 +1,125 @@
 <template>
-  <b-card>
+  <div class="card"><div class="card-body">
     <div class="d-flex align-items-center" slot="header">
-      <div v-if="!readonly" class="drag-handle mr-1 text-muted">
+      <div v-if="!readonly" class="drag-handle me-1 text-muted">
         <i class="fa fa-grip-vertical"></i>
-        <span class="sr-only">Drag handle for reordering</span>
+        <span class="visually-hidden">Drag handle for reordering</span>
       </div>
-      <div class="mr-auto">Input Field: {{ data.name }}</div>
-      <b-link
+      <div class="me-auto">Input Field: {{ data.name }}</div>
+      <a
         v-if="!readonly"
         class="text-secondary"
         @click="deleteApplicationInput"
       >
         <i class="fa fa-trash"></i>
-        <span class="sr-only">Delete</span>
-      </b-link>
+        <span class="visually-hidden">Delete</span>
+      </a>
     </div>
-    <b-collapse :id="id + '-collapse'" :visible="!collapse">
-      <b-form-group label="Name" :label-for="id + '-name'">
-        <b-form-input
+    <div class="collapse" :id="id + '-collapse'" :visible="!collapse">
+      <div class="mb-3" label="Name" :label-for="id + '-name'">
+        <input class="form-control"
           :id="id + '-name'"
           type="text"
           v-model="data.name"
           ref="nameInput"
           required
           :disabled="readonly"
-        ></b-form-input>
-      </b-form-group>
-      <b-form-group label="Type" :label-for="id + '-type'">
-        <b-form-select
+        ></input>
+      </div>
+      <div class="mb-3" label="Type" :label-for="id + '-type'">
+        <select class="form-select"
           :id="id + '-type'"
           v-model="data.type"
           :options="inputTypeOptions"
           :disabled="readonly"
         />
-      </b-form-group>
-      <b-form-group
+      </div>
+      <form-group
         label="Initial Value"
         :label-for="id + '-value'"
         v-if="showValueField"
       >
-        <b-form-input
+        <input class="form-control"
           :id="id + '-value'"
           type="text"
           v-model="data.value"
           :disabled="readonly"
-        ></b-form-input>
-      </b-form-group>
-      <b-form-group
+        ></input>
+      </div>
+      <form-group
         label="Override Filename"
         :label-for="id + '-value'"
         v-if="showOverrideFilenameField"
       >
-        <b-form-input
+        <input class="form-control"
           :id="id + '-override-filename'"
           type="text"
           v-model="data.overrideFilename"
           :disabled="readonly"
-        ></b-form-input>
-      </b-form-group>
-      <b-form-group label="Application Argument" :label-for="id + '-argument'">
-        <b-form-input
+        ></input>
+      </div>
+      <div class="mb-3" label="Application Argument" :label-for="id + '-argument'">
+        <input class="form-control"
           :id="id + '-argument'"
           type="text"
           v-model="data.applicationArgument"
           :disabled="readonly"
-        ></b-form-input>
-      </b-form-group>
-      <b-form-group
+        ></input>
+      </div>
+      <form-group
         class="flex-fill"
         label="Required on Command Line"
         :label-for="id + '-required-command-line'"
         description="Add this input's value to the command line in the generated job script."
       >
-        <b-form-radio-group
+        <form-radio-group
           :id="id + '-required-command-line'"
           v-model="data.requiredToAddedToCommandLine"
           :options="trueFalseOptions"
           :disabled="readonly"
         >
-        </b-form-radio-group>
-      </b-form-group>
+        </div>
+      </div>
       <div class="d-flex">
-        <b-form-group
+        <form-group
           class="flex-fill"
           label="Required"
           :label-for="id + '-required'"
         >
-          <b-form-radio-group
+          <form-radio-group
             :id="id + '-required'"
             v-model="data.isRequired"
             :options="trueFalseOptions"
             :disabled="readonly"
           >
-          </b-form-radio-group>
-        </b-form-group>
-        <b-form-group
+          </div>
+        </div>
+        <form-group
           class="flex-fill"
           label="Read Only"
           :label-for="id + '-read-only'"
         >
-          <b-form-radio-group
+          <form-radio-group
             :id="id + '-read-only'"
             v-model="data.isReadOnly"
             :options="trueFalseOptions"
             :disabled="readonly"
           >
-          </b-form-radio-group>
-        </b-form-group>
+          </div>
+        </div>
       </div>
-      <b-form-group
+      <form-group
         label="User Friendly Description"
         :label-for="id + '-user-friendly-description'"
       >
-        <b-form-textarea
+        <textarea class="form-control"
           :id="id + '-user-friendly-description'"
           v-model="data.userFriendlyDescription"
           :rows="3"
           :disabled="readonly"
         />
-      </b-form-group>
-      <b-form-group
+      </div>
+      <form-group
         label="Advanced Input Field Modification Metadata"
         :label-for="id + '-metadata'"
         description="Metadata for this input, in the JSON format"
@@ -130,9 +130,9 @@
           :rows="5"
           :disabled="readonly"
         />
-      </b-form-group>
-    </b-collapse>
-  </b-card>
+      </div>
+    </div>
+  </div></div>
 </template>
 
 <script>

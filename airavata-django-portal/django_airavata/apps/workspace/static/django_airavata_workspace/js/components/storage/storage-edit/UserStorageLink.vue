@@ -1,9 +1,9 @@
 <template>
   <div>
-    <b-link :href="storageFileViewRouteUrl()" @click="showFilePreview($event)">
+    <a :href="storageFileViewRouteUrl()" @click="showFilePreview($event)">
       {{ fileName }}
-    </b-link>
-    <b-modal :title="fileName" ref="modal" scrollable size="lg" static lazy>
+    </a>
+    <!-- TODO: Replace b-modal with Bootstrap 5 modal --><div class="modal" :title="fileName" ref="modal" scrollable size="lg" static lazy>
       <user-storage-file-edit-viewer
         :file-name="fileName"
         :data-product-uri="dataProductUri"
@@ -17,7 +17,7 @@
           >Open in a new window</a
         >
       </template>
-    </b-modal>
+    </div>
   </div>
 </template>
 

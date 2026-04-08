@@ -18,7 +18,7 @@
       <div class="col">
         <div class="card">
           <div class="card-body">
-            <b-form-group
+            <form-group
               label="Login Username"
               label-for="login-username"
               :invalid-feedback="
@@ -26,7 +26,7 @@
               "
               :state="validationFeedback.loginUserName.state"
             >
-              <b-form-input
+              <input class="form-control"
                 id="login-username"
                 type="text"
                 required
@@ -35,9 +35,9 @@
                 :disabled="!userHasWriteAccess"
                 @input="validate"
               >
-              </b-form-input>
-            </b-form-group>
-            <b-form-group
+              </input>
+            </div>
+            <form-group
               label="SSH Credential"
               label-for="credential-store-token"
             >
@@ -69,14 +69,14 @@
                   <span v-else> Select a SSH credential </span>
                 </template>
               </ssh-credential-selector>
-            </b-form-group>
-            <b-form-group
+            </div>
+            <form-group
               label="Resource Type"
               label-for="resource-type"
               :invalid-feedback="validationFeedback.resourceType.invalidFeedback"
               :state="validationFeedback.resourceType.state"
             >
-              <b-form-select
+              <select class="form-select"
                 id="resource-type"
                 v-model="data.resourceType"
                 :options="resourceTypeOptions"
@@ -87,63 +87,63 @@
                 <template slot="first">
                   <option :value="null">Select a resource type</option>
                 </template>
-              </b-form-select>
-            </b-form-group>
+              </select>
+            </div>
             <!-- SLURM-specific fields -->
             <template v-if="isResourceType('SLURM')">
-              <b-form-group
+              <form-group
                 label="Allocation Project Number"
                 label-for="allocation-number"
               >
-                <b-form-input
+                <input class="form-control"
                   id="allocation-number"
                   type="text"
                   v-model="data.allocationProjectNumber"
                   :disabled="!userHasWriteAccess"
                 >
-                </b-form-input>
-              </b-form-group>
+                </input>
+              </div>
             </template>
             <!-- AWS-specific fields -->
             <template v-if="isResourceType('AWS')">
-              <b-form-group
+              <form-group
                 label="Region"
                 label-for="aws-region"
               >
-                <b-form-input
+                <input class="form-control"
                   id="aws-region"
                   type="text"
                   v-model="data.specificPreferences.region"
                   :disabled="!userHasWriteAccess"
                 >
-                </b-form-input>
-              </b-form-group>
-              <b-form-group
+                </input>
+              </div>
+              <form-group
                 label="Preferred AMI ID"
                 label-for="preferred-ami-id"
               >
-                <b-form-input
+                <input class="form-control"
                   id="preferred-ami-id"
                   type="text"
                   v-model="data.specificPreferences.preferredAmiId"
                   :disabled="!userHasWriteAccess"
                 >
-                </b-form-input>
-              </b-form-group>
-              <b-form-group
+                </input>
+              </div>
+              <form-group
                 label="Preferred Instance Type"
                 label-for="preferred-instance-type"
               >
-                <b-form-input
+                <input class="form-control"
                   id="preferred-instance-type"
                   type="text"
                   v-model="data.specificPreferences.preferredInstanceType"
                   :disabled="!userHasWriteAccess"
                 >
-                </b-form-input>
-              </b-form-group>
+                </input>
+              </div>
             </template>
-            <b-form-group
+            <form-group
               label="Scratch Location"
               label-for="scratch-location"
               :invalid-feedback="
@@ -151,7 +151,7 @@
               "
               :state="validationFeedback.scratchLocation.state"
             >
-              <b-form-input
+              <input class="form-control"
                 id="scratch-location"
                 type="text"
                 required
@@ -160,8 +160,8 @@
                 :state="validationFeedback.scratchLocation.state"
                 @input="validate"
               >
-              </b-form-input>
-            </b-form-group>
+              </input>
+            </div>
           </div>
         </div>
       </div>
@@ -209,7 +209,7 @@
       </div>
     </div>
     <div class="fixed-footer">
-      <b-button
+      <button class="btn"
         variant="primary"
         @click="save"
         :disabled="!valid || !userHasWriteAccess"
@@ -217,14 +217,14 @@
       </b-button
       >
       <delete-button
-        class="ml-2"
+        class="ms-2"
         :disabled="!userHasWriteAccess"
         @delete="remove">
         Are you sure you want to remove the preferences for compute resource
         <strong>{{ computeResource.hostName }}</strong
         >?
       </delete-button>
-      <b-button class="ml-2" variant="secondary" @click="cancel"
+      <button class="btn" class="ms-2" variant="secondary" @click="cancel"
       >Cancel
       </b-button
       >

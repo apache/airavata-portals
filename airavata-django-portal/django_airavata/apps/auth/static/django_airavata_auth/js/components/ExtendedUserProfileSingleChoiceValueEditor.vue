@@ -1,35 +1,35 @@
 <template>
   <extended-user-profile-value-editor v-bind="$props">
-    <b-form-select
+    <select class="form-select"
       v-model="value"
       :options="options"
       @change="onChange"
       :state="validateStateErrorOnly($v.value)"
     >
       <template #first>
-        <b-form-select-option :value="null" disabled
+        <option :value="null" disabled
           >-- Please select an option --</b-form-select-option
         >
       </template>
 
-      <b-form-select-option
+      <select class="form-select"-option
         :value="otherOptionValue"
         v-if="extendedUserProfileField.other"
         >Other (please specify)</b-form-select-option
       >
-    </b-form-select>
-    <b-form-invalid-feedback :state="validateState($v.value)"
+    </select>
+    <div class="invalid-feedback" :state="validateState($v.value)"
       >This field is required.</b-form-invalid-feedback
     >
     <template v-if="showOther">
-      <b-form-input
+      <input class="form-control"
         class="mt-2"
         v-model="other"
         placeholder="Please specify"
         :state="validateState($v.other)"
         @input="onInput"
       />
-      <b-form-invalid-feedback :state="validateState($v.other)"
+      <div class="invalid-feedback" :state="validateState($v.other)"
         >Please specify a value for 'Other'.</b-form-invalid-feedback
       >
     </template>

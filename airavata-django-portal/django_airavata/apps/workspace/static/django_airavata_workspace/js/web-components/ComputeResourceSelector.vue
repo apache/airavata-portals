@@ -1,6 +1,6 @@
 <template>
-  <b-form-group label="Compute Resource" label-for="compute-resource">
-    <b-form-select
+  <div class="mb-3" label="Compute Resource" label-for="compute-resource">
+    <select class="form-select"
       id="compute-resource"
       v-model="resourceHostId"
       :options="computeResourceOptions"
@@ -12,8 +12,8 @@
       <template slot="first">
         <option :value="null" disabled>Select a Compute Resource</option>
       </template>
-    </b-form-select>
-  </b-form-group>
+    </select>
+  </div>
 </template>
 
 <script>

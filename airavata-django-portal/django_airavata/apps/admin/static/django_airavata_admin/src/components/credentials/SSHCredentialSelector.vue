@@ -1,7 +1,7 @@
 <template>
   <div>
-    <b-input-group>
-      <b-form-select
+    <div class="input-group">
+      <select class="form-select"
         v-model="data"
         :options="credentialStoreTokenOptions"
         :disabled="readonly"
@@ -24,19 +24,19 @@
             <span v-else> Unset the default SSH credential </span>
           </slot>
         </option>
-      </b-form-select>
-      <b-input-group-append>
+      </select>
+      <span class="input-group-text">
         <clipboard-copy-button variant="secondary" :text="copySSHPublicKeyText">
         </clipboard-copy-button>
-        <b-button
+        <button class="btn"
           v-if="!readonly"
           variant="secondary"
           @click="showNewSSHCredentialModal"
         >
           <i class="fa fa-plus"></i>
-        </b-button>
-      </b-input-group-append>
-    </b-input-group>
+        </button>
+      </span>
+    </div>
     <new-ssh-credential-modal
       ref="newSSHCredentialModal"
       @new="createSSHCredential"

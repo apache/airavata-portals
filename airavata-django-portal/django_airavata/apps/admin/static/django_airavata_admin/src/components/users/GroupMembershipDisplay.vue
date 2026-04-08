@@ -9,9 +9,9 @@
       v-else-if="defaultUsersGroup"
       :group="defaultUsersGroup"
     />
-    <b-badge v-for="group in nonGatewayGroups" :key="group.id">{{
+    <span class="badge" v-for="group in nonGatewayGroups" :key="group.id">{{
       group.name
-    }}</b-badge>
+    }}</span>
   </span>
 </template>
 

@@ -1,12 +1,12 @@
 <template>
   <div class="confirmation-button">
-    <b-button
+    <button class="btn"
       :variant="variant"
       @click="$refs.modal.show()"
       :disabled="disabled"
     >
       {{ label }}
-    </b-button>
+    </button>
     <confirmation-dialog
       ref="modal"
       :title="dialogTitle"

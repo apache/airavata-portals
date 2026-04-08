@@ -14,9 +14,9 @@
         <i class="far fa-clipboard"></i>
       </slot>
     </a>
-    <b-tooltip :show="show" :disabled="!show" :target="() => $refs.copyLink">
+    <div class="tooltip" :show="show" :disabled="!show" :target="() => $refs.copyLink">
       <slot name="tooltip">Copied!</slot>
-    </b-tooltip>
+    </div>
   </div>
 </template>
 

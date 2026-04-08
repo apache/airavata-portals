@@ -7,20 +7,20 @@
       @directory-selected="$emit('directory-selected', $event)"
     />
 
-    <b-table
+    <!-- TODO: migrate to native HTML table --><table class="table"
       v-if="experimentStoragePath"
       :fields="fields"
       :items="items"
       sort-by="name"
     >
       <template slot="cell(name)" slot-scope="data">
-        <b-link
+        <a
           v-if="data.item.type === 'dir'"
           @click="directorySelected(data.item)"
         >
           <i class="fa fa-folder-open"></i> {{ data.item.name }}</b-link
         >
-        <b-link v-else :href="data.item.downloadURL" :target="downloadTarget">
+        <a v-else :href="data.item.downloadURL" :target="downloadTarget">
           {{ data.item.name }}</b-link
         >
       </template>
@@ -28,15 +28,15 @@
         <human-date :date="data.item.modifiedTime" />
       </template>
       <template slot="cell(actions)" slot-scope="data">
-        <b-link
+        <a
           v-if="data.item.type === 'file'"
           class="action-link"
           :href="`${data.item.downloadURL}&download`"
         >
           Download File
           <i class="fa fa-download" aria-hidden="true"></i>
-        </b-link>
-        <b-link
+        </a>
+        <a
           v-if="data.item.type === 'dir'"
           class="action-link"
           :href="`/sdk/download-experiment-dir/${encodeURIComponent(
@@ -45,9 +45,9 @@
         >
           Download Zip
           <i class="fa fa-file-archive" aria-hidden="true"></i>
-        </b-link>
+        </a>
       </template>
-    </b-table>
+    </table>
   </div>
 </template>
 <script>

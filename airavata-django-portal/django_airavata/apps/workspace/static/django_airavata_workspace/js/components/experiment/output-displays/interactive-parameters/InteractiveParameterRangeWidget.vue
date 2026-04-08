@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-form-input
+    <input class="form-control"
       ref="rangeInput"
       type="range"
       :value="value"

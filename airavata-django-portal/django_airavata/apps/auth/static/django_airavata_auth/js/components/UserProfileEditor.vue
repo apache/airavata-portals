@@ -1,45 +1,45 @@
 <template>
   <div v-if="user">
-    <b-form-group
+    <form-group
       label="Username"
       :disabled="true"
       description="Only administrators can update a username."
     >
-      <b-form-input v-model="user.username" />
-    </b-form-group>
-    <b-form-group label="First Name" :disabled="disabled">
-      <b-form-input
+      <input class="form-control" v-model="user.username" />
+    </div>
+    <div class="mb-3" label="First Name" :disabled="disabled">
+      <input class="form-control"
         v-model="$v.first_name.$model"
         @keydown.enter="save"
         :state="validateState($v.first_name)"
       />
-    </b-form-group>
-    <b-form-group label="Last Name" :disabled="disabled">
-      <b-form-input
+    </div>
+    <div class="mb-3" label="Last Name" :disabled="disabled">
+      <input class="form-control"
         v-model="$v.last_name.$model"
         @keydown.enter="save"
         :state="validateState($v.last_name)"
       />
-    </b-form-group>
-    <b-form-group label="Email" :disabled="disabled">
-      <b-form-input
+    </div>
+    <div class="mb-3" label="Email" :disabled="disabled">
+      <input class="form-control"
         v-model="$v.email.$model"
         @keydown.enter="save"
         :state="validateState($v.email)"
       />
-      <b-form-invalid-feedback v-if="!$v.email.email">
+      <div class="invalid-feedback" v-if="!$v.email.email">
         {{ email }} is not a valid email address.
-      </b-form-invalid-feedback>
-      <b-alert class="mt-1" show v-if="user.pending_email_change"
+      </div>
+      <div class="alert" class="mt-1" show v-if="user.pending_email_change"
         >Once you verify your email address at
         <strong>{{ user.pending_email_change.email_address }}</strong
         >, your email address will be updated. If you didn't receive the
         verification email,
-        <b-link @click="$emit('resend-email-verification')"
+        <a @click="$emit('resend-email-verification')"
           >click here to resend verification link.</b-link
         ></b-alert
       >
-    </b-form-group>
+    </div>
   </div>
 </template>
 

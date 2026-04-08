@@ -1,79 +1,79 @@
 <template>
-  <b-card>
+  <div class="card"><div class="card-body">
     <div class="d-flex align-items-center" slot="header">
-      <div class="mr-auto">Output Field: {{ data.name }}</div>
-      <b-link
+      <div class="me-auto">Output Field: {{ data.name }}</div>
+      <a
         v-if="!readonly"
         class="text-secondary"
         @click="deleteApplicationOutput"
       >
         <i class="fa fa-trash"></i>
-        <span class="sr-only">Delete</span>
-      </b-link>
+        <span class="visually-hidden">Delete</span>
+      </a>
     </div>
-    <b-form-group label="Name" :label-for="id + '-name'">
-      <b-form-input
+    <div class="mb-3" label="Name" :label-for="id + '-name'">
+      <input class="form-control"
         :id="id + '-name'"
         type="text"
         v-model="data.name"
         ref="nameInput"
         required
         :disabled="readonly"
-      ></b-form-input>
-    </b-form-group>
-    <b-form-group label="Value" :label-for="id + '-value'">
-      <b-form-input
+      ></input>
+    </div>
+    <div class="mb-3" label="Value" :label-for="id + '-value'">
+      <input class="form-control"
         :id="id + '-value'"
         type="text"
         v-model="data.value"
         :disabled="readonly"
-      ></b-form-input>
-    </b-form-group>
-    <b-form-group label="Type" :label-for="id + '-type'">
-      <b-form-select
+      ></input>
+    </div>
+    <div class="mb-3" label="Type" :label-for="id + '-type'">
+      <select class="form-select"
         :id="id + '-type'"
         v-model="data.type"
         :options="outputTypeOptions"
         :disabled="readonly"
       />
-    </b-form-group>
-    <b-form-group label="Application Argument" :label-for="id + '-argument'">
-      <b-form-input
+    </div>
+    <div class="mb-3" label="Application Argument" :label-for="id + '-argument'">
+      <input class="form-control"
         :id="id + '-argument'"
         type="text"
         v-model="data.applicationArgument"
         :disabled="readonly"
-      ></b-form-input>
-    </b-form-group>
+      ></input>
+    </div>
     <div class="d-flex">
-      <b-form-group
+      <form-group
         class="flex-fill"
         label="Is Required"
         :label-for="id + '-required'"
       >
-        <b-form-radio-group
+        <form-radio-group
           :id="id + '-required'"
           v-model="data.isRequired"
           :options="trueFalseOptions"
           :disabled="readonly"
         >
-        </b-form-radio-group>
-      </b-form-group>
-      <b-form-group
+        </div>
+      </div>
+      <form-group
         class="flex-fill"
         label="Required on Command Line"
         :label-for="id + '-required-command-line'"
       >
-        <b-form-radio-group
+        <form-radio-group
           :id="id + '-required-command-line'"
           v-model="data.requiredToAddedToCommandLine"
           :options="trueFalseOptions"
           :disabled="readonly"
         >
-        </b-form-radio-group>
-      </b-form-group>
+        </div>
+      </div>
     </div>
-    <b-form-group
+    <form-group
       label="Metadata"
       :label-for="id + '-metadata'"
       description="Metadata for this output, in the JSON format"
@@ -84,9 +84,9 @@
         :rows="5"
         :disabled="readonly"
       />
-    </b-form-group>
-    <b-button size="sm" @click="setPlainText">Plain Text</b-button>
-  </b-card>
+    </div>
+    <button class="btn" size="sm" @click="setPlainText">Plain Text</button>
+  </div></div>
 </template>
 
 <script>

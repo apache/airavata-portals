@@ -1,5 +1,5 @@
 <template>
-  <b-button
+  <button class="btn"
     ref="copyButton"
     :variant="variant"
     :disabled="disabled"
@@ -9,10 +9,10 @@
     <slot name="icon">
       <i class="far fa-clipboard"></i>
     </slot>
-    <b-tooltip :show="show" :disabled="!show" :target="() => $refs.copyButton">
+    <div class="tooltip" :show="show" :disabled="!show" :target="() => $refs.copyButton">
       <slot name="tooltip">Copied!</slot>
-    </b-tooltip>
-  </b-button>
+    </div>
+  </button>
 </template>
 
 <script>

@@ -1,5 +1,5 @@
 <template>
-  <b-badge :variant="badgeVariant">{{ statusName }}</b-badge>
+  <span class="badge" :variant="badgeVariant">{{ statusName }}</span>
 </template>
 
 <script>

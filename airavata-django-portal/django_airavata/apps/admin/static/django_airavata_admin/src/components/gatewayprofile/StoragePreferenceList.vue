@@ -7,32 +7,32 @@
     :new-button-disabled="readonly"
   >
     <template slot="new-item-editor">
-      <b-card v-if="showNewItemEditor" title="New Storage Preference">
-        <b-form-group label="Storage Resource" label-for="storage-resource">
-          <b-form-select
+      <div class="card" v-if="showNewItemEditor" title="New Storage Preference">
+        <div class="mb-3" label="Storage Resource" label-for="storage-resource">
+          <select class="form-select"
             id="storage-resource"
             v-model="newStoragePreference.storageResourceId"
             :options="storageResourceOptions"
           />
-        </b-form-group>
+        </div>
         <storage-preference-editor
           v-model="newStoragePreference"
           :default-credential-store-token="defaultCredentialStoreToken"
         />
         <div class="row">
           <div class="col">
-            <b-button variant="primary" @click="saveNewStoragePreference">
+            <button class="btn" variant="primary" @click="saveNewStoragePreference">
               Save
-            </b-button>
-            <b-button variant="secondary" @click="cancelNewStoragePreference">
+            </button>
+            <button class="btn" variant="secondary" @click="cancelNewStoragePreference">
               Cancel
-            </b-button>
+            </button>
           </div>
         </div>
-      </b-card>
+      </div></div>
     </template>
     <template slot="item-list" slot-scope="slotProps">
-      <b-table
+      <!-- TODO: migrate to native HTML table --><table class="table"
         striped
         hover
         :fields="fields"
@@ -44,24 +44,24 @@
           slot-scope="data"
         >
           {{ data.value }}
-          <b-badge
+          <span class="badge"
             v-if="
               defaultCredentialStoreToken &&
               !data.item.resourceSpecificCredentialStoreToken
             "
           >
             Default
-          </b-badge>
+          </span>
         </template>
         <template slot="cell(action)" slot-scope="data">
-          <b-link
+          <a
             v-if="!readonly"
             class="action-link"
             @click="toggleDetails(data)"
           >
             Edit
             <i class="fa fa-edit" aria-hidden="true"></i>
-          </b-link>
+          </a>
           <delete-link
             v-if="!readonly"
             class="action-link"
@@ -75,16 +75,16 @@
           </delete-link>
         </template>
         <template slot="row-details" slot-scope="row">
-          <b-card>
+          <div class="card"><div class="card-body">
             <storage-preference-editor
               :value="row.item"
               @input="updatedStoragePreference"
               :default-credential-store-token="defaultCredentialStoreToken"
             />
-            <b-button size="sm" @click="toggleDetails(row)">Close</b-button>
-          </b-card>
+            <button class="btn" size="sm" @click="toggleDetails(row)">Close</button>
+          </div></div>
         </template>
-      </b-table>
+      </table>
     </template>
   </list-layout>
 </template>

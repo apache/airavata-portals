@@ -1,7 +1,7 @@
 <template>
   <div class="col-md-6 col-xl-4">
     <div class="card application-card" :class="cardClasses">
-      <b-link
+      <a
         :disabled="disabled"
         class="card-link text-dark"
         @click.prevent="handleAppClick"
@@ -9,13 +9,13 @@
         <div class="card-body">
           <h2 class="card-title h5">{{ appModule.appModuleName }}</h2>
           <span
-            class="badge badge-primary mr-1"
+            class="badge badge-primary me-1"
             v-for="tag in appModule.tags"
             :key="tag"
             >{{ tag }}</span
           >
           <span
-            class="badge badge-primary mr-1"
+            class="badge badge-primary me-1"
             v-if="appModule.appModuleVersion"
             >{{ appModule.appModuleVersion }}</span
           >
@@ -28,7 +28,7 @@
             <slot name="card-actions"> </slot>
           </p>
         </div>
-      </b-link>
+      </a>
     </div>
   </div>
 </template>

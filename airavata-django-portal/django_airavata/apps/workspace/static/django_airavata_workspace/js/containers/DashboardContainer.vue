@@ -10,7 +10,7 @@
     </div>
     <div class="row" v-if="showNewUserMessage">
       <div class="col">
-        <b-alert variant="info" show
+        <div class="alert" variant="info" show
           >Welcome {{ userProfile.firstName }} {{ userProfile.lastName }}! You
           currently don't have access to run any applications but the
           administrator of this gateway has been notified and will be in contact

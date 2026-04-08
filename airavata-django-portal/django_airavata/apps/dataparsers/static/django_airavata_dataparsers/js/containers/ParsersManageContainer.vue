@@ -5,12 +5,12 @@
         <h1 class="h4 mb-4">Parsers</h1>
       </div>
       <div id="col-new-group" class="col-sm-2">
-        <b-button href="create" :variant="'primary'"
+        <button class="btn" href="create" :variant="'primary'"
           >Create New Parser&nbsp;&nbsp;<i
             class="fa fa-plus"
             aria-hidden="true"
           ></i
-        ></b-button>
+        ></button>
       </div>
     </div>
     <div class="row">

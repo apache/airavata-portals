@@ -7,16 +7,16 @@
       new-item-button-text="New SSH Credential"
     >
       <span slot="additional-buttons">
-          <b-btn
+          <button class="btn"
             v-if="userIsAdmin"
             @click="showNewSharedSSHCredentialModel"
             >
             New Gateway SSH Credential
             <i class="fa fa-plus" aria-hidden="true"></i>
-          </b-btn>
+          </button>
         </span>
       <template slot="item-list" slot-scope="slotProps">
-        <b-table striped hover :fields="fields" :items="slotProps.items">
+        <!-- TODO: Replace b-table with native table --><table class="table" striped hover :fields="fields" :items="slotProps.items">
           <template slot="cell(sharing)" slot-scope="data">
             <share-button
               :entity-id="data.item.token"
@@ -30,7 +30,7 @@
           <template slot="cell(action)" slot-scope="data">
             <clipboard-copy-link
               :text="data.item.publicKey.trim()"
-              class="mr-1"
+              class="me-1"
             />
             <delete-link
               v-if="data.item.userHasWriteAccess"
@@ -40,7 +40,7 @@
               <strong>{{ data.item.description }}</strong> SSH credential?
             </delete-link>
           </template>
-        </b-table>
+        </table>
       </template>
     </list-layout>
     <new-ssh-credential-modal
@@ -56,7 +56,7 @@
       new-item-button-text="New Password Credential">
       <template slot="item-list" slot-scope="slotProps">
 
-        <b-table striped hover :fields="fields" :items="slotProps.items">
+        <!-- TODO: Replace b-table with native table --><table class="table" striped hover :fields="fields" :items="slotProps.items">
           <template slot="cell(sharing)" slot-scope="data">
             <share-button :entity-id="data.item.token" :disallow-editing-admin-groups="false" :auto-add-admin-groups="false"/>
           </template>
@@ -66,7 +66,7 @@
               <strong>{{ data.item.description }}</strong> password credential?
             </delete-link>
           </template>
-        </b-table>
+        </table>
       </template>
     </list-layout>
     <new-password-credential-modal ref="newPasswordCredentialModal" @new="createNewPasswordCredential" />

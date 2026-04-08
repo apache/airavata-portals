@@ -9,13 +9,13 @@
     </div>
     <div class="row" v-if="parser">
       <div class="col">
-        <b-form-group label="Image Name" label-for="image-name">
-          <b-form-input
+        <div class="mb-3" label="Image Name" label-for="image-name">
+          <input class="form-control"
             id="image-name"
             type="text"
             v-model="parser.imageName"
           />
-        </b-form-group>
+        </div>
       </div>
     </div>
   </div>

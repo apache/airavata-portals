@@ -1,13 +1,13 @@
 <template>
-  <b-breadcrumb>
-    <b-breadcrumb-item
+  <nav aria-label="breadcrumb"><ol class="breadcrumb">
+    <nav aria-label="breadcrumb"><ol class="breadcrumb"-item
       v-for="item in items"
       :key="item.path"
       :text="item.text"
       :active="item.active"
       @click="directorySelected(item.path)"
     />
-  </b-breadcrumb>
+  </ol></nav>
 </template>
 
 <script>

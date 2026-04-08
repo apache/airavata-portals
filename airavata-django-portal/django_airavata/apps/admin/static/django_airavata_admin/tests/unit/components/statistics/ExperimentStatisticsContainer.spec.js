@@ -1,12 +1,9 @@
 import { render, fireEvent, within } from "@testing-library/vue";
 import "@testing-library/jest-dom";
 import ExperimentStatisticsContainer from "@/components/statistics/ExperimentStatisticsContainer.vue";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import VueFlatPickr from "vue-flatpickr-component";
 
-Vue.use(BootstrapVue);
-Vue.use(VueFlatPickr);
+// TODO: Update test setup for Vue 3 (@testing-library/vue v7+)
+// import VueFlatPickr from "vue-flatpickr-component";
 
 import { models, services, utils } from "django-airavata-api";
 import ExperimentStatus from "django-airavata-api/static/django_airavata_api/js/models/ExperimentStatus";

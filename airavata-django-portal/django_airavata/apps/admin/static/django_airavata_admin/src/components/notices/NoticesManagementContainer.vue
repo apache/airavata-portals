@@ -16,7 +16,7 @@
               :new-button-disabled="!isGatewayAdmin"
             >
               <template slot="new-item-editor">
-                <b-card v-if="showNewItemEditor">
+                <div class="card" v-if="showNewItemEditor">
                   <notice-editor
                     v-model="newNotice"
                     ref="noticeEditor"
@@ -24,13 +24,13 @@
                     @saveNewNotice="saveNewNotice"
                   >
                     <template slot="title">
-                      <h1 class="h4 mb-4 mr-auto">New Notice</h1>
+                      <h1 class="h4 mb-4 me-auto">New Notice</h1>
                     </template>
                   </notice-editor>
-                </b-card>
+                </div></div>
               </template>
               <template slot="item-list">
-                <b-table hover :fields="fields" :items="items">
+                <!-- TODO: Replace b-table with native table --><table class="table" hover :fields="fields" :items="items">
                   <template slot="cell(publishedTime)" slot-scope="data">
                     <human-date :date="data.value" /> </template
                   >row
@@ -39,10 +39,10 @@
                   </template>
                   <template slot="cell(action)" slot-scope="data">
                     <template v-if="data.item.userHasWriteAccess">
-                      <b-link class="action-link" @click="toggleDetails(data)">
+                      <a class="action-link" @click="toggleDetails(data)">
                         Edit
                         <i class="fa fa-edit" aria-hidden="true"></i>
-                      </b-link>
+                      </a>
                       <delete-link
                         @delete="deleteNotice(data.item.notificationId)"
                       >
@@ -51,32 +51,32 @@
                     </template>
                   </template>
                   <template slot="row-details" slot-scope="row">
-                    <b-card>
+                    <div class="card"><div class="card-body">
                       <notice-editor
                         :value="row.item"
                         v-model="updatedNotice"
                         @userBeginsInput="isUserBeginInput = false"
                       >
                         <template slot="title">
-                          <h1 class="h4 mb-4 mr-auto">Update Notice</h1>
+                          <h1 class="h4 mb-4 me-auto">Update Notice</h1>
                         </template>
                       </notice-editor>
-                      <b-button
+                      <button class="btn"
                         variant="success"
                         size="sm"
                         @click="updateNotice()"
                         :disabled="isUserBeginInput"
                         >Update</b-button
                       >
-                      <b-button
+                      <button class="btn"
                         variant="primary"
                         size="sm"
                         @click="toggleDetails(row)"
                         >Close</b-button
                       >
-                    </b-card>
+                    </div></div>
                   </template>
-                </b-table>
+                </table>
               </template>
             </list-layout>
           </div>

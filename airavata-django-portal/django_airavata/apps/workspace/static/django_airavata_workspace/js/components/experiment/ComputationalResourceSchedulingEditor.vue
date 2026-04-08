@@ -2,13 +2,13 @@
   <div>
     <div class="row">
       <div class="col">
-        <b-form-group
+        <form-group
           label="Compute Resource"
           label-for="compute-resource"
           :feedback="getValidationFeedback('resourceHostId')"
           :state="getValidationState('resourceHostId')"
         >
-          <b-form-select
+          <select class="form-select"
             id="compute-resource"
             v-model="resourceHostId"
             :options="computeResourceOptions"
@@ -22,8 +22,8 @@
             <template slot="first">
               <option :value="null" disabled>Select a Compute Resource</option>
             </template>
-          </b-form-select>
-        </b-form-group>
+          </select>
+        </div>
       </div>
     </div>
     <div class="row">
