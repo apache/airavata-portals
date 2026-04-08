@@ -42,11 +42,19 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = [
-    "ruff",
-]
 mysql = [
     "mysqlclient",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8",
+    "ty",
+    "pre-commit>=4.0",
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "pytest-cov>=5.0",
+    "django-stubs>=5.1",
 ]
 
 [project.urls]
@@ -61,3 +69,12 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ty]
+python-version = "3.12"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "django_airavata.settings"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

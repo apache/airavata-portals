@@ -7,10 +7,9 @@ docker_compose('./compose/docker-compose.yaml')
 local_resource(
     'django-server',
     serve_cmd=' && '.join([
-        'pip install -e ".[mysql]" -q',
-        'pip install -r requirements.txt -r requirements-mysql.txt -q',
-        'python manage.py migrate --run-syncdb',
-        'python manage.py runserver 0.0.0.0:8000',
+        'uv sync --extra mysql',
+        'uv run manage.py migrate --run-syncdb',
+        'uv run manage.py runserver 0.0.0.0:8000',
     ]),
     deps=['django_airavata/'],
     ignore=[

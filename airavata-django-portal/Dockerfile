@@ -64,18 +64,16 @@ RUN yarn run build
 
 FROM python:3.12-slim as server-stage
 
+COPY --from=ghcr.io/astral-sh/uv:0.5 /uv /usr/local/bin/uv
+
 ENV PYTHONUNBUFFERED 1
 
 EXPOSE 8000
 
 WORKDIR /code
-COPY requirements.txt requirements-mysql.txt ./
-COPY setup.* ./
-COPY pyproject.toml README.md ./
+COPY pyproject.toml uv.lock README.md ./
 RUN apt-get update && apt-get install -y git gcc g++ zlib1g-dev libjpeg-dev default-libmysqlclient-dev
-RUN pip install --upgrade pip setuptools wheel --no-cache
-RUN pip install -r requirements.txt --no-cache
-RUN pip install -r requirements-mysql.txt --no-cache
+RUN uv sync --frozen --no-dev --extra mysql --no-editable
 
 # Copy in a default settings_local.py file
 COPY ./django_airavata/settings_local.py.sample ./django_airavata/settings_local.py
