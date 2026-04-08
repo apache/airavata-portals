@@ -74,7 +74,7 @@ class KeycloakBackend:
             # authz_token_middleware has already run, so must manually add
             # the `request.authz_token` attribute
             if user is not None:
-                request.authz_token = get_authz_token(request, user=user, access_token=access_token)
+                request.authz_token = get_authz_token(request, user=user, access_token=access_token)  # ty: ignore[invalid-assignment]
             return user
         except Exception as e:
             logger.warning("login failed", exc_info=e)

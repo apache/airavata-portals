@@ -13,7 +13,7 @@ from django_airavata.apps.auth.middleware import user_profile_completeness_check
 class UserProfileCompletenessCheckTestCase(TestCase):
     def setUp(self):
         User = get_user_model()
-        self.user: User = User.objects.create_user("testuser")
+        self.user = User.objects.create_user("testuser")
         self.user_profile: models.UserProfile = models.UserProfile.objects.create(user=self.user)
         self.factory = RequestFactory()
 
@@ -99,7 +99,7 @@ class UserProfileCompletenessCheckTestCase(TestCase):
         """Test user profile is complete, ext user prof is invalid, but user is gateway admin."""
         request = self.factory.get(reverse("django_airavata_workspace:dashboard"), HTTP_ACCEPT=["text/html"])
         request.user = self.user
-        request.is_gateway_admin = True
+        request.is_gateway_admin = True  # ty: ignore[invalid-assignment]
         self.user.first_name = "Admin"
         self.user.last_name = "User"
         self.user.email = "admin@gateway.edu"

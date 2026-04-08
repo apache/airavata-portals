@@ -90,13 +90,13 @@ class UTCPosixTimestampDateTimeField(serializers.DateTimeField):
         self.initial = self.initial_value
         self.required = False
 
-    def to_representation(self, obj: int) -> str:
+    def to_representation(self, value):  # type: ignore[override]
         # Create datetime instance from milliseconds that is aware of timezon
-        dt = datetime.datetime.fromtimestamp(obj / 1000, datetime.UTC)
+        dt = datetime.datetime.fromtimestamp(value / 1000, datetime.UTC)
         return super().to_representation(dt)
 
-    def to_internal_value(self, data: str) -> int:
-        dt = super().to_internal_value(data)
+    def to_internal_value(self, value):  # type: ignore[override]
+        dt = super().to_internal_value(value)
         return int(dt.timestamp() * 1000)
 
     def initial_value(self) -> str:
@@ -124,6 +124,7 @@ class StoredJSONField(serializers.JSONField):
             return json.dumps(data)
         except (TypeError, ValueError):
             self.fail("invalid")
+            raise  # unreachable, but satisfies type checker
 
 
 class OrderedListField(serializers.ListField):
@@ -131,8 +132,8 @@ class OrderedListField(serializers.ListField):
         self.order_by = kwargs.pop("order_by", None)
         super().__init__(*args, **kwargs)
 
-    def to_representation(self, instance: list[Any]) -> list[dict[str, Any]] | None:
-        rep = super().to_representation(instance)
+    def to_representation(self, data):  # type: ignore[override]
+        rep = super().to_representation(data)
         if rep is not None:
             rep.sort(key=lambda item: item[self.order_by])
         return rep
@@ -281,7 +282,7 @@ class ApplicationModuleSerializer(proto_utils.create_serializer_class(Applicatio
 
 
 class EnumChoiceField(serializers.ChoiceField):
-    def __init__(self, enum_class: type, **kwargs: Any) -> None:
+    def __init__(self, enum_class: Any, **kwargs: Any) -> None:
         self.enum_class = enum_class
         kwargs["choices"] = [(member.name, member.name) for member in enum_class]
         super().__init__(**kwargs)
@@ -1804,7 +1805,7 @@ class UserHasWriteAccessToPathSerializer(serializers.Serializer):
                 if path != Path(""):
                     # get parent directory listing and use that to figure out if
                     # there is write access to this directory
-                    directories, _ = user_storage.listdir(request, path.parent)
+                    directories, _ = user_storage.listdir(request, str(path.parent))
                     for d in directories:
                         if Path(d["path"]) == path:
                             return d.get("userHasWriteAccess", False)

@@ -67,12 +67,12 @@ class UTCPosixTimestampDateTimeField(DateTimeField):
         self.initial = self.initial_value
         self.required = False
 
-    def to_representation(self, obj):
-        dt = datetime.datetime.fromtimestamp(obj / 1000, datetime.UTC)
+    def to_representation(self, value):  # type: ignore[override]
+        dt = datetime.datetime.fromtimestamp(value / 1000, datetime.UTC)
         return super().to_representation(dt)
 
-    def to_internal_value(self, data):
-        dt = super().to_internal_value(data)
+    def to_internal_value(self, value):  # type: ignore[override]
+        dt = super().to_internal_value(value)
         return int(dt.timestamp() * 1000)
 
     def initial_value(self):
@@ -87,10 +87,10 @@ class ThriftEnumField(Field):
         super().__init__(*args, **kwargs)
         self.enumClass = enumClass
 
-    def to_representation(self, obj):
-        if obj is None:
+    def to_representation(self, value):  # type: ignore[override]
+        if value is None:
             return None
-        return obj.name
+        return value.name
 
     def to_internal_value(self, data):
         if self.allow_null and data is None:
@@ -208,6 +208,9 @@ def process_field(field, enable_date_time_conversion, required=False, read_only=
             kwargs["allow_null"] = allow_null
         if field_class == CharField:
             kwargs["allow_blank"] = allow_null
+        if field_class == DecimalField:
+            kwargs["max_digits"] = 65
+            kwargs["decimal_places"] = 30
         thrift_model_class = mapping[field[1]]
 
         if (
@@ -242,6 +245,9 @@ def process_list_field(field):
         return ThriftEnumField(item_type_info)
 
     if item_ttype in mapping:
-        return mapping[item_ttype]()
+        field_cls = mapping[item_ttype]
+        if field_cls == DecimalField:
+            return field_cls(max_digits=65, decimal_places=30)
+        return field_cls()
     elif item_ttype == TTYPE_STRUCT:
         return create_serializer(item_type_info[0])

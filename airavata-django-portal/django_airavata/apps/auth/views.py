@@ -209,7 +209,7 @@ def create_account(request):
                     )
                     return redirect(reverse("django_airavata_auth:create_account"))
             except Exception as e:
-                logger.exception("Failed to create account for user", exc_info=e, extra={"request", request})
+                logger.exception("Failed to create account for user", exc_info=e, extra={"request": request})
                 form.add_error(None, ValidationError(e.message))
     else:
         form = forms.CreateAccountForm(initial=request.GET)

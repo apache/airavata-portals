@@ -3,7 +3,6 @@ from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpRequest
 
 from django_airavata.proto_compat import ResourcePermissionType
 
@@ -13,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class WorkspacePreferencesHelper:
-    def get(self, request: HttpRequest) -> models.WorkspacePreferences:
+    def get(self, request: Any) -> models.WorkspacePreferences:
         try:
             workspace_preferences = models.WorkspacePreferences.objects.get(username=request.user.username)
             self._check(request, workspace_preferences)
@@ -22,7 +21,7 @@ class WorkspacePreferencesHelper:
             workspace_preferences.save()
         return workspace_preferences
 
-    def _create_default(self, request: HttpRequest) -> models.WorkspacePreferences:
+    def _create_default(self, request: Any) -> models.WorkspacePreferences:
         workspace_preferences = models.WorkspacePreferences.create(request.user.username)
         most_recent_project = self._get_most_recent_project(request)
         workspace_preferences.most_recent_project_id = most_recent_project.projectID
@@ -32,7 +31,7 @@ class WorkspacePreferencesHelper:
         )
         return workspace_preferences
 
-    def _get_most_recent_project(self, request: HttpRequest) -> Any:
+    def _get_most_recent_project(self, request: Any) -> Any:
         "Return most recent writeable project."
         projects = request.airavata_client.research.get_user_projects(settings.GATEWAY_ID, request.user.username, -1, 0)
         for project in projects:
@@ -40,7 +39,7 @@ class WorkspacePreferencesHelper:
                 return project
         return None
 
-    def _get_first_group_resource_profile(self, request: HttpRequest) -> Any:
+    def _get_first_group_resource_profile(self, request: Any) -> Any:
         "Return first accessible group resource profile"
 
         group_resource_profiles = request.airavata_client.compute.get_group_resource_list(settings.GATEWAY_ID)
@@ -49,7 +48,7 @@ class WorkspacePreferencesHelper:
         else:
             return None
 
-    def _check(self, request: HttpRequest, prefs: models.WorkspacePreferences) -> None:
+    def _check(self, request: Any, prefs: models.WorkspacePreferences) -> None:
         "Validate preference values and update as needed."
         if not prefs.most_recent_project_id or not self._can_write(request, prefs.most_recent_project_id):
             most_recent_project = self._get_most_recent_project(request)
@@ -72,8 +71,8 @@ class WorkspacePreferencesHelper:
             prefs.most_recent_group_resource_profile_id = first_grp_id
             prefs.save()
 
-    def _can_write(self, request: HttpRequest, entity_id: str) -> bool:
+    def _can_write(self, request: Any, entity_id: str) -> bool:
         return request.airavata_client.sharing.user_has_access(entity_id, ResourcePermissionType.WRITE)
 
-    def _can_read(self, request: HttpRequest, entity_id: str) -> bool:
+    def _can_read(self, request: Any, entity_id: str) -> bool:
         return request.airavata_client.sharing.user_has_access(entity_id, ResourcePermissionType.READ)

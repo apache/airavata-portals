@@ -108,8 +108,8 @@ class GroupViewSet(APIBackedViewSet):
             sharing_client.remove_group_admins(group.id, group._removed_admins)
         sharing_client.update_group(group)
 
-    def perform_destroy(self, group: Any) -> None:
-        self.request.airavata_client.sharing.delete_group(group.id, group.ownerId)
+    def perform_destroy(self, instance: Any) -> None:  # type: ignore[override]
+        self.request.airavata_client.sharing.delete_group(instance.id, instance.ownerId)
 
     def _send_users_added_to_group(self, internal_user_ids: set[str], group: Any) -> None:
         for internal_user_id in internal_user_ids:
@@ -1185,6 +1185,7 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, Ge
     @action(methods=["get"], detail=True)
     def all(self, request: Request, entity_id: str | None = None) -> Response:
         """Load direct plus indirectly (inherited) shared permissions."""
+        assert entity_id is not None, "entity_id is required"
         users = {}
         # Load accessible users in order of permission precedence: users that
         # have WRITE permission should also have READ
@@ -1388,7 +1389,7 @@ class UserStoragePathView(APIView):
         experiment_id = request.query_params.get("experiment-id")
         return self._create_response(request, path, experiment_id=experiment_id)
 
-    def post(self, request: Request, path: str = "/", format: str | None = None) -> Response:
+    def post(self, request: Request, path: str = "/", format: str | None = None, file_name: str | None = None) -> Response:
         path = request.data.get("path", path)
         experiment_id = request.data.get("experiment-id")
         if not user_storage.dir_exists(request, path, experiment_id=experiment_id):
@@ -1454,7 +1455,7 @@ class UserStoragePathView(APIView):
     def _create_response(self, request: Request, path: str, uploaded: Any = None, experiment_id: str | None = None) -> Response:
         if user_storage.dir_exists(request, path, experiment_id=experiment_id):
             directories, files = user_storage.listdir(request, path, experiment_id=experiment_id)
-            data = {"isDir": True, "directories": directories, "files": files}
+            data: dict[str, Any] = {"isDir": True, "directories": directories, "files": files}
             if uploaded is not None:
                 data["uploaded"] = uploaded
             data["parts"] = self._split_path(path)
@@ -1463,7 +1464,7 @@ class UserStoragePathView(APIView):
             return Response(serializer.data)
         else:
             file = user_storage.get_file_metadata(request, path, experiment_id=experiment_id)
-            data = {"isDir": False, "directories": [], "files": [file]}
+            data: dict[str, Any] = {"isDir": False, "directories": [], "files": [file]}
             if uploaded is not None:
                 data["uploaded"] = uploaded
             data["parts"] = self._split_path(path)
@@ -1484,6 +1485,7 @@ class ExperimentStoragePathView(APIView):
     serializer_class = serializers.ExperimentStoragePathSerializer
 
     def get(self, request: Request, experiment_id: str | None = None, path: str = "", format: str | None = None) -> Response:
+        assert experiment_id is not None, "experiment_id is required"
         return self._create_response(request, experiment_id, path)
 
     def _create_response(self, request: Request, experiment_id: str, path: str) -> Response:
@@ -1494,7 +1496,7 @@ class ExperimentStoragePathView(APIView):
                 d["experiment_id"] = experiment_id
                 return d
 
-            data = {"isDir": True, "directories": map(add_expid, directories), "files": map(add_expid, files)}
+            data: dict[str, Any] = {"isDir": True, "directories": map(add_expid, directories), "files": map(add_expid, files)}
             data["parts"] = self._split_path(path)
             serializer = self.serializer_class(data, context={"request": request})
             return Response(serializer.data)
@@ -1617,6 +1619,7 @@ class IAMUserViewSet(
 
     @action(methods=["post"], detail=True)
     def enable(self, request: Request, user_id: str | None = None) -> Response:
+        assert user_id is not None, "user_id is required"
         iam_admin_client.enable_user(user_id)
         instance = self.get_instance(user_id)
         serializer = self.serializer_class(instance=instance, context={"request": request})

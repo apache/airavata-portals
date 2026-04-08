@@ -11,6 +11,8 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
+from django_airavata.types import AiravataRequest
+
 from . import utils
 
 log = logging.getLogger(__name__)
@@ -19,7 +21,7 @@ log = logging.getLogger(__name__)
 def authz_token_middleware(get_response: Callable[[HttpRequest], HttpResponse]) -> Callable[[HttpRequest], HttpResponse]:
     """Automatically add the 'authz_token' to the request."""
 
-    def middleware(request: HttpRequest) -> HttpResponse:
+    def middleware(request: Any) -> HttpResponse:
 
         authz_token = None
         if request.user.is_authenticated:
@@ -36,7 +38,7 @@ def authz_token_middleware(get_response: Callable[[HttpRequest], HttpResponse]) 
     return middleware
 
 
-def set_admin_group_attributes(request: HttpRequest, gateway_groups: Any = None) -> None:
+def set_admin_group_attributes(request: Any, gateway_groups: Any = None) -> None:
     """Set is_gateway_admin and is_read_only_gateway_admin request attrs."""
     if gateway_groups is None:
         gateway_groups = request.airavata_client.iam.get_gateway_groups()
@@ -58,7 +60,7 @@ def set_admin_group_attributes(request: HttpRequest, gateway_groups: Any = None)
 def gateway_groups_middleware(get_response: Callable[[HttpRequest], HttpResponse]) -> Callable[[HttpRequest], HttpResponse]:
     """Add 'is_gateway_admin' and 'is_read_only_gateway_admin' to request."""
 
-    def middleware(request: HttpRequest) -> HttpResponse:
+    def middleware(request: Any) -> HttpResponse:
 
         request.is_gateway_admin = False
         request.is_read_only_gateway_admin = False
@@ -99,7 +101,7 @@ def gateway_groups_middleware(get_response: Callable[[HttpRequest], HttpResponse
 def user_profile_completeness_check(get_response: Callable[[HttpRequest], HttpResponse]) -> Callable[[HttpRequest], HttpResponse]:
     """Check if user profile is complete and if not, redirect to user profile editor."""
 
-    def middleware(request: HttpRequest) -> HttpResponse:
+    def middleware(request: Any) -> HttpResponse:
 
         if not request.user.is_authenticated:
             return get_response(request)

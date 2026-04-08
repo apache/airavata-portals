@@ -1,6 +1,6 @@
 import logging
 
-from airavata_sdk import AiravataClient
+from airavata_sdk import AiravataClient  # ty: ignore[unresolved-import]
 from django.conf import settings
 
 log = logging.getLogger(__name__)
