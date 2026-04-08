@@ -1,7 +1,7 @@
 from unittest.mock import patch
 from urllib.parse import urlencode
 
-from airavata.model.user.ttypes import UserProfile
+from django_airavata.proto_compat import UserProfile
 from django.contrib import messages
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.messages.middleware import MessageMiddleware

@@ -1,5 +1,4 @@
-from airavata.model.group.ttypes import GroupModel
-from airavata.model.user.ttypes import UserProfile
+from django_airavata.proto_compat import GroupModel, UserProfile
 from django.core import mail
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase, override_settings

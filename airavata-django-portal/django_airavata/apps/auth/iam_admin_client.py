@@ -73,7 +73,7 @@ def update_username(username, new_username):
         raise Exception(f"Can't change username of {username} to {new_username} because it is not available")
     # fetch user representation
     authz_token = utils.get_service_account_authz_token()
-    headers = {'Authorization': f'Bearer {authz_token.accessToken}'}
+    headers = {'Authorization': f'Bearer {authz_token['accessToken']}'}
     parsed = urlparse(settings.KEYCLOAK_AUTHORIZE_URL)
     r = requests.get(f"{parsed.scheme}://{parsed.netloc}/auth/admin/realms/{settings.GATEWAY_ID}/users",
                      params={'username': username},
@@ -100,7 +100,7 @@ def update_username(username, new_username):
 def update_user(username, first_name=None, last_name=None, email=None):
     # fetch user representation
     authz_token = utils.get_service_account_authz_token()
-    headers = {'Authorization': f'Bearer {authz_token.accessToken}'}
+    headers = {'Authorization': f'Bearer {authz_token['accessToken']}'}
     parsed = urlparse(settings.KEYCLOAK_AUTHORIZE_URL)
     r = requests.get(f"{parsed.scheme}://{parsed.netloc}/auth/admin/realms/{settings.GATEWAY_ID}/users",
                      params={'username': username},

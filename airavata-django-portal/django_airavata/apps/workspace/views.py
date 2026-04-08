@@ -3,7 +3,7 @@ import json
 import logging
 from urllib.parse import urlparse
 
-from airavata.model.application.io.ttypes import DataType
+from django_airavata.proto_compat import DataType
 from airavata_django_portal_sdk import user_storage as user_storage_sdk
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
