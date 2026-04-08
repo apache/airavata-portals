@@ -4,11 +4,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_airavata_api', '0007_applicationsettings'),
-        ('django_airavata_api', '0007_notificationextension'),
+        ("django_airavata_api", "0007_applicationsettings"),
+        ("django_airavata_api", "0007_notificationextension"),
     ]
 
-    operations = [
-    ]
+    operations = []

@@ -8,17 +8,14 @@ def reset_username_initialized_for_cilogon_usernames(apps, schema_editor):
     # Update all existing user's user_profiles to have
     # username_initialized=False when the username is invalid because it is a
     # CILogon sub claim
-    UserProfile.objects.filter(
-        username_initialized=True, user__username__startswith="http://cilogon"
-    ).update(username_initialized=False)
+    UserProfile.objects.filter(username_initialized=True, user__username__startswith="http://cilogon").update(
+        username_initialized=False
+    )
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_airavata_auth', '0013_auto_20220118_1650'),
+        ("django_airavata_auth", "0013_auto_20220118_1650"),
     ]
 
-    operations = [
-        migrations.RunPython(reset_username_initialized_for_cilogon_usernames, migrations.RunPython.noop)
-    ]
+    operations = [migrations.RunPython(reset_username_initialized_for_cilogon_usernames, migrations.RunPython.noop)]

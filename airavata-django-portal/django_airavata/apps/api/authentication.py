@@ -12,13 +12,12 @@ logger = logging.getLogger(__name__)
 class OAuthAuthentication(authentication.BaseAuthentication):
     def authenticate(self, request):
 
-        if 'HTTP_AUTHORIZATION' in request.META:
+        if "HTTP_AUTHORIZATION" in request.META:
             try:
                 user = authenticate(request=request)
                 if user is None:
-                    raise exceptions.AuthenticationFailed(
-                        "Token failed to authenticate")
-                _, token = request.META.get('HTTP_AUTHORIZATION').split()
+                    raise exceptions.AuthenticationFailed("Token failed to authenticate")
+                _, token = request.META.get("HTTP_AUTHORIZATION").split()
 
                 logger.debug(f"OAuthAuthentication authenticated user {user}")
                 # Set request attributes that are normally set by middleware
@@ -27,7 +26,6 @@ class OAuthAuthentication(authentication.BaseAuthentication):
                 set_admin_group_attributes(request)
                 return (user, token)
             except Exception as e:
-                raise exceptions.AuthenticationFailed(
-                    "Token failed to authenticate") from e
+                raise exceptions.AuthenticationFailed("Token failed to authenticate") from e
         else:
             return None

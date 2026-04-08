@@ -19,23 +19,21 @@ def save_tus_upload(upload_url, save_function):
     # file UUID is last path component in URL. For example:
     # http://localhost:1080/files/2c44415fdb6259a22f425145b87d0840
     upload_uuid = urlparse(upload_url).path.split("/")[-1]
-    upload_bin_path = os.path.join(settings.TUS_DATA_DIR,
-                                   f"{upload_uuid}.bin")
+    upload_bin_path = os.path.join(settings.TUS_DATA_DIR, f"{upload_uuid}.bin")
     logger.debug(f"upload_bin_path={upload_bin_path}")
-    upload_info_path = os.path.join(settings.TUS_DATA_DIR,
-                                    f"{upload_uuid}.info")
+    upload_info_path = os.path.join(settings.TUS_DATA_DIR, f"{upload_uuid}.info")
     if os.path.getsize(upload_bin_path) > settings.FILE_UPLOAD_MAX_FILE_SIZE:
-        error_message = (f"File size of {upload_bin_path} is greater than "
-                         f"the max of {settings.FILE_UPLOAD_MAX_FILE_SIZE} "
-                         f"bytes")
+        error_message = (
+            f"File size of {upload_bin_path} is greater than the max of {settings.FILE_UPLOAD_MAX_FILE_SIZE} bytes"
+        )
         logger.error(error_message)
         os.remove(upload_bin_path)
         os.remove(upload_info_path)
         raise Exception(error_message)
     with open(upload_info_path) as upload_info_file:
         upload_info = json.load(upload_info_file)
-        filename = upload_info['MetaData']['filename']
-        filetype = upload_info['MetaData']['filetype']
+        filename = upload_info["MetaData"]["filename"]
+        filetype = upload_info["MetaData"]["filetype"]
         result = save_function(upload_bin_path, filename, filetype)
     os.remove(upload_bin_path)
     os.remove(upload_info_path)

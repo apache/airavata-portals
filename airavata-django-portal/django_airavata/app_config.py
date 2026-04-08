@@ -1,4 +1,3 @@
-
 import logging
 from abc import ABC, abstractmethod
 from importlib import import_module
@@ -44,7 +43,7 @@ class AiravataAppConfig(AppConfig, ABC):
 def get_url_app_name(app_config):
     """Return the urls namespace for the given AppConfig instance."""
     urls = get_app_urls(app_config)
-    return getattr(urls, 'app_name', None)
+    return getattr(urls, "app_name", None)
 
 
 def get_app_urls(app_config):

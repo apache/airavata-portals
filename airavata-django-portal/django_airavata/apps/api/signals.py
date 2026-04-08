@@ -22,8 +22,8 @@ def create_user_storage_dir(sender, request, user, **kwargs):
     path = ""
     if not user_storage.dir_exists(request, path):
         user_storage.create_user_dir(request, path)
-        log.info("Created home directory for user {}".format(user.username))
+        log.info(f"Created home directory for user {user.username}")
 
-    if hasattr(settings, 'GATEWAY_DATA_SHARED_DIRECTORIES'):
+    if hasattr(settings, "GATEWAY_DATA_SHARED_DIRECTORIES"):
         for name, entry in settings.GATEWAY_DATA_SHARED_DIRECTORIES.items():
-            user_storage.create_symlink(request, entry['path'], name)
+            user_storage.create_symlink(request, entry["path"], name)

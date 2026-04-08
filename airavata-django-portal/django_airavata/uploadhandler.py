@@ -1,18 +1,9 @@
 from django.conf import settings
-from django.core.files.uploadhandler import (
-    StopUpload,
-    TemporaryFileUploadHandler
-)
+from django.core.files.uploadhandler import StopUpload, TemporaryFileUploadHandler
 
 
 class MaxFileSizeTemporaryFileUploadHandler(TemporaryFileUploadHandler):
-
-    def handle_raw_input(self,
-                         input_data,
-                         META,
-                         content_length,
-                         boundary,
-                         encoding=None):
+    def handle_raw_input(self, input_data, META, content_length, boundary, encoding=None):
         """
         Use the content_length to enforce max size limit.
         """

@@ -16,8 +16,7 @@ USER_PROFILE_COMPLETED_TEMPLATE = 6
 
 class EmailVerification(models.Model):
     username = models.CharField(max_length=64)
-    verification_code = models.CharField(
-        max_length=36, unique=True, default=uuid.uuid4)
+    verification_code = models.CharField(max_length=36, unique=True, default=uuid.uuid4)
     created_date = models.DateTimeField(auto_now_add=True)
     verified = models.BooleanField(default=False)
     next = models.CharField(max_length=255, null=True)
@@ -25,15 +24,14 @@ class EmailVerification(models.Model):
 
 class EmailTemplate(models.Model):
     TEMPLATE_TYPE_CHOICES = (
-        (VERIFY_EMAIL_TEMPLATE, 'Verify Email Template'),
-        (NEW_USER_EMAIL_TEMPLATE, 'New User Email Template'),
-        (PASSWORD_RESET_EMAIL_TEMPLATE, 'Password Reset Email Template'),
-        (USER_ADDED_TO_GROUP_TEMPLATE, 'User Added to Group Template'),
-        (VERIFY_EMAIL_CHANGE_TEMPLATE, 'Verify Email Change Template'),
-        (USER_PROFILE_COMPLETED_TEMPLATE, 'User Profile Completed Template'),
+        (VERIFY_EMAIL_TEMPLATE, "Verify Email Template"),
+        (NEW_USER_EMAIL_TEMPLATE, "New User Email Template"),
+        (PASSWORD_RESET_EMAIL_TEMPLATE, "Password Reset Email Template"),
+        (USER_ADDED_TO_GROUP_TEMPLATE, "User Added to Group Template"),
+        (VERIFY_EMAIL_CHANGE_TEMPLATE, "Verify Email Change Template"),
+        (USER_PROFILE_COMPLETED_TEMPLATE, "User Profile Completed Template"),
     )
-    template_type = models.IntegerField(
-        primary_key=True, choices=TEMPLATE_TYPE_CHOICES)
+    template_type = models.IntegerField(primary_key=True, choices=TEMPLATE_TYPE_CHOICES)
     subject = models.CharField(max_length=255)
     body = models.TextField()
     created_date = models.DateTimeField(auto_now_add=True)
@@ -48,15 +46,12 @@ class EmailTemplate(models.Model):
 
 class PasswordResetRequest(models.Model):
     username = models.CharField(max_length=64)
-    reset_code = models.CharField(
-        max_length=36, unique=True, default=uuid.uuid4)
+    reset_code = models.CharField(max_length=36, unique=True, default=uuid.uuid4)
     created_date = models.DateTimeField(auto_now_add=True)
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE, related_name="user_profile")
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_profile")
     # This flag is only used for external IDP users. It indicates that the
     # username was properly initialized when the user logged in through the
     # external IDP. As for now that means that the username was set to the
@@ -102,13 +97,13 @@ class UserProfile(models.Model):
     def invalid_fields(self):
         result = []
         if not self.is_username_valid:
-            result.append('username')
+            result.append("username")
         if not self.is_email_valid:
-            result.append('email')
+            result.append("email")
         if not self.is_first_name_valid:
-            result.append('first_name')
+            result.append("first_name")
         if not self.is_last_name_valid:
-            result.append('last_name')
+            result.append("last_name")
         return result
 
     @property
@@ -136,7 +131,7 @@ class UserInfo(models.Model):
     updated_date = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['user_profile', 'claim']
+        unique_together = ["user_profile", "claim"]
 
     def __str__(self):
         return f"{self.claim}={self.value}"
@@ -151,7 +146,7 @@ class IDPUserInfo(models.Model):
     updated_date = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['user_profile', 'claim', 'idp_alias']
+        unique_together = ["user_profile", "claim", "idp_alias"]
 
     def __str__(self):
         return f"{self.idp_alias}: {self.claim}={self.value}"
@@ -160,8 +155,7 @@ class IDPUserInfo(models.Model):
 class PendingEmailChange(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     email_address = models.EmailField()
-    verification_code = models.CharField(
-        max_length=36, unique=True, default=uuid.uuid4)
+    verification_code = models.CharField(max_length=36, unique=True, default=uuid.uuid4)
     created_date = models.DateTimeField(auto_now_add=True)
     verified = models.BooleanField(default=False)
 
@@ -180,32 +174,32 @@ class ExtendedUserProfileField(models.Model):
 
     @property
     def field_type(self):
-        if hasattr(self, 'text'):
-            return 'text'
-        elif hasattr(self, 'single_choice'):
-            return 'single_choice'
-        elif hasattr(self, 'multi_choice'):
-            return 'multi_choice'
-        elif hasattr(self, 'user_agreement'):
-            return 'user_agreement'
+        if hasattr(self, "text"):
+            return "text"
+        elif hasattr(self, "single_choice"):
+            return "single_choice"
+        elif hasattr(self, "multi_choice"):
+            return "multi_choice"
+        elif hasattr(self, "user_agreement"):
+            return "user_agreement"
         else:
             raise Exception("Could not determine field_type")
 
 
 class ExtendedUserProfileTextField(ExtendedUserProfileField):
-    field_ptr = models.OneToOneField(ExtendedUserProfileField,
-                                     on_delete=models.CASCADE,
-                                     parent_link=True,
-                                     primary_key=True,
-                                     related_name="text")
+    field_ptr = models.OneToOneField(
+        ExtendedUserProfileField, on_delete=models.CASCADE, parent_link=True, primary_key=True, related_name="text"
+    )
 
 
 class ExtendedUserProfileSingleChoiceField(ExtendedUserProfileField):
-    field_ptr = models.OneToOneField(ExtendedUserProfileField,
-                                     on_delete=models.CASCADE,
-                                     parent_link=True,
-                                     primary_key=True,
-                                     related_name="single_choice")
+    field_ptr = models.OneToOneField(
+        ExtendedUserProfileField,
+        on_delete=models.CASCADE,
+        parent_link=True,
+        primary_key=True,
+        related_name="single_choice",
+    )
     other = models.BooleanField(default=False)
 
 
@@ -222,28 +216,36 @@ class ExtendedUserProfileFieldChoice(models.Model):
 
 
 class ExtendedUserProfileSingleChoiceFieldChoice(ExtendedUserProfileFieldChoice):
-    single_choice_field = models.ForeignKey(ExtendedUserProfileSingleChoiceField, on_delete=models.CASCADE, related_name="choices")
+    single_choice_field = models.ForeignKey(
+        ExtendedUserProfileSingleChoiceField, on_delete=models.CASCADE, related_name="choices"
+    )
 
 
 class ExtendedUserProfileMultiChoiceField(ExtendedUserProfileField):
-    field_ptr = models.OneToOneField(ExtendedUserProfileField,
-                                     on_delete=models.CASCADE,
-                                     parent_link=True,
-                                     primary_key=True,
-                                     related_name="multi_choice")
+    field_ptr = models.OneToOneField(
+        ExtendedUserProfileField,
+        on_delete=models.CASCADE,
+        parent_link=True,
+        primary_key=True,
+        related_name="multi_choice",
+    )
     other = models.BooleanField(default=False)
 
 
 class ExtendedUserProfileMultiChoiceFieldChoice(ExtendedUserProfileFieldChoice):
-    multi_choice_field = models.ForeignKey(ExtendedUserProfileMultiChoiceField, on_delete=models.CASCADE, related_name="choices")
+    multi_choice_field = models.ForeignKey(
+        ExtendedUserProfileMultiChoiceField, on_delete=models.CASCADE, related_name="choices"
+    )
 
 
 class ExtendedUserProfileAgreementField(ExtendedUserProfileField):
-    field_ptr = models.OneToOneField(ExtendedUserProfileField,
-                                     on_delete=models.CASCADE,
-                                     parent_link=True,
-                                     primary_key=True,
-                                     related_name="user_agreement")
+    field_ptr = models.OneToOneField(
+        ExtendedUserProfileField,
+        on_delete=models.CASCADE,
+        parent_link=True,
+        primary_key=True,
+        related_name="user_agreement",
+    )
     # if no checkbox label, then some default text will be used
     checkbox_label = models.TextField(blank=True)
 
@@ -269,22 +271,22 @@ class ExtendedUserProfileValue(models.Model):
 
     @property
     def value_type(self):
-        if hasattr(self, 'text'):
-            return 'text'
-        elif hasattr(self, 'single_choice'):
-            return 'single_choice'
-        elif hasattr(self, 'multi_choice'):
-            return 'multi_choice'
-        elif hasattr(self, 'user_agreement'):
-            return 'user_agreement'
+        if hasattr(self, "text"):
+            return "text"
+        elif hasattr(self, "single_choice"):
+            return "single_choice"
+        elif hasattr(self, "multi_choice"):
+            return "multi_choice"
+        elif hasattr(self, "user_agreement"):
+            return "user_agreement"
         else:
             raise Exception("Could not determine value_type")
 
     @property
     def value_display(self):
-        if self.value_type == 'text':
+        if self.value_type == "text":
             return self.text.text_value
-        elif self.value_type == 'single_choice':
+        elif self.value_type == "single_choice":
             if self.single_choice.choice:
                 try:
                     choice = self.ext_user_profile_field.single_choice.choices.get(id=self.single_choice.choice)
@@ -293,7 +295,7 @@ class ExtendedUserProfileValue(models.Model):
                     return None
             elif self.single_choice.other_value:
                 return f"Other: {self.single_choice.other_value}"
-        elif self.value_type == 'multi_choice':
+        elif self.value_type == "multi_choice":
             result = []
             if self.multi_choice.choices:
                 mc_field = self.ext_user_profile_field.multi_choice
@@ -306,7 +308,7 @@ class ExtendedUserProfileValue(models.Model):
             if self.multi_choice.other_value:
                 result.append(f"Other: {self.multi_choice.other_value}")
             return result
-        elif self.value_type == 'user_agreement':
+        elif self.value_type == "user_agreement":
             if self.user_agreement.agreement_value:
                 return "Yes"
             else:
@@ -328,66 +330,77 @@ class ExtendedUserProfileValue(models.Model):
         if self.ext_user_profile_field.deleted:
             return True
         if self.ext_user_profile_field.required:
-            if self.value_type == 'text':
+            if self.value_type == "text":
                 return self.text.text_value and len(self.text.text_value.strip()) > 0
-            if self.value_type == 'single_choice':
-                choice_exists = (self.single_choice.choice and
-                                 self.ext_user_profile_field.single_choice.choices
-                                 .filter(id=self.single_choice.choice).exists())
-                has_other = (self.ext_user_profile_field.single_choice.other and
-                             self.single_choice.other_value and
-                             len(self.single_choice.other_value.strip()) > 0)
+            if self.value_type == "single_choice":
+                choice_exists = (
+                    self.single_choice.choice
+                    and self.ext_user_profile_field.single_choice.choices.filter(id=self.single_choice.choice).exists()
+                )
+                has_other = (
+                    self.ext_user_profile_field.single_choice.other
+                    and self.single_choice.other_value
+                    and len(self.single_choice.other_value.strip()) > 0
+                )
                 return choice_exists or has_other
-            if self.value_type == 'multi_choice':
+            if self.value_type == "multi_choice":
                 choice_ids = list(map(lambda c: c.value, self.multi_choice.choices.all()))
                 choice_exists = self.ext_user_profile_field.multi_choice.choices.filter(id__in=choice_ids).exists()
-                has_other = (self.ext_user_profile_field.multi_choice.other and
-                             self.multi_choice.other_value and
-                             len(self.multi_choice.other_value.strip()) > 0)
+                has_other = (
+                    self.ext_user_profile_field.multi_choice.other
+                    and self.multi_choice.other_value
+                    and len(self.multi_choice.other_value.strip()) > 0
+                )
                 return choice_exists or has_other
-            if self.value_type == 'user_agreement':
+            if self.value_type == "user_agreement":
                 return self.user_agreement.agreement_value is True
         return True
 
 
 class ExtendedUserProfileTextValue(ExtendedUserProfileValue):
-    value_ptr = models.OneToOneField(ExtendedUserProfileValue,
-                                     on_delete=models.CASCADE,
-                                     parent_link=True,
-                                     primary_key=True,
-                                     related_name="text")
+    value_ptr = models.OneToOneField(
+        ExtendedUserProfileValue, on_delete=models.CASCADE, parent_link=True, primary_key=True, related_name="text"
+    )
     text_value = models.TextField()
 
 
 class ExtendedUserProfileSingleChoiceValue(ExtendedUserProfileValue):
-    value_ptr = models.OneToOneField(ExtendedUserProfileValue,
-                                     on_delete=models.CASCADE,
-                                     parent_link=True,
-                                     primary_key=True,
-                                     related_name="single_choice")
+    value_ptr = models.OneToOneField(
+        ExtendedUserProfileValue,
+        on_delete=models.CASCADE,
+        parent_link=True,
+        primary_key=True,
+        related_name="single_choice",
+    )
     # Only one of value or other_value should be populated, not both
     choice = models.BigIntegerField(null=True)
     other_value = models.TextField(blank=True)
 
 
 class ExtendedUserProfileMultiChoiceValue(ExtendedUserProfileValue):
-    value_ptr = models.OneToOneField(ExtendedUserProfileValue,
-                                     on_delete=models.CASCADE,
-                                     parent_link=True,
-                                     primary_key=True,
-                                     related_name="multi_choice")
+    value_ptr = models.OneToOneField(
+        ExtendedUserProfileValue,
+        on_delete=models.CASCADE,
+        parent_link=True,
+        primary_key=True,
+        related_name="multi_choice",
+    )
     other_value = models.TextField(blank=True)
 
 
 class ExtendedUserProfileMultiChoiceValueChoice(models.Model):
     value = models.BigIntegerField()
-    multi_choice_value = models.ForeignKey(ExtendedUserProfileMultiChoiceValue, on_delete=models.CASCADE, related_name="choices")
+    multi_choice_value = models.ForeignKey(
+        ExtendedUserProfileMultiChoiceValue, on_delete=models.CASCADE, related_name="choices"
+    )
 
 
 class ExtendedUserProfileAgreementValue(ExtendedUserProfileValue):
-    value_ptr = models.OneToOneField(ExtendedUserProfileValue,
-                                     on_delete=models.CASCADE,
-                                     parent_link=True,
-                                     primary_key=True,
-                                     related_name="user_agreement")
+    value_ptr = models.OneToOneField(
+        ExtendedUserProfileValue,
+        on_delete=models.CASCADE,
+        parent_link=True,
+        primary_key=True,
+        related_name="user_agreement",
+    )
     agreement_value = models.BooleanField()

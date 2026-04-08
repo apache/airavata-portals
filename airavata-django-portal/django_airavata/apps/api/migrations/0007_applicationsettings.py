@@ -4,18 +4,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_airavata_api', '0006_applicationtemplate_applicationtemplatecontextprocessor'),
+        ("django_airavata_api", "0006_applicationtemplate_applicationtemplatecontextprocessor"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ApplicationSettings',
+            name="ApplicationSettings",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('application_module_id', models.CharField(max_length=255, unique=True)),
-                ('show_queue_settings', models.BooleanField(default=True)),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("application_module_id", models.CharField(max_length=255, unique=True)),
+                ("show_queue_settings", models.BooleanField(default=True)),
             ],
         ),
     ]

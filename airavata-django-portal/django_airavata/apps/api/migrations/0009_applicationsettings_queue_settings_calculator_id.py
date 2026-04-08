@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_airavata_api', '0008_merge_20220601_1951'),
+        ("django_airavata_api", "0008_merge_20220601_1951"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='applicationsettings',
-            name='queue_settings_calculator_id',
+            model_name="applicationsettings",
+            name="queue_settings_calculator_id",
             field=models.CharField(max_length=255, null=True),
         ),
     ]

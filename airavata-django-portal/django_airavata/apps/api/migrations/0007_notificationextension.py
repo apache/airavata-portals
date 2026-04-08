@@ -4,21 +4,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_airavata_api', '0006_applicationtemplate_applicationtemplatecontextprocessor'),
+        ("django_airavata_api", "0006_applicationtemplate_applicationtemplatecontextprocessor"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='NotificationExtension',
+            name="NotificationExtension",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('notification_id', models.CharField(max_length=255)),
-                ('showInDashboard', models.BooleanField(default=False)),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("notification_id", models.CharField(max_length=255)),
+                ("showInDashboard", models.BooleanField(default=False)),
             ],
             options={
-                'unique_together': {('notification_id',)},
+                "unique_together": {("notification_id",)},
             },
         ),
     ]

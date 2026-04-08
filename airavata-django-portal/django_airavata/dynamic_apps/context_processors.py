@@ -1,7 +1,7 @@
 import copy
-from importlib import import_module
 import logging
 import re
+from importlib import import_module
 
 from django_airavata.dynamic_apps import CUSTOM_DJANGO_APPS
 
@@ -21,9 +21,7 @@ def custom_app_registry(request):
     return {
         "custom_apps": custom_apps,
         "current_custom_app": current_custom_app,
-        "custom_app_nav": (
-            _get_app_nav(request, current_custom_app) if current_custom_app else None
-        ),
+        "custom_app_nav": (_get_app_nav(request, current_custom_app) if current_custom_app else None),
     }
 
 
@@ -54,10 +52,7 @@ def _get_default_url_home(app_config):
     """Return first url pattern as a default."""
     urls = _get_app_urls(app_config)
     app_name = _get_url_app_name(app_config)
-    logger.warning(
-        "Custom Django app {} has no URL namespace "
-        "defined".format(app_config.label)
-    )
+    logger.warning(f"Custom Django app {app_config.label} has no URL namespace defined")
     first_named_url = None
     for urlpattern in urls.urlpatterns:
         if hasattr(urlpattern, "name"):
@@ -90,10 +85,7 @@ def _get_app_urls(app_config):
 
 def _get_current_app(request, apps):
     current_app = [
-        app
-        for app in apps
-        if request.resolver_match
-        and app.url_app_name == request.resolver_match.app_name
+        app for app in apps if request.resolver_match and app.url_app_name == request.resolver_match.app_name
     ]
     return current_app[0] if len(current_app) > 0 else None
 
@@ -101,11 +93,7 @@ def _get_current_app(request, apps):
 def _get_app_nav(request, current_app):
     if hasattr(current_app, "nav"):
         # Copy and filter current_app's nav items
-        nav = [
-            item
-            for item in copy.copy(current_app.nav)
-            if "enabled" not in item or item["enabled"](request)
-        ]
+        nav = [item for item in copy.copy(current_app.nav) if "enabled" not in item or item["enabled"](request)]
         # convert "/djangoapp/path/in/app" to "path/in/app"
         app_path = "/".join(request.path.split("/")[2:])
         for nav_item in nav:

@@ -24,7 +24,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'bots0)m91u_i4gpw+103o%2jn#j57wjh7s@9$x*27_4^*jyku4'
+SECRET_KEY = "bots0)m91u_i4gpw+103o%2jn#j57wjh7s@9$x*27_4^*jyku4"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -36,48 +36,43 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'django_airavata.apps.admin.apps.AdminConfig',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django_airavata.apps.auth.apps.AuthConfig',
-    'django_airavata.apps.workspace.apps.WorkspaceConfig',
-    'rest_framework',
-    'django_airavata.apps.api.apps.ApiConfig',
-    'django_airavata.apps.groups.apps.GroupsConfig',
-    'django_airavata.apps.dataparsers.apps.DataParsersConfig',
-    'django.contrib.humanize',
-
+    "django_airavata.apps.admin.apps.AdminConfig",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django_airavata.apps.auth.apps.AuthConfig",
+    "django_airavata.apps.workspace.apps.WorkspaceConfig",
+    "rest_framework",
+    "django_airavata.apps.api.apps.ApiConfig",
+    "django_airavata.apps.groups.apps.GroupsConfig",
+    "django_airavata.apps.dataparsers.apps.DataParsersConfig",
+    "django.contrib.humanize",
     # wagtail related apps
-    'wagtail.contrib.forms',
-    'wagtail.contrib.redirects',
-    'wagtail.embeds',
-    'wagtail.sites',
-    'wagtail.users',
-    'wagtail.snippets',
-    'wagtail.documents',
-    'wagtail.images',
-    'wagtail.search',
-    'wagtail.admin',
-    'wagtail',
-    'wagtail.contrib.styleguide',
-
+    "wagtail.contrib.forms",
+    "wagtail.contrib.redirects",
+    "wagtail.embeds",
+    "wagtail.sites",
+    "wagtail.users",
+    "wagtail.snippets",
+    "wagtail.documents",
+    "wagtail.images",
+    "wagtail.search",
+    "wagtail.admin",
+    "wagtail",
+    "wagtail.contrib.styleguide",
     # wagtail third party dependencies
-    'modelcluster',
-    'taggit',
-    'wagtailfontawesome',
-    'wagtail_draftail_anchors',
-    'wagtailcodeblock',
-
+    "modelcluster",
+    "taggit",
+    "wagtailfontawesome",
+    "wagtail_draftail_anchors",
+    "wagtailcodeblock",
     # wagtail custom apps
-    'django_airavata.wagtailapps.base.apps.BaseConfig',
-
+    "django_airavata.wagtailapps.base.apps.BaseConfig",
     # django-vite
-    'django_vite',
-
+    "django_vite",
 ]
 
 # List of app labels for Airavata apps that should be hidden from menus
@@ -85,59 +80,59 @@ INSTALLED_APPS = [
 HIDDEN_AIRAVATA_APPS = []
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_airavata.apps.auth.middleware.authz_token_middleware',
-    'django_airavata.middleware.AiravataClientMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_airavata.apps.auth.middleware.authz_token_middleware",
+    "django_airavata.middleware.AiravataClientMiddleware",
     # Needs to come after authz_token_middleware and AiravataClientMiddleware
-    'django_airavata.apps.auth.middleware.gateway_groups_middleware',
+    "django_airavata.apps.auth.middleware.gateway_groups_middleware",
     # Wagtail related middleware
-    'wagtail.contrib.redirects.middleware.RedirectMiddleware',
-    'django_airavata.apps.auth.middleware.user_profile_completeness_check',
+    "wagtail.contrib.redirects.middleware.RedirectMiddleware",
+    "django_airavata.apps.auth.middleware.user_profile_completeness_check",
 ]
 
-ROOT_URLCONF = 'django_airavata.urls'
+ROOT_URLCONF = "django_airavata.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, "django_airavata", "templates")],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'django_airavata.context_processors.airavata_app_registry',
-                'django_airavata.dynamic_apps.context_processors.custom_app_registry',
-                'django_airavata.context_processors.get_notifications',
-                'django_airavata.context_processors.user_session_data',
-                'django_airavata.context_processors.google_analytics_tracking_id',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [os.path.join(BASE_DIR, "django_airavata", "templates")],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "django_airavata.context_processors.airavata_app_registry",
+                "django_airavata.dynamic_apps.context_processors.custom_app_registry",
+                "django_airavata.context_processors.get_notifications",
+                "django_airavata.context_processors.user_session_data",
+                "django_airavata.context_processors.google_analytics_tracking_id",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'django_airavata.wsgi.application'
+WSGI_APPLICATION = "django_airavata.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
     }
 }
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 # Password validation
@@ -145,16 +140,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -162,9 +157,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -176,25 +171,25 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "django_airavata", "static")]
 
 # Media Files (PDF, Documents, Custom Images)
 MEDIA_ROOT = os.path.join(BASE_DIR, "django_airavata", "media")
-MEDIA_URL = '/media/'
+MEDIA_URL = "/media/"
 
 # Data storage
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o777
 FILE_UPLOAD_PERMISSIONS = 0o644
 FILE_UPLOAD_MAX_FILE_SIZE = 64 * 1024 * 1024  # 64 MB
 FILE_UPLOAD_HANDLERS = [
-    'django.core.files.uploadhandler.MemoryFileUploadHandler',
-    'django_airavata.uploadhandler.MaxFileSizeTemporaryFileUploadHandler',
+    "django.core.files.uploadhandler.MemoryFileUploadHandler",
+    "django_airavata.uploadhandler.MaxFileSizeTemporaryFileUploadHandler",
 ]
 
 # Django max file size
-DATA_UPLOAD_MAX_MEMORY_SIZE =  64 * 1024 * 1024  # 64 MB
-FILE_UPLOAD_MAX_MEMORY_SIZE =  64 * 1024 * 1024  # 64 MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 64 * 1024 * 1024  # 64 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 64 * 1024 * 1024  # 64 MB
 
 # Tus upload
 # Override and set to a valid tus endpoint, for example
@@ -215,30 +210,25 @@ PGA_URL = None
 
 # Django REST Framework configuration
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication',
-        'django_airavata.apps.api.authentication.OAuthAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.SessionAuthentication",
+        "django_airavata.apps.api.authentication.OAuthAuthentication",
     ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
-    'EXCEPTION_HANDLER':
-        'django_airavata.apps.api.exceptions.custom_exception_handler',
-    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "EXCEPTION_HANDLER": "django_airavata.apps.api.exceptions.custom_exception_handler",
+    "TEST_REQUEST_DEFAULT_FORMAT": "json",
     # Force inclusion of fractional seconds (default formatting with
     # datetime.isoformat only includes fractional seconds if non-zero)
-    'DATETIME_FORMAT': "%Y-%m-%dT%H:%M:%S.%fZ",
+    "DATETIME_FORMAT": "%Y-%m-%dT%H:%M:%S.%fZ",
 }
 
-AUTHENTICATION_BACKENDS = [
-    'django_airavata.apps.auth.backends.KeycloakBackend'
-]
+AUTHENTICATION_BACKENDS = ["django_airavata.apps.auth.backends.KeycloakBackend"]
 
 # Default email backend (for local development)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # Wagtail related stuff
-WAGTAIL_SITE_NAME = 'Django Airavata Portal'
+WAGTAIL_SITE_NAME = "Django Airavata Portal"
 
 WAGTAILIMAGES_JPEG_QUALITY = 100
 
@@ -246,14 +236,14 @@ WAGTAILIMAGES_JPEG_QUALITY = 100
 # which is the default for DATA_UPLOAD_MAX_NUMBER_FIELDS
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 
-LOGIN_URL = 'django_airavata_auth:login'
-LOGIN_REDIRECT_URL = 'django_airavata_workspace:dashboard'
-LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = "django_airavata_auth:login"
+LOGIN_REDIRECT_URL = "django_airavata_workspace:dashboard"
+LOGOUT_REDIRECT_URL = "/"
 
 AUTHENTICATION_OPTIONS = {
     # Control whether username/password authentication is allowed
-    'password': {
-        'name': 'your account',
+    "password": {
+        "name": "your account",
         # Static path to image
         # 'logo': '/static/path/to/image'
     },
@@ -280,296 +270,299 @@ DJANGO_VITE = {
     "default": {
         "dev_mode": DEBUG,
         "dev_server_port": 9000,
-        "manifest_path": os.path.join(
-            BASE_DIR, 'django_airavata', 'static', 'common', 'dist', 'manifest.json'),
+        "manifest_path": os.path.join(BASE_DIR, "django_airavata", "static", "common", "dist", "manifest.json"),
     },
     "ADMIN": {
         "dev_mode": DEBUG,
         "dev_server_port": 9000,
         "manifest_path": os.path.join(
-            BASE_DIR, 'django_airavata', 'apps', 'admin', 'static',
-            'django_airavata_admin', 'dist', 'manifest.json'),
+            BASE_DIR, "django_airavata", "apps", "admin", "static", "django_airavata_admin", "dist", "manifest.json"
+        ),
     },
     "AUTH": {
         "dev_mode": DEBUG,
         "dev_server_port": 9000,
         "manifest_path": os.path.join(
-            BASE_DIR, 'django_airavata', 'apps', 'auth', 'static',
-            'django_airavata_auth', 'dist', 'manifest.json'),
+            BASE_DIR, "django_airavata", "apps", "auth", "static", "django_airavata_auth", "dist", "manifest.json"
+        ),
     },
     "DATAPARSERS": {
         "dev_mode": DEBUG,
         "dev_server_port": 9000,
         "manifest_path": os.path.join(
-            BASE_DIR, 'django_airavata', 'apps', 'dataparsers', 'static',
-            'django_airavata_dataparsers', 'dist', 'manifest.json'),
+            BASE_DIR,
+            "django_airavata",
+            "apps",
+            "dataparsers",
+            "static",
+            "django_airavata_dataparsers",
+            "dist",
+            "manifest.json",
+        ),
     },
     "GROUPS": {
         "dev_mode": DEBUG,
         "dev_server_port": 9000,
         "manifest_path": os.path.join(
-            BASE_DIR, 'django_airavata', 'apps', 'groups', 'static',
-            'django_airavata_groups', 'dist', 'manifest.json'),
+            BASE_DIR, "django_airavata", "apps", "groups", "static", "django_airavata_groups", "dist", "manifest.json"
+        ),
     },
     "WORKSPACE": {
         "dev_mode": DEBUG,
         "dev_server_port": 9000,
         "manifest_path": os.path.join(
-            BASE_DIR, 'django_airavata', 'apps', 'workspace', 'static',
-            'django_airavata_workspace', 'dist', 'manifest.json'),
+            BASE_DIR,
+            "django_airavata",
+            "apps",
+            "workspace",
+            "static",
+            "django_airavata_workspace",
+            "dist",
+            "manifest.json",
+        ),
     },
 }
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
         },
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
-        },
-    },
-    'formatters': {
-        'verbose': {
-            'format': '[%(asctime)s %(name)s:%(lineno)d %(levelname)s] %(message)s',
-        },
-        'verbose-safe': {
-            '()': 'anticrlf.LogFormatter',
-            'format': '[%(asctime)s %(name)s:%(lineno)d %(levelname)s] %(message)s',
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
         },
     },
-    'handlers': {
+    "formatters": {
+        "verbose": {
+            "format": "[%(asctime)s %(name)s:%(lineno)d %(levelname)s] %(message)s",
+        },
+        "verbose-safe": {
+            "()": "anticrlf.LogFormatter",
+            "format": "[%(asctime)s %(name)s:%(lineno)d %(levelname)s] %(message)s",
+        },
+    },
+    "handlers": {
         # Log everything to the console when DEBUG=True
-        'console_debug': {
-            'filters': ['require_debug_true'],
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose'
-        },
+        "console_debug": {"filters": ["require_debug_true"], "class": "logging.StreamHandler", "formatter": "verbose"},
         # Only log INFO and higher levels to console when DEBUG=False
-        'console': {
-            'filters': ['require_debug_false'],
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose-safe',
-            'level': 'INFO'
+        "console": {
+            "filters": ["require_debug_false"],
+            "class": "logging.StreamHandler",
+            "formatter": "verbose-safe",
+            "level": "INFO",
         },
-        'mail_admins': {
-            'filters': ['require_debug_false'],
-            'level': 'ERROR',
-            'class': 'django.utils.log.AdminEmailHandler',
-            'include_html': True,
-        }
+        "mail_admins": {
+            "filters": ["require_debug_false"],
+            "level": "ERROR",
+            "class": "django.utils.log.AdminEmailHandler",
+            "include_html": True,
+        },
     },
-    'loggers': {
-        'django_airavata': {
-            'handlers': ['console', 'console_debug', 'mail_admins'],
-            'level': 'DEBUG'
-        },
-        'root': {
-            'handlers': ['console', 'console_debug'],
-            'level': 'WARNING'
-        }
+    "loggers": {
+        "django_airavata": {"handlers": ["console", "console_debug", "mail_admins"], "level": "DEBUG"},
+        "root": {"handlers": ["console", "console_debug"], "level": "WARNING"},
     },
 }
 
 # wagtailcodeblock theme and languages
 WAGTAIL_CODE_BLOCK_THEME = None
 WAGTAIL_CODE_BLOCK_LANGUAGES = (
-    ('abap', 'ABAP'),
-    ('abnf', 'Augmented Backus–Naur form'),
-    ('actionscript', 'ActionScript'),
-    ('ada', 'Ada'),
-    ('antlr4', 'ANTLR4'),
-    ('apacheconf', 'Apache Configuration'),
-    ('apl', 'APL'),
-    ('applescript', 'AppleScript'),
-    ('aql', 'AQL'),
-    ('arduino', 'Arduino'),
-    ('arff', 'ARFF'),
-    ('asciidoc', 'AsciiDoc'),
-    ('asm6502', '6502 Assembly'),
-    ('aspnet', 'ASP.NET (C#)'),
-    ('autohotkey', 'AutoHotkey'),
-    ('autoit', 'AutoIt'),
-    ('bash', 'Bash + Shell'),
-    ('basic', 'BASIC'),
-    ('batch', 'Batch'),
-    ('bison', 'Bison'),
-    ('bnf', 'Backus–Naur form + Routing Backus–Naur form'),
-    ('brainfuck', 'Brainfuck'),
-    ('bro', 'Bro'),
-    ('c', 'C'),
-    ('clike', 'C-like'),
-    ('cmake', 'CMake'),
-    ('csharp', 'C#'),
-    ('cpp', 'C++'),
-    ('cil', 'CIL'),
-    ('coffeescript', 'CoffeeScript'),
-    ('clojure', 'Clojure'),
-    ('crystal', 'Crystal'),
-    ('csp', 'Content-Security-Policy'),
-    ('css', 'CSS'),
-    ('css-extras', 'CSS Extras'),
-    ('d', 'D'),
-    ('dart', 'Dart'),
-    ('diff', 'Diff'),
-    ('django', 'Django/Jinja2'),
-    ('dns-zone-file', 'DNS Zone File'),
-    ('docker', 'Docker'),
-    ('ebnf', 'Extended Backus–Naur form'),
-    ('eiffel', 'Eiffel'),
-    ('ejs', 'EJS'),
-    ('elixir', 'Elixir'),
-    ('elm', 'Elm'),
-    ('erb', 'ERB'),
-    ('erlang', 'Erlang'),
-    ('etlua', 'Embedded LUA Templating'),
-    ('fsharp', 'F#'),
-    ('flow', 'Flow'),
-    ('fortran', 'Fortran'),
-    ('ftl', 'Freemarker Template Language'),
-    ('gcode', 'G-code'),
-    ('gdscript', 'GDScript'),
-    ('gedcom', 'GEDCOM'),
-    ('gherkin', 'Gherkin'),
-    ('git', 'Git'),
-    ('glsl', 'GLSL'),
-    ('gml', 'GameMaker Language'),
-    ('go', 'Go'),
-    ('graphql', 'GraphQL'),
-    ('groovy', 'Groovy'),
-    ('haml', 'Haml'),
-    ('handlebars', 'Handlebars'),
-    ('haskell', 'Haskell'),
-    ('haxe', 'Haxe'),
-    ('hcl', 'HCL'),
-    ('http', 'HTTP'),
-    ('hpkp', 'HTTP Public-Key-Pins'),
-    ('hsts', 'HTTP Strict-Transport-Security'),
-    ('ichigojam', 'IchigoJam'),
-    ('icon', 'Icon'),
-    ('inform7', 'Inform 7'),
-    ('ini', 'Ini'),
-    ('io', 'Io'),
-    ('j', 'J'),
-    ('java', 'Java'),
-    ('javadoc', 'JavaDoc'),
-    ('javadoclike', 'JavaDoc-like'),
-    ('javascript', 'JavaScript'),
-    ('javastacktrace', 'Java stack trace'),
-    ('jolie', 'Jolie'),
-    ('jq', 'JQ'),
-    ('jsdoc', 'JSDoc'),
-    ('js-extras', 'JS Extras'),
-    ('js-templates', 'JS Templates'),
-    ('json', 'JSON'),
-    ('jsonp', 'JSONP'),
-    ('json5', 'JSON5'),
-    ('julia', 'Julia'),
-    ('keyman', 'Keyman'),
-    ('kotlin', 'Kotlin'),
-    ('latex', 'LaTeX'),
-    ('less', 'Less'),
-    ('lilypond', 'Lilypond'),
-    ('liquid', 'Liquid'),
-    ('lisp', 'Lisp'),
-    ('livescript', 'LiveScript'),
-    ('lolcode', 'LOLCODE'),
-    ('lua', 'Lua'),
-    ('makefile', 'Makefile'),
-    ('markdown', 'Markdown'),
-    ('markup', 'Markup + HTML + XML + SVG + MathML'),
-    ('markup-templating', 'Markup templating'),
-    ('matlab', 'MATLAB'),
-    ('mel', 'MEL'),
-    ('mizar', 'Mizar'),
-    ('monkey', 'Monkey'),
-    ('n1ql', 'N1QL'),
-    ('n4js', 'N4JS'),
-    ('nand2tetris-hdl', 'Nand To Tetris HDL'),
-    ('nasm', 'NASM'),
-    ('nginx', 'nginx'),
-    ('nim', 'Nim'),
-    ('nix', 'Nix'),
-    ('nsis', 'NSIS'),
-    ('objectivec', 'Objective-C'),
-    ('ocaml', 'OCaml'),
-    ('opencl', 'OpenCL'),
-    ('oz', 'Oz'),
-    ('parigp', 'PARI/GP'),
-    ('parser', 'Parser'),
-    ('pascal', 'Pascal + Object Pascal'),
-    ('pascaligo', 'Pascaligo'),
-    ('pcaxis', 'PC Axis'),
-    ('perl', 'Perl'),
-    ('php', 'PHP'),
-    ('phpdoc', 'PHPDoc'),
-    ('php-extras', 'PHP Extras'),
-    ('plsql', 'PL/SQL'),
-    ('powershell', 'PowerShell'),
-    ('processing', 'Processing'),
-    ('prolog', 'Prolog'),
-    ('properties', '.properties'),
-    ('protobuf', 'Protocol Buffers'),
-    ('pug', 'Pug'),
-    ('puppet', 'Puppet'),
-    ('pure', 'Pure'),
-    ('python', 'Python'),
-    ('q', 'Q (kdb+ database)'),
-    ('qore', 'Qore'),
-    ('r', 'R'),
-    ('jsx', 'React JSX'),
-    ('tsx', 'React TSX'),
-    ('renpy', 'Ren\'py'),
-    ('reason', 'Reason'),
-    ('regex', 'Regex'),
-    ('rest', 'reST (reStructuredText)'),
-    ('rip', 'Rip'),
-    ('roboconf', 'Roboconf'),
-    ('robot-framework', 'Robot Framework'),
-    ('ruby', 'Ruby'),
-    ('rust', 'Rust'),
-    ('sas', 'SAS'),
-    ('sass', 'Sass (Sass)'),
-    ('scss', 'Sass (Scss)'),
-    ('scala', 'Scala'),
-    ('scheme', 'Scheme'),
-    ('shell-session', 'Shell Session'),
-    ('smalltalk', 'Smalltalk'),
-    ('smarty', 'Smarty'),
-    ('solidity', 'Solidity (Ethereum)'),
-    ('sparql', 'SPARQL'),
-    ('splunk-spl', 'Splunk SPL'),
-    ('sqf', 'SQF: Status Quo Function (Arma 3)'),
-    ('sql', 'SQL'),
-    ('soy', 'Soy (Closure Template)'),
-    ('stylus', 'Stylus'),
-    ('swift', 'Swift'),
-    ('tap', 'TAP'),
-    ('tcl', 'Tcl'),
-    ('textile', 'Textile'),
-    ('toml', 'TOML'),
-    ('tt2', 'Template Toolkit 2'),
-    ('twig', 'Twig'),
-    ('typescript', 'TypeScript'),
-    ('t4-cs', 'T4 Text Templates (C#)'),
-    ('t4-vb', 'T4 Text Templates (VB)'),
-    ('t4-templating', 'T4 templating'),
-    ('vala', 'Vala'),
-    ('vbnet', 'VB.Net'),
-    ('velocity', 'Velocity'),
-    ('verilog', 'Verilog'),
-    ('vhdl', 'VHDL'),
-    ('vim', 'vim'),
-    ('visual-basic', 'Visual Basic'),
-    ('wasm', 'WebAssembly'),
-    ('wiki', 'Wiki markup'),
-    ('xeora', 'Xeora + XeoraCube'),
-    ('xojo', 'Xojo (REALbasic)'),
-    ('xquery', 'XQuery'),
-    ('yaml', 'YAML'),
-    ('zig', 'Zig'),
+    ("abap", "ABAP"),
+    ("abnf", "Augmented Backus–Naur form"),
+    ("actionscript", "ActionScript"),
+    ("ada", "Ada"),
+    ("antlr4", "ANTLR4"),
+    ("apacheconf", "Apache Configuration"),
+    ("apl", "APL"),
+    ("applescript", "AppleScript"),
+    ("aql", "AQL"),
+    ("arduino", "Arduino"),
+    ("arff", "ARFF"),
+    ("asciidoc", "AsciiDoc"),
+    ("asm6502", "6502 Assembly"),
+    ("aspnet", "ASP.NET (C#)"),
+    ("autohotkey", "AutoHotkey"),
+    ("autoit", "AutoIt"),
+    ("bash", "Bash + Shell"),
+    ("basic", "BASIC"),
+    ("batch", "Batch"),
+    ("bison", "Bison"),
+    ("bnf", "Backus–Naur form + Routing Backus–Naur form"),
+    ("brainfuck", "Brainfuck"),
+    ("bro", "Bro"),
+    ("c", "C"),
+    ("clike", "C-like"),
+    ("cmake", "CMake"),
+    ("csharp", "C#"),
+    ("cpp", "C++"),
+    ("cil", "CIL"),
+    ("coffeescript", "CoffeeScript"),
+    ("clojure", "Clojure"),
+    ("crystal", "Crystal"),
+    ("csp", "Content-Security-Policy"),
+    ("css", "CSS"),
+    ("css-extras", "CSS Extras"),
+    ("d", "D"),
+    ("dart", "Dart"),
+    ("diff", "Diff"),
+    ("django", "Django/Jinja2"),
+    ("dns-zone-file", "DNS Zone File"),
+    ("docker", "Docker"),
+    ("ebnf", "Extended Backus–Naur form"),
+    ("eiffel", "Eiffel"),
+    ("ejs", "EJS"),
+    ("elixir", "Elixir"),
+    ("elm", "Elm"),
+    ("erb", "ERB"),
+    ("erlang", "Erlang"),
+    ("etlua", "Embedded LUA Templating"),
+    ("fsharp", "F#"),
+    ("flow", "Flow"),
+    ("fortran", "Fortran"),
+    ("ftl", "Freemarker Template Language"),
+    ("gcode", "G-code"),
+    ("gdscript", "GDScript"),
+    ("gedcom", "GEDCOM"),
+    ("gherkin", "Gherkin"),
+    ("git", "Git"),
+    ("glsl", "GLSL"),
+    ("gml", "GameMaker Language"),
+    ("go", "Go"),
+    ("graphql", "GraphQL"),
+    ("groovy", "Groovy"),
+    ("haml", "Haml"),
+    ("handlebars", "Handlebars"),
+    ("haskell", "Haskell"),
+    ("haxe", "Haxe"),
+    ("hcl", "HCL"),
+    ("http", "HTTP"),
+    ("hpkp", "HTTP Public-Key-Pins"),
+    ("hsts", "HTTP Strict-Transport-Security"),
+    ("ichigojam", "IchigoJam"),
+    ("icon", "Icon"),
+    ("inform7", "Inform 7"),
+    ("ini", "Ini"),
+    ("io", "Io"),
+    ("j", "J"),
+    ("java", "Java"),
+    ("javadoc", "JavaDoc"),
+    ("javadoclike", "JavaDoc-like"),
+    ("javascript", "JavaScript"),
+    ("javastacktrace", "Java stack trace"),
+    ("jolie", "Jolie"),
+    ("jq", "JQ"),
+    ("jsdoc", "JSDoc"),
+    ("js-extras", "JS Extras"),
+    ("js-templates", "JS Templates"),
+    ("json", "JSON"),
+    ("jsonp", "JSONP"),
+    ("json5", "JSON5"),
+    ("julia", "Julia"),
+    ("keyman", "Keyman"),
+    ("kotlin", "Kotlin"),
+    ("latex", "LaTeX"),
+    ("less", "Less"),
+    ("lilypond", "Lilypond"),
+    ("liquid", "Liquid"),
+    ("lisp", "Lisp"),
+    ("livescript", "LiveScript"),
+    ("lolcode", "LOLCODE"),
+    ("lua", "Lua"),
+    ("makefile", "Makefile"),
+    ("markdown", "Markdown"),
+    ("markup", "Markup + HTML + XML + SVG + MathML"),
+    ("markup-templating", "Markup templating"),
+    ("matlab", "MATLAB"),
+    ("mel", "MEL"),
+    ("mizar", "Mizar"),
+    ("monkey", "Monkey"),
+    ("n1ql", "N1QL"),
+    ("n4js", "N4JS"),
+    ("nand2tetris-hdl", "Nand To Tetris HDL"),
+    ("nasm", "NASM"),
+    ("nginx", "nginx"),
+    ("nim", "Nim"),
+    ("nix", "Nix"),
+    ("nsis", "NSIS"),
+    ("objectivec", "Objective-C"),
+    ("ocaml", "OCaml"),
+    ("opencl", "OpenCL"),
+    ("oz", "Oz"),
+    ("parigp", "PARI/GP"),
+    ("parser", "Parser"),
+    ("pascal", "Pascal + Object Pascal"),
+    ("pascaligo", "Pascaligo"),
+    ("pcaxis", "PC Axis"),
+    ("perl", "Perl"),
+    ("php", "PHP"),
+    ("phpdoc", "PHPDoc"),
+    ("php-extras", "PHP Extras"),
+    ("plsql", "PL/SQL"),
+    ("powershell", "PowerShell"),
+    ("processing", "Processing"),
+    ("prolog", "Prolog"),
+    ("properties", ".properties"),
+    ("protobuf", "Protocol Buffers"),
+    ("pug", "Pug"),
+    ("puppet", "Puppet"),
+    ("pure", "Pure"),
+    ("python", "Python"),
+    ("q", "Q (kdb+ database)"),
+    ("qore", "Qore"),
+    ("r", "R"),
+    ("jsx", "React JSX"),
+    ("tsx", "React TSX"),
+    ("renpy", "Ren'py"),
+    ("reason", "Reason"),
+    ("regex", "Regex"),
+    ("rest", "reST (reStructuredText)"),
+    ("rip", "Rip"),
+    ("roboconf", "Roboconf"),
+    ("robot-framework", "Robot Framework"),
+    ("ruby", "Ruby"),
+    ("rust", "Rust"),
+    ("sas", "SAS"),
+    ("sass", "Sass (Sass)"),
+    ("scss", "Sass (Scss)"),
+    ("scala", "Scala"),
+    ("scheme", "Scheme"),
+    ("shell-session", "Shell Session"),
+    ("smalltalk", "Smalltalk"),
+    ("smarty", "Smarty"),
+    ("solidity", "Solidity (Ethereum)"),
+    ("sparql", "SPARQL"),
+    ("splunk-spl", "Splunk SPL"),
+    ("sqf", "SQF: Status Quo Function (Arma 3)"),
+    ("sql", "SQL"),
+    ("soy", "Soy (Closure Template)"),
+    ("stylus", "Stylus"),
+    ("swift", "Swift"),
+    ("tap", "TAP"),
+    ("tcl", "Tcl"),
+    ("textile", "Textile"),
+    ("toml", "TOML"),
+    ("tt2", "Template Toolkit 2"),
+    ("twig", "Twig"),
+    ("typescript", "TypeScript"),
+    ("t4-cs", "T4 Text Templates (C#)"),
+    ("t4-vb", "T4 Text Templates (VB)"),
+    ("t4-templating", "T4 templating"),
+    ("vala", "Vala"),
+    ("vbnet", "VB.Net"),
+    ("velocity", "Velocity"),
+    ("verilog", "Verilog"),
+    ("vhdl", "VHDL"),
+    ("vim", "vim"),
+    ("visual-basic", "Visual Basic"),
+    ("wasm", "WebAssembly"),
+    ("wiki", "Wiki markup"),
+    ("xeora", "Xeora + XeoraCube"),
+    ("xojo", "Xojo (REALbasic)"),
+    ("xquery", "XQuery"),
+    ("yaml", "YAML"),
+    ("zig", "Zig"),
 )
 
 

@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_airavata_auth', '0008_auto_20210422_1838'),
+        ("django_airavata_auth", "0008_auto_20210422_1838"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='emailverification',
-            name='next',
+            model_name="emailverification",
+            name="next",
             field=models.CharField(max_length=255, null=True),
         ),
     ]
