@@ -1,5 +1,5 @@
 # node image is based on Debian and includes necessary build tools
-FROM node:19.9.0 as build-stage
+FROM node:22-slim as build-stage
 
 # build api javascript
 # api must come first, then common, since the others depend on these
@@ -62,7 +62,7 @@ RUN yarn run build
 
 
 
-FROM python:3.10-slim as server-stage
+FROM python:3.12-slim as server-stage
 
 ENV PYTHONUNBUFFERED 1
 
@@ -71,7 +71,7 @@ EXPOSE 8000
 WORKDIR /code
 COPY requirements.txt requirements-mysql.txt ./
 COPY setup.* ./
-COPY README.md .
+COPY pyproject.toml README.md ./
 RUN apt-get update && apt-get install -y git gcc g++ zlib1g-dev libjpeg-dev default-libmysqlclient-dev
 RUN pip install --upgrade pip setuptools wheel --no-cache
 RUN pip install -r requirements.txt --no-cache
@@ -101,4 +101,3 @@ COPY --from=build-stage /code/django_airavata/apps/dataparsers/static/django_air
 WORKDIR /code
 
 ENTRYPOINT ["/code/scripts/start-server.sh"]
-
