@@ -20,6 +20,18 @@ from django_airavata.apps.api.views import (
 
 logger = logging.getLogger(__name__)
 
+# Map bundle names to Vite entry point paths
+ENTRY_POINTS = {
+    'experiment-list': 'static/django_airavata_workspace/js/entry-experiment-list.js',
+    'dashboard': 'static/django_airavata_workspace/js/entry-dashboard.js',
+    'project-list': 'static/django_airavata_workspace/js/entry-project-list.js',
+    'edit-project': 'static/django_airavata_workspace/js/entry-edit-project.js',
+    'create-experiment': 'static/django_airavata_workspace/js/entry-create-experiment.js',
+    'edit-experiment': 'static/django_airavata_workspace/js/entry-edit-experiment.js',
+    'view-experiment': 'static/django_airavata_workspace/js/entry-view-experiment.js',
+    'user-storage': 'static/django_airavata_workspace/js/entry-user-storage.js',
+}
+
 
 @login_required
 def experiments_list(request):
@@ -32,6 +44,7 @@ def experiments_list(request):
     experiments_json = JSONRenderer().render(response.data).decode('utf-8')
     return render(request, 'django_airavata_workspace/experiments_list.html', {
         'bundle_name': 'experiment-list',
+        'entry_point': ENTRY_POINTS['experiment-list'],
         'experiments_data': experiments_json
     })
 
@@ -41,6 +54,7 @@ def dashboard(request):
     request.active_nav_item = 'dashboard'
     return render(request, 'django_airavata_workspace/dashboard.html', {
         'bundle_name': 'dashboard',
+        'entry_point': ENTRY_POINTS['dashboard'],
         'sidebar': True,
     })
 
@@ -57,6 +71,7 @@ def projects_list(request):
 
     return render(request, 'django_airavata_workspace/projects_list.html', {
         'bundle_name': 'project-list',
+        'entry_point': ENTRY_POINTS['project-list'],
         'projects_data': projects_json
     })
 
@@ -67,6 +82,7 @@ def edit_project(request, project_id):
 
     return render(request, 'django_airavata_workspace/edit_project.html', {
         'bundle_name': 'edit-project',
+        'entry_point': ENTRY_POINTS['edit-project'],
         'project_id': project_id
     })
 
@@ -109,6 +125,7 @@ def create_experiment(request, app_module_id):
             user_input_values[name] = request.GET[name]
     context = {
         'bundle_name': 'create-experiment',
+        'entry_point': ENTRY_POINTS['create-experiment'],
         'app_module_id': app_module_id,
         'user_input_values': json.dumps(user_input_values)
     }
@@ -135,6 +152,7 @@ def edit_experiment(request, experiment_id):
     app_module_id = applicationInterface.applicationModules[0]
     context = {
         'bundle_name': 'edit-experiment',
+        'entry_point': ENTRY_POINTS['edit-experiment'],
         'experiment_id': experiment_id,
         'app_module_id': app_module_id,
     }
@@ -176,6 +194,7 @@ def view_experiment(request, experiment_id):
 
     return render(request, 'django_airavata_workspace/view_experiment.html', {
         'bundle_name': 'view-experiment',
+        'entry_point': ENTRY_POINTS['view-experiment'],
         'full_experiment_data': full_experiment_json,
         'launching': json.dumps(launching),
     })
@@ -185,5 +204,6 @@ def view_experiment(request, experiment_id):
 def user_storage(request):
     request.active_nav_item = 'storage'
     return render(request, 'django_airavata_workspace/base.html', {
-        'bundle_name': 'user-storage'
+        'bundle_name': 'user-storage',
+        'entry_point': ENTRY_POINTS['user-storage'],
     })

@@ -75,8 +75,8 @@ INSTALLED_APPS = [
     # wagtail custom apps
     'django_airavata.wagtailapps.base.apps.BaseConfig',
 
-    # django-webpack-loader
-    'webpack_loader',
+    # django-vite
+    'django_vite',
 
 ]
 
@@ -275,82 +275,48 @@ AUTHENTICATION_OPTIONS = {
 ACCESS_TOKEN_REDIRECT_ALLOWED_URIS = []
 
 
-# Webpack loader
-WEBPACK_LOADER = {
-    'COMMON': {
-        'BUNDLE_DIR_NAME': 'common/dist/',
-        'STATS_FILE': os.path.join(
-            BASE_DIR,
-            'django_airavata',
-            'static',
-            'common',
-            'dist',
-            'webpack-stats.json'),
-        'TIMEOUT': 60,
+# Django Vite
+DJANGO_VITE = {
+    "default": {
+        "dev_mode": DEBUG,
+        "dev_server_port": 9000,
+        "manifest_path": os.path.join(
+            BASE_DIR, 'django_airavata', 'static', 'common', 'dist', 'manifest.json'),
     },
-    'ADMIN': {
-        'BUNDLE_DIR_NAME': 'django_airavata_admin/dist/',
-        'STATS_FILE': os.path.join(
-            BASE_DIR,
-            'django_airavata',
-            'apps',
-            'admin',
-            'static',
-            'django_airavata_admin',
-            'dist',
-            'webpack-stats.json'),
-        'TIMEOUT': 60,
+    "ADMIN": {
+        "dev_mode": DEBUG,
+        "dev_server_port": 9000,
+        "manifest_path": os.path.join(
+            BASE_DIR, 'django_airavata', 'apps', 'admin', 'static',
+            'django_airavata_admin', 'dist', 'manifest.json'),
     },
-    'AUTH': {
-        'BUNDLE_DIR_NAME': 'django_airavata_auth/dist/',
-        'STATS_FILE': os.path.join(
-            BASE_DIR,
-            'django_airavata',
-            'apps',
-            'auth',
-            'static',
-            'django_airavata_auth',
-            'dist',
-            'webpack-stats.json'),
+    "AUTH": {
+        "dev_mode": DEBUG,
+        "dev_server_port": 9000,
+        "manifest_path": os.path.join(
+            BASE_DIR, 'django_airavata', 'apps', 'auth', 'static',
+            'django_airavata_auth', 'dist', 'manifest.json'),
     },
-    'DATAPARSERS': {
-        'BUNDLE_DIR_NAME': 'django_airavata_dataparsers/dist/',
-        'STATS_FILE': os.path.join(
-            BASE_DIR,
-            'django_airavata',
-            'apps',
-            'dataparsers',
-            'static',
-            'django_airavata_dataparsers',
-            'dist',
-            'webpack-stats.json'),
-        'TIMEOUT': 60,
+    "DATAPARSERS": {
+        "dev_mode": DEBUG,
+        "dev_server_port": 9000,
+        "manifest_path": os.path.join(
+            BASE_DIR, 'django_airavata', 'apps', 'dataparsers', 'static',
+            'django_airavata_dataparsers', 'dist', 'manifest.json'),
     },
-    'GROUPS': {
-        'BUNDLE_DIR_NAME': 'django_airavata_groups/dist/',
-        'STATS_FILE': os.path.join(
-            BASE_DIR,
-            'django_airavata',
-            'apps',
-            'groups',
-            'static',
-            'django_airavata_groups',
-            'dist',
-            'webpack-stats.json'),
-        'TIMEOUT': 60,
+    "GROUPS": {
+        "dev_mode": DEBUG,
+        "dev_server_port": 9000,
+        "manifest_path": os.path.join(
+            BASE_DIR, 'django_airavata', 'apps', 'groups', 'static',
+            'django_airavata_groups', 'dist', 'manifest.json'),
     },
-    'WORKSPACE': {
-        'BUNDLE_DIR_NAME': 'django_airavata_workspace/dist/',
-        'STATS_FILE': os.path.join(
-            BASE_DIR,
-            'django_airavata',
-            'apps',
-            'workspace',
-            'static',
-            'django_airavata_workspace',
-            'dist',
-            'webpack-stats.json'),
-        'TIMEOUT': 60,
+    "WORKSPACE": {
+        "dev_mode": DEBUG,
+        "dev_server_port": 9000,
+        "manifest_path": os.path.join(
+            BASE_DIR, 'django_airavata', 'apps', 'workspace', 'static',
+            'django_airavata_workspace', 'dist', 'manifest.json'),
     },
 }
 
@@ -631,6 +597,6 @@ except ImportError:
 #
 _load_dynamic_apps(INSTALLED_APPS, "airavata.djangoapp")
 
-# Merge WEBPACK_LOADER settings from custom Django apps
+# Merge DJANGO_VITE settings from custom Django apps
 settings_module = sys.modules[__name__]
 _merge_dynamic_settings(settings_module)

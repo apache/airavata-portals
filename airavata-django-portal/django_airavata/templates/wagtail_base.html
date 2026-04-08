@@ -1,5 +1,5 @@
 {% load navigation_tags static wagtailuserbar %}
-{% load render_bundle from webpack_loader %}
+{% load django_vite %}
 
 {% block head %}
     {% include "includes/head.html" %}
@@ -18,8 +18,7 @@
     {% endblock content %}
   </content>
 
-  {% render_bundle 'chunk-vendors' 'js' 'COMMON' %}
-  {% render_bundle 'cms' 'js' 'COMMON' %}
+  {% vite_asset "js/cms.js" app="default" %}
 </body>
 
 </html>

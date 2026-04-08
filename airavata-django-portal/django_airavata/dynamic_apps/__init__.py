@@ -42,12 +42,12 @@ def merge_settings(settings_module):
         elif hasattr(custom_django_app, "settings"):
             # This approach is deprecated, use 'merge_settings' instead
             # Merge settings from custom Django apps
-            # NOTE: only handles WEBPACK_LOADER additions
+            # NOTE: only handles DJANGO_VITE additions
             print(
                 f"{type(custom_django_app).__name__}.settings attr is deprecated, use merge_settings instead"
             )
             s = custom_django_app.settings
             merge_setting_dict(
-                getattr(settings_module, "WEBPACK_LOADER"),
-                getattr(s, "WEBPACK_LOADER", {}),
+                getattr(settings_module, "DJANGO_VITE"),
+                getattr(s, "DJANGO_VITE", {}),
             )
