@@ -1,0 +1,52 @@
+<template>
+  <div>
+    <breadcrumb-nav :crumbs="breadcrumbs" />
+
+    <div class="row align-items-center mb-3">
+      <div class="col">
+        <h1 class="h4 mb-0">Datasets</h1>
+        <p class="text-muted mb-0">Manage and share research datasets.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="4">
+                <div class="table-empty">
+                  <i class="fa fa-database table-empty__icon"></i>
+                  <div class="table-empty__title">No datasets yet</div>
+                  <div class="table-empty__text">Datasets will appear here once created.</div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { components as comps } from "django-airavata-common-ui";
+
+export default {
+  name: "datasets-container",
+  props: {
+    projectId: { type: String, default: null },
+    breadcrumbs: { type: Array, default: () => [] },
+  },
+  components: {
+    "breadcrumb-nav": comps.BreadcrumbNav,
+  },
+};
+</script>
