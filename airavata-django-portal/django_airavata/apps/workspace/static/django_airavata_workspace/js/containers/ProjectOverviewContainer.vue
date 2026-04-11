@@ -11,6 +11,9 @@
         <a :href="editProjectUrl" class="btn btn-outline-secondary btn-sm">
           <i class="fa fa-cog me-1"></i>Settings
         </a>
+        <button class="btn btn-outline-danger btn-sm ms-2" @click="showDeleteModal">
+          <i class="fa fa-trash me-1"></i>Delete
+        </button>
       </div>
     </div>
 
@@ -86,6 +89,13 @@
         </div>
       </div>
     </div>
+    <project-delete-modal
+      v-if="project"
+      ref="deleteModal"
+      :projectId="projectId"
+      :projectName="project.name"
+      @delete="deleteProject"
+    />
   </div>
 </template>
 
@@ -93,6 +103,7 @@
 import { services } from "django-airavata-api";
 import { components as comps } from "django-airavata-common-ui";
 import moment from "moment";
+import ProjectDeleteModal from "../components/project/ProjectDeleteModal.vue";
 
 export default {
   name: "project-overview-container",
@@ -104,6 +115,7 @@ export default {
   components: {
     "breadcrumb-nav": comps.BreadcrumbNav,
     "experiment-status-badge": comps.ExperimentStatusBadge,
+    "project-delete-modal": ProjectDeleteModal,
   },
   data() {
     return {
@@ -135,6 +147,17 @@ export default {
   methods: {
     viewExperimentUrl(experiment) {
       return `/workspace/projects/${encodeURIComponent(this.projectId)}/experiments/${encodeURIComponent(experiment.experimentId)}/`;
+    },
+    showDeleteModal() {
+      this.$refs.deleteModal.show();
+    },
+    async deleteProject(projectId) {
+      try {
+        await services.ProjectService.delete({ lookup: projectId });
+        window.location.assign("/workspace/");
+      } catch (err) {
+        console.error("Failed to delete project:", err);
+      }
     },
     async loadProject() {
       try {

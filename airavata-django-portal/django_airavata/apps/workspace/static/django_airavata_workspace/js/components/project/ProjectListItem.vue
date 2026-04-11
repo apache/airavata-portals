@@ -7,6 +7,9 @@
       <a :href="editLink" v-if="project.userHasWriteAccess" class="action-link">
         Edit <i class="fa fa-edit" aria-hidden="true"></i>
       </a>
+      <a href="#" v-if="project.isOwner" class="action-link text-danger ms-2" @click.prevent="$emit('delete', project)">
+        Delete <i class="fa fa-trash" aria-hidden="true"></i>
+      </a>
     </td>
   </tr>
 </template>
