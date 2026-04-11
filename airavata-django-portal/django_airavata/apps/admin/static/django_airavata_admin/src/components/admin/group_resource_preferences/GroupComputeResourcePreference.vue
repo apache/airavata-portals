@@ -185,7 +185,7 @@ export default {
         services.GroupResourceProfileService.retrieve({ lookup: this.id }).then(
           (grp) => {
             this.data = grp;
-            this.userHasWriteAccess = this.data.user_has_write_access;
+            this.user_has_write_access = this.data.user_has_write_access;
           }
         );
       }
@@ -196,7 +196,7 @@ export default {
         this.sharedEntity = sharedEntity;
       });
     } else {
-      this.userHasWriteAccess = true;
+      this.user_has_write_access = true;
     }
   },
   data: function () {
@@ -205,7 +205,7 @@ export default {
       data: data,
       service: services.GroupResourceProfileService,
       sharedEntity: null,
-      userHasWriteAccess: data.userHasWriteAccess,
+      userHasWriteAccess: data.user_has_write_access,
       computePreferencesFields: [
         {
           label: "Name",
@@ -267,13 +267,13 @@ export default {
         : null;
     },
     ownerUserId() {
-      return this.owner ? this.owner.userId : null;
+      return this.owner ? this.owner.user_id : null;
     },
     ownerTitle() {
       return this.owner
-        ? this.owner.firstName +
+        ? this.owner.first_name +
             " " +
-            this.owner.lastName +
+            this.owner.last_name +
             " (" +
             this.owner.email +
             ")"

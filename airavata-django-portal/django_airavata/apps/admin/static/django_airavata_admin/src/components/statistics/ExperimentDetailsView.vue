@@ -88,7 +88,7 @@
                   <td>{{ jobDetail.jobId }}</td>
                   <td>{{ jobDetail.jobStatusStateName }}</td>
                   <td>
-                    <span :title="jobDetail.creationTime.toString()">{{
+                    <span :title="jobDetail.creation_time.toString()">{{
                       jobCreationTimes[index]
                     }}</span>
                   </td>
@@ -141,7 +141,7 @@
         <tr>
           <th scope="row">Creation Time</th>
           <td>
-            <span :title="experiment.creationTime.toString()">{{
+            <span :title="experiment.creation_time.toString()">{{
               creationTime
             }}</span>
           </td>
@@ -425,7 +425,7 @@ export default {
       return result;
     },
     creationTime: function () {
-      return moment(this.fullExperiment.experiment.creationTime).fromNow();
+      return moment(this.fullExperiment.experiment.creation_time).fromNow();
     },
     lastModifiedTime: function () {
       return moment(
@@ -434,7 +434,7 @@ export default {
     },
     jobCreationTimes: function () {
       return this.fullExperiment.jobDetails.map((jobDetail) =>
-        moment(jobDetail.creationTime).fromNow()
+        moment(jobDetail.creation_time).fromNow()
       );
     },
     failedJobs() {

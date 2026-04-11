@@ -247,13 +247,13 @@ export default {
         : null;
     },
     ownerUserId() {
-      return this.owner ? this.owner.userId : null;
+      return this.owner ? this.owner.user_id : null;
     },
     ownerTitle() {
       return this.owner
-        ? this.owner.firstName +
+        ? this.owner.first_name +
             " " +
-            this.owner.lastName +
+            this.owner.last_name +
             " (" +
             this.owner.email +
             ")"

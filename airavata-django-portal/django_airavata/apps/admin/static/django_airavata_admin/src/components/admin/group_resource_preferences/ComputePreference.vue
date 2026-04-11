@@ -261,13 +261,13 @@ export default {
   mounted: function () {
     const computeResourcePromise = this.fetchComputeResource(this.host_id);
     if (this.localGroupResourceProfile) {
-      this.userHasWriteAccess = this.localGroupResourceProfile.user_has_write_access;
+      this.user_has_write_access = this.localGroupResourceProfile.user_has_write_access;
     }
     if (!this.value && this.id && this.host_id) {
       services.GroupResourceProfileService.retrieve({lookup: this.id}).then(
         (groupResourceProfile) => {
           this.localGroupResourceProfile = groupResourceProfile;
-          this.userHasWriteAccess = this.localGroupResourceProfile.user_has_write_access;
+          this.user_has_write_access = this.localGroupResourceProfile.user_has_write_access;
           const computeResourcePreference = groupResourceProfile.getComputePreference(
             this.host_id
           );
@@ -291,7 +291,7 @@ export default {
       this.createDefaultComputeResourcePolicy(computeResourcePromise);
     }
     if (!this.id) {
-      this.userHasWriteAccess = true;
+      this.user_has_write_access = true;
     }
     this.$on("input", this.validate);
 

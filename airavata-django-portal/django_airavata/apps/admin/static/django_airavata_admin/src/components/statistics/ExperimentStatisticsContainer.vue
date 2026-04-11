@@ -248,7 +248,7 @@
                     <tr v-for="item in items" :key="item.experimentId">
                       <td><application-name :application-interface-id="item.executionId" /></td>
                       <td><compute-resource-name :compute-resource-id="item.resourceHostId" /></td>
-                      <td><human-date :date="item.creationTime" /></td>
+                      <td><human-date :date="item.creation_time" /></td>
                       <td><experiment-status-badge :status-name="item.experimentStatus.name" /></td>
                       <td>
                         <a @click="showExperimentDetails(item.experimentId)">

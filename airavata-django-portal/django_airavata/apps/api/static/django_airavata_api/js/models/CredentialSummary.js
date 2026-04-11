@@ -6,16 +6,16 @@ const FIELDS = [
     name: "type",
     type: SummaryType,
   },
-  "gatewayId",
+  "gateway_id",
   "username",
-  "publicKey",
+  "public_key",
   {
-    name: "persistedTime",
+    name: "persisted_time",
     type: Date,
   },
   "token",
   "description",
-  "userHasWriteAccess",
+  "user_has_write_access",
 ];
 
 export default class CredentialSummary extends BaseModel {

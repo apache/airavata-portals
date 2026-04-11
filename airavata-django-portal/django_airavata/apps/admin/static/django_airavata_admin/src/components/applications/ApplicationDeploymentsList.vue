@@ -18,7 +18,7 @@
           <template slot="cell(action)" slot-scope="data">
             <router-link
               class="action-link"
-              v-if="!data.item.userHasWriteAccess"
+              v-if="!data.item.user_has_write_access"
               :to="{
                 name: 'application_deployment',
                 params: {
@@ -33,7 +33,7 @@
             </router-link>
             <router-link
               class="action-link"
-              v-if="data.item.userHasWriteAccess && data.item.appDeploymentId"
+              v-if="data.item.user_has_write_access && data.item.appDeploymentId"
               :to="{
                 name: 'application_deployment',
                 params: {
@@ -48,7 +48,7 @@
             </router-link>
             <router-link
               class="action-link"
-              v-if="data.item.userHasWriteAccess && !data.item.appDeploymentId"
+              v-if="data.item.user_has_write_access && !data.item.appDeploymentId"
               :to="{
                 name: 'new_application_deployment',
                 params: {
@@ -62,7 +62,7 @@
               <i class="fa fa-edit" aria-hidden="true"></i>
             </router-link>
             <delete-link
-              v-if="data.item.userHasWriteAccess"
+              v-if="data.item.user_has_write_access"
               @delete="removeApplicationDeployment(data.item)"
               class="action-link"
             >
