@@ -4,6 +4,7 @@ import { resolve } from "path";
 
 export default defineConfig({
   plugins: [vue()],
+  base: "/static/django_airavata_workspace/dist/",
   build: {
     manifest: "manifest.json",
     outDir: resolve(__dirname, "./static/django_airavata_workspace/dist"),
@@ -13,9 +14,9 @@ export default defineConfig({
           __dirname,
           "./static/django_airavata_workspace/js/entry-project-list.js"
         ),
-        dashboard: resolve(
+        applications: resolve(
           __dirname,
-          "./static/django_airavata_workspace/js/entry-dashboard.js"
+          "./static/django_airavata_workspace/js/entry-applications.js"
         ),
         "create-experiment": resolve(
           __dirname,
@@ -41,6 +42,34 @@ export default defineConfig({
           __dirname,
           "./static/django_airavata_workspace/js/entry-user-storage.js"
         ),
+        compute: resolve(
+          __dirname,
+          "./static/django_airavata_workspace/js/entry-compute.js"
+        ),
+        datasets: resolve(
+          __dirname,
+          "./static/django_airavata_workspace/js/entry-datasets.js"
+        ),
+        credentials: resolve(
+          __dirname,
+          "./static/django_airavata_workspace/js/entry-credentials.js"
+        ),
+        "gateway-settings": resolve(
+          __dirname,
+          "./static/django_airavata_workspace/js/entry-gateway-settings.js"
+        ),
+        "storage-detail": resolve(
+          __dirname,
+          "./static/django_airavata_workspace/js/entry-storage-detail.js"
+        ),
+        "compute-detail": resolve(
+          __dirname,
+          "./static/django_airavata_workspace/js/entry-compute-detail.js"
+        ),
+        "project-overview": resolve(
+          __dirname,
+          "./static/django_airavata_workspace/js/entry-project-overview.js"
+        ),
       },
     },
   },
@@ -52,6 +81,7 @@ export default defineConfig({
     },
   },
   resolve: {
+    extensions: [".vue", ".js", ".json"],
     alias: {
       "@": resolve(__dirname, "./static/django_airavata_workspace/js"),
     },
