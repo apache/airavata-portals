@@ -13,11 +13,10 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.decorators.gzip import gzip_page
-from rest_framework import mixins, pagination, status
+from rest_framework import pagination, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ParseError
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.renderers import JSONRenderer
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -30,11 +29,7 @@ from django_airavata.apps.admin.models import UserDataArchiveEntry
 from django_airavata.apps.api import user_storage
 from django_airavata.apps.api.proto_helpers import proto_to_dict, proto_list_to_dicts, dict_to_proto
 from django_airavata.apps.api.view_utils import (
-    APIBackedViewSet,
-    APIResultIterator,
-    APIResultPagination,
     DataProductSharedDirPermission,
-    GenericAPIBackedViewSet,
     IsInAdminsGroupPermission,
     UserStorageSharedDirPermission,
 )
@@ -46,7 +41,7 @@ from django_airavata.proto_compat import (
     SummaryType,
 )
 
-from . import exceptions, helpers, models, output_views, serializers, signals, tus, view_utils
+from . import exceptions, helpers, models, output_views, signals, tus, view_utils
 from . import queue_settings as queue_settings_calculators
 
 READ_PERMISSION_TYPE = "{}:READ"
@@ -1774,13 +1769,20 @@ class ExperimentStoragePathView(APIView):
 
 
 class WorkspacePreferencesView(APIView):
-    serializer_class = serializers.WorkspacePreferencesSerializer
-
     def get(self, request: Request, format: str | None = None) -> Response:
         helper = helpers.WorkspacePreferencesHelper()
-        workspace_preferences = helper.get(request)
-        serializer = self.serializer_class(workspace_preferences, context={"request": request})
-        return Response(serializer.data)
+        wp = helper.get(request)
+        data = {
+            "most_recent_project_id": wp.most_recent_project_id,
+            "most_recent_group_resource_profile_id": wp.most_recent_group_resource_profile_id,
+            "most_recent_compute_resource_id": wp.most_recent_compute_resource_id,
+            "default_project_created": wp.default_project_created,
+            "application_preferences": [
+                {"application_id": ap.application_id, "favorite": ap.favorite}
+                for ap in wp.applicationpreferences_set.all()
+            ],
+        }
+        return Response(data)
 
 
 class ManageNotificationViewSet(viewsets.ViewSet):
@@ -2084,36 +2086,32 @@ class UnverifiedEmailUserViewSet(viewsets.ViewSet):
 
 
 class LogRecordConsumer(APIView):
-    serializer_class = serializers.LogRecordSerializer
-
     def post(self, request: Request, format: str | None = None) -> Response:
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        log_record = serializer.validated_data
-        log_level = getattr(logging, log_record["level"], None)
+        data = request.data
+        level = data.get("level", "")
+        message = data.get("message", "")
+        details = data.get("details", {})
+        stacktrace = data.get("stacktrace", [])
+        log_level = getattr(logging, level, None)
         if log_level is not None:
-            stacktrace = "".join(map(lambda a: "\n    " + a, log_record["stacktrace"]))
+            stacktrace_str = "".join(map(lambda a: "\n    " + a, stacktrace))
             log.log(
                 log_level,
                 "Frontend error: {}: {}\nstacktrace: {}".format(
-                    log_record["message"], json.dumps(log_record["details"], indent=4), stacktrace
+                    message, json.dumps(details, indent=4), stacktrace_str
                 ),
                 extra={"request": request},
             )
-        return Response(serializer.data)
+        return Response({"level": level, "message": message, "details": details, "stacktrace": stacktrace})
 
 
 class SettingsAPIView(APIView):
-    serializer_class = serializers.SettingsSerializer
-
     def get(self, request: Request, format: str | None = None) -> Response:
-        data = {
-            "fileUploadMaxFileSize": settings.FILE_UPLOAD_MAX_FILE_SIZE,
-            "tusEndpoint": settings.TUS_ENDPOINT,
-            "pgaUrl": settings.PGA_URL,
-        }
-        serializer = self.serializer_class(data, context={"request": request})
-        return Response(serializer.data)
+        return Response({
+            "file_upload_max_file_size": settings.FILE_UPLOAD_MAX_FILE_SIZE,
+            "tus_endpoint": settings.TUS_ENDPOINT,
+            "pga_url": settings.PGA_URL,
+        })
 
 
 class APIServerStatusCheckView(APIView):
@@ -2173,26 +2171,26 @@ def _generate_output_view_data(request: Request) -> dict[str, Any]:
     )
 
 
-class QueueSettingsCalculatorViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericAPIBackedViewSet):
-    serializer_class = serializers.QueueSettingsCalculatorSerializer
-
-    def get_list(self) -> list[Any]:
-        return queue_settings_calculators.get_all()
-
-    def get_instance(self, lookup_value: str) -> Any:
+class QueueSettingsCalculatorViewSet(viewsets.ViewSet):
+    def list(self, request: Request) -> Response:
         calcs = queue_settings_calculators.get_all()
-        calc = [calc for calc in calcs if calc.id == lookup_value]
-        if len(calc) == 0:
-            return None
-        return calc[0]
+        return Response([{"id": c.id, "name": c.name} for c in calcs])
 
-    @action(methods=["post"], detail=True, serializer_class=serializers.ExperimentSerializer)
+    def retrieve(self, request: Request, pk: str | None = None) -> Response:
+        calcs = queue_settings_calculators.get_all()
+        matched = [c for c in calcs if c.id == pk]
+        if not matched:
+            raise Http404
+        c = matched[0]
+        return Response({"id": c.id, "name": c.name})
+
+    @action(methods=["post"], detail=True)
     def calculate(self, request: Request, pk: str | None = None) -> Response:
-
-        serializer = self.get_serializer(data=request.data)
         result = {}
-        # Just ignore invalid experiment model since likely caused by late initialization
-        if serializer.is_valid():
-            experiment_model = serializer.save()
+        try:
+            experiment_model = dict_to_proto(request.data, ExperimentModelProto)
             result = queue_settings_calculators.calculate_queue_settings(pk, request, experiment_model)
+        except Exception:
+            # Just ignore invalid experiment model since likely caused by late initialization
+            log.debug("Failed to parse experiment model for queue settings calculation", exc_info=True)
         return Response(result)
