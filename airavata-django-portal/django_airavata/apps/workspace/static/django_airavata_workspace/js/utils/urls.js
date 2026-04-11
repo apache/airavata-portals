@@ -1,31 +1,35 @@
 export default {
-  editExperiment(experiment) {
+  editExperiment(projectId, experiment) {
     return (
-      "/workspace/experiments/" +
+      "/workspace/projects/" +
+      encodeURIComponent(projectId) +
+      "/experiments/" +
       encodeURIComponent(experiment.experimentId) +
       "/edit"
     );
   },
-  navigateToEditExperiment(experiment) {
-    window.location.assign(this.editExperiment(experiment));
+  navigateToEditExperiment(projectId, experiment) {
+    window.location.assign(this.editExperiment(projectId, experiment));
   },
-  experimentsList() {
-    return "/workspace/experiments";
+  experimentsList(projectId) {
+    return "/workspace/projects/" + encodeURIComponent(projectId) + "/experiments";
   },
-  navigateToExperimentsList() {
-    window.location.assign(this.experimentsList());
+  navigateToExperimentsList(projectId) {
+    window.location.assign(this.experimentsList(projectId));
   },
-  viewExperiment(experiment, { launching = false } = {}) {
+  viewExperiment(projectId, experiment, { launching = false } = {}) {
     return (
-      "/workspace/experiments/" +
+      "/workspace/projects/" +
+      encodeURIComponent(projectId) +
+      "/experiments/" +
       encodeURIComponent(experiment.experimentId) +
       "/" +
       (launching ? "?launching=true" : "")
     );
   },
-  navigateToViewExperiment(experiment, { launching = false } = {}) {
+  navigateToViewExperiment(projectId, experiment, { launching = false } = {}) {
     window.location.assign(
-      this.viewExperiment(experiment, { launching: launching })
+      this.viewExperiment(projectId, experiment, { launching })
     );
   },
   createExperiment(appModule) {
@@ -38,18 +42,22 @@ export default {
   navigateToCreateExperiment(appModule) {
     window.location.assign(this.createExperiment(appModule));
   },
-  editProject(project) {
+  projectOverview(project) {
     return "/workspace/projects/" + encodeURIComponent(project.projectID) + "/";
   },
+  navigateToProjectOverview(project) {
+    window.location.assign(this.projectOverview(project));
+  },
+  editProject(project) {
+    return "/workspace/projects/" + encodeURIComponent(project.projectID) + "/edit";
+  },
   projectsList() {
-    return "/workspace/projects";
+    return "/workspace/";
   },
   navigateToProjectsList() {
     window.location.assign(this.projectsList());
   },
-  viewGroupResourceProfile(groupResourceProfile) {
-    return `/admin/group-resource-profiles/${encodeURIComponent(
-      groupResourceProfile.groupResourceProfileId
-    )}`;
+  datasetsList(projectId) {
+    return "/workspace/projects/" + encodeURIComponent(projectId) + "/datasets";
   },
 };
