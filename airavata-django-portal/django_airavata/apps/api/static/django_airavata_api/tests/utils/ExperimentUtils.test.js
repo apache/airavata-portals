@@ -27,12 +27,12 @@ test("error thrown when no applicationName given", async () => {
 test("error thrown with applicationName doesn't match any interfaces", async () => {
   services.ApplicationInterfaceService.list.mockResolvedValue([
     new ApplicationInterfaceDefinition({
-      applicationName: "Foo",
-      applicationModules: ["Foo_module1"],
+      application_name: "Foo",
+      application_modules: ["Foo_module1"],
     }),
     new ApplicationInterfaceDefinition({
-      applicationName: "Bar",
-      applicationModules: ["bar_module1"],
+      application_name: "Bar",
+      application_modules: ["bar_module1"],
     }),
   ]);
   try {
@@ -49,8 +49,8 @@ test("error thrown with applicationName doesn't match any interfaces", async () 
 test("verify if applicationId and applicationName are given, applicationInterface is loaded with applicationId", async () => {
   services.ApplicationModuleService.getApplicationInterface.mockResolvedValue(
     new ApplicationInterfaceDefinition({
-      applicationName: "Foo",
-      applicationModules: ["Foo_module1"],
+      application_name: "Foo",
+      application_modules: ["Foo_module1"],
     })
   );
   try {
@@ -72,9 +72,9 @@ test("verify if applicationId and applicationName are given, applicationInterfac
 test("verify if applicationInterfaceId and applicationId and applicationName are given, applicationInterface is loaded with applicationId", async () => {
   services.ApplicationInterfaceService.retrieve.mockResolvedValue(
     new ApplicationInterfaceDefinition({
-      applicationInterfaceId: "Foo_interface1",
-      applicationName: "Foo",
-      applicationModules: ["Foo_module1"],
+      application_interface_id: "Foo_interface1",
+      application_name: "Foo",
+      application_modules: ["Foo_module1"],
     })
   );
   try {
@@ -98,12 +98,12 @@ test("verify if applicationInterfaceId and applicationId and applicationName are
 test("error thrown when no computeResourceName given", async () => {
   services.ApplicationInterfaceService.list.mockResolvedValue([
     new ApplicationInterfaceDefinition({
-      applicationName: "test",
-      applicationModules: ["test_module1"],
+      application_name: "test",
+      application_modules: ["test_module1"],
     }),
     new ApplicationInterfaceDefinition({
-      applicationName: "Bar",
-      applicationModules: ["bar_module1"],
+      application_name: "Bar",
+      application_modules: ["bar_module1"],
     }),
   ]);
   try {
@@ -118,12 +118,12 @@ test("error thrown when no computeResourceName given", async () => {
 test("error thrown when computeResourceName doesn't match any compute resources", async () => {
   services.ApplicationInterfaceService.list.mockResolvedValue([
     new ApplicationInterfaceDefinition({
-      applicationName: "test",
-      applicationModules: ["test_module1"],
+      application_name: "test",
+      application_modules: ["test_module1"],
     }),
     new ApplicationInterfaceDefinition({
-      applicationName: "Bar",
-      applicationModules: ["bar_module1"],
+      application_name: "Bar",
+      application_modules: ["bar_module1"],
     }),
   ]);
   services.ComputeResourceService.names.mockResolvedValue({
@@ -147,12 +147,12 @@ test("error thrown when computeResourceName doesn't match any compute resources"
 test("error thrown when no GRP found for compute resource", async () => {
   services.ApplicationInterfaceService.list.mockResolvedValue([
     new ApplicationInterfaceDefinition({
-      applicationName: "test",
-      applicationModules: ["test_module1"],
+      application_name: "test",
+      application_modules: ["test_module1"],
     }),
     new ApplicationInterfaceDefinition({
-      applicationName: "Bar",
-      applicationModules: ["bar_module1"],
+      application_name: "Bar",
+      application_modules: ["bar_module1"],
     }),
   ]);
   services.ComputeResourceService.names.mockResolvedValue({
@@ -178,12 +178,12 @@ test("error thrown when no GRP found for compute resource", async () => {
 test("error thrown when no deployment found for compute resource", async () => {
   services.ApplicationInterfaceService.list.mockResolvedValue([
     new ApplicationInterfaceDefinition({
-      applicationName: "test",
-      applicationModules: ["test_module1"],
+      application_name: "test",
+      application_modules: ["test_module1"],
     }),
     new ApplicationInterfaceDefinition({
-      applicationName: "Bar",
-      applicationModules: ["bar_module1"],
+      application_name: "Bar",
+      application_modules: ["bar_module1"],
     }),
   ]);
   services.ComputeResourceService.names.mockResolvedValue({
@@ -192,10 +192,10 @@ test("error thrown when no deployment found for compute resource", async () => {
   });
   services.GroupResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
-      groupResourceProfileId: "groupResourceProfileId1",
+      group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [
         {
-          computeResourceId: "compute1.resource.org_id1",
+          compute_resource_id: "compute1.resource.org_id1",
         },
       ],
     }),
@@ -210,8 +210,8 @@ test("error thrown when no deployment found for compute resource", async () => {
     });
   } catch (e) {
     expect(services.ApplicationDeploymentService.list).toHaveBeenCalledWith({
-      appModuleId: "test_module1",
-      groupResourceProfileId: "groupResourceProfileId1",
+      app_module_id: "test_module1",
+      group_resource_profile_id: "groupResourceProfileId1",
     });
     expect(e).toBeInstanceOf(Error);
     expect(e.message).toEqual(
@@ -223,12 +223,12 @@ test("error thrown when no deployment found for compute resource", async () => {
 test("verify that default queue values are used in computationalResourceScheduling", async () => {
   services.ApplicationInterfaceService.list.mockResolvedValue([
     new ApplicationInterfaceDefinition({
-      applicationName: "test",
-      applicationModules: ["test_module1"],
+      application_name: "test",
+      application_modules: ["test_module1"],
     }),
     new ApplicationInterfaceDefinition({
-      applicationName: "Bar",
-      applicationModules: ["bar_module1"],
+      application_name: "Bar",
+      application_modules: ["bar_module1"],
     }),
   ]);
   services.ComputeResourceService.names.mockResolvedValue({
@@ -237,18 +237,18 @@ test("verify that default queue values are used in computationalResourceScheduli
   });
   services.GroupResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
-      groupResourceProfileId: "groupResourceProfileId1",
+      group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [
         {
-          computeResourceId: "compute1.resource.org_id1",
+          compute_resource_id: "compute1.resource.org_id1",
         },
       ],
     }),
   ]);
   services.ApplicationDeploymentService.list.mockResolvedValue([
     new ApplicationDeploymentDescription({
-      appDeploymentId: "appDeploymentId1",
-      computeHostId: "compute1.resource.org_id1",
+      app_deployment_id: "appDeploymentId1",
+      compute_host_id: "compute1.resource.org_id1",
     }),
   ]);
   services.ApplicationDeploymentService.getQueues.mockResolvedValue([
@@ -275,30 +275,30 @@ test("verify that default queue values are used in computationalResourceScheduli
     computeResourceName: "compute1.resource.org",
   });
   expect(
-    experiment.userConfigurationData.computationalResourceScheduling
-      .resourceHostId
+    experiment.user_configuration_data.computational_resource_scheduling
+      .resource_host_id
   ).toBe("compute1.resource.org_id1");
   expect(
-    experiment.userConfigurationData.computationalResourceScheduling
-      .totalCPUCount
+    experiment.user_configuration_data.computational_resource_scheduling
+      .total_cpu_count
   ).toBe(20);
   expect(
-    experiment.userConfigurationData.computationalResourceScheduling.nodeCount
+    experiment.user_configuration_data.computational_resource_scheduling.node_count
   ).toBe(21);
   expect(
-    experiment.userConfigurationData.computationalResourceScheduling
-      .wallTimeLimit
+    experiment.user_configuration_data.computational_resource_scheduling
+      .wall_time_limit
   ).toBe(22);
   expect(
-    experiment.userConfigurationData.computationalResourceScheduling.queueName
+    experiment.user_configuration_data.computational_resource_scheduling.queue_name
   ).toBe("queue2");
 });
 
 test("verify that experiment name is the given name", async () => {
   services.ApplicationInterfaceService.list.mockResolvedValue([
     new ApplicationInterfaceDefinition({
-      applicationName: "test",
-      applicationModules: ["test_module1"],
+      application_name: "test",
+      application_modules: ["test_module1"],
     }),
   ]);
   services.ComputeResourceService.names.mockResolvedValue({
@@ -306,18 +306,18 @@ test("verify that experiment name is the given name", async () => {
   });
   services.GroupResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
-      groupResourceProfileId: "groupResourceProfileId1",
+      group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [
         {
-          computeResourceId: "compute1.resource.org_id1",
+          compute_resource_id: "compute1.resource.org_id1",
         },
       ],
     }),
   ]);
   services.ApplicationDeploymentService.list.mockResolvedValue([
     new ApplicationDeploymentDescription({
-      appDeploymentId: "appDeploymentId1",
-      computeHostId: "compute1.resource.org_id1",
+      app_deployment_id: "appDeploymentId1",
+      compute_host_id: "compute1.resource.org_id1",
     }),
   ]);
   services.ApplicationDeploymentService.getQueues.mockResolvedValue([
@@ -337,14 +337,14 @@ test("verify that experiment name is the given name", async () => {
     applicationName: "test",
     computeResourceName: "compute1.resource.org",
   });
-  expect(experiment.experimentName).toBe("My Experiment");
+  expect(experiment.experiment_name).toBe("My Experiment");
 });
 
 test("verify that if no experiment name is given, name is based on experiment name", async () => {
   services.ApplicationInterfaceService.list.mockResolvedValue([
     new ApplicationInterfaceDefinition({
-      applicationName: "test",
-      applicationModules: ["test_module1"],
+      application_name: "test",
+      application_modules: ["test_module1"],
     }),
   ]);
   services.ComputeResourceService.names.mockResolvedValue({
@@ -352,18 +352,18 @@ test("verify that if no experiment name is given, name is based on experiment na
   });
   services.GroupResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
-      groupResourceProfileId: "groupResourceProfileId1",
+      group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [
         {
-          computeResourceId: "compute1.resource.org_id1",
+          compute_resource_id: "compute1.resource.org_id1",
         },
       ],
     }),
   ]);
   services.ApplicationDeploymentService.list.mockResolvedValue([
     new ApplicationDeploymentDescription({
-      appDeploymentId: "appDeploymentId1",
-      computeHostId: "compute1.resource.org_id1",
+      app_deployment_id: "appDeploymentId1",
+      compute_host_id: "compute1.resource.org_id1",
     }),
   ]);
   services.ApplicationDeploymentService.getQueues.mockResolvedValue([
@@ -387,14 +387,14 @@ test("verify that if no experiment name is given, name is based on experiment na
     dateStyle: "medium",
     timeStyle: "short",
   });
-  expect(experiment.experimentName).toBe(`test on ${dateString}`);
+  expect(experiment.experiment_name).toBe(`test on ${dateString}`);
 });
 
 test("verify that application inputs and outputs are cloned on experiment", async () => {
   services.ApplicationInterfaceService.list.mockResolvedValue([
     new ApplicationInterfaceDefinition({
-      applicationName: "test",
-      applicationModules: ["test_module1"],
+      application_name: "test",
+      application_modules: ["test_module1"],
       applicationInputs: [
         {
           name: "appInput1",
@@ -418,18 +418,18 @@ test("verify that application inputs and outputs are cloned on experiment", asyn
   });
   services.GroupResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
-      groupResourceProfileId: "groupResourceProfileId1",
+      group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [
         {
-          computeResourceId: "compute1.resource.org_id1",
+          compute_resource_id: "compute1.resource.org_id1",
         },
       ],
     }),
   ]);
   services.ApplicationDeploymentService.list.mockResolvedValue([
     new ApplicationDeploymentDescription({
-      appDeploymentId: "appDeploymentId1",
-      computeHostId: "compute1.resource.org_id1",
+      app_deployment_id: "appDeploymentId1",
+      compute_host_id: "compute1.resource.org_id1",
     }),
   ]);
   services.ApplicationDeploymentService.getQueues.mockResolvedValue([
@@ -449,26 +449,26 @@ test("verify that application inputs and outputs are cloned on experiment", asyn
     computeResourceName: "compute1.resource.org",
   });
   expect(
-    experiment.experimentInputs.find((i) => i.name === "appInput1")
+    experiment.experiment_inputs.find((i) => i.name === "appInput1")
   ).toBeDefined();
   expect(
-    experiment.experimentInputs.find((i) => i.name === "appInput2")
+    experiment.experiment_inputs.find((i) => i.name === "appInput2")
   ).toBeDefined();
-  expect(experiment.experimentInputs.length).toBe(2);
+  expect(experiment.experiment_inputs.length).toBe(2);
   expect(
-    experiment.experimentOutputs.find((i) => i.name === "appOutput1")
+    experiment.experiment_outputs.find((i) => i.name === "appOutput1")
   ).toBeDefined();
   expect(
-    experiment.experimentOutputs.find((i) => i.name === "appOutput2")
+    experiment.experiment_outputs.find((i) => i.name === "appOutput2")
   ).toBeDefined();
-  expect(experiment.experimentOutputs.length).toBe(2);
+  expect(experiment.experiment_outputs.length).toBe(2);
 });
 
 test("verify that projectId is copied from preferences", async () => {
   services.ApplicationInterfaceService.list.mockResolvedValue([
     new ApplicationInterfaceDefinition({
-      applicationName: "test",
-      applicationModules: ["test_module1"],
+      application_name: "test",
+      application_modules: ["test_module1"],
     }),
   ]);
   services.ComputeResourceService.names.mockResolvedValue({
@@ -476,18 +476,18 @@ test("verify that projectId is copied from preferences", async () => {
   });
   services.GroupResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
-      groupResourceProfileId: "groupResourceProfileId1",
+      group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [
         {
-          computeResourceId: "compute1.resource.org_id1",
+          compute_resource_id: "compute1.resource.org_id1",
         },
       ],
     }),
   ]);
   services.ApplicationDeploymentService.list.mockResolvedValue([
     new ApplicationDeploymentDescription({
-      appDeploymentId: "appDeploymentId1",
-      computeHostId: "compute1.resource.org_id1",
+      app_deployment_id: "appDeploymentId1",
+      compute_host_id: "compute1.resource.org_id1",
     }),
   ]);
   services.ApplicationDeploymentService.getQueues.mockResolvedValue([
@@ -506,14 +506,14 @@ test("verify that projectId is copied from preferences", async () => {
     applicationName: "test",
     computeResourceName: "compute1.resource.org",
   });
-  expect(experiment.projectId).toBe("project1");
+  expect(experiment.project_id).toBe("project1");
 });
 
 test("verify that given input values are copied to experiment", async () => {
   services.ApplicationInterfaceService.list.mockResolvedValue([
     new ApplicationInterfaceDefinition({
-      applicationName: "test",
-      applicationModules: ["test_module1"],
+      application_name: "test",
+      application_modules: ["test_module1"],
       applicationInputs: [
         {
           name: "appInput1",
@@ -530,18 +530,18 @@ test("verify that given input values are copied to experiment", async () => {
   });
   services.GroupResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
-      groupResourceProfileId: "groupResourceProfileId1",
+      group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [
         {
-          computeResourceId: "compute1.resource.org_id1",
+          compute_resource_id: "compute1.resource.org_id1",
         },
       ],
     }),
   ]);
   services.ApplicationDeploymentService.list.mockResolvedValue([
     new ApplicationDeploymentDescription({
-      appDeploymentId: "appDeploymentId1",
-      computeHostId: "compute1.resource.org_id1",
+      app_deployment_id: "appDeploymentId1",
+      compute_host_id: "compute1.resource.org_id1",
     }),
   ]);
   services.ApplicationDeploymentService.getQueues.mockResolvedValue([
@@ -565,10 +565,10 @@ test("verify that given input values are copied to experiment", async () => {
     },
   });
   expect(
-    experiment.experimentInputs.find((i) => i.name === "appInput1").value
+    experiment.experiment_inputs.find((i) => i.name === "appInput1").value
   ).toBe("value1");
   expect(
-    experiment.experimentInputs.find((i) => i.name === "appInput2").value
+    experiment.experiment_inputs.find((i) => i.name === "appInput2").value
   ).toBe("value2");
 
   // Don't pass appInput1 and take the default value instead
@@ -581,9 +581,9 @@ test("verify that given input values are copied to experiment", async () => {
     },
   });
   expect(
-    experiment2.experimentInputs.find((i) => i.name === "appInput1").value
+    experiment2.experiment_inputs.find((i) => i.name === "appInput1").value
   ).toBe("default1");
   expect(
-    experiment2.experimentInputs.find((i) => i.name === "appInput2").value
+    experiment2.experiment_inputs.find((i) => i.name === "appInput2").value
   ).toBe("value2");
 });

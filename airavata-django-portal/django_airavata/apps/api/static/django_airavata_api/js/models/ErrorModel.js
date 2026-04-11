@@ -1,9 +1,9 @@
 import BaseModel from "./BaseModel";
 
 const FIELDS = [
-  "errorId",
+  "error_id",
   {
-    name: "creationTime",
+    name: "creation_time",
     type: "date",
   },
   "actualErrorMessage",

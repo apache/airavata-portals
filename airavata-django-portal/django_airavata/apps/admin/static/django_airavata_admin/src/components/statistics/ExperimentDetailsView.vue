@@ -5,12 +5,12 @@
         <tr>
           <th scope="row">Name</th>
           <td>
-            <div :title="experiment.experimentId">
-              {{ experiment.experimentName }}
+            <div :title="experiment.experiment_id">
+              {{ experiment.experiment_name }}
             </div>
             <small class="text-muted">
-              ID: {{ experiment.experimentId }} (<clipboard-copy-link
-                :text="experiment.experimentId"
+              ID: {{ experiment.experiment_id }} (<clipboard-copy-link
+                :text="experiment.experiment_id"
                 :link-classes="['text-reset']"
               >
                 copy
@@ -35,15 +35,15 @@
         </tr>
         <tr>
           <th scope="row">Owner</th>
-          <td>{{ experiment.userName }}</td>
+          <td>{{ experiment.user_name }}</td>
         </tr>
         <tr>
           <th scope="row">Application</th>
-          <td v-if="fullExperiment.applicationName">
-            {{ fullExperiment.applicationName }}
+          <td v-if="fullExperiment.application_name">
+            {{ fullExperiment.application_name }}
           </td>
           <td v-else class="font-italic text-muted">
-            Unable to load interface {{ fullExperiment.experiment.executionId }}
+            Unable to load interface {{ fullExperiment.experiment.execution_id }}
           </td>
         </tr>
         <tr>
@@ -52,7 +52,7 @@
             {{ fullExperiment.computeHostName }}
           </td>
           <td v-else class="font-italic text-muted">
-            Unable to load compute resource {{ fullExperiment.resourceHostId }}
+            Unable to load compute resource {{ fullExperiment.resource_host_id }}
           </td>
         </tr>
         <tr>
@@ -151,7 +151,7 @@
           <td>
             <span
               :title="
-                fullExperiment.experimentStatus.timeOfStateChange.toString()
+                fullExperiment.experimentStatus.time_of_state_change.toString()
               "
               >{{ lastModifiedTime }}</span
             >
@@ -295,8 +295,8 @@
     <h2 class="h5 mb-3">Process Details</h2>
     <div class="card"
       v-for="process in experiment.processes"
-      :key="process.processId"
-      :header="process.processId"
+      :key="process.process_id"
+      :header="process.process_id"
     >
       <div class="card"
         v-for="task in process.sortedTasks"
@@ -429,7 +429,7 @@ export default {
     },
     lastModifiedTime: function () {
       return moment(
-        this.fullExperiment.experimentStatus.timeOfStateChange
+        this.fullExperiment.experimentStatus.time_of_state_change
       ).fromNow();
     },
     jobCreationTimes: function () {
@@ -463,10 +463,10 @@ export default {
   },
   created() {
     services.FullExperimentService.retrieve({
-      lookup: this.experiment.experimentId,
+      lookup: this.experiment.experiment_id,
     }).then((fullExperiment) => (this.fullExperiment = fullExperiment));
     services.ExperimentArchiveService.get({
-      experimentId: this.experiment.experimentId,
+      experimentId: this.experiment.experiment_id,
     }).then((result) => {
       this.experimentArchive = result;
     });

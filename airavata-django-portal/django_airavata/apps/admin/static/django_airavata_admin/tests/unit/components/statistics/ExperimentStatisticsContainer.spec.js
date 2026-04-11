@@ -89,19 +89,19 @@ test("load experiment by job id when job id matches unique experiment", async ()
         count: 1,
         next: null,
         previous: null,
-        results: [{ experimentId: "test-experiment-id" }],
+        results: [{ experiment_id: "test-experiment-id" }],
       },
       models.ExperimentSummary
     )
   );
   // Mock just enough of Experiment and FullExperiment to get ExperimentDetailsView to render
   const experiment = new models.Experiment({
-    experimentId: "test-experiment-id",
-    experimentName: "Test Experiment",
-    creationTime: Date.now(),
-    experimentStatus: [
+    experiment_id: "test-experiment-id",
+    experiment_name: "Test Experiment",
+    creation_time: Date.now(),
+    experiment_status: [
       new ExperimentStatus({
-        timeOfStateChange: Date.now(),
+        time_of_state_change: Date.now(),
         state: models.ExperimentState.COMPLETED,
       }),
     ],
@@ -109,7 +109,7 @@ test("load experiment by job id when job id matches unique experiment", async ()
   services.ExperimentService.retrieve.mockResolvedValue(experiment);
   services.FullExperimentService.retrieve.mockResolvedValue(
     new models.FullExperiment({
-      experimentId: "test-experiment-id",
+      experiment_id: "test-experiment-id",
       experiment,
     })
   );
@@ -147,14 +147,14 @@ test("load experiment by job id when job id matches unique experiment", async ()
   // Double check that the experiment services were called to load the experiment
   expect(services.ExperimentService.retrieve).toHaveBeenCalledWith(
     {
-      lookup: experiment.experimentId,
+      lookup: experiment.experiment_id,
     },
     {
       ignoreErrors: true,
     }
   );
   expect(services.FullExperimentService.retrieve).toHaveBeenCalledWith({
-    lookup: experiment.experimentId,
+    lookup: experiment.experiment_id,
   });
 });
 
@@ -197,22 +197,22 @@ test("Hostname filter only shows compute resources that are configured in a GRP"
 
   services.GroupResourceProfileService.list.mockResolvedValue([
     new models.GroupResourceProfile({
-      computePreferences: [
+      compute_preferences: [
         new models.GroupComputeResourcePreference({
-          computeResourceId: "compute1-abcd",
+          compute_resource_id: "compute1-abcd",
         }),
         new models.GroupComputeResourcePreference({
-          computeResourceId: "compute3-abcd",
+          compute_resource_id: "compute3-abcd",
         }),
       ],
     }),
     new models.GroupResourceProfile({
-      computePreferences: [
+      compute_preferences: [
         new models.GroupComputeResourcePreference({
-          computeResourceId: "compute1-abcd",
+          compute_resource_id: "compute1-abcd",
         }),
         new models.GroupComputeResourcePreference({
-          computeResourceId: "compute4-abcd",
+          compute_resource_id: "compute4-abcd",
         }),
       ],
     }),

@@ -134,7 +134,7 @@ export const actions = {
     );
     commit("setApplicationInterface", { applicationInterface });
     commit("setApplicationModuleId", {
-      applicationModuleId: applicationInterface.applicationModuleId,
+      applicationModuleId: applicationInterface.application_module_id,
     });
     await dispatch("setExperiment", { experiment });
   },
@@ -765,16 +765,16 @@ export const getters = {
     if (!getters.groupResourceProfile || !getters.resourceHostId) {
       return null;
     }
-    return getters.groupResourceProfile.computeResourcePolicies.find(
-      (crp) => crp.computeResourceId === getters.resourceHostId
+    return getters.groupResourceProfile.compute_resource_policies.find(
+      (crp) => crp.compute_resource_id === getters.resourceHostId
     );
   },
   batchQueueResourcePolicies: (state, getters) => {
     if (!getters.groupResourceProfile || !getters.resourceHostId) {
       return null;
     }
-    return getters.groupResourceProfile.batchQueueResourcePolicies.filter(
-      (bqrp) => bqrp.computeResourceId === getters.resourceHostId
+    return getters.groupResourceProfile.batch_queue_resource_policies.filter(
+      (bqrp) => bqrp.compute_resource_id === getters.resourceHostId
     );
   },
   batchQueueResourcePolicy: (state, getters) => {

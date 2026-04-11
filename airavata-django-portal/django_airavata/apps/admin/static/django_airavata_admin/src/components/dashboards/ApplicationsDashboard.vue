@@ -12,7 +12,7 @@
         <application-card
           v-for="item in slotProps.items"
           v-bind:app-module="item"
-          v-bind:key="item.appModuleId"
+          v-bind:key="item.app_module_id"
           v-on:app-selected="clickHandler(item)"
         >
         </application-card>
@@ -43,7 +43,7 @@ export default {
       if (this.appModules) {
         return utils.StringUtils.sortIgnoreCase(
           this.appModules.slice(),
-          (a) => a.appModuleName
+          (a) => a.app_module_name
         );
       } else {
         return [];
@@ -57,7 +57,7 @@ export default {
     clickHandler(item) {
       this.$router.push({
         name: "application_module",
-        params: { id: item.appModuleId },
+        params: { id: item.app_module_id },
       });
     },
     newApplicationHandler() {

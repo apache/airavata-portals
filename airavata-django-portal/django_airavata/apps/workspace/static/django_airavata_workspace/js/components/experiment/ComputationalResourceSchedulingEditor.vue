@@ -117,10 +117,10 @@ export default {
       if (this.selectedGroupResourceProfileData === null) {
         return null;
       }
-      return this.selectedGroupResourceProfileData.computeResourcePolicies.find(
+      return this.selectedGroupResourceProfileData.compute_resource_policies.find(
         (crp) => {
           return (
-            crp.computeResourceId ===
+            crp.compute_resource_id ===
             this.localComputationalResourceScheduling.resource_host_id
           );
         }
@@ -130,10 +130,10 @@ export default {
       if (this.selectedGroupResourceProfileData === null) {
         return null;
       }
-      return this.selectedGroupResourceProfileData.batchQueueResourcePolicies.filter(
+      return this.selectedGroupResourceProfileData.batch_queue_resource_policies.filter(
         (bqrp) => {
           return (
-            bqrp.computeResourceId ===
+            bqrp.compute_resource_id ===
             this.localComputationalResourceScheduling.resource_host_id
           );
         }

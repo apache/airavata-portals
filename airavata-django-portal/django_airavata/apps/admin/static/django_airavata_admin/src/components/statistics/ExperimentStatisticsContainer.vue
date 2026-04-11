@@ -245,13 +245,13 @@
                 <!-- TODO: Replace b-table with native table -->
                 <table class="table">
                   <tbody>
-                    <tr v-for="item in items" :key="item.experimentId">
-                      <td><application-name :application-interface-id="item.executionId" /></td>
-                      <td><compute-resource-name :compute-resource-id="item.resourceHostId" /></td>
+                    <tr v-for="item in items" :key="item.experiment_id">
+                      <td><application-name :application-interface-id="item.execution_id" /></td>
+                      <td><compute-resource-name :compute-resource-id="item.resource_host_id" /></td>
                       <td><human-date :date="item.creation_time" /></td>
-                      <td><experiment-status-badge :status-name="item.experimentStatus.name" /></td>
+                      <td><experiment-status-badge :status-name="item.experiment_status.name" /></td>
                       <td>
-                        <a @click="showExperimentDetails(item.experimentId)">
+                        <a @click="showExperimentDetails(item.experiment_id)">
                           View Details
                           <i class="far fa-chart-bar" aria-hidden="true"></i>
                         </a>
@@ -272,13 +272,13 @@
         </li>
         <li class="nav-item"
           v-for="experimentTab in experimentDetailTabs"
-          :key="experimentTab.experiment.experimentId"
+          :key="experimentTab.experiment.experiment_id"
         >
           <template slot="title">
             {{ experimentTab.tabTitle }}
             <a
               @click="
-                removeExperimentDetailTab(experimentTab.experiment.experimentId)
+                removeExperimentDetailTab(experimentTab.experiment.experiment_id)
               "
               class="text-secondary"
             >
@@ -385,23 +385,23 @@ export default {
           label: "Name",
         },
         {
-          key: "userName",
+          key: "user_name",
           label: "Owner",
         },
         {
-          key: "executionId",
+          key: "execution_id",
           label: "Application",
         },
         {
-          key: "resourceHostId",
+          key: "resource_host_id",
           label: "Resource",
         },
         {
-          key: "creationTime",
+          key: "creation_time",
           label: "Creation Time",
         },
         {
-          key: "experimentStatus",
+          key: "experiment_status",
           label: "Status",
         },
         {
@@ -438,8 +438,8 @@ export default {
       if (this.appInterfaces) {
         const options = this.appInterfaces.map((appInterface) => {
           return {
-            value: appInterface.applicationInterfaceId,
-            text: appInterface.applicationName,
+            value: appInterface.application_interface_id,
+            text: appInterface.application_name,
           };
         });
         return utils.StringUtils.sortIgnoreCase(options, (o) => o.text);
@@ -453,7 +453,7 @@ export default {
         // First create a Set of all compute resource ids in the GRPs
         const groupResourceProfileCompResources = new Set(
           this.groupResourceProfiles.flatMap((grp) =>
-            grp.computePreferences.map((cp) => cp.computeResourceId)
+            grp.compute_preferences.map((cp) => cp.compute_resource_id)
           )
         );
         const options = this.computeResourceNames
@@ -517,13 +517,13 @@ export default {
         toTime: this.toTime.toJSON(),
       };
       if (this.usernameFilterEnabled && this.usernameFilter) {
-        requestData["userName"] = this.usernameFilter;
+        requestData["user_name"] = this.usernameFilter;
       }
       if (this.applicationNameFilterEnabled && this.applicationNameFilter) {
-        requestData["applicationName"] = this.applicationNameFilter;
+        requestData["application_name"] = this.applicationNameFilter;
       }
       if (this.hostnameFilterEnabled && this.hostnameFilter) {
-        requestData["resourceHostName"] = this.hostnameFilter;
+        requestData["resource_host_name"] = this.hostnameFilter;
       }
       return services.ExperimentStatisticsService.get(requestData).then(
         (stats) => {
@@ -584,7 +584,7 @@ export default {
             { ignoreErrors: true }
           );
           this.experimentDetailTabs.push({
-            tabTitle: tabTitle || exp.experimentName,
+            tabTitle: tabTitle || exp.experiment_name,
             experiment: exp,
           });
           this.selectExperimentDetailsTab(experimentId);
@@ -627,7 +627,7 @@ export default {
           );
         }
         this.showExperimentDetails(
-          searchResults.results[0].experimentId,
+          searchResults.results[0].experiment_id,
           `Job ${jobId}`
         );
       }
@@ -643,7 +643,7 @@ export default {
     },
     getExperimentDetailTabsIndex(experimentId) {
       return this.experimentDetailTabs.findIndex(
-        (tab) => tab.experiment.experimentId === experimentId
+        (tab) => tab.experiment.experiment_id === experimentId
       );
     },
     removeExperimentDetailTab(experimentId) {

@@ -26,7 +26,7 @@
         <div class="card">
           <div class="card-body">
             <!-- TODO: Replace b-table with native table --><table class="table" hover :fields="fields" :items="items" :fixed="true">
-              <template slot="cell(creationTime)" slot-scope="data">
+              <template slot="cell(creation_time)" slot-scope="data">
                 <human-date :date="data.value" />
               </template>
               <template slot="cell(groups)" slot-scope="data">
@@ -126,7 +126,7 @@ export default {
         },
         {
           label: "Created",
-          key: "creationTime",
+          key: "creation_time",
         },
         {
           label: "Action",

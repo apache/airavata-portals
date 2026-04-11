@@ -234,9 +234,9 @@ export default {
         queryParams: [
           "fromTime",
           "toTime",
-          "userName",
-          "applicationName",
-          "resourceHostName",
+          "user_name",
+          "application_name",
+          "resource_host_name",
           "limit",
           "offset",
         ],
