@@ -41,24 +41,9 @@ from django_airavata.apps.api.view_utils import (
 from django_airavata.apps.auth import iam_admin_client
 from django_airavata.apps.auth.models import EmailVerification
 from django_airavata.proto_compat import (
-    BatchQueueResourcePolicy,
-    CloudJobSubmission,
-    ComputeResourcePolicy,
-    ComputeResourceReservation,
-    GlobusJobSubmission,
-    GridFTPDataMovement,
-    GroupAccountSSHProvisionerConfig,
-    GroupComputeResourcePreference,
-    LOCALDataMovement,
-    LOCALSubmission,
     ResourcePermissionType,
-    ResourceType,
-    SCPDataMovement,
-    SSHJobSubmission,
     Status,
     SummaryType,
-    UnicoreDataMovement,
-    UnicoreJobSubmission,
 )
 
 from . import exceptions, helpers, models, output_views, serializers, signals, tus, view_utils
@@ -731,89 +716,45 @@ class ApplicationDeploymentViewSet(viewsets.ViewSet):
         return Response(proto_list_to_dicts(batch_queues))
 
 
-class ComputeResourceViewSet(APIBackedViewSet):
-    serializer_class = serializers.ComputeResourceDescriptionSerializer
+class ComputeResourceViewSet(viewsets.ViewSet):
     lookup_field = "compute_resource_id"
 
-    def get_list(self) -> list[Any]:
-        from django_airavata.proto_compat import ComputeResourceDescription as ComputeCompat
-
-        all_names = self.request.airavata_client.compute.get_all_compute_resource_names()
+    def list(self, request: Request) -> Response:
+        all_names = request.airavata_client.compute.get_all_compute_resource_names()
         results = []
         for rid in all_names:
-            proto = self.request.airavata_client.compute.get_compute_resource(rid)
-            results.append(ComputeCompat(
-                computeResourceId=proto.compute_resource_id,
-                hostName=proto.host_name,
-                resourceDescription=proto.resource_description,
-                enabled=proto.enabled,
-                maxMemoryPerNode=proto.max_memory_per_node,
-                cpusPerNode=proto.cpus_per_node,
-                defaultNodeCount=proto.default_node_count,
-                defaultCPUCount=proto.default_cpu_count,
-                defaultWalltime=proto.default_walltime,
-                batchQueues=[],
-            ))
-        return results
+            proto = request.airavata_client.compute.get_compute_resource(rid)
+            results.append(proto_to_dict(proto))
+        return Response(results)
 
-    def get_instance(self, lookup_value: str, format: str | None = None) -> Any:
-        from django_airavata.proto_compat import ComputeResourceDescription as ComputeCompat
+    def retrieve(self, request: Request, compute_resource_id: str | None = None) -> Response:
+        proto = request.airavata_client.compute.get_compute_resource(compute_resource_id)
+        return Response(proto_to_dict(proto))
 
-        proto = self.request.airavata_client.compute.get_compute_resource(lookup_value)
-        return ComputeCompat(
-            computeResourceId=proto.compute_resource_id,
-            hostName=proto.host_name,
-            resourceDescription=proto.resource_description,
-            enabled=proto.enabled,
-            maxMemoryPerNode=proto.max_memory_per_node,
-            cpusPerNode=proto.cpus_per_node,
-            defaultNodeCount=proto.default_node_count,
-            defaultCPUCount=proto.default_cpu_count,
-            defaultWalltime=proto.default_walltime,
-            batchQueues=[],
-        )
-
-    def perform_create(self, serializer: Any) -> None:
+    def create(self, request: Request) -> Response:
         from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource.compute_resource_pb2 import (
             ComputeResourceDescription as ComputeResourceDescriptionProto,
         )
 
-        compat_obj = serializer.save()
-        proto_obj = ComputeResourceDescriptionProto(
-            host_name=getattr(compat_obj, "hostName", ""),
-            resource_description=getattr(compat_obj, "resourceDescription", ""),
-            enabled=getattr(compat_obj, "enabled", True),
-            max_memory_per_node=getattr(compat_obj, "maxMemoryPerNode", 0),
-            cpus_per_node=getattr(compat_obj, "cpusPerNode", 0),
-            default_node_count=getattr(compat_obj, "defaultNodeCount", 0),
-            default_cpu_count=getattr(compat_obj, "defaultCPUCount", 0),
-            default_walltime=getattr(compat_obj, "defaultWalltime", 0),
-        )
-        resource_id = self.request.airavata_client.compute.register_compute_resource(proto_obj)
-        compat_obj.computeResourceId = resource_id
+        proto = dict_to_proto(request.data, ComputeResourceDescriptionProto)
+        resource_id = request.airavata_client.compute.register_compute_resource(proto)
+        proto.compute_resource_id = resource_id
+        return Response(proto_to_dict(proto), status=status.HTTP_201_CREATED)
 
-    def perform_update(self, serializer: Any) -> None:
+    def update(self, request: Request, compute_resource_id: str | None = None) -> Response:
         from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource.compute_resource_pb2 import (
             ComputeResourceDescription as ComputeResourceDescriptionProto,
         )
 
-        compat_obj = serializer.save()
-        resource_id = getattr(compat_obj, "computeResourceId", "")
-        proto_obj = ComputeResourceDescriptionProto(
-            compute_resource_id=resource_id,
-            host_name=getattr(compat_obj, "hostName", ""),
-            resource_description=getattr(compat_obj, "resourceDescription", ""),
-            enabled=getattr(compat_obj, "enabled", True),
-            max_memory_per_node=getattr(compat_obj, "maxMemoryPerNode", 0),
-            cpus_per_node=getattr(compat_obj, "cpusPerNode", 0),
-            default_node_count=getattr(compat_obj, "defaultNodeCount", 0),
-            default_cpu_count=getattr(compat_obj, "defaultCPUCount", 0),
-            default_walltime=getattr(compat_obj, "defaultWalltime", 0),
-        )
-        self.request.airavata_client.compute.update_compute_resource(resource_id, proto_obj)
+        proto = dict_to_proto(request.data, ComputeResourceDescriptionProto)
+        proto.compute_resource_id = compute_resource_id
+        request.airavata_client.compute.update_compute_resource(compute_resource_id, proto)
+        updated = request.airavata_client.compute.get_compute_resource(compute_resource_id)
+        return Response(proto_to_dict(updated))
 
-    def perform_destroy(self, instance: Any) -> None:
-        self.request.airavata_client.compute.delete_compute_resource(instance.computeResourceId)
+    def destroy(self, request: Request, compute_resource_id: str | None = None) -> Response:
+        request.airavata_client.compute.delete_compute_resource(compute_resource_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False)
     def all_names(self, request: Request, format: str | None = None) -> Response:
@@ -840,116 +781,79 @@ class ComputeResourceViewSet(APIBackedViewSet):
     @action(detail=True)
     def queues(self, request: Request, compute_resource_id: str, format: str | None = None) -> Response:
         details = request.airavata_client.compute.get_compute_resource(compute_resource_id)
-        serializer = self.serializer_class(instance=details, context={"request": request})
-        data = serializer.data
-        return Response([queue["queueName"] for queue in data["batchQueues"]])
+        data = proto_to_dict(details)
+        return Response([queue["queue_name"] for queue in data.get("batch_queues", [])])
 
 
 class LocalJobSubmissionView(APIView):
-    renderer_classes = (JSONRenderer,)
-
     def get(self, request: Request, format: str | None = None) -> Response:
         job_submission_id = request.query_params["id"]
-        local_job_submission = request.airavata_client.compute.get_local_job_submission(job_submission_id)
-        from . import proto_utils
-
-        return Response(proto_utils.create_serializer(LOCALSubmission, instance=local_job_submission).data)
+        result = request.airavata_client.compute.get_local_job_submission(job_submission_id)
+        return Response(proto_to_dict(result))
 
 
 class CloudJobSubmissionView(APIView):
-    renderer_classes = (JSONRenderer,)
-
     def get(self, request: Request, format: str | None = None) -> Response:
         job_submission_id = request.query_params["id"]
-        job_submission = request.airavata_client.compute.get_cloud_job_submission(job_submission_id)
-        from . import proto_utils
-
-        return Response(proto_utils.create_serializer(CloudJobSubmission, instance=job_submission).data)
+        result = request.airavata_client.compute.get_cloud_job_submission(job_submission_id)
+        return Response(proto_to_dict(result))
 
 
 class GlobusJobSubmissionView(APIView):
-    renderer_classes = (JSONRenderer,)
-
     def get(self, request: Request, format: str | None = None) -> Response:
         job_submission_id = request.query_params["id"]
         try:
-            job_submission = request.airavata_client.compute.get_globus_job_submission(job_submission_id)
+            result = request.airavata_client.compute.get_globus_job_submission(job_submission_id)
         except Exception:
             log.warning("get_globus_job_submission is not implemented on the server", exc_info=True)
             return Response(None)
-        from . import proto_utils
-
-        return Response(proto_utils.create_serializer(GlobusJobSubmission, instance=job_submission).data)
+        return Response(proto_to_dict(result))
 
 
 class SshJobSubmissionView(APIView):
-    renderer_classes = (JSONRenderer,)
-
     def get(self, request: Request, format: str | None = None) -> Response:
         job_submission_id = request.query_params["id"]
-        job_submission = request.airavata_client.compute.get_ssh_job_submission(job_submission_id)
-        from . import proto_utils
-
-        return Response(proto_utils.create_serializer(SSHJobSubmission, instance=job_submission).data)
+        result = request.airavata_client.compute.get_ssh_job_submission(job_submission_id)
+        return Response(proto_to_dict(result))
 
 
 class UnicoreJobSubmissionView(APIView):
-    renderer_classes = (JSONRenderer,)
-
     def get(self, request: Request, format: str | None = None) -> Response:
         job_submission_id = request.query_params["id"]
-        job_submission = request.airavata_client.compute.get_unicore_job_submission(job_submission_id)
-        from . import proto_utils
-
-        return Response(proto_utils.create_serializer(UnicoreJobSubmission, instance=job_submission).data)
+        result = request.airavata_client.compute.get_unicore_job_submission(job_submission_id)
+        return Response(proto_to_dict(result))
 
 
 class GridFtpDataMovementView(APIView):
-    renderer_classes = (JSONRenderer,)
-
     def get(self, request: Request, format: str | None = None) -> Response:
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.storage.get_grid_ftp_data_movement(data_movement_id)
-        from . import proto_utils
-
-        return Response(proto_utils.create_serializer(GridFTPDataMovement, instance=data_movement).data)
+        result = request.airavata_client.storage.get_grid_ftp_data_movement(data_movement_id)
+        return Response(proto_to_dict(result))
 
 
 class ScpDataMovementView(APIView):
-    renderer_classes = (JSONRenderer,)
-
     def get(self, request: Request, format: str | None = None) -> Response:
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.storage.get_scp_data_movement(data_movement_id)
-        from . import proto_utils
-
-        return Response(proto_utils.create_serializer(SCPDataMovement, instance=data_movement).data)
+        result = request.airavata_client.storage.get_scp_data_movement(data_movement_id)
+        return Response(proto_to_dict(result))
 
 
 class UnicoreDataMovementView(APIView):
-    renderer_classes = (JSONRenderer,)
-
     def get(self, request: Request, format: str | None = None) -> Response:
         data_movement_id = request.query_params["id"]
         try:
-            data_movement = request.airavata_client.compute.get_unicore_data_movement(data_movement_id)
+            result = request.airavata_client.compute.get_unicore_data_movement(data_movement_id)
         except Exception:
             log.warning("get_unicore_data_movement is not implemented on the server", exc_info=True)
             return Response(None)
-        from . import proto_utils
-
-        return Response(proto_utils.create_serializer(UnicoreDataMovement, instance=data_movement).data)
+        return Response(proto_to_dict(result))
 
 
 class LocalDataMovementView(APIView):
-    renderer_classes = (JSONRenderer,)
-
     def get(self, request: Request, format: str | None = None) -> Response:
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.storage.get_local_data_movement(data_movement_id)
-        from . import proto_utils
-
-        return Response(proto_utils.create_serializer(LOCALDataMovement, instance=data_movement).data)
+        result = request.airavata_client.storage.get_local_data_movement(data_movement_id)
+        return Response(proto_to_dict(result))
 
 
 class DataProductView(APIView):
@@ -1040,223 +944,102 @@ class UserProfileViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin, Gener
         return self.request.airavata_client.iam.get_user_profile_by_id(self.request.user.username, self.gateway_id)
 
 
-class GroupResourceProfileViewSet(APIBackedViewSet):
-    serializer_class = serializers.GroupResourceProfileSerializer
+class GroupResourceProfileViewSet(viewsets.ViewSet):
     lookup_field = "group_resource_profile_id"
 
-    def get_list(self) -> list[Any]:
-        return self.request.airavata_client.compute.get_group_resource_list(self.gateway_id)
+    def list(self, request: Request) -> Response:
+        results = request.airavata_client.compute.get_group_resource_list(settings.GATEWAY_ID)
+        return Response(proto_list_to_dicts(results))
 
-    def get_instance(self, lookup_value: str) -> Any:
-        return self.request.airavata_client.compute.get_group_resource_profile(lookup_value)
+    def retrieve(self, request: Request, group_resource_profile_id: str | None = None) -> Response:
+        result = request.airavata_client.compute.get_group_resource_profile(group_resource_profile_id)
+        return Response(proto_to_dict(result))
 
-    def perform_create(self, serializer: Any) -> None:
-        group_resource_profile = serializer.save()
-        group_resource_profile.gatewayId = self.gateway_id
-        group_resource_profile_id = self.request.airavata_client.compute.create_group_resource_profile(
-            group_resource_profile=group_resource_profile
+    def create(self, request: Request) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.groupresourceprofile.group_resource_profile_pb2 import (
+            GroupResourceProfile as GroupResourceProfileProto,
         )
-        group_resource_profile.groupResourceProfileId = group_resource_profile_id
-        # Update the creationTime field on the group resource profile
-        new_group_resource_profile = self.request.airavata_client.compute.get_group_resource_profile(
-            group_resource_profile_id
+
+        proto = dict_to_proto(request.data, GroupResourceProfileProto)
+        proto.gateway_id = settings.GATEWAY_ID
+        profile_id = request.airavata_client.compute.create_group_resource_profile(
+            group_resource_profile=proto
         )
-        group_resource_profile.creationTime = new_group_resource_profile.creationTime
+        created = request.airavata_client.compute.get_group_resource_profile(profile_id)
+        return Response(proto_to_dict(created), status=status.HTTP_201_CREATED)
 
-    def perform_update(self, serializer: Any) -> None:
-        original_instance = serializer.instance
+    def update(self, request: Request, group_resource_profile_id: str | None = None) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.groupresourceprofile.group_resource_profile_pb2 import (
+            GroupResourceProfile as GroupResourceProfileProto,
+        )
 
-        grp = serializer.save()
-        for removed_compute_resource_preference in grp._removed_compute_resource_preferences:
-            self.request.airavata_client.compute.remove_group_compute_prefs(
-                removed_compute_resource_preference.computeResourceId,
-                removed_compute_resource_preference.groupResourceProfileId,
-            )
-        for removed_compute_resource_policy in grp._removed_compute_resource_policies:
-            self.request.airavata_client.compute.remove_group_compute_resource_policy(
-                removed_compute_resource_policy.resourcePolicyId
-            )
-        for removed_batch_queue_resource_policy in grp._removed_batch_queue_resource_policies:
-            self.request.airavata_client.compute.remove_group_batch_queue_resource_policy(
-                removed_batch_queue_resource_policy.resourcePolicyId
-            )
-        if hasattr(grp, "computePreferences") and grp.computePreferences:
-            from collections import OrderedDict
+        # Fetch existing profile to handle removals
+        existing = request.airavata_client.compute.get_group_resource_profile(group_resource_profile_id)
+        existing_dict = proto_to_dict(existing)
 
-            from django_airavata.apps.api.serializers import GroupComputeResourcePreferenceSerializer
+        incoming_data = request.data
 
-            for pref in grp.computePreferences:
-                if isinstance(pref, GroupComputeResourcePreference):
-                    if not hasattr(pref, "resourceType") or pref.resourceType is None:
-                        resource_type = None
-                        if hasattr(pref, "specificPreferences") and pref.specificPreferences:
-                            if isinstance(pref.specificPreferences, (dict, OrderedDict)):
-                                specific_prefs_dict = pref.specificPreferences
-                                if "slurm" in specific_prefs_dict or "allocationProjectNumber" in specific_prefs_dict:
-                                    resource_type = ResourceType.SLURM
-                                elif "aws" in specific_prefs_dict or "region" in specific_prefs_dict:
-                                    resource_type = ResourceType.AWS
-                                else:
-                                    resource_type = ResourceType.SLURM
-                            elif hasattr(pref.specificPreferences, "slurm") and pref.specificPreferences.slurm:
-                                resource_type = ResourceType.SLURM
-                            elif hasattr(pref.specificPreferences, "aws") and pref.specificPreferences.aws:
-                                resource_type = ResourceType.AWS
-                            else:
-                                resource_type = ResourceType.SLURM
-                        else:
-                            resource_type = ResourceType.SLURM
-                        pref.resourceType = resource_type
-
-                    resource_type = pref.resourceType if hasattr(pref, "resourceType") and pref.resourceType else None
-                    if resource_type and (
-                        hasattr(pref, "specificPreferences")
-                        and isinstance(pref.specificPreferences, (dict, OrderedDict))
-                        or hasattr(pref, "specificPreferences")
-                        and pref.specificPreferences
-                    ):
-                        GroupComputeResourcePreferenceSerializer._convert_specific_preferences_dict_to_thrift(
-                            pref, resource_type
-                        )
-
-        from collections import OrderedDict
-
-        if hasattr(grp, "computeResourcePolicies") and grp.computeResourcePolicies:
-            existing_policies_by_resource_id = {}
-            if original_instance and hasattr(original_instance, "computeResourcePolicies"):
-                for existing_policy in original_instance.computeResourcePolicies:
-                    if hasattr(existing_policy, "computeResourceId") and hasattr(existing_policy, "resourcePolicyId"):
-                        existing_policies_by_resource_id[existing_policy.computeResourceId] = existing_policy
-
-            indices_to_remove = []
-            for idx, policy in enumerate(grp.computeResourcePolicies):
-                if isinstance(policy, (dict, OrderedDict)):
-                    try:
-                        if isinstance(policy, OrderedDict):
-                            policy = dict(policy)
-
-                        compute_resource_id = policy.get("computeResourceId")
-                        current_resource_policy_id = policy.get("resourcePolicyId")
-
-                        if not current_resource_policy_id:
-                            if compute_resource_id and compute_resource_id in existing_policies_by_resource_id:
-                                existing_policy = existing_policies_by_resource_id[compute_resource_id]
-                                policy["resourcePolicyId"] = existing_policy.resourcePolicyId
-                            elif (
-                                original_instance
-                                and hasattr(original_instance, "computeResourcePolicies")
-                                and idx < len(original_instance.computeResourcePolicies)
-                            ):
-                                existing_policy_by_idx = original_instance.computeResourcePolicies[idx]
-                                if (
-                                    hasattr(existing_policy_by_idx, "resourcePolicyId")
-                                    and existing_policy_by_idx.resourcePolicyId
-                                ):
-                                    policy["resourcePolicyId"] = existing_policy_by_idx.resourcePolicyId
-
-                        if not policy.get("resourcePolicyId"):
-                            indices_to_remove.append(idx)
-                            continue
-
-                        grp.computeResourcePolicies[idx] = ComputeResourcePolicy(**policy)
-                    except Exception as e:
-                        log.error(
-                            "GCPreference perform_update: Failed to convert"
-                            " computeResourcePolicies[%d] OrderedDict to Thrift: %s, policy keys: %s",
-                            idx,
-                            str(e),
-                            list(policy.keys()) if isinstance(policy, dict) else list(policy.keys()),
-                            exc_info=True,
-                        )
-                        raise
-
-            for idx in reversed(indices_to_remove):
-                grp.computeResourcePolicies.pop(idx)
-
-        if hasattr(grp, "batchQueueResourcePolicies") and grp.batchQueueResourcePolicies:
-            existing_bq_policies_by_key = {}
-            if original_instance and hasattr(original_instance, "batchQueueResourcePolicies"):
-                for existing_bq_policy in original_instance.batchQueueResourcePolicies:
-                    if (
-                        hasattr(existing_bq_policy, "computeResourceId")
-                        and hasattr(existing_bq_policy, "queuename")
-                        and hasattr(existing_bq_policy, "resourcePolicyId")
-                    ):
-                        key = (existing_bq_policy.computeResourceId, existing_bq_policy.queuename)
-                        existing_bq_policies_by_key[key] = existing_bq_policy
-
-            for idx, policy in enumerate(grp.batchQueueResourcePolicies):
-                if isinstance(policy, (dict, OrderedDict)):
-                    try:
-                        compute_resource_id = policy.get("computeResourceId")
-                        queuename = policy.get("queuename")
-                        if compute_resource_id and queuename:
-                            key = (compute_resource_id, queuename)
-                            if key in existing_bq_policies_by_key:
-                                existing_bq_policy = existing_bq_policies_by_key[key]
-                                if "resourcePolicyId" not in policy or policy.get("resourcePolicyId") is None:
-                                    policy["resourcePolicyId"] = existing_bq_policy.resourcePolicyId
-                        grp.batchQueueResourcePolicies[idx] = BatchQueueResourcePolicy(**policy)
-                    except Exception as e:
-                        log.error(
-                            "GCPreference perform_update: Failed to convert"
-                            " batchQueueResourcePolicies[%d] OrderedDict to Thrift: %s",
-                            idx,
-                            str(e),
-                            exc_info=True,
-                        )
-
-        if hasattr(grp, "computePreferences") and grp.computePreferences:
-            for idx, pref in enumerate(grp.computePreferences):
-                if isinstance(pref, (dict, OrderedDict)):
-                    from django_airavata.apps.api.serializers import GroupComputeResourcePreferenceSerializer
-
-                    serializer = GroupComputeResourcePreferenceSerializer()
-                    try:
-                        pref = serializer.create(pref)
-                        grp.computePreferences[idx] = pref
-                    except Exception as e:
-                        log.error(
-                            "GCPreference perform_update: Failed to convert OrderedDict to Thrift: %s",
-                            str(e),
-                            exc_info=True,
-                        )
-
-                if (
-                    isinstance(pref, GroupComputeResourcePreference)
-                    and hasattr(pref, "specificPreferences")
-                    and pref.specificPreferences
-                    and hasattr(pref.specificPreferences, "slurm")
-                    and pref.specificPreferences.slurm
-                ):
-                    GroupComputeResourcePreferenceSerializer._convert_nested_list_fields_to_thrift(
-                        pref.specificPreferences.slurm
+        # Detect removed compute preferences and remove them
+        existing_pref_ids = {
+            p.get("compute_resource_id") for p in existing_dict.get("compute_preferences", [])
+        }
+        incoming_pref_ids = {
+            p.get("compute_resource_id") or p.get("computeResourceId")
+            for p in incoming_data.get("compute_preferences", [])
+        }
+        for removed_id in existing_pref_ids - incoming_pref_ids:
+            if removed_id:
+                try:
+                    request.airavata_client.compute.remove_group_compute_prefs(
+                        removed_id, group_resource_profile_id
                     )
-                    if (
-                        hasattr(pref.specificPreferences.slurm, "reservations")
-                        and pref.specificPreferences.slurm.reservations
-                    ):
-                        for res_idx, res in enumerate(pref.specificPreferences.slurm.reservations):
-                            if isinstance(res, (dict, OrderedDict)):
-                                pref.specificPreferences.slurm.reservations[res_idx] = (
-                                    ComputeResourceReservation(**res)
-                                )
-                    if (
-                        hasattr(pref.specificPreferences.slurm, "groupSSHAccountProvisionerConfigs")
-                        and pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs
-                    ):
-                        for cfg_idx, cfg in enumerate(
-                            pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs
-                        ):
-                            if isinstance(cfg, (dict, OrderedDict)):
-                                pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs[cfg_idx] = (
-                                    GroupAccountSSHProvisionerConfig(**cfg)
-                                )
+                except Exception:
+                    log.warning("Failed to remove compute pref %s", removed_id, exc_info=True)
 
-        self.request.airavata_client.compute.update_group_resource_profile(grp)
+        # Detect removed compute resource policies and remove them
+        existing_policy_ids = {
+            p.get("resource_policy_id") for p in existing_dict.get("compute_resource_policies", [])
+            if p.get("resource_policy_id")
+        }
+        incoming_policy_ids = {
+            p.get("resource_policy_id") or p.get("resourcePolicyId")
+            for p in incoming_data.get("compute_resource_policies", [])
+            if p.get("resource_policy_id") or p.get("resourcePolicyId")
+        }
+        for removed_policy_id in existing_policy_ids - incoming_policy_ids:
+            if removed_policy_id:
+                try:
+                    request.airavata_client.compute.remove_group_compute_resource_policy(removed_policy_id)
+                except Exception:
+                    log.warning("Failed to remove compute resource policy %s", removed_policy_id, exc_info=True)
 
-    def perform_destroy(self, instance: Any) -> None:
-        self.request.airavata_client.compute.remove_group_resource_profile(instance.groupResourceProfileId)
+        # Detect removed batch queue resource policies and remove them
+        existing_bq_policy_ids = {
+            p.get("resource_policy_id") for p in existing_dict.get("batch_queue_resource_policies", [])
+            if p.get("resource_policy_id")
+        }
+        incoming_bq_policy_ids = {
+            p.get("resource_policy_id") or p.get("resourcePolicyId")
+            for p in incoming_data.get("batch_queue_resource_policies", [])
+            if p.get("resource_policy_id") or p.get("resourcePolicyId")
+        }
+        for removed_bq_policy_id in existing_bq_policy_ids - incoming_bq_policy_ids:
+            if removed_bq_policy_id:
+                try:
+                    request.airavata_client.compute.remove_group_batch_queue_resource_policy(removed_bq_policy_id)
+                except Exception:
+                    log.warning("Failed to remove batch queue resource policy %s", removed_bq_policy_id, exc_info=True)
+
+        proto = dict_to_proto(incoming_data, GroupResourceProfileProto)
+        proto.group_resource_profile_id = group_resource_profile_id
+        proto.gateway_id = settings.GATEWAY_ID
+        request.airavata_client.compute.update_group_resource_profile(proto)
+        updated = request.airavata_client.compute.get_group_resource_profile(group_resource_profile_id)
+        return Response(proto_to_dict(updated))
+
+    def destroy(self, request: Request, group_resource_profile_id: str | None = None) -> Response:
+        request.airavata_client.compute.remove_group_resource_profile(group_resource_profile_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class SharedEntityViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, GenericAPIBackedViewSet):
@@ -1522,21 +1305,17 @@ class CredentialSummaryViewSet(APIBackedViewSet):
 class CurrentGatewayResourceProfile(APIView):
     def get(self, request: Request, format: str | None = None) -> Response:
         gateway_resource_profile = request.airavata_client.compute.get_gateway_resource_profile(settings.GATEWAY_ID)
-        serializer = serializers.GatewayResourceProfileSerializer(
-            gateway_resource_profile, context={"request": request}
-        )
-        return Response(serializer.data)
+        return Response(proto_to_dict(gateway_resource_profile))
 
     def put(self, request: Request, format: str | None = None) -> Response:
-        serializer = serializers.GatewayResourceProfileSerializer(data=request.data, context={"request": request})
-        if serializer.is_valid():
-            gateway_resource_profile = serializer.save()
-            request.airavata_client.compute.update_gateway_resource_profile(
-                settings.GATEWAY_ID, gateway_resource_profile
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.gatewayprofile.gateway_resource_profile_pb2 import (
+            GatewayResourceProfile as GatewayResourceProfileProto,
+        )
+
+        proto = dict_to_proto(request.data, GatewayResourceProfileProto)
+        request.airavata_client.compute.update_gateway_resource_profile(settings.GATEWAY_ID, proto)
+        updated = request.airavata_client.compute.get_gateway_resource_profile(settings.GATEWAY_ID)
+        return Response(proto_to_dict(updated))
 
 
 class ExperimentArchiveView(APIView):
@@ -1616,32 +1395,46 @@ class StorageResourceViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
         return Response(request.airavata_client.storage.get_all_storage_resource_names())
 
 
-class StoragePreferenceViewSet(APIBackedViewSet):
-    serializer_class = serializers.StoragePreferenceSerializer
+class StoragePreferenceViewSet(viewsets.ViewSet):
     lookup_field = "storage_resource_id"
 
-    def get_list(self) -> list[Any]:
-        return self.request.airavata_client.compute.get_all_gateway_storage_preferences(settings.GATEWAY_ID)
+    def list(self, request: Request) -> Response:
+        results = request.airavata_client.compute.get_all_gateway_storage_preferences(settings.GATEWAY_ID)
+        return Response(proto_list_to_dicts(results))
 
-    def get_instance(self, lookup_value: str) -> Any:
-        return self.request.airavata_client.compute.get_gateway_storage_preference(settings.GATEWAY_ID, lookup_value)
+    def retrieve(self, request: Request, storage_resource_id: str | None = None) -> Response:
+        result = request.airavata_client.compute.get_gateway_storage_preference(settings.GATEWAY_ID, storage_resource_id)
+        return Response(proto_to_dict(result))
 
-    def perform_create(self, serializer: Any) -> None:
-        storage_preference = serializer.save()
-        self.request.airavata_client.compute.add_gateway_storage_preference(
-            settings.GATEWAY_ID, storage_preference.storageResourceId, storage_preference
+    def create(self, request: Request) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.gatewayprofile.gateway_resource_profile_pb2 import (
+            StoragePreference as StoragePreferenceProto,
         )
 
-    def perform_update(self, serializer: Any) -> None:
-        storage_preference = serializer.save()
-        self.request.airavata_client.compute.update_gateway_storage_preference(
-            settings.GATEWAY_ID, storage_preference.storageResourceId, storage_preference
+        proto = dict_to_proto(request.data, StoragePreferenceProto)
+        request.airavata_client.compute.add_gateway_storage_preference(
+            settings.GATEWAY_ID, proto.storage_resource_id, proto
+        )
+        return Response(proto_to_dict(proto), status=status.HTTP_201_CREATED)
+
+    def update(self, request: Request, storage_resource_id: str | None = None) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.gatewayprofile.gateway_resource_profile_pb2 import (
+            StoragePreference as StoragePreferenceProto,
         )
 
-    def perform_destroy(self, instance: Any) -> None:
-        self.request.airavata_client.compute.delete_gateway_storage_preference(
-            settings.GATEWAY_ID, instance.storageResourceId
+        proto = dict_to_proto(request.data, StoragePreferenceProto)
+        proto.storage_resource_id = storage_resource_id
+        request.airavata_client.compute.update_gateway_storage_preference(
+            settings.GATEWAY_ID, storage_resource_id, proto
         )
+        updated = request.airavata_client.compute.get_gateway_storage_preference(settings.GATEWAY_ID, storage_resource_id)
+        return Response(proto_to_dict(updated))
+
+    def destroy(self, request: Request, storage_resource_id: str | None = None) -> Response:
+        request.airavata_client.compute.delete_gateway_storage_preference(
+            settings.GATEWAY_ID, storage_resource_id
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ParserViewSet(viewsets.ViewSet):
