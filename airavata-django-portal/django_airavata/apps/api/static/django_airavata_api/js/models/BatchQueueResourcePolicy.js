@@ -1,13 +1,13 @@
 import BaseModel from "./BaseModel";
 
 const FIELDS = [
-  "resourcePolicyId",
-  "computeResourceId",
-  "groupResourceProfileId",
+  "resource_policy_id",
+  "compute_resource_id",
+  "group_resource_profile_id",
   "queuename",
-  "maxAllowedNodes",
-  "maxAllowedCores",
-  "maxAllowedWalltime",
+  "max_allowed_nodes",
+  "max_allowed_cores",
+  "max_allowed_walltime",
 ];
 
 export default class BatchQueueResourcePolicy extends BaseModel {
@@ -17,26 +17,26 @@ export default class BatchQueueResourcePolicy extends BaseModel {
 
   validate(batchQueue) {
     let validationResults = {};
-    if (this.maxAllowedNodes && this.maxAllowedNodes < 1) {
-      validationResults["maxAllowedNodes"] = "Must be at least 1.";
-    } else if (this.maxAllowedNodes > batchQueue.maxNodes) {
+    if (this.max_allowed_nodes && this.max_allowed_nodes < 1) {
+      validationResults["max_allowed_nodes"] = "Must be at least 1.";
+    } else if (this.max_allowed_nodes > batchQueue.max_nodes) {
       validationResults[
-        "maxAllowedNodes"
-      ] = `Must be at most ${batchQueue.maxNodes}.`;
+        "max_allowed_nodes"
+      ] = `Must be at most ${batchQueue.max_nodes}.`;
     }
-    if (this.maxAllowedCores && this.maxAllowedCores < 1) {
-      validationResults["maxAllowedCores"] = "Must be at least 1.";
-    } else if (this.maxAllowedCores > batchQueue.maxProcessors) {
+    if (this.max_allowed_cores && this.max_allowed_cores < 1) {
+      validationResults["max_allowed_cores"] = "Must be at least 1.";
+    } else if (this.max_allowed_cores > batchQueue.max_processors) {
       validationResults[
-        "maxAllowedCores"
-      ] = `Must be at most ${batchQueue.maxProcessors}.`;
+        "max_allowed_cores"
+      ] = `Must be at most ${batchQueue.max_processors}.`;
     }
-    if (this.maxAllowedWalltime && this.maxAllowedWalltime < 1) {
-      validationResults["maxAllowedWalltime"] = "Must be at least 1.";
-    } else if (this.maxAllowedWalltime > batchQueue.maxRunTime) {
+    if (this.max_allowed_walltime && this.max_allowed_walltime < 1) {
+      validationResults["max_allowed_walltime"] = "Must be at least 1.";
+    } else if (this.max_allowed_walltime > batchQueue.max_run_time) {
       validationResults[
-        "maxAllowedWalltime"
-      ] = `Must be at most ${batchQueue.maxRunTime}.`;
+        "max_allowed_walltime"
+      ] = `Must be at most ${batchQueue.max_run_time}.`;
     }
     return validationResults;
   }

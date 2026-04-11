@@ -32,68 +32,68 @@ export default class ComputationalResourceSchedulingModel extends BaseModel {
       validationResults["node_count"] = "Enter a node count greater than 0.";
     } else if (
       batchQueueResourcePolicy &&
-      this.node_count > batchQueueResourcePolicy.maxAllowedNodes
+      this.node_count > batchQueueResourcePolicy.max_allowed_nodes
     ) {
       validationResults[
         "node_count"
-      ] = `Enter a node count no greater than ${batchQueueResourcePolicy.maxAllowedNodes}.`;
+      ] = `Enter a node count no greater than ${batchQueueResourcePolicy.max_allowed_nodes}.`;
     } else if (
       queueInfo &&
-      queueInfo.maxNodes &&
-      this.node_count > queueInfo.maxNodes
+      queueInfo.max_nodes &&
+      this.node_count > queueInfo.max_nodes
     ) {
       validationResults[
         "node_count"
-      ] = `Enter a node count no greater than ${queueInfo.maxNodes}.`;
+      ] = `Enter a node count no greater than ${queueInfo.max_nodes}.`;
     }
     if (!(this.total_cpu_count > 0)) {
       validationResults["total_cpu_count"] = "Enter a core count greater than 0.";
     } else if (
       batchQueueResourcePolicy &&
-      this.total_cpu_count > batchQueueResourcePolicy.maxAllowedCores
+      this.total_cpu_count > batchQueueResourcePolicy.max_allowed_cores
     ) {
       validationResults[
         "total_cpu_count"
-      ] = `Enter a core count no greater than ${batchQueueResourcePolicy.maxAllowedCores}.`;
+      ] = `Enter a core count no greater than ${batchQueueResourcePolicy.max_allowed_cores}.`;
     } else if (
       queueInfo &&
-      queueInfo.maxProcessors &&
-      this.total_cpu_count > queueInfo.maxProcessors
+      queueInfo.max_processors &&
+      this.total_cpu_count > queueInfo.max_processors
     ) {
       validationResults[
         "total_cpu_count"
-      ] = `Enter a core count no greater than ${queueInfo.maxProcessors}.`;
+      ] = `Enter a core count no greater than ${queueInfo.max_processors}.`;
     }
     if (!(this.wall_time_limit > 0)) {
       validationResults["wall_time_limit"] =
         "Enter a wall time limit greater than 0.";
     } else if (
       batchQueueResourcePolicy &&
-      this.wall_time_limit > batchQueueResourcePolicy.maxAllowedWalltime
+      this.wall_time_limit > batchQueueResourcePolicy.max_allowed_walltime
     ) {
       validationResults[
         "wall_time_limit"
-      ] = `Enter a wall time limit no greater than ${batchQueueResourcePolicy.maxAllowedWalltime}.`;
+      ] = `Enter a wall time limit no greater than ${batchQueueResourcePolicy.max_allowed_walltime}.`;
     } else if (
       queueInfo &&
-      queueInfo.maxRunTime &&
-      this.wall_time_limit > queueInfo.maxRunTime
+      queueInfo.max_run_time &&
+      this.wall_time_limit > queueInfo.max_run_time
     ) {
       validationResults[
         "wall_time_limit"
-      ] = `Enter a wall time limit no greater than ${queueInfo.maxRunTime}.`;
+      ] = `Enter a wall time limit no greater than ${queueInfo.max_run_time}.`;
     }
     if (!(this.total_physical_memory >= 0)) {
       validationResults["total_physical_memory"] =
         "Enter a total physical memory greater than or equal to 0.";
     } else if (
       queueInfo &&
-      queueInfo.maxMemory &&
-      this.total_physical_memory > queueInfo.maxMemory
+      queueInfo.max_memory &&
+      this.total_physical_memory > queueInfo.max_memory
     ) {
       validationResults[
         "total_physical_memory"
-      ] = `Enter a total physical memory no greater than ${queueInfo.maxMemory}.`;
+      ] = `Enter a total physical memory no greater than ${queueInfo.max_memory}.`;
     }
     return validationResults;
   }

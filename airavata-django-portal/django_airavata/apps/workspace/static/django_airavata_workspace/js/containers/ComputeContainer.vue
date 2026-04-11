@@ -77,21 +77,21 @@
           <tbody>
             <tr>
               <td class="text-muted" style="width:180px;">Host Name</td>
-              <td>{{ selectedResourceDetail ? selectedResourceDetail.hostName : '-' }}</td>
+              <td>{{ selectedResourceDetail ? selectedResourceDetail.host_name : '-' }}</td>
             </tr>
             <tr>
               <td class="text-muted">Description</td>
-              <td>{{ selectedResourceDetail ? (selectedResourceDetail.resourceDescription || '-') : '-' }}</td>
+              <td>{{ selectedResourceDetail ? (selectedResourceDetail.resource_description || '-') : '-' }}</td>
             </tr>
             <tr>
               <td class="text-muted">Enabled</td>
               <td>{{ selectedResourceDetail ? (selectedResourceDetail.enabled ? 'Yes' : 'No') : '-' }}</td>
             </tr>
-            <tr v-if="selectedResourceDetail && selectedResourceDetail.batchQueues && selectedResourceDetail.batchQueues.length > 0">
+            <tr v-if="selectedResourceDetail && selectedResourceDetail.batch_queues && selectedResourceDetail.batch_queues.length > 0">
               <td class="text-muted">Queues</td>
               <td>
-                <span v-for="q in selectedResourceDetail.batchQueues" :key="q.queueName" class="badge bg-secondary me-1">
-                  {{ q.queueName }}
+                <span v-for="q in selectedResourceDetail.batch_queues" :key="q.queue_name" class="badge bg-secondary me-1">
+                  {{ q.queue_name }}
                 </span>
               </td>
             </tr>
@@ -208,8 +208,8 @@ export default {
       try {
         await services.ComputeResourceService.create({
           data: {
-            hostName: this.newHostName.trim(),
-            resourceDescription: this.newDescription.trim() || undefined,
+            host_name: this.newHostName.trim(),
+            resource_description: this.newDescription.trim() || undefined,
           },
         });
         Modal.getInstance(this.$refs.registerModal).hide();

@@ -9,20 +9,20 @@ function currentTimeTopOfHour() {
   return d;
 }
 const FIELDS = [
-  "reservationId",
-  "reservationName",
+  "reservation_id",
+  "reservation_name",
   {
-    name: "queueNames",
+    name: "queue_names",
     type: "string",
     list: true,
   },
   {
-    name: "startTime",
+    name: "start_time",
     type: Date,
     default: () => currentTimeTopOfHour(),
   },
   {
-    name: "endTime",
+    name: "end_time",
     type: Date,
     default: () => currentTimeTopOfHour(),
   },
@@ -38,28 +38,28 @@ export default class ComputeResourceReservation extends BaseModel {
   }
   validate() {
     let validationResults = {};
-    if (this.isEmpty(this.reservationName)) {
-      validationResults["reservationName"] =
+    if (this.isEmpty(this.reservation_name)) {
+      validationResults["reservation_name"] =
         "Please provide the name of this reservation.";
     }
-    if (this.startTime > this.endTime) {
-      validationResults["endTime"] = "End time must be later than start time.";
+    if (this.start_time > this.end_time) {
+      validationResults["end_time"] = "End time must be later than start time.";
     }
-    if (this.isEmpty(this.queueNames)) {
-      validationResults["queueNames"] = "Please select at least one queue.";
+    if (this.isEmpty(this.queue_names)) {
+      validationResults["queue_names"] = "Please select at least one queue.";
     }
     return validationResults;
   }
   get isExpired() {
     const now = new Date();
-    return now > this.endTime;
+    return now > this.end_time;
   }
   get isActive() {
     const now = new Date();
-    return this.startTime < now && now < this.endTime;
+    return this.start_time < now && now < this.end_time;
   }
   get isUpcoming() {
     const now = new Date();
-    return now < this.startTime;
+    return now < this.start_time;
   }
 }

@@ -4,7 +4,7 @@
       <label for="reservation-name" class="form-label">Reservation name</label>
       <input class="form-control"
         id="reservation-name"
-        v-model="data.reservationName"
+        v-model="data.reservation_name"
         type="text"
         @input="nameInputBegins = true"
         :class="{ 'is-invalid': nameValidationState === false }"
@@ -20,8 +20,8 @@
         class="form-control"
         @on-change="onStartTimeChange"
       />
-      <div class="invalid-feedback d-block" v-if="getValidationFeedback('startTime')">
-        {{ getValidationFeedback('startTime') }}
+      <div class="invalid-feedback d-block" v-if="getValidationFeedback('start_time')">
+        {{ getValidationFeedback('start_time') }}
       </div>
     </div>
     <div class="mb-3">
@@ -30,11 +30,11 @@
         id="end-time"
         :value="endTimeAsString"
         :config="endTimeConfig"
-        :class="{ 'form-control': true, 'is-invalid': getValidationState('endTime') === false }"
+        :class="{ 'form-control': true, 'is-invalid': getValidationState('end_time') === false }"
         @on-change="onEndTimeChange"
       />
-      <div class="invalid-feedback d-block" v-if="getValidationFeedback('endTime')">
-        {{ getValidationFeedback('endTime') }}
+      <div class="invalid-feedback d-block" v-if="getValidationFeedback('end_time')">
+        {{ getValidationFeedback('end_time') }}
       </div>
     </div>
     <div class="mb-3">
@@ -49,12 +49,12 @@
           type="checkbox"
           :id="'queue-' + queue"
           :value="queue"
-          v-model="data.queueNames"
+          v-model="data.queue_names"
         />
         <label class="form-check-label" :for="'queue-' + queue">{{ queue }}</label>
       </div>
-      <div class="invalid-feedback d-block" v-if="getValidationFeedback('queueNames')">
-        {{ getValidationFeedback('queueNames') }}
+      <div class="invalid-feedback d-block" v-if="getValidationFeedback('queue_names')">
+        {{ getValidationFeedback('queue_names') }}
       </div>
     </div>
   </form>
@@ -83,10 +83,10 @@ export default {
   },
   computed: {
     startTimeAsString() {
-      return this.data.startTime.toISOString();
+      return this.data.start_time.toISOString();
     },
     endTimeAsString() {
-      return this.data.endTime.toISOString();
+      return this.data.end_time.toISOString();
     },
     startTimeConfig() {
       return {
@@ -108,13 +108,13 @@ export default {
       };
     },
     nameValidationFeedback() {
-      return this.getValidationFeedback("reservationName");
+      return this.getValidationFeedback("reservation_name");
     },
     nameValidationState() {
       if (this.nameInputBegins === false) {
         return null;
       }
-      return this.getValidationState("reservationName");
+      return this.getValidationState("reservation_name");
     },
     queueNameOptions() {
       return this.queues.slice().sort();
@@ -123,13 +123,13 @@ export default {
   methods: {
     onStartTimeChange(selectedDates) {
       if (selectedDates.length > 0) {
-        this.data.startTime = selectedDates[0];
+        this.data.start_time = selectedDates[0];
         this.valuesChanged();
       }
     },
     onEndTimeChange(selectedDates) {
       if (selectedDates.length > 0) {
-        this.data.endTime = selectedDates[0];
+        this.data.end_time = selectedDates[0];
         this.valuesChanged();
       }
     },

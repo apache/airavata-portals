@@ -3,7 +3,7 @@
     <div class="mb-3" label="Login username" label-for="login-username">
       <input class="form-control"
         id="login-username"
-        v-model="data.loginUserName"
+        v-model="data.login_user_name"
         type="text"
       />
     </div>
@@ -13,7 +13,7 @@
     >
       <input class="form-control"
         id="filesystem-root-location"
-        v-model="data.fileSystemRootLocation"
+        v-model="data.file_system_root_location"
         type="text"
       />
     </form-group>
@@ -24,7 +24,7 @@
     >
       <ssh-credential-selector
         id="default-credential-store-token"
-        v-model="data.resourceSpecificCredentialStoreToken"
+        v-model="data.resource_specific_credential_store_token"
         :null-option-default-credential-token="defaultCredentialStoreToken"
         :null-option-disabled="!defaultCredentialStoreToken"
       >

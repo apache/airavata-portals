@@ -60,14 +60,14 @@
         <tbody>
           <tr v-for="item in slotProps.items" :key="item.key">
             <td>
-              {{ item.reservationName }}
+              {{ item.reservation_name }}
               <span class="badge bg-secondary" v-if="item.isExpired">Expired</span>
               <span class="badge bg-success" v-if="item.isActive">Active</span>
               <span class="badge bg-info" v-if="item.isUpcoming">Upcoming</span>
             </td>
             <td>
               <ul>
-                <li v-for="queueName in item.queueNames" :key="queueName">{{ queueName }}</li>
+                <li v-for="queueName in item.queue_names" :key="queueName">{{ queueName }}</li>
               </ul>
             </td>
             <td>
@@ -85,7 +85,7 @@
                 @delete="deleteReservation(item)"
               >
                 Are you sure you want to delete reservation
-                <strong>{{ item.reservationName }}</strong>?
+                <strong>{{ item.reservation_name }}</strong>?
               </delete-link>
             </td>
           </tr>
@@ -136,21 +136,21 @@ export default {
       return [
         {
           label: "Name",
-          key: "reservationName",
+          key: "reservation_name",
         },
         {
           label: "Queues",
-          key: "queueNames",
+          key: "queue_names",
         },
         {
           label: "Start Time",
-          key: "startTime",
+          key: "start_time",
           formatter: (value) =>
             utils.dateFormatters.dateTimeInMinutesWithTimeZone.format(value),
         },
         {
           label: "End Time",
-          key: "endTime",
+          key: "end_time",
           formatter: (value) =>
             utils.dateFormatters.dateTimeInMinutesWithTimeZone.format(value),
         },
@@ -200,7 +200,7 @@ export default {
     addNewReservation() {
       this.newReservation = new models.ComputeResourceReservation();
       this.newReservationValid = false;
-      this.newReservation.queueNames = this.queues.slice();
+      this.newReservation.queue_names = this.queues.slice();
       this.showNewItemEditor = true;
     },
     saveNewReservation() {

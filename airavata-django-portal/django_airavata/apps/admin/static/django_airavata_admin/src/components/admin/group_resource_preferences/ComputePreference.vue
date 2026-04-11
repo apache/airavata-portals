@@ -8,9 +8,9 @@
             class="group-resource-profile-name text-muted text-uppercase"
           >
             <i class="fa fa-server" aria-hidden="true"></i>
-            {{ localGroupResourceProfile.groupResourceProfileName }}
+            {{ localGroupResourceProfile.group_resource_profile_name }}
           </div>
-          {{ computeResource.hostName }}
+          {{ computeResource.host_name }}
         </h1>
       </div>
     </div>
@@ -22,16 +22,16 @@
               label="Login Username"
               label-for="login-username"
               :invalid-feedback="
-                validationFeedback.loginUserName.invalidFeedback
+                validationFeedback.login_user_name.invalidFeedback
               "
-              :state="validationFeedback.loginUserName.state"
+              :state="validationFeedback.login_user_name.state"
             >
               <input class="form-control"
                 id="login-username"
                 type="text"
                 required
-                v-model="data.loginUserName"
-                :state="validationFeedback.loginUserName.state"
+                v-model="data.login_user_name"
+                :state="validationFeedback.login_user_name.state"
                 :disabled="!userHasWriteAccess"
                 @input="validate"
               />
@@ -41,14 +41,14 @@
               label-for="credential-store-token"
             >
               <ssh-credential-selector
-                v-model="data.resourceSpecificCredentialStoreToken"
+                v-model="data.resource_specific_credential_store_token"
                 v-if="localGroupResourceProfile"
                 :readonly="!userHasWriteAccess"
                 :null-option-default-credential-token="
-                  localGroupResourceProfile.defaultCredentialStoreToken
+                  localGroupResourceProfile.default_credential_store_token
                 "
                 :null-option-disabled="
-                  !localGroupResourceProfile.defaultCredentialStoreToken
+                  !localGroupResourceProfile.default_credential_store_token
                 "
               >
                 <template
@@ -57,7 +57,7 @@
                 >
                   <span v-if="nullOptionLabelScope.defaultCredentialSummary">
                     Use the default SSH credential for
-                    {{ localGroupResourceProfile.groupResourceProfileName }} ({{
+                    {{ localGroupResourceProfile.group_resource_profile_name }} ({{
                       nullOptionLabelScope.defaultCredentialSummary.username
                     }}
                     -
@@ -72,15 +72,15 @@
             <form-group
               label="Resource Type"
               label-for="resource-type"
-              :invalid-feedback="validationFeedback.resourceType.invalidFeedback"
-              :state="validationFeedback.resourceType.state"
+              :invalid-feedback="validationFeedback.resource_type.invalidFeedback"
+              :state="validationFeedback.resource_type.state"
             >
               <select class="form-select"
                 id="resource-type"
-                v-model="data.resourceType"
+                v-model="data.resource_type"
                 :options="resourceTypeOptions"
                 :disabled="!userHasWriteAccess"
-                :state="validationFeedback.resourceType.state"
+                :state="validationFeedback.resource_type.state"
                 @change="onResourceTypeChange"
               >
                 <template slot="first">
@@ -97,7 +97,7 @@
                 <input class="form-control"
                   id="allocation-number"
                   type="text"
-                  v-model="data.allocationProjectNumber"
+                  v-model="data.allocation_project_number"
                   :disabled="!userHasWriteAccess"
                 />
               </form-group>
@@ -111,7 +111,7 @@
                 <input class="form-control"
                   id="aws-region"
                   type="text"
-                  v-model="data.specificPreferences.region"
+                  v-model="data.specific_preferences.region"
                   :disabled="!userHasWriteAccess"
                 />
               </form-group>
@@ -122,7 +122,7 @@
                 <input class="form-control"
                   id="preferred-ami-id"
                   type="text"
-                  v-model="data.specificPreferences.preferredAmiId"
+                  v-model="data.specific_preferences.preferred_ami_id"
                   :disabled="!userHasWriteAccess"
                 />
               </form-group>
@@ -133,7 +133,7 @@
                 <input class="form-control"
                   id="preferred-instance-type"
                   type="text"
-                  v-model="data.specificPreferences.preferredInstanceType"
+                  v-model="data.specific_preferences.preferred_instance_type"
                   :disabled="!userHasWriteAccess"
                 />
               </form-group>
@@ -142,17 +142,17 @@
               label="Scratch Location"
               label-for="scratch-location"
               :invalid-feedback="
-                validationFeedback.scratchLocation.invalidFeedback
+                validationFeedback.scratch_location.invalidFeedback
               "
-              :state="validationFeedback.scratchLocation.state"
+              :state="validationFeedback.scratch_location.state"
             >
               <input class="form-control"
                 id="scratch-location"
                 type="text"
                 required
-                v-model="data.scratchLocation"
+                v-model="data.scratch_location"
                 :disabled="!userHasWriteAccess"
-                :state="validationFeedback.scratchLocation.state"
+                :state="validationFeedback.scratch_location.state"
                 @input="validate"
               />
             </form-group>
@@ -166,7 +166,7 @@
           <div class="card-body">
             <h5 class="card-title">Policy</h5>
             <compute-resource-policy-editor
-              :batch-queues="computeResource.batchQueues"
+              :batch-queues="computeResource.batch_queues"
               :compute-resource-policy="localComputeResourcePolicy"
               :batch-queue-resource-policies="localBatchQueueResourcePolicies"
               :readonly="!userHasWriteAccess"
@@ -214,7 +214,7 @@
         :disabled="!userHasWriteAccess"
         @delete="remove">
         Are you sure you want to remove the preferences for compute resource
-        <strong>{{ computeResource.hostName }}</strong
+        <strong>{{ computeResource.host_name }}</strong
         >?
       </delete-button>
       <button class="btn btn-secondary btn-sm ms-2" @click="cancel"
@@ -261,13 +261,13 @@ export default {
   mounted: function () {
     const computeResourcePromise = this.fetchComputeResource(this.host_id);
     if (this.localGroupResourceProfile) {
-      this.userHasWriteAccess = this.localGroupResourceProfile.userHasWriteAccess;
+      this.userHasWriteAccess = this.localGroupResourceProfile.user_has_write_access;
     }
     if (!this.value && this.id && this.host_id) {
       services.GroupResourceProfileService.retrieve({lookup: this.id}).then(
         (groupResourceProfile) => {
           this.localGroupResourceProfile = groupResourceProfile;
-          this.userHasWriteAccess = this.localGroupResourceProfile.userHasWriteAccess;
+          this.userHasWriteAccess = this.localGroupResourceProfile.user_has_write_access;
           const computeResourcePreference = groupResourceProfile.getComputePreference(
             this.host_id
           );
@@ -301,7 +301,7 @@ export default {
       data: this.value
         ? this.value.clone()
         : new models.GroupComputeResourcePreference({
-          computeResourceId: this.host_id,
+          compute_resource_id: this.host_id,
         }),
       localGroupResourceProfile: this.groupResourceProfile
         ? this.groupResourceProfile.clone()
@@ -313,8 +313,8 @@ export default {
         ? this.batchQueueResourcePolicies.map((pol) => pol.clone())
         : [],
       computeResource: {
-        batchQueues: [],
-        jobSubmissionInterfaces: [],
+        batch_queues: [],
+        job_submission_interfaces: [],
       },
       validationErrors: null,
       reservationsInvalid: false,
@@ -344,7 +344,7 @@ export default {
       );
     },
     queueNames() {
-      return this.computeResource.batchQueues.map((bq) => bq.queueName);
+      return this.computeResource.batch_queues.map((bq) => bq.queue_name);
     },
   },
   mixins: [mixins.VModelMixin],
@@ -370,20 +370,20 @@ export default {
             name: "group_resource_preference",
             params: {
               value: groupResourceProfile,
-              id: groupResourceProfile.groupResourceProfileId,
+              id: groupResourceProfile.group_resource_profile_id,
             },
           });
         })
         .catch((error) => {
           if (
             errors.ErrorUtils.isValidationError(error) &&
-            "computePreferences" in error.details.response
+            "compute_preferences" in error.details.response
           ) {
-            const computePreferencesIndex = groupResourceProfile.computePreferences.findIndex(
-              (cp) => cp.computeResourceId === this.host_id
+            const computePreferencesIndex = groupResourceProfile.compute_preferences.findIndex(
+              (cp) => cp.compute_resource_id === this.host_id
             );
             this.validationErrors =
-              error.details.response.computePreferences[
+              error.details.response.compute_preferences[
                 computePreferencesIndex
                 ];
           } else {
@@ -445,10 +445,10 @@ export default {
     createDefaultComputeResourcePolicy: function (computeResourcePromise) {
       computeResourcePromise.then((computeResource) => {
         const defaultComputeResourcePolicy = new models.ComputeResourcePolicy();
-        defaultComputeResourcePolicy.computeResourceId = this.host_id;
-        defaultComputeResourcePolicy.groupResourceProfileId = this.id;
-        defaultComputeResourcePolicy.allowedBatchQueues = computeResource.batchQueues.map(
-          (queue) => queue.queueName
+        defaultComputeResourcePolicy.compute_resource_id = this.host_id;
+        defaultComputeResourcePolicy.group_resource_profile_id = this.id;
+        defaultComputeResourcePolicy.allowed_batch_queues = computeResource.batch_queues.map(
+          (queue) => queue.queue_name
         );
         this.localComputeResourcePolicy = defaultComputeResourcePolicy;
       });
@@ -463,7 +463,7 @@ export default {
     addReservation(reservation) {
       this.data.reservations.push(reservation);
       this.data.reservations.sort((a, b) =>
-        a.startTime < b.startTime ? -1 : 1
+        a.start_time < b.start_time ? -1 : 1
       );
     },
     deleteReservation(reservation) {
@@ -479,21 +479,21 @@ export default {
       this.data.reservations.splice(reservationIndex, 1, reservation);
     },
     onResourceTypeChange() {
-      if (!this.data.resourceType) {
-        this.data.specificPreferences = null;
+      if (!this.data.resource_type) {
+        this.data.specific_preferences = null;
         this.validate();
         return;
       }
       if (this.data.resetSpecificPreferences) {
         this.data.resetSpecificPreferences();
       } else {
-        const resourceTypeName = this.data.resourceType.name;
+        const resourceTypeName = this.data.resource_type.name;
         const modelClassName = this._getPreferenceModelClassName(resourceTypeName);
         if (modelClassName && models[modelClassName]) {
           const PreferenceModel = models[modelClassName];
-          this.data.specificPreferences = new PreferenceModel();
+          this.data.specific_preferences = new PreferenceModel();
         } else {
-          this.data.specificPreferences = null;
+          this.data.specific_preferences = null;
         }
       }
       this.validate();
@@ -510,7 +510,7 @@ export default {
       if (this.data.isResourceType) {
         return this.data.isResourceType(resourceTypeName);
       }
-      return this.data.resourceType && this.data.resourceType.name === resourceTypeName;
+      return this.data.resource_type && this.data.resource_type.name === resourceTypeName;
     },
   },
   beforeRouteEnter: function (to, from, next) {

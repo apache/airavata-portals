@@ -11,7 +11,7 @@
         <div class="mb-3" label="Storage Resource" label-for="storage-resource">
           <select class="form-select"
             id="storage-resource"
-            v-model="newStoragePreference.storageResourceId"
+            v-model="newStoragePreference.storage_resource_id"
             :options="storageResourceOptions"
           />
         </div>
@@ -37,17 +37,17 @@
         hover
         :fields="fields"
         :items="slotProps.items"
-        sort-by="storageResourceId"
+        sort-by="storage_resource_id"
       >
         <template
-          slot="cell(resourceSpecificCredentialStoreToken)"
+          slot="cell(resource_specific_credential_store_token)"
           slot-scope="data"
         >
           {{ data.value }}
           <span class="badge"
             v-if="
               defaultCredentialStoreToken &&
-              !data.item.resourceSpecificCredentialStoreToken
+              !data.item.resource_specific_credential_store_token
             "
           >
             Default
@@ -65,11 +65,11 @@
           <delete-link
             v-if="!readonly"
             class="action-link"
-            @delete="deleteStoragePreference(data.item.storageResourceId)"
+            @delete="deleteStoragePreference(data.item.storage_resource_id)"
           >
             Are you sure you want to delete the storage preference for
             <strong>{{
-              getStorageResourceName(data.item.storageResourceId)
+              getStorageResourceName(data.item.storage_resource_id)
             }}</strong
             >?
           </delete-link>
@@ -130,22 +130,22 @@ export default {
       return [
         {
           label: "Name",
-          key: "storageResourceId",
+          key: "storage_resource_id",
           sortable: true,
           formatter: (value) => this.getStorageResourceName(value),
         },
         {
           label: "Username",
-          key: "loginUserName",
+          key: "login_user_name",
         },
         {
           label: "SSH Credential",
-          key: "resourceSpecificCredentialStoreToken",
+          key: "resource_specific_credential_store_token",
           formatter: (value) => this.getCredentialName(value),
         },
         {
           label: "File System Location",
-          key: "fileSystemRootLocation",
+          key: "file_system_root_location",
         },
         {
           label: "Action",
@@ -156,12 +156,12 @@ export default {
     decoratedStoragePreferences() {
       return this.storagePreferences.map((sp) => {
         const spClone = sp.clone();
-        spClone._showDetails = this.showingDetails[spClone.storageResourceId];
+        spClone._showDetails = this.showingDetails[spClone.storage_resource_id];
         return spClone;
       });
     },
     currentStoragePreferenceIds() {
-      return this.storagePreferences.map((sp) => sp.storageResourceId);
+      return this.storagePreferences.map((sp) => sp.storage_resource_id);
     },
     storageResourceOptions() {
       const options = [];
@@ -227,8 +227,8 @@ export default {
     },
     toggleDetails(row) {
       row.toggleDetails();
-      this.showingDetails[row.item.storageResourceId] = !this.showingDetails[
-        row.item.storageResourceId
+      this.showingDetails[row.item.storage_resource_id] = !this.showingDetails[
+        row.item.storage_resource_id
       ];
     },
     deleteStoragePreference(storageResourceId) {

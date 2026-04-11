@@ -32,20 +32,20 @@
                 </div>
               </td>
             </tr>
-            <tr v-for="profile in groupResourceProfiles" :key="profile.groupResourceProfileId">
-              <td>{{ profile.groupResourceProfileName }}</td>
-              <td><human-date :date="profile.updatedTime" /></td>
+            <tr v-for="profile in groupResourceProfiles" :key="profile.group_resource_profile_id">
+              <td>{{ profile.group_resource_profile_name }}</td>
+              <td><human-date :date="profile.updated_time" /></td>
               <td>
-                <router-link class="action-link me-2" v-if="profile.userHasWriteAccess"
-                  :to="{ name: 'group_resource_preference', params: { value: profile, id: profile.groupResourceProfileId } }">
+                <router-link class="action-link me-2" v-if="profile.user_has_write_access"
+                  :to="{ name: 'group_resource_preference', params: { value: profile, id: profile.group_resource_profile_id } }">
                   Edit <i class="fa fa-edit"></i>
                 </router-link>
                 <router-link class="action-link me-2" v-else
-                  :to="{ name: 'group_resource_preference', params: { value: profile, id: profile.groupResourceProfileId } }">
+                  :to="{ name: 'group_resource_preference', params: { value: profile, id: profile.group_resource_profile_id } }">
                   View <i class="fa fa-eye"></i>
                 </router-link>
-                <delete-link v-if="profile.userHasWriteAccess" class="action-link" @delete="removeGroupResourceProfile(profile)">
-                  Are you sure you want to delete <strong>{{ profile.groupResourceProfileName }}</strong>?
+                <delete-link v-if="profile.user_has_write_access" class="action-link" @delete="removeGroupResourceProfile(profile)">
+                  Are you sure you want to delete <strong>{{ profile.group_resource_profile_name }}</strong>?
                 </delete-link>
               </td>
             </tr>
@@ -82,7 +82,7 @@ export default {
       );
     },
     removeGroupResourceProfile(profile) {
-      services.GroupResourceProfileService.delete({ lookup: profile.groupResourceProfileId })
+      services.GroupResourceProfileService.delete({ lookup: profile.group_resource_profile_id })
         .then(() => services.GroupResourceProfileService.list())
         .then((profiles) => (this.groupResourceProfiles = profiles));
     },

@@ -182,7 +182,7 @@ export default {
   computed: {
     name() {
       if (this.computeResource) {
-        return this.computeResource.hostName;
+        return this.computeResource.host_name;
       } else {
         return this.data.computeHostId.substring(0, 10) + "...";
       }
@@ -199,44 +199,44 @@ export default {
       if (!this.computeResource) {
         return [];
       }
-      return this.computeResource.batchQueues.map((queue) => {
+      return this.computeResource.batch_queues.map((queue) => {
         return {
-          value: queue.queueName,
-          text: queue.queueName,
+          value: queue.queue_name,
+          text: queue.queue_name,
         };
       });
     },
     maxNodes() {
       const queue = this.computeResource
-        ? this.computeResource.batchQueues.find(
-            (q) => q.queueName === this.data.defaultQueueName
+        ? this.computeResource.batch_queues.find(
+            (q) => q.queue_name === this.data.defaultQueueName
           )
         : null;
-      return queue ? queue.maxNodes : 0;
+      return queue ? queue.max_nodes : 0;
     },
     maxCPUCount() {
       const queue = this.computeResource
-        ? this.computeResource.batchQueues.find(
-            (q) => q.queueName === this.data.defaultQueueName
+        ? this.computeResource.batch_queues.find(
+            (q) => q.queue_name === this.data.defaultQueueName
           )
         : null;
-      return queue ? queue.maxProcessors : 0;
+      return queue ? queue.max_processors : 0;
     },
     maxWalltime() {
       const queue = this.computeResource
-        ? this.computeResource.batchQueues.find(
-            (q) => q.queueName === this.data.defaultQueueName
+        ? this.computeResource.batch_queues.find(
+            (q) => q.queue_name === this.data.defaultQueueName
           )
         : null;
-      return queue ? queue.maxRuntime : 0;
+      return queue ? queue.max_run_time : 0;
     },
     cpuPerNode() {
       const queue = this.computeResource
-        ? this.computeResource.batchQueues.find(
-            (q) => q.queueName === this.data.defaultQueueName
+        ? this.computeResource.batch_queues.find(
+            (q) => q.queue_name === this.data.defaultQueueName
           )
         : null;
-      return queue ? queue.cpuPerNode : 0;
+      return queue ? queue.cpu_per_node : 0;
     },
     defaultQueueAttributesDisabled() {
       return !this.data.defaultQueueName || this.readonly;
@@ -280,12 +280,12 @@ export default {
     },
     defaultQueueChanged(queueName) {
       if (queueName) {
-        const queue = this.computeResource.batchQueues.find(
-          (q) => q.queueName === queueName
+        const queue = this.computeResource.batch_queues.find(
+          (q) => q.queue_name === queueName
         );
-        this.data.defaultNodeCount = queue.defaultNodeCount;
-        this.data.defaultCPUCount = queue.defaultCPUCount;
-        this.data.defaultWalltime = queue.defaultWalltime;
+        this.data.defaultNodeCount = queue.default_node_count;
+        this.data.defaultCPUCount = queue.default_cpu_count;
+        this.data.defaultWalltime = queue.default_walltime;
       } else {
         this.data.defaultNodeCount = null;
         this.data.defaultCPUCount = null;

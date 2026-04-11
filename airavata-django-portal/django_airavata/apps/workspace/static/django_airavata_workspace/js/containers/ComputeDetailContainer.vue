@@ -21,11 +21,11 @@
       <div class="row align-items-center mb-3">
         <div class="col">
           <h1 class="h4 mb-0">
-            {{ resource.hostName }}
+            {{ resource.host_name }}
             <span class="badge bg-success ms-2" v-if="resource.enabled" style="font-size:0.7rem;vertical-align:middle;">Enabled</span>
             <span class="badge bg-secondary ms-2" v-else style="font-size:0.7rem;vertical-align:middle;">Disabled</span>
           </h1>
-          <p class="text-muted mb-0" style="font-size:0.8125rem;" v-if="resource.resourceDescription">{{ resource.resourceDescription }}</p>
+          <p class="text-muted mb-0" style="font-size:0.8125rem;" v-if="resource.resource_description">{{ resource.resource_description }}</p>
         </div>
         <div class="col-auto d-flex gap-2">
           <button class="btn btn-outline-secondary btn-sm" @click="testConnection" :disabled="testingConnection || !sshCredentialToken">
@@ -56,11 +56,11 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label form-label-sm">Host Name</label>
-              <input type="text" class="form-control form-control-sm" v-model="resource.hostName" />
+              <input type="text" class="form-control form-control-sm" v-model="resource.host_name" />
             </div>
             <div class="col-md-6">
               <label class="form-label form-label-sm">Description</label>
-              <input type="text" class="form-control form-control-sm" v-model="resource.resourceDescription" placeholder="Optional" />
+              <input type="text" class="form-control form-control-sm" v-model="resource.resource_description" placeholder="Optional" />
             </div>
             <div class="col-md-2">
               <label class="form-label form-label-sm">Enabled</label>
@@ -71,23 +71,23 @@
             </div>
             <div class="col-md-2">
               <label class="form-label form-label-sm">CPUs Per Node</label>
-              <input type="number" class="form-control form-control-sm" v-model.number="resource.cpusPerNode" min="1" />
+              <input type="number" class="form-control form-control-sm" v-model.number="resource.cpus_per_node" min="1" />
             </div>
             <div class="col-md-2">
               <label class="form-label form-label-sm">Max Memory (MB)</label>
-              <input type="number" class="form-control form-control-sm" v-model.number="resource.maxMemoryPerNode" min="0" />
+              <input type="number" class="form-control form-control-sm" v-model.number="resource.max_memory_per_node" min="0" />
             </div>
             <div class="col-md-2">
               <label class="form-label form-label-sm">Default Node Count</label>
-              <input type="number" class="form-control form-control-sm" v-model.number="resource.defaultNodeCount" min="1" />
+              <input type="number" class="form-control form-control-sm" v-model.number="resource.default_node_count" min="1" />
             </div>
             <div class="col-md-2">
               <label class="form-label form-label-sm">Default CPU Count</label>
-              <input type="number" class="form-control form-control-sm" v-model.number="resource.defaultCPUCount" min="1" />
+              <input type="number" class="form-control form-control-sm" v-model.number="resource.default_cpu_count" min="1" />
             </div>
             <div class="col-md-2">
               <label class="form-label form-label-sm">Default Walltime (min)</label>
-              <input type="number" class="form-control form-control-sm" v-model.number="resource.defaultWalltime" min="1" />
+              <input type="number" class="form-control form-control-sm" v-model.number="resource.default_walltime" min="1" />
             </div>
           </div>
         </div>
@@ -282,36 +282,36 @@ export default {
         });
         // Pull job submission info if available
         if (
-          this.resource.jobSubmissionInterfaces &&
-          this.resource.jobSubmissionInterfaces.length > 0
+          this.resource.job_submission_interfaces &&
+          this.resource.job_submission_interfaces.length > 0
         ) {
-          const iface = this.resource.jobSubmissionInterfaces[0];
-          if (iface.jobSubmissionInterfaceId) {
+          const iface = this.resource.job_submission_interfaces[0];
+          if (iface.job_submission_interface_id) {
             this.jobSubmission.resourceManager =
-              iface.jobSubmissionProtocol || "";
+              iface.job_submission_protocol || "";
           }
         }
         // Pull SSH job submission info (sshPort, alternativeSshHostname)
         if (
-          this.resource.sshJobSubmission
+          this.resource.ssh_job_submission
         ) {
           this.jobSubmission.sshPort =
-            this.resource.sshJobSubmission.sshPort || 22;
+            this.resource.ssh_job_submission.ssh_port || 22;
           this.jobSubmission.alternativeSshHostname =
-            this.resource.sshJobSubmission.alternativeSshHostname || "";
+            this.resource.ssh_job_submission.alternative_ssh_hostname || "";
           this.jobSubmission.resourceManager =
-            this.resource.sshJobSubmission.resourceManager || "";
+            this.resource.ssh_job_submission.resource_manager || "";
         }
         // Load existing batch queues as partitions
         if (
-          this.resource.batchQueues &&
-          this.resource.batchQueues.length > 0
+          this.resource.batch_queues &&
+          this.resource.batch_queues.length > 0
         ) {
-          this.partitions = this.resource.batchQueues.map((q) => ({
-            partition: q.queueName || "",
-            nodes: q.maxNodes || null,
-            maxCpusPerNode: q.cpuPerNode || null,
-            maxMemMbPerNode: q.maxMemory || null,
+          this.partitions = this.resource.batch_queues.map((q) => ({
+            partition: q.queue_name || "",
+            nodes: q.max_nodes || null,
+            maxCpusPerNode: q.cpu_per_node || null,
+            maxMemMbPerNode: q.max_memory || null,
             maxGpusPerNode: null,
             gpuTypesStr: "",
             accountsStr: "",
@@ -364,7 +364,7 @@ export default {
         await utils.FetchUtils.post("/api/ssh/test/", {
           compute_resource_id: this.computeResourceId,
           credential_token: this.sshCredentialToken,
-          host: this.resource.hostName,
+          host: this.resource.host_name,
           port: this.jobSubmission.sshPort || 22,
         });
       } catch (e) {
@@ -411,16 +411,16 @@ export default {
       this.saveSuccess = false;
       try {
         // Map partitions back to batchQueues
-        const batchQueues = this.partitions.map((p) => ({
-          queueName: p.partition,
-          maxNodes: p.nodes || undefined,
-          cpuPerNode: p.maxCpusPerNode || undefined,
-          maxMemory: p.maxMemMbPerNode || undefined,
+        const batch_queues = this.partitions.map((p) => ({
+          queue_name: p.partition,
+          max_nodes: p.nodes || undefined,
+          cpu_per_node: p.maxCpusPerNode || undefined,
+          max_memory: p.maxMemMbPerNode || undefined,
         }));
 
         const payload = {
           ...this.resource,
-          batchQueues,
+          batch_queues,
         };
 
         await services.ComputeResourceService.update({
@@ -439,7 +439,7 @@ export default {
     async deleteResource() {
       if (
         !window.confirm(
-          `Delete compute resource "${this.resource.hostName}"? This action cannot be undone.`
+          `Delete compute resource "${this.resource.host_name}"? This action cannot be undone.`
         )
       ) {
         return;

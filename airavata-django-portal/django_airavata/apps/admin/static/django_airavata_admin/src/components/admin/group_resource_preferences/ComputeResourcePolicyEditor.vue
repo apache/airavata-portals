@@ -2,33 +2,33 @@
   <form-group
     label="Allowed Queues"
     v-if="localComputeResourcePolicy"
-    :invalid-feedback="validationFeedback.allowedBatchQueues.invalidFeedback"
-    :state="validationFeedback.allowedBatchQueues.state"
+    :invalid-feedback="validationFeedback.allowed_batch_queues.invalidFeedback"
+    :state="validationFeedback.allowed_batch_queues.state"
   >
-    <div v-for="batchQueue in batchQueues" :key="batchQueue.queueName">
+    <div v-for="batchQueue in batchQueues" :key="batchQueue.queue_name">
       <div class="form-check">
         <input class="form-check-input" type="checkbox"
           :checked="
-            localComputeResourcePolicy.allowedBatchQueues.includes(
-              batchQueue.queueName
+            localComputeResourcePolicy.allowed_batch_queues.includes(
+              batchQueue.queue_name
             )
           "
           :disabled="readonly"
           @change="batchQueueChecked(batchQueue, $event.target.checked)"
         />
-        <label class="form-check-label">{{ batchQueue.queueName }}</label>
+        <label class="form-check-label">{{ batchQueue.queue_name }}</label>
       </div>
       <batch-queue-resource-policy
         v-if="
-          localComputeResourcePolicy.allowedBatchQueues.includes(
-            batchQueue.queueName
+          localComputeResourcePolicy.allowed_batch_queues.includes(
+            batchQueue.queue_name
           )
         "
         :batch-queue="batchQueue"
         :readonly="readonly"
         :value="
           localBatchQueueResourcePolicies.find(
-            (pol) => pol.queuename === batchQueue.queueName
+            (pol) => pol.queuename === batchQueue.queue_name
           )
         "
         @input="updatedBatchQueueResourcePolicy(batchQueue, $event)"
@@ -95,27 +95,27 @@ export default {
     },
     allowedInvalidBatchQueueResourcePolicies() {
       return this.invalidBatchQueueResourcePolicies.filter((queueName) =>
-        this.localComputeResourcePolicy.allowedBatchQueues.includes(queueName)
+        this.localComputeResourcePolicy.allowed_batch_queues.includes(queueName)
       );
     },
   },
   methods: {
     batchQueueChecked: function (batchQueue, checked) {
       if (checked) {
-        this.localComputeResourcePolicy.allowedBatchQueues.push(
-          batchQueue.queueName
+        this.localComputeResourcePolicy.allowed_batch_queues.push(
+          batchQueue.queue_name
         );
       } else {
-        const queueIndex = this.localComputeResourcePolicy.allowedBatchQueues.indexOf(
-          batchQueue.queueName
+        const queueIndex = this.localComputeResourcePolicy.allowed_batch_queues.indexOf(
+          batchQueue.queue_name
         );
-        this.localComputeResourcePolicy.allowedBatchQueues.splice(
+        this.localComputeResourcePolicy.allowed_batch_queues.splice(
           queueIndex,
           1
         );
         // Remove batchQueueResourcePolicy if it exists
         const policyIndex = this.localBatchQueueResourcePolicies.findIndex(
-          (pol) => pol.queuename === batchQueue.queueName
+          (pol) => pol.queuename === batchQueue.queue_name
         );
         if (policyIndex >= 0) {
           this.localBatchQueueResourcePolicies.splice(policyIndex, 1);
@@ -135,7 +135,7 @@ export default {
       batchQueue,
       batchQueueResourcePolicy
     ) {
-      const queueName = batchQueue.queueName;
+      const queueName = batchQueue.queue_name;
       if (batchQueueResourcePolicy) {
         const existingPolicy = this.localBatchQueueResourcePolicies.find(
           (pol) => pol.queuename === queueName
@@ -163,10 +163,10 @@ export default {
     },
     recordValidBatchQueueResourcePolicy(batchQueue) {
       if (
-        this.invalidBatchQueueResourcePolicies.includes(batchQueue.queueName)
+        this.invalidBatchQueueResourcePolicies.includes(batchQueue.queue_name)
       ) {
         const index = this.invalidBatchQueueResourcePolicies.indexOf(
-          batchQueue.queueName
+          batchQueue.queue_name
         );
         this.invalidBatchQueueResourcePolicies.splice(index, 1);
       }
@@ -174,9 +174,9 @@ export default {
     },
     recordInvalidBatchQueueResourcePolicy(batchQueue) {
       if (
-        !this.invalidBatchQueueResourcePolicies.includes(batchQueue.queueName)
+        !this.invalidBatchQueueResourcePolicies.includes(batchQueue.queue_name)
       ) {
-        this.invalidBatchQueueResourcePolicies.push(batchQueue.queueName);
+        this.invalidBatchQueueResourcePolicies.push(batchQueue.queue_name);
       }
       this.validate(); // propagate validation
     },

@@ -6,24 +6,24 @@
         (<span title="Max Allowed Nodes"
           >N:
           {{
-            queuePolicy.policy.maxAllowedNodes
-              ? queuePolicy.policy.maxAllowedNodes
+            queuePolicy.policy.max_allowed_nodes
+              ? queuePolicy.policy.max_allowed_nodes
               : "Unlimited"
           }}</span
         >,
         <span title="Max Allowed Cores"
           >C:
           {{
-            queuePolicy.policy.maxAllowedCores
-              ? queuePolicy.policy.maxAllowedCores
+            queuePolicy.policy.max_allowed_cores
+              ? queuePolicy.policy.max_allowed_cores
               : "Unlimited"
           }}</span
         >,
         <span title="Max Allowed Walltime"
           >W:
           {{
-            queuePolicy.policy.maxAllowedWalltime
-              ? queuePolicy.policy.maxAllowedWalltime
+            queuePolicy.policy.max_allowed_walltime
+              ? queuePolicy.policy.max_allowed_walltime
               : "Unlimited"
           }}</span
         >)
@@ -51,8 +51,8 @@ export default {
       const computeResourcePolicy = this.groupResourceProfile.getComputeResourcePolicy(
         this.computeResourceId
       );
-      if (computeResourcePolicy && computeResourcePolicy.allowedBatchQueues) {
-        const queues = computeResourcePolicy.allowedBatchQueues.slice();
+      if (computeResourcePolicy && computeResourcePolicy.allowed_batch_queues) {
+        const queues = computeResourcePolicy.allowed_batch_queues.slice();
         queues.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
         return queues;
       } else {

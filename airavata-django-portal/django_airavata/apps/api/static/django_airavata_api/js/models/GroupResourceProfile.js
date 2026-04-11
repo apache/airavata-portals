@@ -43,20 +43,20 @@ export default class GroupResourceProfile extends BaseModel {
   }
 
   getComputePreference(computeResourceId) {
-    return this.computePreferences.find(
-      (pref) => pref.computeResourceId === computeResourceId
+    return this.compute_preferences.find(
+      (pref) => pref.compute_resource_id === computeResourceId
     );
   }
 
   getComputeResourcePolicy(computeResourceId) {
-    return this.computeResourcePolicies.find(
-      (pol) => pol.computeResourceId === computeResourceId
+    return this.compute_resource_policies.find(
+      (pol) => pol.compute_resource_id === computeResourceId
     );
   }
 
   getBatchQueueResourcePolicies(computeResourceId) {
-    return this.batchQueueResourcePolicies.filter(
-      (pol) => pol.computeResourceId === computeResourceId
+    return this.batch_queue_resource_policies.filter(
+      (pol) => pol.compute_resource_id === computeResourceId
     );
   }
 
@@ -66,9 +66,9 @@ export default class GroupResourceProfile extends BaseModel {
     batchQueueResourcePolicies
   ) {
     // merge/add computeResourcePreference and computeResourcePolicy
-    const existingComputeResourcePreference = this.computePreferences.find(
+    const existingComputeResourcePreference = this.compute_preferences.find(
       (pref) =>
-        pref.computeResourceId === computeResourcePreference.computeResourceId
+        pref.compute_resource_id === computeResourcePreference.compute_resource_id
     );
     if (existingComputeResourcePreference) {
       Object.assign(
@@ -76,20 +76,20 @@ export default class GroupResourceProfile extends BaseModel {
         computeResourcePreference
       );
     } else {
-      this.computePreferences.push(computeResourcePreference);
+      this.compute_preferences.push(computeResourcePreference);
     }
-    const existingComputeResourcePolicy = this.computeResourcePolicies.find(
-      (pol) => pol.computeResourceId === computeResourcePolicy.computeResourceId
+    const existingComputeResourcePolicy = this.compute_resource_policies.find(
+      (pol) => pol.compute_resource_id === computeResourcePolicy.compute_resource_id
     );
     if (existingComputeResourcePolicy) {
       Object.assign(existingComputeResourcePolicy, computeResourcePolicy);
     } else {
-      this.computeResourcePolicies.push(computeResourcePolicy);
+      this.compute_resource_policies.push(computeResourcePolicy);
     }
     // merge/add/remove batchQueueResourcePolicies
-    const existingBatchQueueResourcePolicies = this.batchQueueResourcePolicies.filter(
+    const existingBatchQueueResourcePolicies = this.batch_queue_resource_policies.filter(
       (pol) =>
-        pol.computeResourceId === computeResourcePreference.computeResourceId
+        pol.compute_resource_id === computeResourcePreference.compute_resource_id
     );
     for (const batchQueueResourcePolicy of batchQueueResourcePolicies) {
       const existingBatchQueueResourcePolicy = existingBatchQueueResourcePolicies.find(
@@ -110,18 +110,18 @@ export default class GroupResourceProfile extends BaseModel {
           );
         }
       } else {
-        this.batchQueueResourcePolicies.push(batchQueueResourcePolicy);
+        this.batch_queue_resource_policies.push(batchQueueResourcePolicy);
       }
     }
     for (const existingBatchQueueResourcePolicy of existingBatchQueueResourcePolicies) {
-      const existingBatchQueueResourcePolicyIndex = this.batchQueueResourcePolicies.findIndex(
+      const existingBatchQueueResourcePolicyIndex = this.batch_queue_resource_policies.findIndex(
         (pol) =>
-          pol.computeResourceId ===
-            existingBatchQueueResourcePolicy.computeResourceId &&
+          pol.compute_resource_id ===
+            existingBatchQueueResourcePolicy.compute_resource_id &&
           pol.queuename === existingBatchQueueResourcePolicy.queuename
       );
       if (existingBatchQueueResourcePolicyIndex >= 0) {
-        this.batchQueueResourcePolicies.splice(
+        this.batch_queue_resource_policies.splice(
           existingBatchQueueResourcePolicyIndex,
           1
         );
@@ -136,31 +136,31 @@ export default class GroupResourceProfile extends BaseModel {
    */
   removeComputeResource(computeResourceId) {
     let removedChildren = false;
-    const existingComputeResourcePreferenceIndex = this.computePreferences.findIndex(
-      (pref) => pref.computeResourceId === computeResourceId
+    const existingComputeResourcePreferenceIndex = this.compute_preferences.findIndex(
+      (pref) => pref.compute_resource_id === computeResourceId
     );
     if (existingComputeResourcePreferenceIndex >= 0) {
-      this.computePreferences.splice(existingComputeResourcePreferenceIndex, 1);
+      this.compute_preferences.splice(existingComputeResourcePreferenceIndex, 1);
       removedChildren = true;
     }
-    const existingComputeResourcePolicyIndex = this.computeResourcePolicies.findIndex(
-      (pol) => pol.computeResourceId === computeResourceId
+    const existingComputeResourcePolicyIndex = this.compute_resource_policies.findIndex(
+      (pol) => pol.compute_resource_id === computeResourceId
     );
     if (existingComputeResourcePolicyIndex >= 0) {
-      this.computeResourcePolicies.splice(
+      this.compute_resource_policies.splice(
         existingComputeResourcePolicyIndex,
         1
       );
       removedChildren = true;
     }
-    const existingBatchQueueResourcePolicies = this.batchQueueResourcePolicies.filter(
-      (pol) => pol.computeResourceId === computeResourceId
+    const existingBatchQueueResourcePolicies = this.batch_queue_resource_policies.filter(
+      (pol) => pol.compute_resource_id === computeResourceId
     );
     for (const existingBatchQueueResourcePolicy of existingBatchQueueResourcePolicies) {
-      const existingBatchQueueResourcePolicyIndex = this.batchQueueResourcePolicies.indexOf(
+      const existingBatchQueueResourcePolicyIndex = this.batch_queue_resource_policies.indexOf(
         existingBatchQueueResourcePolicy
       );
-      this.batchQueueResourcePolicies.splice(
+      this.batch_queue_resource_policies.splice(
         existingBatchQueueResourcePolicyIndex,
         1
       );
