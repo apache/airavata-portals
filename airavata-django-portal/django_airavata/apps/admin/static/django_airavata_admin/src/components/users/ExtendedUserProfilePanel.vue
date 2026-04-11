@@ -1,33 +1,47 @@
 <template>
-  <div class="card" header="Extended User Profile">
-    <template v-if="items.length === 0">
-      <a href="/admin/extended-user-profile"
-        >Add additional user profile fields for gateway users to
-        complete</b-link
-      >
-    </template>
-    <!-- TODO: Replace b-table with native table --><table class="table" v-else :items="items" :fields="fields" small borderless>
-      <template #cell(value)="{ value, item }">
-        <!-- only show a valid checkmark when there is a user provided value -->
-        <i v-if="value && item.valid" class="fas fa-check text-success"></i>
-        <i v-if="!item.valid" class="fas fa-times text-danger"></i>
-        <template v-if="Array.isArray(value)">
-          <ul>
-            <li v-for="result in value" :key="result">
-              {{ result }}
-            </li>
-          </ul>
-        </template>
-        <template v-else> {{ value }} </template>
+  <div class="card">
+    <div class="card-header">Extended User Profile</div>
+    <div class="card-body">
+      <template v-if="items.length === 0">
+        <a href="/admin/extended-user-profile"
+          >Add additional user profile fields for gateway users to
+          complete</a
+        >
       </template>
-    </table>
-    <a
-      v-if="items.length > 0"
-      href="/admin/extended-user-profile"
-      class="text-muted small"
-      >Add or edit these field definitions</b-link
-    >
-  </div></div>
+      <table class="table table-sm table-borderless mb-0" v-else>
+        <thead>
+          <tr>
+            <th>name</th>
+            <th>value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in items" :key="item.name">
+            <td>{{ item.name }}</td>
+            <td>
+              <!-- only show a valid checkmark when there is a user provided value -->
+              <i v-if="item.value && item.valid" class="fas fa-check text-success"></i>
+              <i v-if="!item.valid" class="fas fa-times text-danger"></i>
+              <template v-if="Array.isArray(item.value)">
+                <ul>
+                  <li v-for="result in item.value" :key="result">
+                    {{ result }}
+                  </li>
+                </ul>
+              </template>
+              <template v-else> {{ item.value }} </template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <a
+        v-if="items.length > 0"
+        href="/admin/extended-user-profile"
+        class="text-muted small"
+        >Add or edit these field definitions</a
+      >
+    </div>
+  </div>
 </template>
 
 <script>

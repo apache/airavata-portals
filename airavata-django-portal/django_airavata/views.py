@@ -1,9 +1,18 @@
+from django.conf import settings
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
 
 def health(request):
     return JsonResponse({"status": "ok"})
+
+
+def landing(request):
+    if request.user.is_authenticated:
+        return redirect("home")
+    return render(request, "django_airavata/landing.html", {
+        "portal_title": getattr(settings, "PORTAL_TITLE", "CyberShuttle Portal"),
+    })
 
 
 def home(request):

@@ -1,105 +1,74 @@
 <template>
   <form>
-    <form-group
-      label="Reservation name"
-      label-for="reservation-name"
-      :invalid-feedback="nameValidationFeedback"
-      :state="nameValidationState"
-    >
+    <div class="mb-3">
+      <label for="reservation-name" class="form-label">Reservation name</label>
       <input class="form-control"
         id="reservation-name"
         v-model="data.reservationName"
         type="text"
         @input="nameInputBegins = true"
-        :state="nameValidationState"
+        :class="{ 'is-invalid': nameValidationState === false }"
       />
+      <div class="invalid-feedback" v-if="nameValidationFeedback">{{ nameValidationFeedback }}</div>
     </div>
-    <form-group
-      label="Start Time"
-      label-for="start-time"
-      :invalid-feedback="getValidationFeedback('startTime')"
-      :state="getValidationState('startTime')"
-    >
-      <datetime
+    <div class="mb-3">
+      <label for="start-time" class="form-label">Start Time</label>
+      <flat-pickr
         id="start-time"
-        type="datetime"
         :value="startTimeAsString"
-        input-class="form-control"
-        :format="{
-          year: 'numeric',
-          month: '2-digit',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          timeZoneName: 'short',
-        }"
-        :phrases="{ ok: 'Continue', cancel: 'Exit' }"
-        :hour-step="1"
-        :minute-step="30"
-        :week-start="7"
-        use12-hour
-        auto
-        @input="data.startTime = stringToDate($event)"
-      ></datetime>
-    </div>
-    <form-group
-      label="End Time"
-      label-for="end-time"
-      :invalid-feedback="getValidationFeedback('endTime')"
-      :state="getValidationState('endTime')"
-    >
-      <datetime
-        id="end-time"
-        type="datetime"
-        :value="endTimeAsString"
-        :input-class="{
-          'form-control': true,
-          'is-invalid': getValidationState('endTime'),
-        }"
-        :format="{
-          year: 'numeric',
-          month: '2-digit',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          timeZoneName: 'short',
-        }"
-        :phrases="{ ok: 'Continue', cancel: 'Exit' }"
-        :hour-step="1"
-        :minute-step="30"
-        :week-start="7"
-        :min-datetime="startTimeAsString"
-        use12-hour
-        auto
-        @input="data.endTime = stringToDate($event)"
-      ></datetime>
-    </div>
-    <form-group
-      label="Queues"
-      label-for="queues"
-      :invalid-feedback="getValidationFeedback('queueNames')"
-      :state="getValidationState('queueNames')"
-    >
-      <form-checkbox-group
-        id="queues"
-        v-model="data.queueNames"
-        :options="queueNameOptions"
-        :state="getValidationState('queueNames')"
+        :config="startTimeConfig"
+        class="form-control"
+        @on-change="onStartTimeChange"
       />
+      <div class="invalid-feedback d-block" v-if="getValidationFeedback('startTime')">
+        {{ getValidationFeedback('startTime') }}
+      </div>
+    </div>
+    <div class="mb-3">
+      <label for="end-time" class="form-label">End Time</label>
+      <flat-pickr
+        id="end-time"
+        :value="endTimeAsString"
+        :config="endTimeConfig"
+        :class="{ 'form-control': true, 'is-invalid': getValidationState('endTime') === false }"
+        @on-change="onEndTimeChange"
+      />
+      <div class="invalid-feedback d-block" v-if="getValidationFeedback('endTime')">
+        {{ getValidationFeedback('endTime') }}
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Queues</label>
+      <div
+        v-for="queue in queueNameOptions"
+        :key="queue"
+        class="form-check"
+      >
+        <input
+          class="form-check-input"
+          type="checkbox"
+          :id="'queue-' + queue"
+          :value="queue"
+          v-model="data.queueNames"
+        />
+        <label class="form-check-label" :for="'queue-' + queue">{{ queue }}</label>
+      </div>
+      <div class="invalid-feedback d-block" v-if="getValidationFeedback('queueNames')">
+        {{ getValidationFeedback('queueNames') }}
+      </div>
     </div>
   </form>
 </template>
 
 <script>
 import { mixins, utils } from "django-airavata-common-ui";
-import { Datetime } from "vue-datetime";
-import "vue-datetime/dist/vue-datetime.css";
+import FlatPickr from "vue-flatpickr-component";
 
 export default {
   name: "compute-resource-reservation-editor",
   mixins: [mixins.VModelMixin],
   components: {
-    datetime: Datetime,
+    FlatPickr,
   },
   props: {
     queues: {
@@ -112,15 +81,31 @@ export default {
       nameInputBegins: false,
     };
   },
-  created() {
-    this.$on("input", this.valuesChanged);
-  },
   computed: {
     startTimeAsString() {
       return this.data.startTime.toISOString();
     },
     endTimeAsString() {
       return this.data.endTime.toISOString();
+    },
+    startTimeConfig() {
+      return {
+        enableTime: true,
+        dateFormat: "Z",
+        altInput: true,
+        altFormat: "m/d/Y h:i K T",
+        minuteIncrement: 30,
+      };
+    },
+    endTimeConfig() {
+      return {
+        enableTime: true,
+        dateFormat: "Z",
+        altInput: true,
+        altFormat: "m/d/Y h:i K T",
+        minuteIncrement: 30,
+        minDate: this.startTimeAsString,
+      };
     },
     nameValidationFeedback() {
       return this.getValidationFeedback("reservationName");
@@ -136,8 +121,17 @@ export default {
     },
   },
   methods: {
-    stringToDate(datetimeString) {
-      return new Date(datetimeString);
+    onStartTimeChange(selectedDates) {
+      if (selectedDates.length > 0) {
+        this.data.startTime = selectedDates[0];
+        this.valuesChanged();
+      }
+    },
+    onEndTimeChange(selectedDates) {
+      if (selectedDates.length > 0) {
+        this.data.endTime = selectedDates[0];
+        this.valuesChanged();
+      }
     },
     getValidationFeedback: function (properties) {
       return utils.getProperty(this.data.validate(), properties);

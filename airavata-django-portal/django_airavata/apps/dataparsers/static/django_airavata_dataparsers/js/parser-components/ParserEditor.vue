@@ -9,11 +9,8 @@
       <div class="col">
         <div class="card">
           <div class="card-body">
-            <div class="alert"
-              :variant="showDismissibleAlert.variant"
-              dismissible
-              :show="showDismissibleAlert.dismissable"
-              @dismissed="showDismissibleAlert.dismissable = false"
+            <div :class="['alert', 'alert-' + showDismissibleAlert.variant]"
+              v-if="showDismissibleAlert.dismissable"
             >
               {{ showDismissibleAlert.message }}
             </div>
@@ -31,9 +28,8 @@
                   v-model="localParser.id"
                   required
                   placeholder="Enter parser name"
-                >
-                </input>
-              </div>
+                />
+              </form-group>
 
               <form-group
                 id="group2"
@@ -46,9 +42,8 @@
                   v-model="localParser.imageName"
                   required
                   placeholder="Enter the Docker Image name"
-                >
-                </input>
-              </div>
+                />
+              </form-group>
 
               <form-group
                 id="group3"
@@ -61,9 +56,8 @@
                   v-model="localParser.inputDirPath"
                   required
                   placeholder="Enter input directory of the container"
-                >
-                </input>
-              </div>
+                />
+              </form-group>
 
               <form-group
                 id="group4"
@@ -76,9 +70,8 @@
                   v-model="localParser.outputDirPath"
                   required
                   placeholder="Enter output directory of the container"
-                >
-                </input>
-              </div>
+                />
+              </form-group>
             </form>
           </div>
         </div>
@@ -134,16 +127,14 @@
     </div>
     <div class="row">
       <div class="col d-flex justify-content-end">
-        <button class="btn" variant="primary" @click="saveParser">Save</button>
-        <button class="btn"
+        <button class="btn btn-primary" @click="saveParser">Save</button>
+        <button class="btn btn-danger ms-2"
           v-if="parser"
-          class="ms-2"
-          variant="danger"
           @click="removeParser"
-          >Delete</b-button
+          >Delete</button
         >
-        <button class="btn" class="ms-2" variant="secondary" @click="cancel"
-          >Cancel</b-button
+        <button class="btn btn-secondary ms-2" @click="cancel"
+          >Cancel</button
         >
       </div>
     </div>

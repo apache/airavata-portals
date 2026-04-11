@@ -4,6 +4,7 @@ import { resolve } from "path";
 
 export default defineConfig({
   plugins: [vue()],
+  base: "/static/django_airavata_groups/dist/",
   build: {
     manifest: "manifest.json",
     outDir: resolve(__dirname, "./static/django_airavata_groups/dist"),
@@ -25,6 +26,7 @@ export default defineConfig({
     },
   },
   resolve: {
+    extensions: [".vue", ".js", ".json"],
     alias: {
       "@": resolve(__dirname, "./static/django_airavata_groups/js"),
     },

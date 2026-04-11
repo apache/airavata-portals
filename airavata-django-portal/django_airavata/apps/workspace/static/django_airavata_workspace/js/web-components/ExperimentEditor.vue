@@ -8,10 +8,9 @@
       <!-- programmatically define slot for experiment-project as native slot
            (not Vue slots), see #mounted() -->
     </div>
-    <template v-for="input in experiment.experimentInputs">
+    <template v-for="input in experiment.experimentInputs" :key="input.name">
       <div
         :ref="input.name"
-        :key="input.name"
         @input="updateInputValue(input.name, $event)"
       >
         <!-- programmatically define slots as native slots (not Vue slots), see #mounted() -->
@@ -197,11 +196,11 @@ export default {
        */
       // <slot name="experiment-buttons">
       //   <div class="d-flex justify-content-end">
-      //     <button class="btn"
+      //     <button class="btn me-2"
       //       type="submit"
       //       variant="success"
       //       name="save-and-launch-experiment-button"
-      //       class="me-2"
+      //       
       //     >
       //       Save and Launch
       //     </button>

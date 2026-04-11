@@ -16,14 +16,13 @@ from django_airavata.proto_compat import UserProfile
 
 class LoginViewTestCase(TestCase):
     def test_login_with_next_param(self):
-
+        # The login view redirects to Keycloak; verify the next param is
+        # forwarded (URL-encoded) through the redirect_uri query string.
         response = self.client.get("/auth/login", data={"next": "/some/url"})
-        self.assertTrue("next" in response.context)
-        self.assertEqual(response.context["next"], "/some/url")
-        self.assertContains(response, '<input type="hidden" name="next" value="/some/url"/>')
-        # Create account url should pass along the next param
-        create_account_url = reverse("django_airavata_auth:create_account") + "?" + urlencode({"next": "/some/url"})
-        self.assertContains(response, f'<a href="{create_account_url}">')
+        self.assertEqual(response.status_code, 302)
+        location = response["Location"]
+        # 'next' is embedded in redirect_uri as URL-encoded query param
+        self.assertIn("next%3D", location)
 
 
 class HandleLoginViewTestCase(TestCase):
@@ -81,6 +80,7 @@ class CreateAccountViewTestCase(TestCase):
         self.assertEqual(data["next"], email_verification.next)
 
     @patch("django_airavata.apps.auth.forms.iam_admin_client")
+    @override_settings(AUTHENTICATION_OPTIONS={"password": {"hidden": False}})
     def test_submit_invalid_create_account_with_next(self, forms_iam_admin_client):
 
         # make sure there are no EmailVerification records at the beginning

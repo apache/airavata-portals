@@ -12,8 +12,8 @@
       maxlength="255"
     ></textarea>
     <div class="mt-1">
-      <button class="btn" variant="success" size="sm" @click="toggleEditing"
-        >Save description</b-button
+      <button class="btn btn-success btn-sm" @click="toggleEditing"
+        >Save description</button
       >
       <a
         @click="cancelEditing"
@@ -24,7 +24,7 @@
         <span class="visually-hidden">Cancel editing</span>
       </a>
     </div>
-  </div>
+  </form-group>
   <div v-else class="mb-3">
     <a @click="startEditing" class="d-inline-block text-body mb-1">
       <i class="fas fa-align-left"></i>

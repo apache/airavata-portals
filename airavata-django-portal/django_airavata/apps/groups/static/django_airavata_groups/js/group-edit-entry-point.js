@@ -7,7 +7,7 @@ entry(({ createApp }) => {
     data() {
       return {
         groupId: null,
-        next: "/groups/",
+        next: "/resources/sharing/",
       };
     },
     beforeMount() {

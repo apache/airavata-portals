@@ -1,36 +1,26 @@
 <template>
   <extended-user-profile-value-editor v-bind="$props">
-    <select class="form-select"
+    <select :class="['form-select', validateStateErrorOnly(v$.value) === false ? 'is-invalid' : '']"
       v-model="value"
-      :options="options"
       @change="onChange"
-      :state="validateStateErrorOnly($v.value)"
     >
-      <template #first>
-        <option :value="null" disabled
-          >-- Please select an option --</b-form-select-option
-        >
-      </template>
-
-      <select class="form-select"-option
-        :value="otherOptionValue"
-        v-if="extendedUserProfileField.other"
-        >Other (please specify)</b-form-select-option
+      <option :value="null" disabled>-- Please select an option --</option>
+      <option v-for="opt in options" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
+      <option v-if="extendedUserProfileField.other" :value="otherOptionValue"
+        >Other (please specify)</option
       >
     </select>
-    <div class="invalid-feedback" :state="validateState($v.value)"
-      >This field is required.</b-form-invalid-feedback
+    <div class="invalid-feedback" v-if="v$.value.$dirty && v$.value.$error"
+      >This field is required.</div
     >
     <template v-if="showOther">
-      <input class="form-control"
-        class="mt-2"
+      <input :class="['form-control mt-2', validateState(v$.other) === false ? 'is-invalid' : '']"
         v-model="other"
         placeholder="Please specify"
-        :state="validateState($v.other)"
         @input="onInput"
       />
-      <div class="invalid-feedback" :state="validateState($v.other)"
-        >Please specify a value for 'Other'.</b-form-invalid-feedback
+      <div class="invalid-feedback" v-if="v$.other.$dirty && v$.other.$error"
+        >Please specify a value for 'Other'.</div
       >
     </template>
   </extended-user-profile-value-editor>
@@ -38,16 +28,18 @@
 
 <script>
 import { mapGetters, mapMutations } from "vuex";
-import { validationMixin } from "vuelidate";
-import { required, requiredIf } from "vuelidate/lib/validators";
+import { useVuelidate } from "@vuelidate/core";
+import { required, requiredIf } from "@vuelidate/validators";
 import { errors } from "django-airavata-common-ui";
 import ExtendedUserProfileValueEditor from "./ExtendedUserProfileValueEditor.vue";
 const OTHER_OPTION = new Object(); // sentinel value
 
 export default {
-  mixins: [validationMixin],
   components: { ExtendedUserProfileValueEditor },
   props: ["extendedUserProfileField"],
+  setup() {
+    return { v$: useVuelidate() };
+  },
   data() {
     return {
       otherOptionSelected: false,
@@ -72,7 +64,7 @@ export default {
             value,
             id: this.extendedUserProfileField.id,
           });
-          this.$v.value.$touch();
+          this.v$.value.$touch();
         }
       },
     },
@@ -85,7 +77,7 @@ export default {
           value,
           id: this.extendedUserProfileField.id,
         });
-        this.$v.other.$touch();
+        this.v$.other.$touch();
       },
     },
     showOther() {
@@ -107,7 +99,7 @@ export default {
       return OTHER_OPTION;
     },
     valid() {
-      return !this.$v.$invalid;
+      return !this.v$.$invalid;
     },
     required() {
       return this.extendedUserProfileField.required;
@@ -121,7 +113,7 @@ export default {
     if (this.showOther) {
       validations.other = { required };
     } else {
-      validations.value = { required: requiredIf("required") };
+      validations.value = { required: requiredIf(() => this.required) };
     }
     return validations;
   },
@@ -130,19 +122,16 @@ export default {
       "setSingleChoiceValue",
       "setSingleChoiceOther",
     ]),
-    onChange(value) {
-      this.otherOptionSelected = value === this.otherOptionValue;
+    onChange(event) {
+      this.otherOptionSelected = event.target.value === String(this.otherOptionValue);
     },
     onInput() {
-      // Handle case where initially there is an other value. If the user
-      // deletes the other value, then we still want to keep the other text box
-      // until the user unchecks the other option.
       this.otherOptionSelected = true;
     },
     validateState: errors.vuelidateHelpers.validateState,
     validateStateErrorOnly: errors.vuelidateHelpers.validateStateErrorOnly,
     touch() {
-      this.$v.$touch();
+      this.v$.$touch();
     },
   },
   watch: {

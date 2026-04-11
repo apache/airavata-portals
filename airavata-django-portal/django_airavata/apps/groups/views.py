@@ -12,7 +12,7 @@ ENTRY_POINTS = {
 
 @login_required
 def groups_manage(request):
-    request.active_nav_item = "manage"
+    request.active_nav_item = "sharing"
 
     return render(
         request,
@@ -26,7 +26,7 @@ def groups_manage(request):
 
 @login_required
 def groups_create(request):
-    request.active_nav_item = "manage"
+    request.active_nav_item = "sharing"
 
     return render(
         request,
@@ -41,7 +41,7 @@ def groups_create(request):
 
 @login_required
 def edit_group(request, group_id):
-    request.active_nav_item = "manage"
+    request.active_nav_item = "sharing"
 
     return render(
         request,

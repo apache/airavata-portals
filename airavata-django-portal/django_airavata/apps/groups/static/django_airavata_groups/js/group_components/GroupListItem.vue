@@ -17,7 +17,7 @@
       <a
         v-if="group.isOwner || group.isAdmin"
         class="action-link"
-        :href="'/groups/edit/' + encodeURIComponent(group.id) + '/'"
+        :href="'/resources/sharing/edit/' + encodeURIComponent(group.id) + '/'"
       >
         Edit <i class="fa fa-edit"></i>
       </a>
@@ -30,34 +30,22 @@
       >
         Delete <i class="fa fa-trash"></i>
       </a>
-      <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
-        :header-bg-variant="headerBgVariant"
-        :header-text-variant="headerTextVariant"
-        :body-bg-variant="bodyBgVariant"
-        v-model="show"
-        :id="'modal' + group.id"
-        title="Are you sure?"
-      >
-        <p class="my-4">
+      <div v-if="show" class="alert alert-danger mt-2">
+        <p class="my-2">
           You cannot go back! Do you really want to delete the group '<strong>{{
             group.name
-          }}</strong
-          >'?
+          }}</strong>'?
         </p>
-        <div slot="modal-footer" class="w-100">
-          <button class="btn"
-            class="float-right ms-1"
-            :variant="yesButtonVariant"
+        <div class="d-flex justify-content-end">
+          <button class="btn btn-danger btn-sm ms-1"
             :disabled="deleting"
             @click="deleteGroup(group.id)"
-            >Yes</b-button
+            >Yes</button
           >
-          <button class="btn"
-            class="float-right ms-1"
-            :variant="noButtonVariant"
+          <button class="btn btn-secondary btn-sm ms-1"
             :disabled="deleting"
             @click="show = false"
-            >No</b-button
+            >No</button
           >
         </div>
       </div>

@@ -57,9 +57,9 @@ class ExperimentSearchFields(enum.IntEnum):
 
 
 class SummaryType(enum.IntEnum):
-    SSH = 0
-    PASSWD = 1
-    CERT = 2
+    SSH = 1
+    PASSWD = 2
+    CERT = 3
 
 
 class ResourcePermissionType(enum.IntEnum):
@@ -323,9 +323,12 @@ class ExperimentSummaryModel(_ThriftLikeBase):
 
 
 class GroupModel(_ThriftLikeBase):
-    name: str | None
-    id: str | None
-    ownerId: str | None
+    name: str | None = None
+    id: str | None = None
+    ownerId: str | None = None
+    description: str | None = None
+    members: list[str] | None = None
+    admins: list[str] | None = None
 
 
 # -- Job --

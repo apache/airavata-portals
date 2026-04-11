@@ -51,7 +51,7 @@ export default {
     },
     storageFileViewRouteUrl() {
       // This endpoint can handle XHR upload or a TUS uploadURL
-      return `/workspace/storage/~?dataProductUri=${this.dataProductUri}`;
+      return `/resources/storage/~?dataProductUri=${this.dataProductUri}`;
     },
   },
 };

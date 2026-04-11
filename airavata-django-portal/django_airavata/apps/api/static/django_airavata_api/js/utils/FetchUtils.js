@@ -21,7 +21,9 @@ const parseQueryParams = function (url, queryParams = "") {
 
 const setSpinnerDisplay = function (display) {
   let spinner = document.getElementById("airavata-spinner");
-  spinner.style.display = display;
+  if (spinner) {
+    spinner.style.display = display;
+  }
 };
 
 const incrementCount = function () {

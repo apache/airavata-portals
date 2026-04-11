@@ -1,61 +1,64 @@
 <template>
-  <list-layout
-    @add-new-item="newGroupResourcePreference"
-    :items="groupResourceProfiles"
-    title="Group Resource Profiles"
-    new-item-button-text="New Group Resource Profile"
-  >
-    <template slot="item-list" slot-scope="slotProps">
-      <!-- TODO: Replace b-table with native table --><table class="table" striped hover :fields="fields" :items="slotProps.items">
-        <template slot="cell(updatedTime)" slot-scope="data">
-          <human-date :date="data.value" />
-        </template>
-        <template slot="cell(action)" slot-scope="data">
-          <router-link
-            class="action-link"
-            v-if="data.item.userHasWriteAccess"
-            :to="{
-              name: 'group_resource_preference',
-              params: {
-                value: data.item,
-                id: data.item.groupResourceProfileId,
-              },
-            }"
-          >
-            Edit
-            <i class="fa fa-edit" aria-hidden="true"></i>
-          </router-link>
-          <router-link
-            class="action-link"
-            v-if="!data.item.userHasWriteAccess"
-            :to="{
-              name: 'group_resource_preference',
-              params: {
-                value: data.item,
-                id: data.item.groupResourceProfileId,
-              },
-            }"
-          >
-            View
-            <i class="fa fa-eye" aria-hidden="true"></i>
-          </router-link>
-          <delete-link
-            v-if="data.item.userHasWriteAccess"
-            class="action-link"
-            @delete="removeGroupResourceProfile(data.item)"
-          >
-            Are you sure you want to delete Group Resource Profile
-            <strong>{{ data.item.groupResourceProfileName }}</strong
-            >?
-          </delete-link>
-        </template>
-      </table>
-    </template>
-  </list-layout>
+  <div>
+    <div class="row align-items-center mb-3">
+      <div class="col">
+        <h1 class="h4 mb-0">Group Resource Profiles</h1>
+        <p class="text-muted mb-0">Manage compute resource access policies for user groups.</p>
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-primary btn-sm" @click="newGroupResourcePreference">
+          <i class="fa fa-plus me-1"></i>Create New
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="groupResourceProfiles.length === 0">
+              <td colspan="3">
+                <div class="table-empty">
+                  <i class="fa fa-server table-empty__icon"></i>
+                  <div class="table-empty__title">No group resource profiles</div>
+                  <div class="table-empty__text">Create a profile to configure compute resource access for user groups.</div>
+                </div>
+              </td>
+            </tr>
+            <tr v-for="profile in groupResourceProfiles" :key="profile.groupResourceProfileId">
+              <td>{{ profile.groupResourceProfileName }}</td>
+              <td><human-date :date="profile.updatedTime" /></td>
+              <td>
+                <router-link class="action-link me-2" v-if="profile.userHasWriteAccess"
+                  :to="{ name: 'group_resource_preference', params: { value: profile, id: profile.groupResourceProfileId } }">
+                  Edit <i class="fa fa-edit"></i>
+                </router-link>
+                <router-link class="action-link me-2" v-else
+                  :to="{ name: 'group_resource_preference', params: { value: profile, id: profile.groupResourceProfileId } }">
+                  View <i class="fa fa-eye"></i>
+                </router-link>
+                <delete-link v-if="profile.userHasWriteAccess" class="action-link" @delete="removeGroupResourceProfile(profile)">
+                  Are you sure you want to delete <strong>{{ profile.groupResourceProfileName }}</strong>?
+                </delete-link>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-if="groupResourceProfiles.length > 0" class="text-end text-muted" style="font-size:0.75rem; padding: 6px 8px;">Showing {{ groupResourceProfiles.length }}</div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
-import { components, layouts } from "django-airavata-common-ui";
+import { components } from "django-airavata-common-ui";
 import { services } from "django-airavata-api";
 
 export default {
@@ -63,52 +66,28 @@ export default {
   components: {
     "delete-link": components.DeleteLink,
     "human-date": components.HumanDate,
-    "list-layout": layouts.ListLayout,
   },
-  data: function () {
+  data() {
     return {
       groupResourceProfiles: [],
-      fields: [
-        {
-          label: "Name",
-          key: "groupResourceProfileName",
-        },
-        {
-          label: "Updated",
-          key: "updatedTime",
-        },
-        {
-          label: "Action",
-          key: "action",
-        },
-      ],
     };
   },
   methods: {
-    newGroupResourcePreference: function () {
-      this.$router.push({
-        name: "new_group_resource_preference",
-      });
+    newGroupResourcePreference() {
+      this.$router.push({ name: "new_group_resource_preference" });
     },
-    loadGroupResourceProfiles: function () {
+    loadGroupResourceProfiles() {
       services.GroupResourceProfileService.list().then(
-        (groupResourceProfiles) => {
-          this.groupResourceProfiles = groupResourceProfiles;
-        }
+        (profiles) => (this.groupResourceProfiles = profiles)
       );
     },
-    removeGroupResourceProfile: function (groupResourceProfile) {
-      services.GroupResourceProfileService.delete({
-        lookup: groupResourceProfile.groupResourceProfileId,
-      })
+    removeGroupResourceProfile(profile) {
+      services.GroupResourceProfileService.delete({ lookup: profile.groupResourceProfileId })
         .then(() => services.GroupResourceProfileService.list())
-        .then(
-          (groupResourceProfiles) =>
-            (this.groupResourceProfiles = groupResourceProfiles)
-        );
+        .then((profiles) => (this.groupResourceProfiles = profiles));
     },
   },
-  mounted: function () {
+  mounted() {
     this.loadGroupResourceProfiles();
   },
 };

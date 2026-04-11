@@ -22,8 +22,7 @@
                   <button class="btn"
                     :disabled="!experimentId"
                     @click="showExperimentDetails(experimentId)"
-                    variant="primary"
-                    >Load</b-button
+                    >Load</button
                   >
                 </span>
               </div>
@@ -45,8 +44,7 @@
                   <button class="btn"
                     :disabled="!jobId"
                     @click="showExperimentDetailsForJobId(jobId)"
-                    variant="primary"
-                    >Load</b-button
+                    >Load</button
                   >
                 </span>
               </div>
@@ -54,15 +52,15 @@
           </div>
         </li>
       </ul>
-    </div></div>
+    </div>
     <div class="card" no-body>
-      <ul class="nav nav-tabs" card v-model="activeTabIndex" ref="tabs">
+      <ul class="nav nav-tabs" ref="tabs">
         <li class="nav-item" :title="selectedExperimentsTabTitle">
           <div class="row">
             <div class="col">
               <div class="card" header="Filter Options">
-                <div class="input-group" class="w-100 mb-2">
-                  <div class="input-group"-prepend is-text>
+                <div class="input-group w-100 mb-2">
+                  <span class="input-group-text">
                     <i class="fa fa-calendar-week" aria-hidden="true"></i>
                   </span>
                   <flat-pickr
@@ -74,32 +72,31 @@
                   <span class="input-group-text">
                     <button class="btn"
                       @click="getPast24Hours"
-                      variant="outline-secondary"
-                      >Past 24 Hours</b-button
+                      >Past 24 Hours</button
                     >
-                    <button class="btn" @click="getPastWeek" variant="outline-secondary"
-                      >Past Week</b-button
+                    <button class="btn" @click="getPastWeek"
+                      >Past Week</button
                     >
                   </span>
                 </div>
-                <div class="dropdown" text="Add Filters" class="mb-2">
+                <div class="dropdown mb-2">
                   <a class="dropdown-item"
                     v-if="!usernameFilterEnabled"
                     @click="usernameFilterEnabled = true"
-                    >Username</b-dropdown-item
+                    >Username</a
                   >
                   <a class="dropdown-item"
                     v-if="!applicationNameFilterEnabled"
                     @click="applicationNameFilterEnabled = true"
-                    >Application Name</b-dropdown-item
+                    >Application Name</a
                   >
                   <a class="dropdown-item"
                     v-if="!hostnameFilterEnabled"
                     @click="hostnameFilterEnabled = true"
-                    >Hostname</b-dropdown-item
+                    >Hostname</a
                   >
                 </div>
-                <div class="input-group" v-if="usernameFilterEnabled" class="mb-2">
+                <div class="input-group mb-2" v-if="usernameFilterEnabled">
                   <input class="form-control"
                     v-model="usernameFilter"
                     placeholder="Username"
@@ -112,7 +109,7 @@
                     </button>
                   </span>
                 </div>
-                <div class="input-group" v-if="applicationNameFilterEnabled" class="mb-2">
+                <div class="input-group mb-2" v-if="applicationNameFilterEnabled">
                   <select class="form-select"
                     v-model="applicationNameFilter"
                     :options="applicationNameOptions"
@@ -133,7 +130,7 @@
                     </button>
                   </span>
                 </div>
-                <div class="input-group" v-if="hostnameFilterEnabled" class="mb-2">
+                <div class="input-group mb-2" v-if="hostnameFilterEnabled">
                   <select class="form-select"
                     v-model="hostnameFilter"
                     :options="hostnameOptions"
@@ -154,15 +151,13 @@
                 </div>
                 <template slot="footer">
                   <div class="d-flex justify-content-end">
-                    <button class="btn"
+                    <button class="btn ms-auto"
                       @click="loadStatistics"
-                      class="ms-auto"
-                      variant="primary"
-                      >Get Statistics</b-button
+                      >Get Statistics</button
                     >
                   </div>
                 </template>
-              </div></div>
+              </div>
             </div>
           </div>
           <div class="row">
@@ -245,30 +240,27 @@
           </div>
           <div class="row" v-if="items.length > 0">
             <div class="col">
-              <div class="card"><div class="card-body">
-                <!-- TODO: Replace b-table with native table --><table class="table" :fields="fields" :items="items">
-                  <template slot="cell(executionId)" slot-scope="data">
-                    <application-name :application-interface-id="data.value" />
-                  </template>
-                  <template slot="cell(resourceHostId)" slot-scope="data">
-                    <compute-resource-name :compute-resource-id="data.value" />
-                  </template>
-                  <template slot="cell(creationTime)" slot-scope="data">
-                    <human-date :date="data.value" />
-                  </template>
-                  <template slot="cell(experimentStatus)" slot-scope="data">
-                    <experiment-status-badge :status-name="data.value.name" />
-                  </template>
-                  <template slot="cell(actions)" slot-scope="data">
-                    <a
-                      @click="showExperimentDetails(data.item.experimentId)"
-                    >
-                      View Details
-                      <i class="far fa-chart-bar" aria-hidden="true"></i>
-                    </a>
-                  </template>
+              <div class="card">
+                <div class="card-body">
+                <!-- TODO: Replace b-table with native table -->
+                <table class="table">
+                  <tbody>
+                    <tr v-for="item in items" :key="item.experimentId">
+                      <td><application-name :application-interface-id="item.executionId" /></td>
+                      <td><compute-resource-name :compute-resource-id="item.resourceHostId" /></td>
+                      <td><human-date :date="item.creationTime" /></td>
+                      <td><experiment-status-badge :status-name="item.experimentStatus.name" /></td>
+                      <td>
+                        <a @click="showExperimentDetails(item.experimentId)">
+                          View Details
+                          <i class="far fa-chart-bar" aria-hidden="true"></i>
+                        </a>
+                      </td>
+                    </tr>
+                  </tbody>
                 </table>
-              </div></div>
+                </div>
+              </div>
               <pager
                 v-if="experimentStatistics.allExperimentCount > 0"
                 :paginator="experimentStatisticsPaginator"
@@ -297,7 +289,7 @@
           <experiment-details-view :experiment="experimentTab.experiment" />
         </li>
       </ul>
-    </div></div>
+    </div>
   </div>
 </template>
 <script>

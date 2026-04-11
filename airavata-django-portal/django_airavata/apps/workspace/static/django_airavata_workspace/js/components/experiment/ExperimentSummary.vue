@@ -16,18 +16,18 @@
           Launch
           <i class="fa fa-running" aria-hidden="true"></i>
         </a>
-        <button class="btn" v-if="isClonable" variant="primary" @click="onClone">
+        <button class="btn btn-primary" v-if="isClonable" @click="onClone">
           Clone
           <i class="fa fa-copy" aria-hidden="true"></i>
         </button>
-        <button class="btn" v-if="isCancelable" variant="primary" @click="onCancel">
+        <button class="btn btn-primary" v-if="isCancelable" @click="onCancel">
           Cancel
           <i class="fa fa-window-close" aria-hidden="true"></i>
         </button>
       </div>
     </div>
-    <template v-for="output in experiment.experimentOutputs">
-      <div class="row" v-if="finishedOrExecuting" :key="output.name">
+    <template v-for="output in experiment.experimentOutputs" :key="output.name">
+      <div class="row" v-if="finishedOrExecuting">
         <div class="col">
           <output-display-container :experiment-output="output" />
         </div>
@@ -265,7 +265,7 @@
                       header="Error"
                     >
                       <p>{{ error.userFriendlyMessage }}</p>
-                    </div></div>
+                    </div>
                   </td>
                 </tr>
                 <template v-if="failedJobs.length > 0">
@@ -277,13 +277,13 @@
                         :header="job.jobName + ' STDOUT'"
                       >
                         <pre class="pre-scrollable">{{ job.stdOut }}</pre>
-                      </div></div>
+                      </div>
                       <div class="card"
                         v-if="job.stdErr"
                         :header="job.jobName + ' STDERR'"
                       >
                         <pre class="pre-scrollable">{{ job.stdErr }}</pre>
-                      </div></div>
+                      </div>
                     </td>
                   </tr>
                 </template>

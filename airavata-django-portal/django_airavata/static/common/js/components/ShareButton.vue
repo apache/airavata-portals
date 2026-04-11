@@ -1,7 +1,6 @@
 <template>
   <div class="share-button btn-container">
-    <button class="btn"
-      :variant="'outline-primary'"
+    <button class="btn btn-outline-primary btn-sm"
       :title="title"
       :disabled="!shareButtonEnabled"
       @click="openSharingSettingsModal"
@@ -9,41 +8,51 @@
       Share
       <span class="badge">{{ totalCount }}</span>
     </button>
-    <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
-      class="modal-share-settings"
-      title="Sharing Settings"
+    <!-- Bootstrap 5 modal -->
+    <div
+      class="modal fade modal-share-settings"
       ref="sharingSettingsModal"
-      ok-title="Save"
-      @ok="saveSharedEntity"
-      @cancel="cancelEditSharedEntity"
-      no-close-on-esc
-      no-close-on-backdrop
-      hide-header-close
-      @show="showSharingSettingsModal"
+      tabindex="-1"
+      aria-labelledby="sharingSttingsModalLabel"
+      aria-hidden="true"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
     >
-      <shared-entity-editor
-        v-if="localSharedEntity && users && groups"
-        v-model="localSharedEntity"
-        :users="users"
-        :groups="groups"
-        :disallow-editing-admin-groups="disallowEditingAdminGroups"
-      />
-      <!-- Only show parent entity permissions for new entities -->
-      <template v-if="hasParentSharedEntityPermissions">
-        <shared-entity-editor
-          v-if="parentSharedEntity && users && groups"
-          v-model="parentSharedEntity"
-          :users="users"
-          :groups="groups"
-          :readonly="true"
-          class="mt-4"
-        >
-          <span slot="permissions-header"
-            >Inherited {{ parentEntityLabel }} Permissions
-            <!-- <small class="text-muted" v-if="parentEntityOwner">Owned by {{parentEntityOwner.firstName}} {{parentEntityOwner.lastName}} ({{parentEntityOwner.email}})</small> -->
-          </span>
-        </shared-entity-editor>
-      </template>
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="sharingSettingsModalLabel">Sharing Settings</h5>
+          </div>
+          <div class="modal-body">
+            <shared-entity-editor
+              v-if="localSharedEntity && users && groups"
+              v-model="localSharedEntity"
+              :users="users"
+              :groups="groups"
+              :disallow-editing-admin-groups="disallowEditingAdminGroups"
+            />
+            <!-- Only show parent entity permissions for new entities -->
+            <template v-if="hasParentSharedEntityPermissions">
+              <shared-entity-editor
+                v-if="parentSharedEntity && users && groups"
+                v-model="parentSharedEntity"
+                :users="users"
+                :groups="groups"
+                :readonly="true"
+                class="mt-4"
+              >
+                <template #permissions-header>
+                  <span>Inherited {{ parentEntityLabel }} Permissions</span>
+                </template>
+              </shared-entity-editor>
+            </template>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="cancelEditSharedEntity">Cancel</button>
+            <button type="button" class="btn btn-primary" @click="saveSharedEntity">Save</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -301,9 +310,11 @@ export default {
         }).then((sharedEntity) => {
           this.localSharedEntity = sharedEntity;
           this.emitSavedEvent();
+          this.closeModal();
         });
       } else {
         this.emitUnsavedEvent();
+        this.closeModal();
       }
     },
     emitSavedEvent() {
@@ -314,11 +325,9 @@ export default {
     },
     cancelEditSharedEntity: function () {
       this.localSharedEntity = this.sharedEntityCopy;
+      this.closeModal();
     },
     openSharingSettingsModal: function () {
-      this.$refs.sharingSettingsModal.show();
-    },
-    showSharingSettingsModal: function () {
       this.sharedEntityCopy = this.localSharedEntity.clone();
       if (!this.users) {
         services.ServiceFactory.service("UserProfiles")
@@ -330,6 +339,16 @@ export default {
           this.groups = groups;
         });
       }
+      const modalEl = this.$refs.sharingSettingsModal;
+      // eslint-disable-next-line no-undef
+      const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      bsModal.show();
+    },
+    closeModal: function () {
+      const modalEl = this.$refs.sharingSettingsModal;
+      // eslint-disable-next-line no-undef
+      const bsModal = bootstrap.Modal.getInstance(modalEl);
+      if (bsModal) bsModal.hide();
     },
   },
   mounted: function () {
@@ -367,12 +386,12 @@ button {
 .share-button {
   display: inline-block;
 }
-.share-button >>> .modal-share-settings .modal-body {
+.share-button :deep(.modal-share-settings .modal-body) {
   max-height: 50vh;
   min-height: 300px;
   overflow: auto;
 }
-.share-button >>> .modal-dialog {
+.share-button :deep(.modal-dialog) {
   max-width: 800px;
   width: 60vw;
 }

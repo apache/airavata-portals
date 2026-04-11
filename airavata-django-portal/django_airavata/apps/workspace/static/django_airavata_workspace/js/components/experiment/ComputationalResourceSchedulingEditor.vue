@@ -23,7 +23,7 @@
               <option :value="null" disabled>Select a Compute Resource</option>
             </template>
           </select>
-        </div>
+        </form-group>
       </div>
     </div>
     <div class="row">

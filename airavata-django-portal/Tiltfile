@@ -1,15 +1,16 @@
 # Tiltfile for Airavata Django Portal
 
 # --- Infrastructure (MariaDB + Adminer from docker-compose) ---
-docker_compose('./compose/docker-compose.yaml')
+# Disabled: Django uses SQLite by default and airavata's compose already occupies port 13306
+# docker_compose('./compose/docker-compose.yaml')
 
 # --- Django backend dev server ---
 local_resource(
     'django-server',
     serve_cmd=' && '.join([
-        'uv sync --extra mysql',
+        'uv sync',
         'uv run manage.py migrate --run-syncdb',
-        'uv run manage.py runserver 0.0.0.0:8000',
+        'uv run uvicorn django_airavata.asgi:application --host 0.0.0.0 --port 8000 --reload --reload-dir django_airavata',
     ]),
     deps=['django_airavata/'],
     ignore=[
@@ -18,7 +19,6 @@ local_resource(
         '**/static/django_airavata_*/*.css',
         '**/static/common/dist',
     ],
-    resource_deps=['db'],
     readiness_probe=probe(
         http_get=http_get_action(port=8000, path='/health/'),
         initial_delay_secs=10,

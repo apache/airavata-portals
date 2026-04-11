@@ -18,9 +18,8 @@
           :formatter="numberFormatter"
           :placeholder="'Max Nodes: ' + batchQueue.maxNodes"
           :state="validationFeedback.maxAllowedNodes.state"
-        >
-        </input>
-      </div>
+        />
+      </form-group>
     </div>
     <div class="col">
       <form-group
@@ -40,9 +39,8 @@
           :formatter="numberFormatter"
           :placeholder="'Max Cores: ' + batchQueue.maxProcessors"
           :state="validationFeedback.maxAllowedCores.state"
-        >
-        </input>
-      </div>
+        />
+      </form-group>
     </div>
     <div class="col">
       <form-group
@@ -64,9 +62,8 @@
           :formatter="numberFormatter"
           :placeholder="'Max Wall Time: ' + batchQueue.maxRunTime"
           :state="validationFeedback.maxAllowedWalltime.state"
-        >
-        </input>
-      </div>
+        />
+      </form-group>
     </div>
   </div>
 </template>

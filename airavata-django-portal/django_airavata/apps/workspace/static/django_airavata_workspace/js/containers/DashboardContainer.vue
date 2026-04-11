@@ -1,76 +1,106 @@
 <template>
   <div>
     <pga-link />
-    <div class="row">
+    <div class="row align-items-center mb-3">
       <div class="col">
-        <h1 class="h4 mb-4">Dashboard</h1>
-        <workspace-notices-management-container/>
-        <h2 class="h6 mb-2 text-uppercase text-muted">Applications</h2>
+        <h1 class="h4 mb-0">Applications</h1>
+        <p class="text-muted mb-0">Manage applications and launch experiments.</p>
+      </div>
+      <div class="col-auto">
+        <a href="/workspace/applications/new" class="btn btn-primary btn-sm">
+          <i class="fa fa-plus me-1"></i>Create New
+        </a>
       </div>
     </div>
-    <div class="row" v-if="showNewUserMessage">
-      <div class="col">
-        <div class="alert" variant="info" show
-          >Welcome {{ userProfile.firstName }} {{ userProfile.lastName }}! You
-          currently don't have access to run any applications but the
-          administrator of this gateway has been notified and will be in contact
-          to grant you the appropriate privileges.</b-alert
-        >
+    <workspace-notices-management-container/>
+
+    <div class="card">
+      <div class="card-body">
+        <!-- Loading state -->
+        <div v-if="loading" class="text-center py-4 text-muted">
+          <i class="fa fa-spinner fa-spin me-1"></i> Loading applications...
+        </div>
+
+        <table class="table table-hover" v-if="!loading">
+          <thead>
+            <tr>
+              <th style="width:30px;"></th>
+              <th>Name</th>
+              <th>Version</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="allApplicationData.length === 0">
+              <td colspan="5">
+                <div class="table-empty">
+                  <i class="fa fa-rocket table-empty__icon"></i>
+                  <div class="table-empty__title">No applications available</div>
+                  <div class="table-empty__text">Add an application using the <strong>Create New</strong> button above.</div>
+                </div>
+              </td>
+            </tr>
+            <tr v-for="item in allApplicationData" :key="item.appModule.appModuleId">
+              <td>
+                <a href="#" @click.prevent="toggleFavorite(item.appModule)" :title="isFavorite(item.appModule) ? 'Remove from favorites' : 'Add to favorites'">
+                  <i :class="isFavorite(item.appModule) ? 'fa fa-star text-warning' : 'far fa-star text-muted'"></i>
+                </a>
+              </td>
+              <td>
+                <a href="#" @click.prevent="handleAppSelected(item.appModule)" :class="{ 'text-muted': item.disabled }">
+                  {{ item.appModule.appModuleName }}
+                </a>
+              </td>
+              <td>
+                <span v-if="item.appModule.appModuleVersion" class="badge bg-secondary">{{ item.appModule.appModuleVersion }}</span>
+                <span v-else class="text-muted">-</span>
+              </td>
+              <td class="text-muted">{{ truncate(item.appModule.appModuleDescription, 60) }}</td>
+              <td>
+                <a href="#" class="action-link me-2" @click.prevent="handleAppSelected(item.appModule)" v-if="!item.disabled" title="Launch experiment">
+                  <i class="fa fa-play"></i> Launch
+                </a>
+                <a :href="editUrl(item.appModule)" class="action-link me-2" title="Edit application">
+                  <i class="fa fa-edit"></i> Edit
+                </a>
+                <a href="#" class="action-link text-danger" @click.prevent="confirmDelete(item.appModule)" title="Delete application">
+                  <i class="fa fa-trash"></i> Delete
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-if="allApplicationData.length > 0" class="text-end text-muted" style="font-size:0.75rem; padding: 6px 8px;">Showing {{ allApplicationData.length }}</div>
       </div>
     </div>
-    <template v-if="favoriteApplicationsData.length > 0">
-      <div class="row">
-        <div class="col">
-          <h1 class="h5 mb-2">Favorites</h1>
+
+    <!-- Delete confirmation modal -->
+    <div v-if="deleteTarget" class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.4);">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Delete Application</h5>
+            <button type="button" class="btn-close" @click="deleteTarget = null"></button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to delete <strong>{{ deleteTarget.appModuleName }}</strong>?</p>
+            <p class="text-muted mb-0" style="font-size:0.8125rem;">This will also remove its interface and all deployments.</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-sm btn-secondary" @click="deleteTarget = null">Cancel</button>
+            <button class="btn btn-sm btn-danger" @click="deleteApplication" :disabled="deleting">
+              <i v-if="deleting" class="fa fa-spinner fa-spin me-1"></i>Delete
+            </button>
+          </div>
         </div>
       </div>
-      <div class="row">
-        <application-card
-          v-for="item in favoriteApplicationsData"
-          v-bind:appModule="item.appModule"
-          v-bind:key="item.appModule.appModuleId"
-          @app-selected="handleAppSelected"
-          :disabled="item.disabled"
-          @favorite="markFavorite(item.appModule)"
-          @unfavorite="markNotFavorite(item.appModule)"
-          ref="favoriteApplicationCards"
-        >
-          <favorite-toggle
-            slot="card-actions"
-            :favorite="true"
-            class="card-link"
-            @favorite="markFavorite(item.appModule)"
-            @unfavorite="markNotFavorite(item.appModule)"
-          />
-        </application-card>
-      </div>
-      <hr />
-    </template>
-    <div class="row">
-      <application-card
-        v-for="item in nonFavoriteApplicationsData"
-        v-bind:appModule="item.appModule"
-        v-bind:key="item.appModule.appModuleId"
-        @app-selected="handleAppSelected"
-        :disabled="item.disabled"
-        @favorite="markFavorite(item.appModule)"
-        @unfavorite="markNotFavorite(item.appModule)"
-      >
-        <favorite-toggle
-          slot="card-actions"
-          :favorite="false"
-          class="card-link"
-          @favorite="markFavorite(item.appModule)"
-          @unfavorite="markNotFavorite(item.appModule)"
-        />
-      </application-card>
     </div>
   </div>
 </template>
 
 <script>
-import { services, session } from "django-airavata-api";
-import { components as comps } from "django-airavata-common-ui";
+import { services } from "django-airavata-api";
 import urls from "../utils/urls";
 import PgaLink from "../components/PgaLink";
 import WorkspaceNoticesManagementContainer from "../components/notices/WorkspaceNoticesManagementContainer";
@@ -80,68 +110,77 @@ export default {
   data() {
     return {
       accessibleAppModules: null,
-      userProfile: null,
       allApplicationModules: null,
       workspacePreferences: null,
+      loading: true,
+      deleteTarget: null,
+      deleting: false,
     };
   },
   components: {
     WorkspaceNoticesManagementContainer,
-    "application-card": comps.ApplicationCard,
-    "favorite-toggle": comps.FavoriteToggle,
     "pga-link": PgaLink,
   },
   methods: {
-    handleAppSelected: function (appModule) {
+    handleAppSelected(appModule) {
       urls.navigateToCreateExperiment(appModule);
     },
-    markFavorite(appModule) {
-      services.ApplicationModuleService.favorite({
-        lookup: appModule.appModuleId,
-      })
+    editUrl(appModule) {
+      return "/admin/applications/" + appModule.appModuleId;
+    },
+    toggleFavorite(appModule) {
+      const action = this.isFavorite(appModule) ? "unfavorite" : "favorite";
+      services.ApplicationModuleService[action]({ lookup: appModule.appModuleId })
+        .then(() => services.WorkspacePreferencesService.get())
+        .then((prefs) => (this.workspacePreferences = prefs));
+    },
+    isFavorite(appModule) {
+      return this.favoriteApplicationIds.indexOf(appModule.appModuleId) >= 0;
+    },
+    truncate(text, len) {
+      if (!text) return "";
+      return text.length > len ? text.substring(0, len) + "..." : text;
+    },
+    confirmDelete(appModule) {
+      this.deleteTarget = appModule;
+    },
+    deleteApplication() {
+      if (!this.deleteTarget) return;
+      this.deleting = true;
+      services.ApplicationModuleService.delete({ lookup: this.deleteTarget.appModuleId })
         .then(() => {
-          return services.WorkspacePreferencesService.get().then(
-            (prefs) => (this.workspacePreferences = prefs)
+          this.allApplicationModules = this.allApplicationModules.filter(
+            (m) => m.appModuleId !== this.deleteTarget.appModuleId
           );
+          this.deleteTarget = null;
         })
-        .then(() => {
-          const index = this.favoriteApplicationsData.findIndex(
-            (data) => data.appModule.appModuleId === appModule.appModuleId
-          );
-          this.$nextTick(() => {
-            this.$refs.favoriteApplicationCards[index].$el.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-            });
-          });
+        .catch(() => {
+          // If simple delete fails, the admin editor handles cascading delete
+          // Redirect there instead
+          window.location.href = this.editUrl(this.deleteTarget);
+        })
+        .finally(() => {
+          this.deleting = false;
         });
     },
-    markNotFavorite(appModule) {
-      services.ApplicationModuleService.unfavorite({
-        lookup: appModule.appModuleId,
-      }).then(() => {
-        return services.WorkspacePreferencesService.get().then(
-          (prefs) => (this.workspacePreferences = prefs)
-        );
+    loadApplications() {
+      this.loading = true;
+      Promise.all([
+        services.ApplicationModuleService.list()
+          .then((result) => (this.accessibleAppModules = result))
+          .catch(() => (this.accessibleAppModules = [])),
+        services.ApplicationModuleService.listAll()
+          .then((result) => (this.allApplicationModules = result))
+          .catch(() => (this.allApplicationModules = [])),
+        services.WorkspacePreferencesService.get()
+          .then((prefs) => (this.workspacePreferences = prefs))
+          .catch(() => {}),
+      ]).finally(() => {
+        this.loading = false;
       });
     },
   },
   computed: {
-    isNewUser() {
-      return (
-        this.userProfile &&
-        Date.now() - this.userProfile.creationTime.getTime() <
-          7 * 24 * 60 * 60 * 1000
-      );
-    },
-    showNewUserMessage() {
-      return (
-        this.isNewUser &&
-        this.userProfile &&
-        this.accessibleAppModules &&
-        this.accessibleAppModules.length === 0
-      );
-    },
     accessibleModuleIds() {
       return this.accessibleAppModules
         ? this.accessibleAppModules.map((a) => a.appModuleId)
@@ -149,53 +188,23 @@ export default {
     },
     allApplicationData() {
       return this.allApplicationModules
-        ? this.allApplicationModules.map((app) => {
-            return {
-              appModule: app,
-              disabled: this.accessibleModuleIds.indexOf(app.appModuleId) < 0,
-            };
-          })
+        ? this.allApplicationModules.map((app) => ({
+            appModule: app,
+            disabled: this.accessibleModuleIds.indexOf(app.appModuleId) < 0,
+          }))
         : [];
     },
-    favoriteApplicationsData() {
-      return this.allApplicationData.filter(
-        (app) =>
-          this.favoriteApplicationIds.indexOf(app.appModule.appModuleId) >= 0
-      );
-    },
-    nonFavoriteApplicationsData() {
-      return this.allApplicationData.filter(
-        (app) =>
-          this.favoriteApplicationIds.indexOf(app.appModule.appModuleId) < 0
-      );
-    },
     favoriteApplicationIds() {
-      if (
-        this.workspacePreferences &&
-        this.workspacePreferences.application_preferences
-      ) {
+      if (this.workspacePreferences && this.workspacePreferences.application_preferences) {
         return this.workspacePreferences.application_preferences
           .filter((p) => p.favorite)
           .map((p) => p.application_id);
-      } else {
-        return [];
       }
+      return [];
     },
   },
-  beforeMount: function () {
-    services.ApplicationModuleService.list().then(
-      (result) => (this.accessibleAppModules = result)
-    );
-    services.UserProfileService.retrieve({
-      lookup: session.Session.username,
-    }).then((userProfile) => (this.userProfile = userProfile));
-    // Load all application, including ones that aren't accessible by this user
-    services.ApplicationModuleService.listAll().then(
-      (result) => (this.allApplicationModules = result)
-    );
-    services.WorkspacePreferencesService.get().then(
-      (prefs) => (this.workspacePreferences = prefs)
-    );
+  beforeMount() {
+    this.loadApplications();
   },
 };
 </script>

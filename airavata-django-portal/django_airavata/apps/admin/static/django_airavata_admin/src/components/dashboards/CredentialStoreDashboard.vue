@@ -1,205 +1,126 @@
 <template>
   <div>
-    <list-layout
-      @add-new-item="showNewSSHCredentialModal"
-      :items="sshKeys"
-      title="SSH Credentials"
-      new-item-button-text="New SSH Credential"
-    >
-      <span slot="additional-buttons">
-          <button class="btn"
-            v-if="userIsAdmin"
-            @click="showNewSharedSSHCredentialModel"
-            >
-            New Gateway SSH Credential
-            <i class="fa fa-plus" aria-hidden="true"></i>
-          </button>
-        </span>
-      <template slot="item-list" slot-scope="slotProps">
-        <!-- TODO: Replace b-table with native table --><table class="table" striped hover :fields="fields" :items="slotProps.items">
-          <template slot="cell(sharing)" slot-scope="data">
-            <share-button
-              :entity-id="data.item.token"
-              :disallow-editing-admin-groups="false"
-              :auto-add-admin-groups="false"
-            />
-          </template>
-          <template slot="cell(persistedTime)" slot-scope="data">
-            <human-date :date="data.value" />
-          </template>
-          <template slot="cell(action)" slot-scope="data">
-            <clipboard-copy-link
-              :text="data.item.publicKey.trim()"
-              class="me-1"
-            />
-            <delete-link
-              v-if="data.item.userHasWriteAccess"
-              @delete="deleteSSHCredential(data.item)"
-            >
-              Are you sure you want to delete the
-              <strong>{{ data.item.description }}</strong> SSH credential?
-            </delete-link>
-          </template>
-        </table>
-      </template>
-    </list-layout>
-    <new-ssh-credential-modal
-      ref="newSSHCredentialModal"
-      @new="createNewSSHCredential"
-    />
-    <new-shared-ssh-credential-modal
-      ref="newSharedSSHCredentialModal"
-      @new="createNewSharedSSHCredential"
-    />
-    <!--
-    <list-layout class="mt-4" @add-new-item="showNewPasswordCredentialModal" :items="passwordCredentials" title="Password Credentials"
-      new-item-button-text="New Password Credential">
-      <template slot="item-list" slot-scope="slotProps">
+    <div class="row align-items-center mb-3">
+      <div class="col">
+        <h1 class="h4 mb-0">SSH Credentials</h1>
+        <p class="text-muted mb-0">Manage SSH key pairs for accessing compute and storage resources.</p>
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-primary btn-sm me-1" @click="showNewSSHCredentialModal">
+          <i class="fa fa-plus me-1"></i>Create New
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" v-if="userIsAdmin" @click="showNewSharedSSHCredentialModel">
+          <i class="fa fa-plus me-1"></i>Gateway Credential
+        </button>
+      </div>
+    </div>
 
-        <!-- TODO: Replace b-table with native table --><table class="table" striped hover :fields="fields" :items="slotProps.items">
-          <template slot="cell(sharing)" slot-scope="data">
-            <share-button :entity-id="data.item.token" :disallow-editing-admin-groups="false" :auto-add-admin-groups="false"/>
-          </template>
-          <template slot="cell(action)" slot-scope="data">
-            <delete-link v-if="data.item.userHasWriteAccess" @delete="deletePasswordCredential(data.item)">
-              Are you sure you want to delete the
-              <strong>{{ data.item.description }}</strong> password credential?
-            </delete-link>
-          </template>
+    <div class="card">
+      <div class="card-body">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>User</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="sshKeys.length === 0">
+              <td colspan="4">
+                <div class="table-empty">
+                  <i class="fa fa-key table-empty__icon"></i>
+                  <div class="table-empty__title">No SSH credentials</div>
+                  <div class="table-empty__text">Add an SSH key pair using the <strong>Create New</strong> button above.</div>
+                </div>
+              </td>
+            </tr>
+            <tr v-for="cred in sshKeys" :key="cred.token">
+              <td>{{ cred.description || '-' }}</td>
+              <td>{{ cred.username }}</td>
+              <td><human-date :date="cred.persistedTime" /></td>
+              <td>
+                <clipboard-copy-link :text="(cred.publicKey || '').trim()" class="action-link me-2" />
+                <share-button :entity-id="cred.token" :disallow-editing-admin-groups="false" :auto-add-admin-groups="false" />
+                <delete-link v-if="cred.userHasWriteAccess" @delete="deleteSSHCredential(cred)">
+                  Are you sure you want to delete <strong>{{ cred.description }}</strong>?
+                </delete-link>
+              </td>
+            </tr>
+          </tbody>
         </table>
-      </template>
-    </list-layout>
-    <new-password-credential-modal ref="newPasswordCredentialModal" @new="createNewPasswordCredential" />
-    -->
+        <div v-if="sshKeys.length > 0" class="text-end text-muted" style="font-size:0.75rem; padding: 6px 8px;">Showing {{ sshKeys.length }}</div>
+      </div>
+    </div>
+
+    <new-ssh-credential-modal ref="newSSHCredentialModal" @new="createNewSSHCredential" />
+    <new-shared-ssh-credential-modal ref="newSharedSSHCredentialModal" @new="createNewSharedSSHCredential" />
   </div>
 </template>
 
 <script>
 import { models, services, session } from "django-airavata-api";
-import { components, layouts } from "django-airavata-common-ui";
+import { components } from "django-airavata-common-ui";
 import NewSSHCredentialModal from "../credentials/NewSSHCredentialModal.vue";
-// import NewPasswordCredentialModal from "../credentials/NewPasswordCredentialModal.vue";
 
 export default {
   components: {
     "delete-link": components.DeleteLink,
     "human-date": components.HumanDate,
-    "list-layout": layouts.ListLayout,
     "clipboard-copy-link": components.ClipboardCopyLink,
-    // "new-password-credential-modal": NewPasswordCredentialModal,
     "new-ssh-credential-modal": NewSSHCredentialModal,
     "new-shared-ssh-credential-modal": NewSSHCredentialModal,
     "share-button": components.ShareButton,
   },
-  created: function () {
+  created() {
     this.fetchSSHKeys();
-    this.fetchPasswordCredentials();
   },
-  data: function () {
+  data() {
     return {
       sshKeys: [],
-      passwordCredentials: [],
       userIsAdmin: session.Session.isGatewayAdmin,
       adminsGroup: null,
     };
   },
-  computed: {
-    fields() {
-      return [
-        {
-          label: "Description",
-          key: "description",
-        },
-        {
-          label: "User",
-          key: "username",
-        },
-        {
-          label: "Created",
-          key: "persistedTime",
-        },
-        {
-          label: "Sharing",
-          key: "sharing",
-        },
-        {
-          label: "Action",
-          key: "action",
-        },
-      ];
-    },
-  },
   methods: {
     fetchSSHKeys() {
-      services.CredentialSummaryService.allSSHCredentials().then((sshCreds) => {
-        this.sshKeys = sshCreds;
-      });
-    },
-    fetchPasswordCredentials() {
-      services.CredentialSummaryService.allPasswordCredentials().then(
-        (passwordCreds) => (this.passwordCredentials = passwordCreds)
+      services.CredentialSummaryService.allSSHCredentials().then(
+        (creds) => (this.sshKeys = creds)
       );
     },
     showNewSSHCredentialModal() {
       this.$refs.newSSHCredentialModal.show();
     },
     createNewSSHCredential(data) {
-      services.CredentialSummaryService.createSSH({ data: data }).then(() =>
-        this.fetchSSHKeys()
-      );
+      services.CredentialSummaryService.createSSH({ data }).then(() => this.fetchSSHKeys());
     },
     deleteSSHCredential(cred) {
-      services.CredentialSummaryService.delete({
-        lookup: cred.token,
-      }).then(() => this.fetchSSHKeys());
+      services.CredentialSummaryService.delete({ lookup: cred.token }).then(() => this.fetchSSHKeys());
     },
-    showNewPasswordCredentialModal() {
-      this.$refs.newPasswordCredentialModal.show();
-    },
-    createNewPasswordCredential(data) {
-      services.CredentialSummaryService.createPassword({
-        data: data,
-      }).then(() => this.fetchPasswordCredentials());
-    },
-    deletePasswordCredential(cred) {
-      services.CredentialSummaryService.delete({
-        lookup: cred.token,
-      }).then(() => this.fetchPasswordCredentials());
-    },
-    showNewSharedSSHCredentialModel(){
-      if (!this.adminsGroup){
-        services.GroupService.list({limit: -1}).then((groups) => {
-             this.adminsGroup = groups.filter((g) => g.isGatewayAdminsGroup)[0];
-             this.$refs.newSharedSSHCredentialModal.show();
-          });
-      }
-      else{
+    showNewSharedSSHCredentialModel() {
+      if (!this.adminsGroup) {
+        services.GroupService.list({ limit: -1 }).then((groups) => {
+          this.adminsGroup = groups.filter((g) => g.isGatewayAdminsGroup)[0];
+          this.$refs.newSharedSSHCredentialModal.show();
+        });
+      } else {
         this.$refs.newSharedSSHCredentialModal.show();
       }
     },
     createNewSharedSSHCredential(data) {
-
-      services.CredentialSummaryService.createSSH({ data: data }).then((cred) =>
-        {
-          const sharedEntity = new models.SharedEntity();
-          services.UserProfileService.retrieve({
-            lookup: session.Session.username,
-          }).then((userProfile) => {
-            sharedEntity.owner =  userProfile;
-            sharedEntity.isOwner = session.Session.username == sharedEntity.owner.userId;
-            sharedEntity.addGroup({
-              group: this.adminsGroup,
-              permissionType: models.ResourcePermissionType.MANAGE_SHARING,
-            });
-            services.SharedEntityService.merge({
-              data: sharedEntity,
-              lookup: cred.token,
-            }).then(() => {
-              this.fetchSSHKeys();
-            });
+      services.CredentialSummaryService.createSSH({ data }).then((cred) => {
+        const sharedEntity = new models.SharedEntity();
+        services.UserProfileService.retrieve({ lookup: session.Session.username }).then((userProfile) => {
+          sharedEntity.owner = userProfile;
+          sharedEntity.isOwner = session.Session.username == sharedEntity.owner.userId;
+          sharedEntity.addGroup({
+            group: this.adminsGroup,
+            permissionType: models.ResourcePermissionType.MANAGE_SHARING,
           });
-        }
-      );
+          services.SharedEntityService.merge({ data: sharedEntity, lookup: cred.token }).then(() => this.fetchSSHKeys());
+        });
+      });
     },
   },
 };

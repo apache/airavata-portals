@@ -37,12 +37,6 @@ class GroupViewSetTests(TestCase):
         force_authenticate(request, self.user)
 
         # Mock api clients
-        group_manager_mock = MagicMock(name="group_manager")
-        user_profile_mock = MagicMock(name="user_profile")
-        request.profile_service = {
-            "group_manager": group_manager_mock,
-            "user_profile": user_profile_mock,
-        }
         request.airavata_client = MagicMock(name="airavata_client")
         request.airavata_client.getGatewayGroups.return_value = GatewayGroups(
             gatewayId=GATEWAY_ID,
@@ -51,8 +45,14 @@ class GroupViewSetTests(TestCase):
             defaultGatewayUsersGroupId="defaultGatewayUsersGroupId",
         )
         request.authz_token = "dummy"
-        request.session = {}
-        group_manager_mock.createGroup.return_value = "abc123"
+        request.session = {
+            "GATEWAY_GROUPS": {
+                "adminsGroupId": "adminsGroupId",
+                "readOnlyAdminsGroupId": "readOnlyAdminsGroupId",
+                "defaultGatewayUsersGroupId": "defaultGatewayUsersGroupId",
+            }
+        }
+        request.airavata_client.sharing.create_group.return_value = "abc123"
         user_profile = UserProfile(
             airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
             userId="testuser1",
@@ -60,7 +60,10 @@ class GroupViewSetTests(TestCase):
             lastName="User1",
             emails=["testuser1@example.com"],
         )
-        user_profile_mock.getUserProfileById.return_value = user_profile
+        request.airavata_client.iam.get_user_profile_by_id.return_value = user_profile
+        # For serializer rendering (get_instance / _convert_user_profile not called on create)
+        # sharing.get_group used for isAdmin check
+        request.airavata_client.sharing.has_admin_access.return_value = False
 
         # Mock signal handler to verify 'user_added_to_group' signal is sent
         user_added_to_group_handler = MagicMock()
@@ -91,12 +94,6 @@ class GroupViewSetTests(TestCase):
         force_authenticate(request, self.user)
 
         # Mock api clients
-        group_manager_mock = MagicMock(name="group_manager")
-        user_profile_mock = MagicMock(name="user_profile")
-        request.profile_service = {
-            "group_manager": group_manager_mock,
-            "user_profile": user_profile_mock,
-        }
         request.airavata_client = MagicMock(name="airavata_client")
         request.airavata_client.getGatewayGroups.return_value = GatewayGroups(
             gatewayId=GATEWAY_ID,
@@ -105,9 +102,15 @@ class GroupViewSetTests(TestCase):
             defaultGatewayUsersGroupId="defaultGatewayUsersGroupId",
         )
         request.authz_token = "dummy"
-        request.session = {}
+        request.session = {
+            "GATEWAY_GROUPS": {
+                "adminsGroupId": "adminsGroupId",
+                "readOnlyAdminsGroupId": "readOnlyAdminsGroupId",
+                "defaultGatewayUsersGroupId": "defaultGatewayUsersGroupId",
+            }
+        }
 
-        # mock getGroup
+        # mock get_group (used by get_instance for serialization and perform_update)
         group = GroupModel(
             id="abc123",
             name="My Group",
@@ -115,14 +118,14 @@ class GroupViewSetTests(TestCase):
             members=[
                 f"{self.user.username}@{GATEWAY_ID}",  # owner
                 f"testuser1@{GATEWAY_ID}",  # existing member
-                f"testuser2@{GATEWAY_ID}",  # new member
+                f"testuser2@{GATEWAY_ID}",  # removed member
             ],
             admins=[],
         )
-        group_manager_mock.getGroup.return_value = group
+        request.airavata_client.sharing.get_group.return_value = group
+        request.airavata_client.sharing.has_admin_access.return_value = False
 
-        # Only user added is testuser3, so getUserProfileById will be called
-        # for that user
+        # Only user added is testuser3
         user_profile = UserProfile(
             airavataInternalUserId=f"testuser3@{GATEWAY_ID}",
             userId="testuser3",
@@ -130,7 +133,7 @@ class GroupViewSetTests(TestCase):
             lastName="User3",
             emails=["testuser3@example.com"],
         )
-        user_profile_mock.getUserProfileById.return_value = user_profile
+        request.airavata_client.iam.get_user_profile_by_id.return_value = user_profile
 
         # Mock signal handler to verify 'user_added_to_group' signal is sent
         user_added_to_group_handler = MagicMock()
@@ -140,18 +143,18 @@ class GroupViewSetTests(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual("abc123", response.data["id"])
 
-        # verify addUsersToGroup
-        group_manager_mock.addUsersToGroup.assert_called_once()
-        args, kwargs = group_manager_mock.addUsersToGroup.call_args
-        self.assertEqual(args[1], [f"testuser3@{GATEWAY_ID}"])
+        # verify add_users_to_group
+        request.airavata_client.sharing.add_users_to_group.assert_called_once()
+        args, kwargs = request.airavata_client.sharing.add_users_to_group.call_args
+        self.assertEqual(args[0], [f"testuser3@{GATEWAY_ID}"])
 
-        # verify removeUsersFromGroup
-        group_manager_mock.removeUsersFromGroup.assert_called_once()
-        args, kwargs = group_manager_mock.removeUsersFromGroup.call_args
-        self.assertEqual(args[1], [f"testuser2@{GATEWAY_ID}"])
+        # verify remove_users_from_group
+        request.airavata_client.sharing.remove_users_from_group.assert_called_once()
+        args, kwargs = request.airavata_client.sharing.remove_users_from_group.call_args
+        self.assertEqual(args[0], [f"testuser2@{GATEWAY_ID}"])
 
-        # verify updateGroup
-        group_manager_mock.updateGroup.assert_called_once()
+        # verify update_group
+        request.airavata_client.sharing.update_group.assert_called_once()
 
         user_added_to_group_handler.assert_called_once()
         args, kwargs = user_added_to_group_handler.call_args
@@ -190,19 +193,15 @@ class IAMUserViewSetTests(TestCase):
         iam_user_profile = UserProfile(
             airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
             userId="testuser1",
+            gatewayId=GATEWAY_ID,
             firstName="Test",
             lastName="User1",
             emails=["testuser1@example.com"],
+            State=None,
+            creationTime=None,
         )
         iam_admin_client.get_user.return_value = iam_user_profile
-        group_manager_mock = MagicMock(name="group_manager")
-        user_profile_mock = MagicMock(name="user_profile")
-        request.profile_service = {
-            "group_manager": group_manager_mock,
-            "user_profile": user_profile_mock,
-        }
         request.authz_token = "dummy"
-        user_profile_mock.doesUserExist.return_value = True
         user_profile = UserProfile(
             airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
             userId="testuser1",
@@ -210,18 +209,20 @@ class IAMUserViewSetTests(TestCase):
             lastName="User1",
             emails=["testuser1@example.com"],
         )
-        user_profile_mock.getUserProfileById.return_value = user_profile
-        group_manager_mock.getAllGroupsUserBelongs.return_value = [GroupModel(id="group1")]
         group = GroupModel(id="group2", name="Group 2")
-        group_manager_mock.getGroup.return_value = group
         request.airavata_client = MagicMock(name="airavata_client")
-        request.airavata_client.getGatewayGroups.return_value = GatewayGroups(
-            gatewayId=GATEWAY_ID,
-            adminsGroupId="adminsGroupId",
-            readOnlyAdminsGroupId="readOnlyAdminsGroupId",
-            defaultGatewayUsersGroupId="defaultGatewayUsersGroupId",
-        )
-        request.session = {}
+        # get_instance uses iam and sharing clients
+        request.airavata_client.iam.does_user_exist.return_value = True
+        request.airavata_client.sharing.get_all_groups_user_belongs.return_value = [GroupModel(id="group1")]
+        request.airavata_client.sharing.get_group.return_value = group
+        request.airavata_client.iam.get_user_profile_by_id.return_value = user_profile
+        request.session = {
+            "GATEWAY_GROUPS": {
+                "adminsGroupId": "adminsGroupId",
+                "readOnlyAdminsGroupId": "readOnlyAdminsGroupId",
+                "defaultGatewayUsersGroupId": "defaultGatewayUsersGroupId",
+            }
+        }
 
         # Mock signal handler to verify 'user_added_to_group' signal is sent
         user_added_to_group_handler = MagicMock(name="user_added_to_group_handler")
@@ -230,20 +231,19 @@ class IAMUserViewSetTests(TestCase):
         response = iam_user_update(request, user_id=username)
         self.assertEqual(200, response.status_code)
 
-        user_profile_mock.doesUserExist.assert_called_once()
-        group_manager_mock.getAllGroupsUserBelongs.assert_called_once()
+        request.airavata_client.iam.does_user_exist.assert_called()
+        request.airavata_client.sharing.get_all_groups_user_belongs.assert_called()
+        request.airavata_client.iam.get_user_profile_by_id.assert_called_once()
+        args, kwargs = request.airavata_client.iam.get_user_profile_by_id.call_args
+        self.assertSequenceEqual(args, ["testuser1", GATEWAY_ID])
 
-        user_profile_mock.getUserProfileById.assert_called_once()
-        args, kwargs = user_profile_mock.getUserProfileById.call_args
-        self.assertSequenceEqual(args, [request.authz_token, "testuser1", GATEWAY_ID])
+        request.airavata_client.sharing.get_group.assert_called_once()
+        args, kwargs = request.airavata_client.sharing.get_group.call_args
+        self.assertSequenceEqual(args, ["group2"])
 
-        group_manager_mock.getGroup.assert_called_once()
-        args, kwargs = group_manager_mock.getGroup.call_args
-        self.assertSequenceEqual(args, [request.authz_token, "group2"])
-
-        group_manager_mock.addUsersToGroup.assert_called_once()
-        args, kwargs = group_manager_mock.addUsersToGroup.call_args
-        self.assertSequenceEqual(args, [request.authz_token, [f"testuser1@{GATEWAY_ID}"], "group2"])
+        request.airavata_client.sharing.add_users_to_group.assert_called_once()
+        args, kwargs = request.airavata_client.sharing.add_users_to_group.call_args
+        self.assertSequenceEqual(args, [[f"testuser1@{GATEWAY_ID}"], "group2"])
 
         user_added_to_group_handler.assert_called_once()
         args, kwargs = user_added_to_group_handler.call_args
@@ -280,19 +280,15 @@ class IAMUserViewSetTests(TestCase):
         iam_user_profile = UserProfile(
             airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
             userId="testuser1",
+            gatewayId=GATEWAY_ID,
             firstName="Test",
             lastName="User1",
             emails=["testuser1@example.com"],
+            State=None,
+            creationTime=None,
         )
         iam_admin_client.get_user.return_value = iam_user_profile
-        group_manager_mock = MagicMock(name="group_manager")
-        user_profile_mock = MagicMock(name="user_profile")
-        request.profile_service = {
-            "group_manager": group_manager_mock,
-            "user_profile": user_profile_mock,
-        }
         request.authz_token = "dummy"
-        user_profile_mock.doesUserExist.return_value = True
         user_profile = UserProfile(
             airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
             userId="testuser1",
@@ -300,10 +296,8 @@ class IAMUserViewSetTests(TestCase):
             lastName="User1",
             emails=["testuser1@example.com"],
         )
-        user_profile_mock.getUserProfileById.return_value = user_profile
-        group_manager_mock.getAllGroupsUserBelongs.return_value = [GroupModel(id="group1")]
 
-        def side_effect(authz_token, group_id):
+        def get_group_side_effect(group_id):
             if group_id == "group2":
                 return GroupModel(id="group2", name="Group 2")
             elif group_id == "group3":
@@ -311,15 +305,18 @@ class IAMUserViewSetTests(TestCase):
             else:
                 raise Exception("Unexpected group id: " + group_id)
 
-        group_manager_mock.getGroup.side_effect = side_effect
         request.airavata_client = MagicMock(name="airavata_client")
-        request.airavata_client.getGatewayGroups.return_value = GatewayGroups(
-            gatewayId=GATEWAY_ID,
-            adminsGroupId="adminsGroupId",
-            readOnlyAdminsGroupId="readOnlyAdminsGroupId",
-            defaultGatewayUsersGroupId="defaultGatewayUsersGroupId",
-        )
-        request.session = {}
+        request.airavata_client.iam.does_user_exist.return_value = True
+        request.airavata_client.sharing.get_all_groups_user_belongs.return_value = [GroupModel(id="group1")]
+        request.airavata_client.sharing.get_group.side_effect = get_group_side_effect
+        request.airavata_client.iam.get_user_profile_by_id.return_value = user_profile
+        request.session = {
+            "GATEWAY_GROUPS": {
+                "adminsGroupId": "adminsGroupId",
+                "readOnlyAdminsGroupId": "readOnlyAdminsGroupId",
+                "defaultGatewayUsersGroupId": "defaultGatewayUsersGroupId",
+            }
+        }
 
         # Mock signal handler to verify 'user_added_to_group' signal is sent
         user_added_to_group_handler = MagicMock(name="user_added_to_group_handler")
@@ -328,21 +325,20 @@ class IAMUserViewSetTests(TestCase):
         response = iam_user_update(request, user_id=username)
         self.assertEqual(200, response.status_code)
 
-        user_profile_mock.doesUserExist.assert_called_once()
-        group_manager_mock.getAllGroupsUserBelongs.assert_called_once()
+        request.airavata_client.iam.does_user_exist.assert_called()
+        request.airavata_client.sharing.get_all_groups_user_belongs.assert_called()
+        request.airavata_client.iam.get_user_profile_by_id.assert_called_once()
+        args, kwargs = request.airavata_client.iam.get_user_profile_by_id.call_args
+        self.assertSequenceEqual(args, ["testuser1", GATEWAY_ID])
 
-        user_profile_mock.getUserProfileById.assert_called_once()
-        args, kwargs = user_profile_mock.getUserProfileById.call_args
-        self.assertSequenceEqual(args, [request.authz_token, "testuser1", GATEWAY_ID])
-
-        group_manager_mock.getGroup.assert_has_calls(
-            [call(request.authz_token, "group2"), call(request.authz_token, "group3")], any_order=True
+        request.airavata_client.sharing.get_group.assert_has_calls(
+            [call("group2"), call("group3")], any_order=True
         )
 
-        group_manager_mock.addUsersToGroup.assert_has_calls(
+        request.airavata_client.sharing.add_users_to_group.assert_has_calls(
             [
-                call(request.authz_token, [f"testuser1@{GATEWAY_ID}"], "group2"),
-                call(request.authz_token, [f"testuser1@{GATEWAY_ID}"], "group3"),
+                call([f"testuser1@{GATEWAY_ID}"], "group2"),
+                call([f"testuser1@{GATEWAY_ID}"], "group3"),
             ],
             any_order=True,
         )
@@ -382,37 +378,26 @@ class IAMUserViewSetTests(TestCase):
         iam_user_profile = UserProfile(
             airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
             userId="testuser1",
+            gatewayId=GATEWAY_ID,
             firstName="Test",
             lastName="User1",
             emails=["testuser1@example.com"],
+            State=None,
+            creationTime=None,
         )
         iam_admin_client.get_user.return_value = iam_user_profile
-        group_manager_mock = MagicMock(name="group_manager")
-        user_profile_mock = MagicMock(name="user_profile")
-        request.profile_service = {
-            "group_manager": group_manager_mock,
-            "user_profile": user_profile_mock,
-        }
         request.authz_token = "dummy"
-        user_profile_mock.doesUserExist.return_value = True
-        user_profile = UserProfile(
-            airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
-            userId="testuser1",
-            firstName="Test",
-            lastName="User1",
-            emails=["testuser1@example.com"],
-        )
-        user_profile_mock.getUserProfileById.return_value = user_profile
-        group_manager_mock.getAllGroupsUserBelongs.return_value = [GroupModel(id="group1")]
 
         request.airavata_client = MagicMock(name="airavata_client")
-        request.airavata_client.getGatewayGroups.return_value = GatewayGroups(
-            gatewayId=GATEWAY_ID,
-            adminsGroupId="adminsGroupId",
-            readOnlyAdminsGroupId="readOnlyAdminsGroupId",
-            defaultGatewayUsersGroupId="defaultGatewayUsersGroupId",
-        )
-        request.session = {}
+        request.airavata_client.iam.does_user_exist.return_value = True
+        request.airavata_client.sharing.get_all_groups_user_belongs.return_value = [GroupModel(id="group1")]
+        request.session = {
+            "GATEWAY_GROUPS": {
+                "adminsGroupId": "adminsGroupId",
+                "readOnlyAdminsGroupId": "readOnlyAdminsGroupId",
+                "defaultGatewayUsersGroupId": "defaultGatewayUsersGroupId",
+            }
+        }
 
         # Mock signal handler to verify 'user_added_to_group' signal is sent
         user_added_to_group_handler = MagicMock(name="user_added_to_group_handler")
@@ -421,14 +406,14 @@ class IAMUserViewSetTests(TestCase):
         response = iam_user_update(request, user_id=username)
         self.assertEqual(200, response.status_code)
 
-        user_profile_mock.doesUserExist.assert_called_once()
-        group_manager_mock.getAllGroupsUserBelongs.assert_called_once()
+        request.airavata_client.iam.does_user_exist.assert_called()
+        request.airavata_client.sharing.get_all_groups_user_belongs.assert_called()
 
         # Since user wasn't added to a group, these all should not have been
         # called
-        user_profile_mock.getUserProfileById.assert_not_called()
-        group_manager_mock.getGroup.assert_not_called()
-        group_manager_mock.addUsersToGroup.assert_not_called()
+        request.airavata_client.iam.get_user_profile_by_id.assert_not_called()
+        request.airavata_client.sharing.get_group.assert_not_called()
+        request.airavata_client.sharing.add_users_to_group.assert_not_called()
         user_added_to_group_handler.assert_not_called()
 
 

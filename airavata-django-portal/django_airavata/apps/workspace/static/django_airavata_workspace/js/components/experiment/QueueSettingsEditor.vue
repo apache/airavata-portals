@@ -3,8 +3,7 @@
     <div class="row">
       <div class="col">
         <div
-          class="card border-default"
-          :class="{ 'border-danger': !valid, 'is-disabled': disabled }"
+          :class="['card border-default', { 'border-danger': !valid, 'is-disabled': disabled }]"
         >
           <a
             @click="showConfiguration = !showConfiguration"
@@ -54,15 +53,13 @@
             <select class="form-select"
               id="queue"
               v-model="data.queueName"
-              :options="queueOptions"
               required
               @change="queueChanged"
-              :state="getValidationState('queueName')"
             >
+              <option v-for="opt in queueOptions" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
             </select>
-            <div slot="description">
-              {{ queueDescription }}
-            </div>
+            <small class="form-text text-muted">{{ queueDescription }}</small>
+          </form-group>
           </div>
           <div class="d-flex flex-row">
             <div class="flex-fill">
@@ -80,14 +77,14 @@
                   v-model="data.nodeCount"
                   required
                   @input="nodeCountChanged"
-                  :state="getValidationState('nodeCount', true)"
-                >
-                </input>
-                <div slot="description">
+                />
+                <small class="form-text text-muted">
                   <i class="fa fa-info-circle" aria-hidden="true"></i>
                   Max Allowed Nodes = {{ maxNodes }}
-                </div>
-              </div>
+                </small>
+              </form-group>
+            </div>
+            <div class="flex-fill">
               <form-group
                 label="Total Core Count"
                 label-for="core-count"
@@ -102,10 +99,8 @@
                   v-model="data.totalCPUCount"
                   required
                   @input="cpuCountChanged"
-                  :state="getValidationState('totalCPUCount', true)"
-                >
-                </input>
-                <div slot="description">
+                />
+                <small class="form-text text-muted">
                   <i class="fa fa-info-circle" aria-hidden="true"></i>
                   Max Allowed Cores = {{ maxCPUCount
                   }}<template
@@ -116,8 +111,9 @@
                     >. There are {{ selectedQueueDefault.cpuPerNode }} cores per
                     node.
                   </template>
-                </div>
-              </div>
+                </small>
+              </form-group>
+            </div>
             </div>
             <div
               class="d-flex flex-column"
@@ -134,10 +130,7 @@
                   margin-right: 15px;
                 "
               ></div>
-              <button class="btn"
-                size="sm"
-                pill
-                variant="outline-secondary"
+              <button class="btn btn-sm btn-outline-secondary rounded-pill"
                 v-on:click="
                   enableNodeCountToCpuCheck = !enableNodeCountToCpuCheck
                 "
@@ -168,7 +161,7 @@
             :invalid-feedback="getValidationFeedback('wallTimeLimit')"
             :state="getValidationState('wallTimeLimit', true)"
           >
-            <div class="input-group" append="minutes">
+            <div class="input-group">
               <input class="form-control"
                 id="walltime-limit"
                 type="number"
@@ -176,15 +169,14 @@
                 :max="maxWalltime"
                 v-model="data.wallTimeLimit"
                 required
-                :state="getValidationState('wallTimeLimit', true)"
-              >
-              </input>
+              />
+              <span class="input-group-text">minutes</span>
             </div>
-            <div slot="description">
+            <small class="form-text text-muted">
               <i class="fa fa-info-circle" aria-hidden="true"></i>
               Max Allowed Wall Time = {{ maxWalltime }} minutes
-            </div>
-          </div>
+            </small>
+          </form-group>
           <form-group
             v-if="maxPhysicalMemory > 0"
             label="Total Physical Memory"
@@ -192,22 +184,21 @@
             :invalid-feedback="getValidationFeedback('totalPhysicalMemory')"
             :state="getValidationState('totalPhysicalMemory', true)"
           >
-            <div class="input-group" append="MB">
+            <div class="input-group">
               <input class="form-control"
                 id="total-physical-memory"
                 type="number"
                 min="0"
                 :max="maxPhysicalMemory"
                 v-model="data.totalPhysicalMemory"
-                :state="getValidationState('totalPhysicalMemory', true)"
-              >
-              </input>
+              />
+              <span class="input-group-text">MB</span>
             </div>
-            <div slot="description">
+            <small class="form-text text-muted">
               <i class="fa fa-info-circle" aria-hidden="true"></i>
               Max Physical Memory = {{ maxPhysicalMemory }} MB
-            </div>
-          </div>
+            </small>
+          </form-group>
           <div>
             <a
               class="text-secondary action-link"
@@ -220,8 +211,6 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
 </template>
 
 <script>

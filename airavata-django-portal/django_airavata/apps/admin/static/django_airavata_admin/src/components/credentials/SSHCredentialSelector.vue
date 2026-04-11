@@ -28,9 +28,8 @@
       <span class="input-group-text">
         <clipboard-copy-button variant="secondary" :text="copySSHPublicKeyText">
         </clipboard-copy-button>
-        <button class="btn"
+        <button class="btn btn-secondary btn-sm"
           v-if="!readonly"
-          variant="secondary"
           @click="showNewSSHCredentialModal"
         >
           <i class="fa fa-plus"></i>

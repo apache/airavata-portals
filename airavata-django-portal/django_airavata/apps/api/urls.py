@@ -5,6 +5,7 @@ from rest_framework import routers
 from rest_framework.urlpatterns import format_suffix_patterns
 
 from . import views
+from . import views_ssh
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,13 @@ urlpatterns = [
         views.ExperimentArchiveView.as_view(),
         name="experiment-archives",
     ),
+    # SSE and SSH proxy endpoints
+    re_path(r"^events/$", views_ssh.sse_events, name="sse-events"),
+    re_path(r"^ssh/test/$", views_ssh.ssh_test, name="ssh-test"),
+    re_path(r"^ssh/respond/$", views_ssh.ssh_respond, name="ssh-respond"),
+    re_path(r"^ssh/run/$", views_ssh.ssh_run, name="ssh-run"),
+    re_path(r"^ssh/run-info/$", views_ssh.ssh_run_info, name="ssh-run-info"),
+    re_path(r"^ssh/close/$", views_ssh.ssh_close, name="ssh-close"),
 ]
 
 urlpatterns = router.urls + format_suffix_patterns(urlpatterns)

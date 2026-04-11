@@ -3,14 +3,13 @@ import { components, entry } from "django-airavata-common-ui";
 import EditProjectContainer from "./containers/EditProjectContainer.vue";
 
 entry(({ createApp }) => {
+  const el = document.getElementById("edit-project");
+  const projectId = el ? el.dataset.projectId || null : null;
   const app = createApp({
     data() {
       return {
-        projectId: null,
+        projectId,
       };
-    },
-    beforeMount() {
-      this.projectId = this.$el.dataset.projectId;
     },
     render() {
       return h(components.MainLayout, null, {

@@ -1,29 +1,32 @@
 <template>
   <extended-user-profile-value-editor v-bind="$props">
-    <form-checkbox
-      v-model="value"
-      :unchecked-value="false"
-      :value="true"
-      :state="validateStateErrorOnly($v.value)"
-    >
-      {{ extendedUserProfileField.checkbox_label }}
+    <div class="form-check">
+      <input :class="['form-check-input', validateStateErrorOnly(v$.value) === false ? 'is-invalid' : '']" type="checkbox"
+        v-model="value"
+        :value="true"
+      />
+      <label class="form-check-label">
+        {{ extendedUserProfileField.checkbox_label }}
+      </label>
     </div>
-    <div class="invalid-feedback" :state="validateState($v.value)"
-      >This field is required.</b-form-invalid-feedback
+    <div class="invalid-feedback d-block" v-if="v$.value.$dirty && v$.value.$error"
+      >This field is required.</div
     >
   </extended-user-profile-value-editor>
 </template>
 
 <script>
 import { mapGetters, mapMutations } from "vuex";
-import { validationMixin } from "vuelidate";
+import { useVuelidate } from "@vuelidate/core";
 import { errors } from "django-airavata-common-ui";
 import ExtendedUserProfileValueEditor from "./ExtendedUserProfileValueEditor.vue";
 
 export default {
-  mixins: [validationMixin],
   components: { ExtendedUserProfileValueEditor },
   props: ["extendedUserProfileField"],
+  setup() {
+    return { v$: useVuelidate() };
+  },
   computed: {
     ...mapGetters("extendedUserProfile", ["getUserAgreementValue"]),
     value: {
@@ -35,23 +38,22 @@ export default {
           value,
           id: this.extendedUserProfileField.id,
         });
-        this.$v.value.$touch();
+        this.v$.value.$touch();
       },
     },
     valid() {
-      return !this.$v.$invalid;
+      return !this.v$.$invalid;
     },
     required() {
       return this.extendedUserProfileField.required;
     },
   },
   validations() {
-    const validations = {
+    return {
       value: {
         mustBeTrue: this.mustBeTrue,
       },
     };
-    return validations;
   },
   methods: {
     ...mapMutations("extendedUserProfile", ["setUserAgreementValue"]),
@@ -59,14 +61,13 @@ export default {
       if (this.required) {
         return value === true;
       } else {
-        // If not required, always valid
         return true;
       }
     },
     validateState: errors.vuelidateHelpers.validateState,
     validateStateErrorOnly: errors.vuelidateHelpers.validateStateErrorOnly,
     touch() {
-      this.$v.$touch();
+      this.v$.$touch();
     },
   },
   watch: {

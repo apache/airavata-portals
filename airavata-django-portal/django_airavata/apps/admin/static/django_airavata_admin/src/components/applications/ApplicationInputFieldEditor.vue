@@ -1,6 +1,6 @@
 <template>
-  <div class="card"><div class="card-body">
-    <div class="d-flex align-items-center" slot="header">
+  <div class="card">
+    <div class="card-header d-flex align-items-center">
       <div v-if="!readonly" class="drag-handle me-1 text-muted">
         <i class="fa fa-grip-vertical"></i>
         <span class="visually-hidden">Drag handle for reordering</span>
@@ -15,6 +15,7 @@
         <span class="visually-hidden">Delete</span>
       </a>
     </div>
+    <div class="card-body">
     <div class="collapse" :id="id + '-collapse'" :visible="!collapse">
       <div class="mb-3" label="Name" :label-for="id + '-name'">
         <input class="form-control"
@@ -24,7 +25,7 @@
           ref="nameInput"
           required
           :disabled="readonly"
-        ></input>
+        />
       </div>
       <div class="mb-3" label="Type" :label-for="id + '-type'">
         <select class="form-select"
@@ -44,8 +45,8 @@
           type="text"
           v-model="data.value"
           :disabled="readonly"
-        ></input>
-      </div>
+        />
+      </form-group>
       <form-group
         label="Override Filename"
         :label-for="id + '-value'"
@@ -56,15 +57,15 @@
           type="text"
           v-model="data.overrideFilename"
           :disabled="readonly"
-        ></input>
-      </div>
+        />
+      </form-group>
       <div class="mb-3" label="Application Argument" :label-for="id + '-argument'">
         <input class="form-control"
           :id="id + '-argument'"
           type="text"
           v-model="data.applicationArgument"
           :disabled="readonly"
-        ></input>
+        />
       </div>
       <form-group
         class="flex-fill"
@@ -77,9 +78,8 @@
           v-model="data.requiredToAddedToCommandLine"
           :options="trueFalseOptions"
           :disabled="readonly"
-        >
-        </div>
-      </div>
+        />
+      </form-group>
       <div class="d-flex">
         <form-group
           class="flex-fill"
@@ -91,9 +91,8 @@
             v-model="data.isRequired"
             :options="trueFalseOptions"
             :disabled="readonly"
-          >
-          </div>
-        </div>
+          />
+        </form-group>
         <form-group
           class="flex-fill"
           label="Read Only"
@@ -104,9 +103,8 @@
             v-model="data.isReadOnly"
             :options="trueFalseOptions"
             :disabled="readonly"
-          >
-          </div>
-        </div>
+          />
+        </form-group>
       </div>
       <form-group
         label="User Friendly Description"
@@ -118,7 +116,7 @@
           :rows="3"
           :disabled="readonly"
         />
-      </div>
+      </form-group>
       <form-group
         label="Advanced Input Field Modification Metadata"
         :label-for="id + '-metadata'"
@@ -130,9 +128,10 @@
           :rows="5"
           :disabled="readonly"
         />
-      </div>
+      </form-group>
     </div>
-  </div></div>
+  </div>
+  </div>
 </template>
 
 <script>

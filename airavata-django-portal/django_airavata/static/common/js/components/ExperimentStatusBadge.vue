@@ -1,5 +1,5 @@
 <template>
-  <span class="badge" :variant="badgeVariant">{{ statusName }}</span>
+  <span :class="['badge', 'bg-' + badgeVariant]">{{ statusName }}</span>
 </template>
 
 <script>

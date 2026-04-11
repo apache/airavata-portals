@@ -1,40 +1,21 @@
 <template>
-  <div>
-    <div class="row">
-      <div class="col">
-        <h1 class="h4">Storage</h1>
-        <p>
-          <small class="text-muted"
-            ><i class="fa fa-folder-open"></i> {{ username }}</small
-          >
-        </p>
-      </div>
-    </div>
-    <div class="row" v-if="userHasWriteAccess">
-      <div class="col">
-        <uppy
-          class="mb-1"
-          ref="file-upload"
-          :xhr-upload-endpoint="uploadEndpoint"
-          :tus-upload-finish-endpoint="uploadEndpoint"
-          @upload-finished="uploadFinished"
-          multiple
-        />
-      </div>
-      <div class="col">
-        <div class="input-group">
-          <input class="form-control"
-            v-model="dirName"
-            placeholder="New directory name"
-            @keydown.enter="addDirectory"
-          ></input>
-          <span class="input-group-text">
-            <button class="btn" @click="addDirectory" :disabled="!this.dirName"
-              >Add directory
-            </button>
-          </span>
-        </div>
-      </div>
+  <div v-if="userHasWriteAccess" class="d-flex gap-2 mb-2">
+    <uppy
+      ref="file-upload"
+      :xhr-upload-endpoint="uploadEndpoint"
+      :tus-upload-finish-endpoint="uploadEndpoint"
+      @upload-finished="uploadFinished"
+      multiple
+    />
+    <div class="input-group input-group-sm" style="max-width: 300px;">
+      <input class="form-control"
+        v-model="dirName"
+        placeholder="New directory name"
+        @keydown.enter="addDirectory"
+      />
+      <button class="btn btn-outline-secondary" @click="addDirectory" :disabled="!this.dirName">
+        <i class="fa fa-folder-plus me-1"></i>Add
+      </button>
     </div>
   </div>
 </template>
@@ -50,7 +31,6 @@ export default {
   },
   computed: {
     uploadEndpoint() {
-      // This endpoint can handle XHR upload or a TUS uploadURL
       return "/api/user-storage/" + this.storagePath;
     },
     username() {

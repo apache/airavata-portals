@@ -1,6 +1,6 @@
 <template>
   <div class="delete-button">
-    <button class="btn" variant="danger" @click="$refs.modal.show()" :disabled="disabled">
+    <button class="btn btn-danger btn-sm" @click="$refs.modal.show()" :disabled="disabled">
       {{ label }}
     </button>
     <confirmation-dialog ref="modal" :title="dialogTitle" @ok="$emit('delete')">

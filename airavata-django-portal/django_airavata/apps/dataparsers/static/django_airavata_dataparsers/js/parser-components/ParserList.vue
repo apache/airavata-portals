@@ -1,11 +1,8 @@
 <template>
   <div>
-    <div class="alert"
-      dismissible
-      :variant="alertVariant"
-      :show="showDismissibleAlert"
-      @dismissed="showDismissibleAlert = false"
-      >{{ alertMsg }}</b-alert
+    <div :class="['alert', 'alert-' + alertVariant]"
+      v-if="showDismissibleAlert"
+      >{{ alertMsg }}</div
     >
     <table class="table table-hover">
       <thead>

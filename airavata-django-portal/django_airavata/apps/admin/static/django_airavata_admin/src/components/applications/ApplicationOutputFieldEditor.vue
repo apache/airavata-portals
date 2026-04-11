@@ -1,6 +1,6 @@
 <template>
-  <div class="card"><div class="card-body">
-    <div class="d-flex align-items-center" slot="header">
+  <div class="card">
+    <div class="card-header d-flex align-items-center">
       <div class="me-auto">Output Field: {{ data.name }}</div>
       <a
         v-if="!readonly"
@@ -11,6 +11,7 @@
         <span class="visually-hidden">Delete</span>
       </a>
     </div>
+    <div class="card-body">
     <div class="mb-3" label="Name" :label-for="id + '-name'">
       <input class="form-control"
         :id="id + '-name'"
@@ -19,7 +20,7 @@
         ref="nameInput"
         required
         :disabled="readonly"
-      ></input>
+      />
     </div>
     <div class="mb-3" label="Value" :label-for="id + '-value'">
       <input class="form-control"
@@ -27,7 +28,7 @@
         type="text"
         v-model="data.value"
         :disabled="readonly"
-      ></input>
+      />
     </div>
     <div class="mb-3" label="Type" :label-for="id + '-type'">
       <select class="form-select"
@@ -43,7 +44,7 @@
         type="text"
         v-model="data.applicationArgument"
         :disabled="readonly"
-      ></input>
+      />
     </div>
     <div class="d-flex">
       <form-group
@@ -56,9 +57,8 @@
           v-model="data.isRequired"
           :options="trueFalseOptions"
           :disabled="readonly"
-        >
-        </div>
-      </div>
+        />
+      </form-group>
       <form-group
         class="flex-fill"
         label="Required on Command Line"
@@ -69,9 +69,8 @@
           v-model="data.requiredToAddedToCommandLine"
           :options="trueFalseOptions"
           :disabled="readonly"
-        >
-        </div>
-      </div>
+        />
+      </form-group>
     </div>
     <form-group
       label="Metadata"
@@ -84,9 +83,10 @@
         :rows="5"
         :disabled="readonly"
       />
-    </div>
+    </form-group>
     <button class="btn" size="sm" @click="setPlainText">Plain Text</button>
-  </div></div>
+  </div>
+  </div>
 </template>
 
 <script>

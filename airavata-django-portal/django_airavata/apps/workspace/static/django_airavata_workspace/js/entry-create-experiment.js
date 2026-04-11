@@ -4,24 +4,19 @@ import CreateExperimentContainer from "./containers/CreateExperimentContainer.vu
 import "../../scss/styles.scss";
 
 entry(({ createApp }) => {
+  const el = document.getElementById("create-experiment");
+  const appModuleId = el ? el.dataset.appModuleId || null : null;
+  const userInputValues = el && el.dataset.userInputValues
+    ? JSON.parse(el.dataset.userInputValues)
+    : null;
+  const experimentDataDir = el ? el.dataset.experimentDataDir || null : null;
   const app = createApp({
     data() {
       return {
-        appModuleId: null,
-        userInputValues: null,
-        experimentDataDir: null,
+        appModuleId,
+        userInputValues,
+        experimentDataDir,
       };
-    },
-    beforeMount() {
-      if (this.$el.dataset.appModuleId) {
-        this.appModuleId = this.$el.dataset.appModuleId;
-      }
-      if (this.$el.dataset.userInputValues) {
-        this.userInputValues = JSON.parse(this.$el.dataset.userInputValues);
-      }
-      if (this.$el.dataset.experimentDataDir) {
-        this.experimentDataDir = this.$el.dataset.experimentDataDir;
-      }
     },
     render() {
       return h(components.MainLayout, null, {

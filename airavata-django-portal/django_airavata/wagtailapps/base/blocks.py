@@ -654,8 +654,8 @@ class LoginNavItem(NavItem):
 class DashboardLinkNavItem(NavItem):
     class Meta:
         default = {
-            "link": "/workspace/dashboard",
-            "link_text": "Go to Dashboard",
+            "link": "/workspace/applications",
+            "link_text": "Go to Applications",
             "icon_class": "fas fa-arrow-circle-right",
             "show": "logged-in",
             "horizontal_alignment": "push-right",

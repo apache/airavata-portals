@@ -1,18 +1,13 @@
 import { createApp, h } from "vue";
-import GatewayNoticesContainer from "./components/GatewayNoticesContainer";
+import GatewayNoticesContainer from "./components/GatewayNoticesContainer.vue";
 
 const el = document.getElementById("gateway-notices");
 if (el) {
+  const unreadCount = parseInt(el.dataset.unreadCount || "0");
+  const notices = JSON.parse(el.dataset.notices || "[]");
   const app = createApp({
     data() {
-      return {
-        unreadCount: null,
-        notices: null,
-      };
-    },
-    beforeMount() {
-      this.unreadCount = parseInt(this.$el.dataset.unreadCount);
-      this.notices = JSON.parse(this.$el.dataset.notices);
+      return { unreadCount, notices };
     },
     render() {
       return h(GatewayNoticesContainer, {

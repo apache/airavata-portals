@@ -25,8 +25,8 @@
             v-model="data.executablePath"
             required
             :disabled="readonly"
-          ></input>
-        </div>
+          />
+        </form-group>
         <form-group
           label="Application Parallelism Type"
           label-for="parallelism-type"
@@ -37,7 +37,7 @@
             :options="parallelismTypeOptions"
             :disabled="readonly"
           />
-        </div>
+        </form-group>
         <form-group
           label="Application Deployment Description"
           label-for="deployment-description"
@@ -48,7 +48,7 @@
             :rows="3"
             :disabled="readonly"
           ></textarea>
-        </div>
+        </form-group>
         <command-objects-editor
           title="Module Load Commands"
           add-button-label="Add Module Load Command"
@@ -89,13 +89,11 @@
           <select class="form-select"
             id="default-queue-name"
             v-model="data.defaultQueueName"
-            :options="queueNameOptions"
             @change="defaultQueueChanged"
             :disabled="readonly"
           >
-            <template slot="first">
-              <option :value="null">Select a Default Queue</option>
-            </template>
+            <option :value="null">Select a Default Queue</option>
+            <option v-for="opt in queueNameOptions" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
           </select>
         </div>
         <div class="mb-3" label="Default Node Count" label-for="default-node-count">
@@ -106,7 +104,7 @@
             min="0"
             :max="maxNodes"
             :disabled="defaultQueueAttributesDisabled"
-          ></input>
+          />
         </div>
         <div class="mb-3" label="Default CPU Count" label-for="default-cpu-count">
           <input class="form-control"
@@ -116,10 +114,10 @@
             min="0"
             :max="maxCPUCount"
             :disabled="defaultQueueAttributesDisabled"
-          ></input>
-          <template #description v-if="cpuPerNode > 0">
+          />
+          <small class="form-text text-muted" v-if="cpuPerNode > 0">
             There are {{ cpuPerNode }} cores per node.
-          </template>
+          </small>
         </div>
         <form-group
           label="Default Walltime (in minutes)"
@@ -132,8 +130,8 @@
             min="0"
             :max="maxWalltime"
             :disabled="defaultQueueAttributesDisabled"
-          ></input>
-        </div>
+          />
+        </form-group>
       </div>
     </div>
   </div>

@@ -4,16 +4,12 @@ import DashboardContainer from "./containers/DashboardContainer.vue";
 import RecentExperimentsContainer from "./containers/RecentExperimentsContainer.vue";
 
 entry(({ createApp }) => {
+  const el = document.getElementById("dashboard");
+  const viewAllExperiments = el ? el.dataset.viewAllExperiments : null;
+  const username = el ? el.dataset.username : null;
   const app = createApp({
     data() {
-      return {
-        viewAllExperiments: null,
-        username: null,
-      };
-    },
-    beforeMount() {
-      this.viewAllExperiments = this.$el.dataset.viewAllExperiments;
-      this.username = this.$el.dataset.username;
+      return { viewAllExperiments, username };
     },
     render() {
       return h(components.MainLayout, null, {

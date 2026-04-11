@@ -18,7 +18,8 @@ class AiravataClientMiddleware:
     def __call__(self, request: Any) -> HttpResponse:
         access_token = _get_access_token(request)
         gateway_id = settings.GATEWAY_ID
-        request.airavata_client = create_airavata_client(access_token, gateway_id)
+        username = request.user.username if request.user.is_authenticated else ""
+        request.airavata_client = create_airavata_client(access_token, gateway_id, username)
         try:
             response = self.get_response(request)
         except Exception:

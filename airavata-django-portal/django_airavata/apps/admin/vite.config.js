@@ -15,6 +15,7 @@ export default defineConfig({
     },
   },
   resolve: {
+    extensions: [".vue", ".js", ".json"],
     alias: {
       "@": resolve(__dirname, "./static/django_airavata_admin/src"),
     },

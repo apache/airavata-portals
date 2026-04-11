@@ -5,7 +5,7 @@
         <h1 class="h4 mb-4">Parsers</h1>
       </div>
       <div id="col-new-group" class="col-sm-2">
-        <button class="btn" href="create" :variant="'primary'"
+        <button class="btn btn-primary" href="create"
           >Create New Parser&nbsp;&nbsp;<i
             class="fa fa-plus"
             aria-hidden="true"

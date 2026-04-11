@@ -151,6 +151,11 @@ class GroupSerializer(proto_utils.create_serializer_class(GroupModel)):
     url = FullyEncodedHyperlinkedIdentityField(
         view_name="django_airavata_api:group-detail", lookup_field="id", lookup_url_kwarg="group_id"
     )
+    id = serializers.CharField(required=False, allow_null=True, default=None)
+    name = serializers.CharField(required=True)
+    description = serializers.CharField(required=False, allow_null=True, default=None)
+    members = serializers.ListField(child=serializers.CharField(), required=False, allow_null=True, default=None)
+    admins = serializers.ListField(child=serializers.CharField(), required=False, allow_null=True, default=None)
     isAdmin = serializers.SerializerMethodField()
     isOwner = serializers.SerializerMethodField()
     isMember = serializers.SerializerMethodField()
@@ -230,6 +235,11 @@ class ProjectSerializer(proto_utils.create_serializer_class(Project)):
         required = ("name",)
         read_only = ("owner", "gatewayId")
 
+    projectID = serializers.CharField(allow_null=True, required=False)
+    name = serializers.CharField(required=True)
+    description = serializers.CharField(allow_null=True, required=False, allow_blank=True)
+    owner = serializers.CharField(read_only=True, required=False, allow_null=True)
+    gatewayId = serializers.CharField(read_only=True, required=False, allow_null=True)
     url = FullyEncodedHyperlinkedIdentityField(
         view_name="django_airavata_api:project-detail", lookup_field="projectID", lookup_url_kwarg="project_id"
     )
@@ -250,7 +260,9 @@ class ProjectSerializer(proto_utils.create_serializer_class(Project)):
 
     def get_userHasWriteAccess(self, project: Any) -> bool:
         request = self.context["request"]
-        return request.airavata_client.sharing.user_has_access(project.projectID, ResourcePermissionType.WRITE)
+        return request.airavata_client.sharing.user_has_access(
+            project.projectID, request.user.username + "@" + settings.GATEWAY_ID, "WRITE"
+        )
 
     def get_isOwner(self, project: Any) -> bool:
         request = self.context["request"]
@@ -455,12 +467,20 @@ class ApplicationDeploymentDescriptionSerializer(proto_utils.create_serializer_c
     def get_userHasWriteAccess(self, appDeployment):
         request = self.context["request"]
         return request.airavata_client.sharing.user_has_access(
-            appDeployment.appDeploymentId, ResourcePermissionType.WRITE
+            appDeployment.appDeploymentId, request.user.username + "@" + settings.GATEWAY_ID, "WRITE"
         )
 
 
 class ComputeResourceDescriptionSerializer(proto_utils.create_serializer_class(ComputeResourceDescription)):
-    pass
+    computeResourceId = serializers.CharField(allow_null=True, required=False)
+    hostName = serializers.CharField(required=True)
+    resourceDescription = serializers.CharField(allow_null=True, required=False, allow_blank=True)
+    enabled = serializers.BooleanField(required=False, default=True)
+    maxMemoryPerNode = serializers.IntegerField(required=False, default=0)
+    cpusPerNode = serializers.IntegerField(required=False, default=0)
+    defaultNodeCount = serializers.IntegerField(required=False, default=0)
+    defaultCPUCount = serializers.IntegerField(required=False, default=0)
+    defaultWalltime = serializers.IntegerField(required=False, default=0)
 
 
 class BatchQueueSerializer(proto_utils.create_serializer_class(BatchQueue)):
@@ -505,7 +525,9 @@ class ExperimentSerializer(proto_utils.create_serializer_class(ExperimentModel))
 
     def get_userHasWriteAccess(self, experiment):
         request = self.context["request"]
-        return request.airavata_client.sharing.user_has_access(experiment.experimentId, ResourcePermissionType.WRITE)
+        return request.airavata_client.sharing.user_has_access(
+            experiment.experimentId, request.user.username + "@" + settings.GATEWAY_ID, "WRITE"
+        )
 
     def to_representation(self, experiment):
         result = super().to_representation(experiment)
@@ -664,7 +686,9 @@ class ExperimentSummarySerializer(BaseExperimentSummarySerializer):
 
     def get_userHasWriteAccess(self, experiment):
         request = self.context["request"]
-        return request.airavata_client.sharing.user_has_access(experiment.experimentId, ResourcePermissionType.WRITE)
+        return request.airavata_client.sharing.user_has_access(
+            experiment.experimentId, request.user.username + "@" + settings.GATEWAY_ID, "WRITE"
+        )
 
 
 class UserProfileSerializer(proto_utils.create_serializer_class(UserProfile)):
@@ -1597,7 +1621,7 @@ class GroupResourceProfileSerializer(proto_utils.create_serializer_class(GroupRe
     def get_userHasWriteAccess(self, groupResourceProfile):
         request = self.context["request"]
         write_access = request.airavata_client.sharing.user_has_access(
-            groupResourceProfile.groupResourceProfileId, ResourcePermissionType.WRITE
+            groupResourceProfile.groupResourceProfileId, request.user.username + "@" + settings.GATEWAY_ID, "WRITE"
         )
         if not write_access:
             return False
@@ -1609,7 +1633,9 @@ class GroupResourceProfileSerializer(proto_utils.create_serializer_class(GroupRe
         )
 
         def check_token(token):
-            return token is None or request.airavata_client.sharing.user_has_access(token, ResourcePermissionType.READ)
+            return token is None or request.airavata_client.sharing.user_has_access(
+                token, request.user.username + "@" + settings.GATEWAY_ID, "READ"
+            )
 
         return all(map(check_token, tokens))
 
@@ -1703,17 +1729,17 @@ class SharedEntitySerializer(serializers.Serializer):
         all_ids = existing_permissions.keys() | new_permissions.keys()
         for id in all_ids:
             revokes, grants = self._compute_revokes_and_grants(existing_permissions.get(id), new_permissions.get(id))
-            if ResourcePermissionType.READ in revokes:
+            if "READ" in revokes:
                 revoke_read_permission.append(id)
-            if ResourcePermissionType.WRITE in revokes:
+            if "WRITE" in revokes:
                 revoke_write_permission.append(id)
-            if ResourcePermissionType.MANAGE_SHARING in revokes:
+            if "MANAGE_SHARING" in revokes:
                 revoke_manage_sharing_permission.append(id)
-            if ResourcePermissionType.READ in grants:
+            if "READ" in grants:
                 grant_read_permission.append(id)
-            if ResourcePermissionType.WRITE in grants:
+            if "WRITE" in grants:
                 grant_write_permission.append(id)
-            if ResourcePermissionType.MANAGE_SHARING in grants:
+            if "MANAGE_SHARING" in grants:
                 grant_manage_sharing_permission.append(id)
         return (
             grant_read_permission,
@@ -1725,24 +1751,24 @@ class SharedEntitySerializer(serializers.Serializer):
         )
 
     def _compute_revokes_and_grants(self, current_permission=None, new_permission=None):
-        read_permissions = set((ResourcePermissionType.READ,))
-        write_permissions = set((ResourcePermissionType.READ, ResourcePermissionType.WRITE))
+        read_permissions = set(("READ",))
+        write_permissions = set(("READ", "WRITE"))
         manage_share_permissions = set(
-            (ResourcePermissionType.READ, ResourcePermissionType.WRITE, ResourcePermissionType.MANAGE_SHARING)
+            ("READ", "WRITE", "MANAGE_SHARING")
         )
         current_permissions_set = set()
         new_permissions_set = set()
-        if current_permission == ResourcePermissionType.READ:
+        if current_permission == "READ":
             current_permissions_set = read_permissions
-        elif current_permission == ResourcePermissionType.WRITE:
+        elif current_permission == "WRITE":
             current_permissions_set = write_permissions
-        elif current_permission == ResourcePermissionType.MANAGE_SHARING:
+        elif current_permission == "MANAGE_SHARING":
             current_permissions_set = manage_share_permissions
-        if new_permission == ResourcePermissionType.READ:
+        if new_permission == "READ":
             new_permissions_set = read_permissions
-        elif new_permission == ResourcePermissionType.WRITE:
+        elif new_permission == "WRITE":
             new_permissions_set = write_permissions
-        elif new_permission == ResourcePermissionType.MANAGE_SHARING:
+        elif new_permission == "MANAGE_SHARING":
             new_permissions_set = manage_share_permissions
 
         # return tuple: permissions to revoke and permissions to grant
@@ -1755,7 +1781,7 @@ class SharedEntitySerializer(serializers.Serializer):
     def get_hasSharingPermission(self, shared_entity: dict[str, Any]) -> bool:
         request = self.context["request"]
         return request.airavata_client.sharing.user_has_access(
-            shared_entity["entityId"], ResourcePermissionType.MANAGE_SHARING
+            shared_entity["entityId"], request.user.username + "@" + settings.GATEWAY_ID, "MANAGE_SHARING"
         )
 
 
@@ -1766,7 +1792,9 @@ class CredentialSummarySerializer(proto_utils.create_serializer_class(Credential
 
     def get_userHasWriteAccess(self, credential_summary):
         request = self.context["request"]
-        return request.airavata_client.sharing.user_has_access(credential_summary.token, ResourcePermissionType.WRITE)
+        return request.airavata_client.sharing.user_has_access(
+            credential_summary.token, request.user.username + "@" + settings.GATEWAY_ID, "WRITE"
+        )
 
 
 class StoragePreferenceSerializer(proto_utils.create_serializer_class(StoragePreference)):
@@ -1794,6 +1822,10 @@ class GatewayResourceProfileSerializer(proto_utils.create_serializer_class(Gatew
 
 
 class StorageResourceSerializer(proto_utils.create_serializer_class(StorageResourceDescription)):
+    storageResourceId = serializers.CharField(allow_null=True, required=False)
+    hostName = serializers.CharField(required=True)
+    storageResourceDescription = serializers.CharField(allow_null=True, required=False, allow_blank=True)
+    enabled = serializers.BooleanField(required=False, default=True)
     url = FullyEncodedHyperlinkedIdentityField(
         view_name="django_airavata_api:storage-resource-detail",
         lookup_field="storageResourceId",

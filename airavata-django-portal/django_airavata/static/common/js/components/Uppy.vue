@@ -2,7 +2,7 @@
   <div class="custom-Uppy">
     <div ref="dragDrop" />
     <div ref="statusBar" />
-    <div class="alert" class="mt-1" :show="restrictionFailed" variant="danger">{{
+    <div class="alert alert-danger mt-1" v-if="restrictionFailed">{{
       restrictionFailedMessage
     }}</div>
   </div>
@@ -163,16 +163,16 @@ export default {
 </script>
 
 <style scoped>
-.custom-Uppy >>> .uppy-DragDrop-inner {
+.custom-Uppy :deep(.uppy-DragDrop-inner) {
   padding: 5px 0px;
 }
-.custom-Uppy >>> .UppyIcon {
+.custom-Uppy :deep(.UppyIcon) {
   display: none;
 }
-.custom-Uppy >>> .uppy-DragDrop-label {
+.custom-Uppy :deep(.uppy-DragDrop-label) {
   margin-bottom: 0px;
 }
-.custom-Uppy >>> .uppy-StatusBar {
+.custom-Uppy :deep(.uppy-StatusBar) {
   background-color: inherit;
 }
 </style>

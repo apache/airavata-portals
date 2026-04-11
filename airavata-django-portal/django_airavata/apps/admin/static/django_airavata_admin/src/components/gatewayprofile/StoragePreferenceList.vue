@@ -21,15 +21,15 @@
         />
         <div class="row">
           <div class="col">
-            <button class="btn" variant="primary" @click="saveNewStoragePreference">
+            <button class="btn btn-primary btn-sm" @click="saveNewStoragePreference">
               Save
             </button>
-            <button class="btn" variant="secondary" @click="cancelNewStoragePreference">
+            <button class="btn btn-secondary btn-sm" @click="cancelNewStoragePreference">
               Cancel
             </button>
           </div>
         </div>
-      </div></div>
+      </div>
     </template>
     <template slot="item-list" slot-scope="slotProps">
       <!-- TODO: migrate to native HTML table --><table class="table"
@@ -75,14 +75,16 @@
           </delete-link>
         </template>
         <template slot="row-details" slot-scope="row">
-          <div class="card"><div class="card-body">
-            <storage-preference-editor
-              :value="row.item"
-              @input="updatedStoragePreference"
-              :default-credential-store-token="defaultCredentialStoreToken"
-            />
-            <button class="btn" size="sm" @click="toggleDetails(row)">Close</button>
-          </div></div>
+          <div class="card">
+            <div class="card-body">
+              <storage-preference-editor
+                :value="row.item"
+                @input="updatedStoragePreference"
+                :default-credential-store-token="defaultCredentialStoreToken"
+              />
+              <button class="btn btn-sm" @click="toggleDetails(row)">Close</button>
+            </div>
+          </div>
         </template>
       </table>
     </template>

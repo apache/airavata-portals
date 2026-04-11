@@ -1,9 +1,9 @@
 <template>
   <div class="card" :title="title" title-tag="h5">
-    <div class="input-group"
+    <div class="input-group mb-1 align-items-center"
       v-for="setEnvPath in data"
       :key="setEnvPath.key"
-      class="mb-1 align-items-center"
+      
     >
       <input class="form-control"
         type="text"
@@ -21,17 +21,17 @@
         placeholder="VALUE"
         :disabled="readonly"
       />
-      <div class="input-group"-append v-if="!readonly">
-        <button class="btn" variant="secondary" @click="deleteEnvPath(setEnvPath)">
+      <span class="input-group-text">
+        <button class="btn btn-secondary btn-sm" @click="deleteEnvPath(setEnvPath)">
           <i class="fa fa-trash"></i>
           <span class="visually-hidden">Delete</span>
         </button>
       </span>
     </div>
-    <button class="btn" v-if="!readonly" variant="secondary" @click="addEnvPath">{{
+    <button class="btn btn-secondary btn-sm" v-if="!readonly" @click="addEnvPath">{{
       addButtonLabel
     }}</button>
-  </div></div>
+  </div>
 </template>
 
 <script>

@@ -5,15 +5,20 @@ import ExperimentSummary from "./components/experiment/ExperimentSummary.vue";
 import createStore from "./store";
 
 entry(({ createApp }) => {
+  const el = document.getElementById("view-experiment");
+  const fullExperimentData = el && el.dataset.fullExperimentData
+    ? JSON.parse(el.dataset.fullExperimentData)
+    : null;
+  const launching = el && "launching" in el.dataset
+    ? JSON.parse(el.dataset.launching)
+    : null;
   const store = createStore();
   const app = createApp({
-    async beforeMount() {
-      const fullExperimentData = JSON.parse(
-        this.$el.dataset.fullExperimentData
-      );
-      this.setInitialFullExperimentData({ fullExperimentData });
-      if ("launching" in this.$el.dataset) {
-        const launching = JSON.parse(this.$el.dataset.launching);
+    beforeMount() {
+      if (fullExperimentData) {
+        this.setInitialFullExperimentData({ fullExperimentData });
+      }
+      if (launching !== null) {
         this.setLaunching({ launching });
       }
     },

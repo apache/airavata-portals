@@ -1,34 +1,75 @@
 <template>
-  <div class="mb-3" label="Groups">
-    <form-checkbox-group
-      :checked="selected"
-      :options="userDefinedGroupOptions"
-      @input="groupsUpdated"
-      stacked
+  <div class="mb-3">
+    <label class="form-label">Groups</label>
+    <div
+      v-if="gatewayUsersGroupOption"
+      class="form-check"
     >
-      <template slot="first">
-        <form-checkbox
-          v-if="gatewayUsersGroupOption"
-          :value="gatewayUsersGroupOption.value"
-          :disabled="gatewayUsersGroupOption.disabled"
-          >{{ gatewayUsersGroupOption.text }}
-          <gateway-groups-badge :group="gatewayUsersGroup" />
-        </div>
-        <form-checkbox
-          v-if="adminsGroupOption"
-          :value="adminsGroupOption.value"
-          :disabled="adminsGroupOption.disabled"
-          >{{ adminsGroupOption.text }}
-          <gateway-groups-badge :group="adminsGroup" />
-        </div>
-        <form-checkbox
-          v-if="readOnlyAdminsGroupOption"
-          :value="readOnlyAdminsGroupOption.value"
-          :disabled="readOnlyAdminsGroupOption.disabled"
-          >{{ readOnlyAdminsGroupOption.text }}
-          <gateway-groups-badge :group="readOnlyAdminsGroup" />
-        </div>
-      </template>
+      <input
+        class="form-check-input"
+        type="checkbox"
+        :id="'group-' + gatewayUsersGroupOption.value"
+        :value="gatewayUsersGroupOption.value"
+        :checked="selected.includes(gatewayUsersGroupOption.value)"
+        :disabled="gatewayUsersGroupOption.disabled"
+        @change="toggleGroup(gatewayUsersGroupOption.value, $event.target.checked)"
+      />
+      <label class="form-check-label" :for="'group-' + gatewayUsersGroupOption.value">
+        {{ gatewayUsersGroupOption.text }}
+        <gateway-groups-badge :group="gatewayUsersGroup" />
+      </label>
+    </div>
+    <div
+      v-if="adminsGroupOption"
+      class="form-check"
+    >
+      <input
+        class="form-check-input"
+        type="checkbox"
+        :id="'group-' + adminsGroupOption.value"
+        :value="adminsGroupOption.value"
+        :checked="selected.includes(adminsGroupOption.value)"
+        :disabled="adminsGroupOption.disabled"
+        @change="toggleGroup(adminsGroupOption.value, $event.target.checked)"
+      />
+      <label class="form-check-label" :for="'group-' + adminsGroupOption.value">
+        {{ adminsGroupOption.text }}
+        <gateway-groups-badge :group="adminsGroup" />
+      </label>
+    </div>
+    <div
+      v-if="readOnlyAdminsGroupOption"
+      class="form-check"
+    >
+      <input
+        class="form-check-input"
+        type="checkbox"
+        :id="'group-' + readOnlyAdminsGroupOption.value"
+        :value="readOnlyAdminsGroupOption.value"
+        :checked="selected.includes(readOnlyAdminsGroupOption.value)"
+        :disabled="readOnlyAdminsGroupOption.disabled"
+        @change="toggleGroup(readOnlyAdminsGroupOption.value, $event.target.checked)"
+      />
+      <label class="form-check-label" :for="'group-' + readOnlyAdminsGroupOption.value">
+        {{ readOnlyAdminsGroupOption.text }}
+        <gateway-groups-badge :group="readOnlyAdminsGroup" />
+      </label>
+    </div>
+    <div
+      v-for="option in userDefinedGroupOptions"
+      :key="option.value"
+      class="form-check"
+    >
+      <input
+        class="form-check-input"
+        type="checkbox"
+        :id="'group-' + option.value"
+        :value="option.value"
+        :checked="selected.includes(option.value)"
+        :disabled="option.disabled"
+        @change="toggleGroup(option.value, $event.target.checked)"
+      />
+      <label class="form-check-label" :for="'group-' + option.value">{{ option.text }}</label>
     </div>
   </div>
 </template>
@@ -108,20 +149,17 @@ export default {
     },
   },
   methods: {
-    groupsUpdated(checkedGroups) {
-      // Check for added groups
-      for (const checkedGroupId of checkedGroups) {
-        if (!this.data.find((g) => g.id === checkedGroupId)) {
-          const addedGroup = this.editableGroups.find(
-            (g) => g.id === checkedGroupId
-          );
-          this.data.push(addedGroup);
+    toggleGroup(groupId, checked) {
+      if (checked) {
+        if (!this.data.find((g) => g.id === groupId)) {
+          const addedGroup = this.editableGroups.find((g) => g.id === groupId);
+          if (addedGroup) {
+            this.data.push(addedGroup);
+          }
         }
-      }
-      // Check for removed groups
-      for (const group of this.data) {
-        if (!checkedGroups.find((groupId) => groupId === group.id)) {
-          const groupIndex = this.data.findIndex((g) => g.id === group.id);
+      } else {
+        const groupIndex = this.data.findIndex((g) => g.id === groupId);
+        if (groupIndex >= 0) {
           this.data.splice(groupIndex, 1);
         }
       }

@@ -7,7 +7,7 @@
       Are you sure you want to delete <strong>{{ username }}</strong
       >?
     </delete-button>
-  </div></div>
+  </div>
 </template>
 
 <script>

@@ -16,8 +16,8 @@
             required
             :disabled="readonly"
             :state="validationFeedback.appModuleName.state"
-          ></input>
-        </div>
+          />
+        </form-group>
         <form-group
           label="Application Version"
           label-for="application-version"
@@ -27,8 +27,8 @@
             type="text"
             v-model="data.appModuleVersion"
             :disabled="readonly"
-          ></input>
-        </div>
+          />
+        </form-group>
         <form-group
           label="Application Description"
           label-for="application-description"
@@ -39,7 +39,7 @@
             :rows="3"
             :disabled="readonly"
           ></textarea>
-        </div>
+        </form-group>
       </div>
     </div>
   </div>

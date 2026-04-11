@@ -16,29 +16,21 @@
     </div>
     <div class="row">
       <div class="col">
-        <ul class="nav" tabs class="mb-3">
-          <li class="nav-item"><a class="nav-link"
-            exact-active-class="active"
-            exact
+        <ul class="nav mb-3" tabs >
+          <li class="nav-item"><a class="nav-link active"
             :to="{
               name: id ? 'application_module' : 'new_application_module',
               params: { id: id },
             }"
-            >Details</b-nav-item
-          >
-          <li class="nav-item"><a class="nav-link"
-            exact-active-class="active"
-            exact
+            >Details</a></li>
+          <li class="nav-item"><a class="nav-link active"
             :to="{ name: 'application_interface', params: { id: id } }"
             :disabled="!id"
-            >Interface</b-nav-item
-          >
-          <li class="nav-item"><a class="nav-link"
-            active-class="active"
+            >Interface</a></li>
+          <li class="nav-item"><a class="nav-link active"
             :to="{ name: 'application_deployments', params: { id: id } }"
             :disabled="!id"
-            >Deployments</b-nav-item
-          >
+            >Deployments</a></li>
         </ul>
         <router-view
           name="module"
@@ -74,9 +66,7 @@
       </div>
     </div>
     <div class="fixed-footer">
-      <button class="btn"
-        class="editor-button"
-        variant="primary"
+      <button class="btn btn-primary btn-sm editor-button"
         @click="saveAll"
         :disabled="readonly || !isDirty"
       >
@@ -92,7 +82,7 @@
         <strong>{{ appModule ? appModule.appModuleName : "" }}</strong>
         application?
       </delete-button>
-      <button class="btn" class="editor-button" variant="secondary" @click="cancel">
+      <button class="btn btn-secondary btn-sm editor-button" @click="cancel">
         Cancel
       </button>
     </div>

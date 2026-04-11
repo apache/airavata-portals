@@ -62,8 +62,11 @@ export default {
 <style scoped>
 .pager {
   text-align: right;
+  font-size: 0.8125rem;
+  color: #6c757d;
+  padding: 0.5rem 0;
 }
 .pager-element + .pager-element {
-  margin-left: 5px;
+  margin-left: 0.5rem;
 }
 </style>

@@ -62,6 +62,7 @@ import Session from "./session/Session";
 import ExperimentUtils from "./utils/ExperimentUtils";
 import FetchUtils from "./utils/FetchUtils";
 import PaginationIterator from "./utils/PaginationIterator";
+import SSEClient from "./utils/SSEClient";
 import StringUtils from "./utils/StringUtils";
 
 const errors = {
@@ -185,6 +186,7 @@ const utils = {
   ExperimentUtils,
   FetchUtils,
   PaginationIterator,
+  SSEClient,
   StringUtils,
 };
 

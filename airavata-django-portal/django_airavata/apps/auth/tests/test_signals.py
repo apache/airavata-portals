@@ -52,6 +52,6 @@ class EmailUserAddedToGroupSignalReceiverTests(TestCase):
         self.assertEqual(msg.from_email, f'"{PORTAL_TITLE}" <{SERVER_EMAIL}>')
         self.assertEqual(msg.reply_to, [f'"{PORTAL_ADMINS[0][0]}" <{PORTAL_ADMINS[0][1]}>'])
         self.assertSequenceEqual(msg.to, [f'"{self.user.firstName} {self.user.lastName}" <{self.user.emails[0]}>'])
-        self.assertIn(self.request.build_absolute_uri(reverse("django_airavata_workspace:dashboard")), msg.body)
-        self.assertIn(self.request.build_absolute_uri(reverse("django_airavata_workspace:experiments")), msg.body)
+        applications_url = self.request.build_absolute_uri(reverse("django_airavata_workspace:applications"))
+        self.assertIn(applications_url, msg.body)
         self.assertIn(self.user.userId, msg.body)

@@ -6,13 +6,15 @@
       @valid="valid = true"
       @invalid="valid = false"
     >
-      <share-button slot="buttons" :entity-id="projectId" />
+      <template #buttons>
+        <share-button :entity-id="projectId" />
+      </template>
     </project-editor>
     <div class="d-flex justify-content-end">
-      <button class="btn" @click="saveProject" variant="primary" :disabled="!valid"
-        >Save</b-button
+      <button class="btn btn-primary btn-sm" @click="saveProject" :disabled="!valid"
+        >Save</button
       >
-      <button class="btn" @click="cancel" variant="secondary">Cancel</button>
+      <button class="btn btn-secondary btn-sm" @click="cancel">Cancel</button>
     </div>
   </div>
 </template>

@@ -1,18 +1,16 @@
 <template>
-  <ul class="nav nav-tabs" content-class="mt-3 px-2">
+  <ul class="nav nav-tabs mt-3 px-2" content->
     <li class="nav-item"
       title="User Profile"
       :active="iamUserProfile.airavataUserProfileExists"
     >
-      <div class="alert"
-        variant="warning"
-        show
+      <div class="alert alert-warning"
         v-if="!iamUserProfile.userProfileComplete"
       >
         This user has not completed their user profile. An incomplete user
         profile is shown below.
       </div>
-      <div class="alert" variant="danger" show v-if="isUsernameInvalid">
+      <div class="alert alert-danger" v-if="isUsernameInvalid">
         The user has an invalid username. Please use
         <strong>Change Username</strong> under the
         <strong>Troubleshooting</strong> tab to fix the user's username.
@@ -56,7 +54,7 @@
         :username="iamUserProfile.userId"
         @delete-user="$emit('delete-user', $event)"
       />
-      <div class="alert" variant="danger" show v-if="isUsernameInvalid">
+      <div class="alert alert-danger" v-if="isUsernameInvalid">
         The user has an invalid username. Please fix the user's username so that
         they can complete their user profile.
       </div>

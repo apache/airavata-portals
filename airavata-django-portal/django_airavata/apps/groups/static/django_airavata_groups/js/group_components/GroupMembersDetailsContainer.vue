@@ -1,20 +1,22 @@
 <template>
 <div>
-    <div class="card" header="Details">
-      <b>Name: </b> {{name}}<br>
-      <b>Email: </b> {{userProfile.email}}<br>
-      
-      <span v-if="role"><b>Role: </b></span>
-      <select class="form-select"
-          v-if="isOwner && role !== 'OWNER'"
-          :value="role"
-          @input="changeRole($event)"
-          :options="groupRoleOptions"
-        >
-      </select>
-      <span v-if="(!isOwner && role) || (isOwner && role=='OWNER')">{{ role }}</span>
+    <div class="card">
+      <div class="card-header">Details</div>
+      <div class="card-body">
+        <b>Name: </b> {{name}}<br>
+        <b>Email: </b> {{userProfile.email}}<br>
 
-    </div></div>
+        <span v-if="role"><b>Role: </b></span>
+        <select class="form-select"
+            v-if="isOwner && role !== 'OWNER'"
+            :value="role"
+            @input="changeRole($event)"
+          >
+          <option v-for="opt in groupRoleOptions" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
+        </select>
+        <span v-if="(!isOwner && role) || (isOwner && role=='OWNER')">{{ role }}</span>
+      </div>
+    </div>
     
 </div>
 </template>

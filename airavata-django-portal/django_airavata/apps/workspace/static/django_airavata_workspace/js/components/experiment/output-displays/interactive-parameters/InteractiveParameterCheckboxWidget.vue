@@ -1,5 +1,7 @@
 <template>
-  <div class="form-check"><input class="form-check-input" type="checkbox" :checked="value" @input="$emit('input', $event)" />
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" :checked="value" @input="$emit('input', $event)" />
+  </div>
 </template>
 
 <script>

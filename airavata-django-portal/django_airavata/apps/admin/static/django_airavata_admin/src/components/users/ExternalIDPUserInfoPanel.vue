@@ -6,7 +6,7 @@
       provider. The IDP alias used is
       {{ externalIDPUserInfo.idp_alias || "N/A" }}.
     </small>
-  </div></div>
+  </div>
 </template>
 
 <script>

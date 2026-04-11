@@ -8,7 +8,6 @@
     no-close-on-esc
     hide-header-close
     ok-title="Confirm"
-    ok-variant="danger"
   >
     <slot></slot>
   </div>

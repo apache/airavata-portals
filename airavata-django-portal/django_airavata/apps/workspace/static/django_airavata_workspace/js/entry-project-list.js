@@ -3,16 +3,15 @@ import { components, entry } from "django-airavata-common-ui";
 import ProjectListContainer from "./containers/ProjectListContainer.vue";
 
 entry(({ createApp }) => {
+  const el = document.getElementById("project-list");
+  const projectsData = el && el.dataset.projectsData
+    ? JSON.parse(el.dataset.projectsData)
+    : null;
   const app = createApp({
     data() {
       return {
-        projectsData: null,
+        projectsData,
       };
-    },
-    beforeMount() {
-      if (this.$el.dataset.projectsData) {
-        this.projectsData = JSON.parse(this.$el.dataset.projectsData);
-      }
     },
     render() {
       return h(components.MainLayout, null, {

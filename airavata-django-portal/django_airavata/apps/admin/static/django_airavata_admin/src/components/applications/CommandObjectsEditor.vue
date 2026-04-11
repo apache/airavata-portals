@@ -1,9 +1,9 @@
 <template>
   <div class="card" :title="title" title-tag="h5">
-    <div class="input-group"
+    <div class="input-group mb-1"
       v-for="commandObject in data"
       :key="commandObject.key"
-      class="mb-1"
+      
     >
       <input class="form-control"
         type="text"
@@ -12,9 +12,8 @@
         ref="commandObjectInputs"
         :disabled="readonly"
       />
-      <div class="input-group"-append v-if="!readonly">
-        <button class="btn"
-          variant="secondary"
+      <span class="input-group-text">
+        <button class="btn btn-secondary btn-sm"
           @click="deleteCommandObject(commandObject)"
         >
           <i class="fa fa-trash"></i>
@@ -22,10 +21,10 @@
         </button>
       </span>
     </div>
-    <button class="btn" v-if="!readonly" variant="secondary" @click="addCommandObject">{{
+    <button class="btn btn-secondary btn-sm" v-if="!readonly" @click="addCommandObject">{{
       addButtonLabel
     }}</button>
-  </div></div>
+  </div>
 </template>
 
 <script>

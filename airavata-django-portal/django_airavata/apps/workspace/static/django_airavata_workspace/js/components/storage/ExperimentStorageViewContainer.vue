@@ -1,6 +1,6 @@
 <template>
-  <div class="card"><div class="card-body">
-    <template #header>
+  <div class="card">
+    <div class="card-header">
       <div class="d-flex justify-content-between">
         <h6 class="mb-0">Experiment Data Directory</h6>
         <a
@@ -13,7 +13,8 @@
           <i class="fa fa-file-archive" aria-hidden="true"></i>
         </a>
       </div>
-    </template>
+    </div>
+    <div class="card-body">
     <experiment-storage-path-viewer
       v-if="experimentStoragePath"
       :experiment-storage-path="experimentStoragePath"
@@ -22,10 +23,10 @@
       :download-in-new-window="true"
     ></experiment-storage-path-viewer>
 
-    <div class="alert" v-else-if="archived" show variant="warning">
+    <div class="alert alert-warning" v-else-if="archived">
       This experiment was archived on {{ experimentArchive.created_date }}.
     </div>
-    <div class="alert" v-else-if="experimentDataDirNotFound" show variant="warning">
+    <div class="alert alert-warning" v-else-if="experimentDataDirNotFound">
       Experiment Data Directory does not exist in storage.
     </div>
 

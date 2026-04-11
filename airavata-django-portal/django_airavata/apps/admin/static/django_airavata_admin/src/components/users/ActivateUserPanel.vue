@@ -7,7 +7,7 @@
       to be assigned to groups.
     </p>
     <button class="btn" @click="activate">Activate</button>
-  </div></div>
+  </div>
 </template>
 
 <script>

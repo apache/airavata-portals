@@ -13,7 +13,7 @@
             v-model="data.credentialStoreToken"
             :readonly="!data.userHasWriteAccess"
           />
-        </div>
+        </form-group>
       </div>
     </div>
   </div>

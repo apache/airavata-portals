@@ -6,7 +6,7 @@
 
           <div class="mb-3">
             <div class="input-group">
-              <div class="input-group"-text slot="prepend">
+              <span class="input-group-text">
                 <i class="fa fa-filter"></i>
               </span>
               <input class="form-control"
@@ -28,7 +28,7 @@
             :sort-compare="sortCompare"
             responsive="sm"
             ref="usersTable"
-            head-variant="light"
+
             sort-by="name"
             @row-selected="onUsersRowSelected"
           >
@@ -55,87 +55,63 @@
 
           </table>
 
-        </div></div>
+        </div>
       </div>
 
       <div>
-        <button class="btn"-group vertical>
+        <div class="btn-group-vertical">
 
-          <button class="btn"
+          <button class="btn btn-primary"
             style="margin-top:10px; margin-bottom:10px;"
-            variant="primary"
             :disabled = "selectedUsers.length<1"
             @click="addSelectedMembers">
             <!--Add Selected Members-->
             <i class="fas fa-angle-right fa-lg"></i>
           </button>
 
-          <button class="btn"
+          <button class="btn btn-primary"
             style="margin-top:10px; margin-bottom:10px;"
-            variant="primary"
             :disabled = "nonMembers.length<1"
             @click="showAdd = true">
             <!--Add All Members-->
             <i class="fas fa-angle-double-right fa-lg"></i>
           </button>
 
-          <button class="btn"
+          <button class="btn btn-primary"
             style="margin-top:10px; margin-bottom:10px;"
-            variant="primary"
             :disabled = "membersCount<2"
             @click="showRemove = true">
             <i class="fas fa-angle-double-left fa-lg"></i>
             <!--Remove All Members-->
           </button>
 
-          <button class="btn"
+          <button class="btn btn-primary"
             style="margin-top:10px; margin-bottom:10px;"
-            variant="primary"
             :disabled = "selectedMembers.length<1"
               @click="removeSelectedMembers">
               <i class="fas fa-angle-left fa-lg"></i>
               <!--Remove Selected Members-->
           </button>
 
-          <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
-            v-model="showRemove"
-            title="Are you sure?">
-            <p class="my-4">
+          <div v-if="showRemove" class="alert alert-warning mt-2">
+            <p class="my-2">
               Do you really want to remove all members from
               '<strong>{{group.name}}</strong>'?
             </p>
-            <div slot="modal-footer" class="w-100">
-              <button class="btn"
-                class="float-right ms-1"
-                @click="removeAllMembers">
-                Yes
-              </button>
-              <button class="btn"
-                class="float-right ms-1"
-                @click="showRemove = false">
-                No
-              </button>
+            <div class="d-flex justify-content-end">
+              <button class="btn btn-primary ms-1" @click="removeAllMembers">Yes</button>
+              <button class="btn btn-secondary ms-1" @click="showRemove = false">No</button>
             </div>
           </div>
 
-          <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
-            v-model="showAdd"
-            title="Are you sure?">
-            <p class="my-4">
+          <div v-if="showAdd" class="alert alert-warning mt-2">
+            <p class="my-2">
               Do you really want to add all users to
               '<strong>{{group.name}}</strong>'?
             </p>
-            <div slot="modal-footer" class="w-100">
-              <button class="btn"
-                class="float-right ms-1"
-                @click="addAllMembers">
-                Yes
-              </button>
-              <button class="btn"
-                class="float-right ms-1"
-                @click="showAdd = false">
-                No
-              </button>
+            <div class="d-flex justify-content-end">
+              <button class="btn btn-primary ms-1" @click="addAllMembers">Yes</button>
+              <button class="btn btn-secondary ms-1" @click="showAdd = false">No</button>
             </div>
           </div>
 
@@ -147,7 +123,7 @@
 
           <div class="mb-3">
             <div class="input-group">
-              <div class="input-group"-text slot="prepend">
+              <span class="input-group-text">
                 <i class="fa fa-filter"></i>
               </span>
               <input class="form-control"
@@ -168,7 +144,7 @@
             :filter="memberFilter"
             :select-mode="selectMode"
             :sort-compare="sortCompare"
-            head-variant="light"
+
             responsive="sm"
             ref="membersTable"
             sort-by="name"
@@ -210,7 +186,7 @@
 
           </table>
 
-        </div></div>
+        </div>
       </div>
     </div>
   </div>

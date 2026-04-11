@@ -15,7 +15,7 @@
               new-item-button-text="New Notice"
               :new-button-disabled="!isGatewayAdmin"
             >
-              <template slot="new-item-editor">
+              <template #new-item-editor>
                 <div class="card" v-if="showNewItemEditor">
                   <notice-editor
                     v-model="newNotice"
@@ -23,59 +23,40 @@
                     @cancelNewNotice="cancelNewNotice"
                     @saveNewNotice="saveNewNotice"
                   >
-                    <template slot="title">
+                    <template #title>
                       <h1 class="h4 mb-4 me-auto">New Notice</h1>
                     </template>
                   </notice-editor>
-                </div></div>
+                </div>
               </template>
-              <template slot="item-list">
-                <!-- TODO: Replace b-table with native table --><table class="table" hover :fields="fields" :items="items">
-                  <template slot="cell(publishedTime)" slot-scope="data">
-                    <human-date :date="data.value" /> </template
-                  >row
-                  <template slot="cell(expirationTime)" slot-scope="data">
-                    <human-date :date="data.value" />
-                  </template>
-                  <template slot="cell(action)" slot-scope="data">
-                    <template v-if="data.item.userHasWriteAccess">
-                      <a class="action-link" @click="toggleDetails(data)">
-                        Edit
-                        <i class="fa fa-edit" aria-hidden="true"></i>
-                      </a>
-                      <delete-link
-                        @delete="deleteNotice(data.item.notificationId)"
-                      >
-                        Are you sure you want to delete the notice?
-                      </delete-link>
-                    </template>
-                  </template>
-                  <template slot="row-details" slot-scope="row">
-                    <div class="card"><div class="card-body">
-                      <notice-editor
-                        :value="row.item"
-                        v-model="updatedNotice"
-                        @userBeginsInput="isUserBeginInput = false"
-                      >
-                        <template slot="title">
-                          <h1 class="h4 mb-4 me-auto">Update Notice</h1>
+              <template #item-list>
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Published Time</th>
+                      <th>Expiration Time</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in items" :key="item.notificationId">
+                      <td><human-date :date="item.publishedTime" /></td>
+                      <td><human-date :date="item.expirationTime" /></td>
+                      <td>
+                        <template v-if="item.userHasWriteAccess">
+                          <a class="action-link" @click="editNotice(item)">
+                            Edit
+                            <i class="fa fa-edit" aria-hidden="true"></i>
+                          </a>
+                          <delete-link
+                            @delete="deleteNotice(item.notificationId)"
+                          >
+                            Are you sure you want to delete the notice?
+                          </delete-link>
                         </template>
-                      </notice-editor>
-                      <button class="btn"
-                        variant="success"
-                        size="sm"
-                        @click="updateNotice()"
-                        :disabled="isUserBeginInput"
-                        >Update</b-button
-                      >
-                      <button class="btn"
-                        variant="primary"
-                        size="sm"
-                        @click="toggleDetails(row)"
-                        >Close</b-button
-                      >
-                    </div></div>
-                  </template>
+                      </td>
+                    </tr>
+                  </tbody>
                 </table>
               </template>
             </list-layout>

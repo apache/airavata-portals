@@ -16,7 +16,7 @@
         v-model="data.fileSystemRootLocation"
         type="text"
       />
-    </div>
+    </form-group>
     <form-group
       label="Resource Specific SSH Credential"
       label-for="default-credential-store-token"
@@ -38,7 +38,7 @@
           <span v-else> Select a SSH credential </span>
         </template>
       </ssh-credential-selector>
-    </div>
+    </form-group>
   </div>
 </template>
 

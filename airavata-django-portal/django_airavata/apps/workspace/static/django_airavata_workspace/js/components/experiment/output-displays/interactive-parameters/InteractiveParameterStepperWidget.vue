@@ -11,8 +11,8 @@
       @keydown.enter="enterKeyPressed"
     />
     <span class="input-group-text">
-      <button class="btn" variant="primary" :disabled="disabled" @click="submit"
-        >Submit</b-button
+      <button class="btn btn-primary" :disabled="disabled" @click="submit"
+        >Submit</button
       >
     </span>
   </div>

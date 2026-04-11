@@ -9,8 +9,7 @@
       <div class="col-auto">
         <slot name="additional-buttons"> </slot>
         <slot name="new-item-button">
-          <button class="btn"
-            variant="primary"
+          <button class="btn btn-primary"
             @click="addNewItem"
             :disabled="newButtonDisabled"
           >
@@ -96,6 +95,6 @@ export default {
 
 <style scoped>
 .subtitle {
-  font-size: 14px;
+  font-size: 0.8125rem;
 }
 </style>

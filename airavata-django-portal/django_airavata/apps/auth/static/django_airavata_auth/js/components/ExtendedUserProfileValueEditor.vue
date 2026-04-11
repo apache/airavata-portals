@@ -1,34 +1,35 @@
 <template>
-  <form-group
-    :label="extendedUserProfileField.name"
-    :description="extendedUserProfileField.help_text"
-  >
-    <template #label>
+  <div class="mb-3">
+    <label class="form-label">
       {{ extendedUserProfileField.name }}
       <small
         v-if="!extendedUserProfileField.required"
         class="text-muted text-small"
         >(Optional)</small
       >
-    </template>
-    <div class="card"
+    </label>
+    <div class="card ms-3 mb-3"
       v-for="link in extendedUserProfileField.links"
       :key="link.id"
-      :header="link.label"
-      class="ms-3 mb-3"
     >
-      <div class="card"-text v-if="link.display_inline">
-        <iframe :src="link.url" />
+      <div class="card-header">{{ link.label }}</div>
+      <div class="card-body">
+        <div v-if="link.display_inline">
+          <iframe :src="link.url" />
+        </div>
+        <a
+          v-if="link.display_link"
+          :href="link.url"
+          target="_blank"
+          class="card-link"
+          >Open '{{ link.label }}' in separate tab.</a
+        >
       </div>
-      <a
-        v-if="link.display_link"
-        :href="link.url"
-        target="_blank"
-        class="card-link"
-        >Open '{{ link.label }}' in separate tab.</a
-      >
-    </div></div>
+    </div>
     <slot />
+    <small v-if="extendedUserProfileField.help_text" class="form-text text-muted">
+      {{ extendedUserProfileField.help_text }}
+    </small>
   </div>
 </template>
 

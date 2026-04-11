@@ -4,14 +4,13 @@ import EditExperimentContainer from "./containers/EditExperimentContainer.vue";
 import "../../scss/styles.scss";
 
 entry(({ createApp }) => {
+  const el = document.getElementById("edit-experiment");
+  const experimentId = el ? el.dataset.experimentId || null : null;
   const app = createApp({
     data() {
       return {
-        experimentId: null,
+        experimentId,
       };
-    },
-    beforeMount() {
-      this.experimentId = this.$el.dataset.experimentId;
     },
     render() {
       return h(components.MainLayout, null, {

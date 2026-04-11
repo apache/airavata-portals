@@ -28,6 +28,9 @@ def custom_exception_handler(exc, context):
         elif code == StatusCode.UNAVAILABLE:
             log.warning("gRPC Unavailable (API server down)", exc_info=exc)
             return Response({"detail": str(exc), "apiServerDown": True}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        elif code == StatusCode.UNIMPLEMENTED:
+            log.info("gRPC Unimplemented: %s", exc.details() if hasattr(exc, "details") else str(exc))
+            return Response({"detail": "This feature is not yet available."}, status=status.HTTP_501_NOT_IMPLEMENTED)
         else:
             log.error("gRPC error", exc_info=exc, extra={"request": context["request"]})
             return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

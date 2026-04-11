@@ -1,15 +1,16 @@
 <template>
   <div class="card" title="Parameters">
     <validated-form ref="validatedForm" :items="formItems">
-      <interactive-parameter-widget-container
-        slot-scope="form"
-        :parameter="form.item"
-        @valid="form.valid"
-        @invalid="form.invalid"
-        @input="updated(form.item, $event)"
-      />
+      <template #default="form">
+        <interactive-parameter-widget-container
+          :parameter="form.item"
+          @valid="form.valid"
+          @invalid="form.invalid"
+          @input="updated(form.item, $event)"
+        />
+      </template>
     </validated-form>
-  </div></div>
+  </div>
 </template>
 
 <script>

@@ -32,20 +32,19 @@ logger = logging.getLogger(__name__)
 
 
 def start_login(request):
-    next_url = request.GET.get("next", None)
-    if next_url is not None:
-        create_account_url = reverse("django_airavata_auth:create_account") + "?" + urlencode({"next": next_url})
-    else:
-        create_account_url = reverse("django_airavata_auth:create_account")
-    return render(
-        request,
-        "django_airavata_auth/login.html",
-        {
-            "next": request.GET.get("next", None),
-            "options": settings.AUTHENTICATION_OPTIONS,
-            "create_account_url": create_account_url,
-        },
-    )
+    """Redirect directly to Keycloak for authentication — no portal-side login form."""
+    client_id = settings.KEYCLOAK_CLIENT_ID
+    base_authorize_url = settings.KEYCLOAK_AUTHORIZE_URL
+    redirect_uri = request.build_absolute_uri(reverse("django_airavata_auth:callback"))
+    passthrough_query_params = ("next", "login_desktop", "download-code", "show-code")
+    for param in passthrough_query_params:
+        if param in request.GET:
+            redirect_uri += ("&" if "?" in redirect_uri else "?") + f"{param}={quote(request.GET[param])}"
+    oauth2_session = OAuth2Session(client_id, scope="openid profile email", redirect_uri=redirect_uri)
+    authorization_url, state = oauth2_session.authorization_url(base_authorize_url)
+    request.session["OAUTH2_STATE"] = state
+    request.session["OAUTH2_REDIRECT_URI"] = redirect_uri
+    return redirect(authorization_url)
 
 
 def start_username_password_login(request):
@@ -162,7 +161,10 @@ def callback(request):
         messages.error(request, f"Failed to process OAuth2 callback: {str(err)}")
         if login_desktop:
             return _create_login_desktop_failed_response(request, idp_alias=idp_alias)
-        return redirect(reverse("django_airavata_auth:callback-error", args=(idp_alias,)))
+        if idp_alias:
+            return redirect(reverse("django_airavata_auth:callback-error", args=(idp_alias,)))
+        # No idp_alias — redirect back to login to retry
+        return redirect(reverse("django_airavata_auth:login"))
 
 
 def callback_error(request, idp_alias):

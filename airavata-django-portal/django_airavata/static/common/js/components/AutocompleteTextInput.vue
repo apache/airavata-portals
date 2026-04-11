@@ -1,10 +1,11 @@
 <template>
   <div class="autocomplete-text-input">
     <div class="input-group">
-      <div class="input-group"-text slot="prepend">
+      <span class="input-group-text">
         <i class="fa fa-search"></i>
       </span>
-      <input class="form-control"
+      <input
+        class="form-control"
         type="text"
         :value="searchValue"
         :placeholder="placeholder"
@@ -12,13 +13,13 @@
         @keydown.enter="enter"
         @keydown.down="down"
         @keydown.up="up"
-      ></input>
+      />
     </div>
-    <ul class="list-group" class="autocomplete-suggestion-list" v-if="open">
-      <ul class="list-group"-item
+    <ul class="list-group autocomplete-suggestion-list" v-if="open">
+      <li
+        class="list-group-item"
         v-for="(suggestion, index) in filtered"
         v-bind:class="{ active: isActive(index) }"
-        href="#"
         @click="suggestionClick(index)"
         v-bind:key="suggestion.id"
       >
@@ -68,7 +69,8 @@ export default {
     },
   },
   methods: {
-    updateSearchValue(value) {
+    updateSearchValue(event) {
+      const value = event.target.value;
       if (this.open === false) {
         this.open = true;
         this.current = 0;

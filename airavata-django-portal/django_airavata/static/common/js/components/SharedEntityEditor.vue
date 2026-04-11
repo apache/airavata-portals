@@ -1,16 +1,13 @@
 <template>
   <div>
-    <form-group
-      v-if="!readonly"
-      label="Search for users/groups"
-      labelFor="user-groups-autocomplete"
-    >
+    <div v-if="!readonly" class="mb-3">
+      <label for="user-groups-autocomplete" class="form-label">Search for users/groups</label>
       <autocomplete-text-input
         id="user-groups-autocomplete"
         :suggestions="usersAndGroupsSuggestions"
         @selected="suggestionSelected"
       >
-        <template slot="suggestion" slot-scope="slotProps">
+        <template #suggestion="slotProps">
           <span v-if="slotProps.suggestion.type == 'group'">
             <i class="fa fa-users"></i> {{ slotProps.suggestion.name }}
           </span>
@@ -27,90 +24,96 @@
     <h5 v-if="totalCount > 0">
       <slot name="permissions-header">Currently Shared With</slot>
     </h5>
-    <!-- TODO: migrate to native HTML table --><table class="table"
-      v-if="usersCount > 0"
-      id="modal-user-table"
-      hover
-      :items="sortedUserPermissions"
-      :fields="userFields"
-    >
-      <template slot="cell(name)" slot-scope="data">
-        <span
-          :title="data.item.user.userId"
-          :class="userDataClasses"
-          v-if="!isPermissionReadOnly(data.item.permissionType)"
-          >{{ data.item.user.firstName }} {{ data.item.user.lastName }}</span
-        >
-        <span v-else class="text-muted font-italic"
-          >{{ data.item.user.firstName }} {{ data.item.user.lastName }}</span
-        >
-      </template>
-      <template slot="cell(email)" slot-scope="data">
-        <span
-          :class="userDataClasses"
-          v-if="!isPermissionReadOnly(data.item.permissionType)"
-          >{{ data.item.user.email }}</span
-        >
-        <span v-else class="text-muted font-italic">{{
-          data.item.user.email
-        }}</span>
-      </template>
-      <template slot="cell(permission)" slot-scope="data">
-        <select class="form-select"
-          v-if="!isPermissionReadOnly(data.item.permissionType)"
-          v-model="data.item.permissionType"
-          :options="permissionOptions"
-        />
-        <span
-          v-else
-          class="text-uppercase text-muted font-italic"
-          :class="userDataClasses"
-          >{{ data.item.permissionType.name }}</span
-        >
-      </template>
-      <template slot="cell(remove)" slot-scope="data">
-        <a
-          v-if="!isPermissionReadOnly(data.item.permissionType)"
-          @click="removeUser(data.item.user)"
-        >
-          <span class="fa fa-trash"></span>
-        </a>
-      </template>
+    <table class="table" v-if="usersCount > 0" id="modal-user-table">
+      <thead>
+        <tr>
+          <th>User Name</th>
+          <th>Email</th>
+          <th>Permission</th>
+          <th>Remove</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in sortedUserPermissions" :key="item.user.airavataInternalUserId">
+          <td>
+            <span
+              :title="item.user.userId"
+              :class="userDataClasses"
+              v-if="!isPermissionReadOnly(item.permissionType)"
+              >{{ item.user.firstName }} {{ item.user.lastName }}</span
+            >
+            <span v-else class="text-muted fst-italic"
+              >{{ item.user.firstName }} {{ item.user.lastName }}</span
+            >
+          </td>
+          <td>
+            <span
+              :class="userDataClasses"
+              v-if="!isPermissionReadOnly(item.permissionType)"
+              >{{ item.user.email }}</span
+            >
+            <span v-else class="text-muted fst-italic">{{ item.user.email }}</span>
+          </td>
+          <td>
+            <select class="form-select form-select-sm"
+              v-if="!isPermissionReadOnly(item.permissionType)"
+              v-model="item.permissionType"
+            >
+              <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
+            </select>
+            <span
+              v-else
+              class="text-uppercase text-muted fst-italic"
+              :class="userDataClasses"
+              >{{ item.permissionType.name }}</span
+            >
+          </td>
+          <td>
+            <a
+              v-if="!isPermissionReadOnly(item.permissionType)"
+              @click="removeUser(item.user)"
+              role="button"
+            >
+              <span class="fa fa-trash"></span>
+            </a>
+          </td>
+        </tr>
+      </tbody>
     </table>
-    <!-- TODO: migrate to native HTML table --><table class="table"
-      v-if="groupsCount > 0"
-      id="modal-group-table"
-      hover
-      :items="sortedGroupPermissions"
-      :fields="groupFields"
-    >
-      <template slot="cell(name)" slot-scope="data">
-        <span
-          v-if="editingAllowed(data.item.group, data.item.permissionType)"
-          >{{ data.item.group.name }}</span
-        >
-        <span v-else class="text-muted font-italic">{{
-          data.item.group.name
-        }}</span>
-      </template>
-      <template slot="cell(permission)" slot-scope="data">
-        <select class="form-select"
-          v-if="editingAllowed(data.item.group, data.item.permissionType)"
-          v-model="data.item.permissionType"
-          :options="permissionOptions"
-        />
-        <span v-else class="text-muted font-italic">{{
-          data.item.permissionType.name
-        }}</span>
-      </template>
-      <template slot="cell(remove)" slot-scope="data">
-        <a
-          v-if="editingAllowed(data.item.group, data.item.permissionType)"
-          @click="removeGroup(data.item.group)"
-        >
-          <span class="fa fa-trash"></span>
-        </a>
-      </template>
+    <table class="table" v-if="groupsCount > 0" id="modal-group-table">
+      <thead>
+        <tr>
+          <th>Group Name</th>
+          <th>Permission</th>
+          <th>Remove</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in sortedGroupPermissions" :key="item.group.id">
+          <td>
+            <span v-if="editingAllowed(item.group, item.permissionType)">{{ item.group.name }}</span>
+            <span v-else class="text-muted fst-italic">{{ item.group.name }}</span>
+          </td>
+          <td>
+            <select class="form-select form-select-sm"
+              v-if="editingAllowed(item.group, item.permissionType)"
+              v-model="item.permissionType"
+            >
+              <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
+            </select>
+            <span v-else class="text-muted fst-italic">{{ item.permissionType.name }}</span>
+          </td>
+          <td>
+            <a
+              v-if="editingAllowed(item.group, item.permissionType)"
+              @click="removeGroup(item.group)"
+              role="button"
+            >
+              <span class="fa fa-trash"></span>
+            </a>
+          </td>
+        </tr>
+      </tbody>
     </table>
   </div>
 </template>
@@ -124,7 +127,7 @@ export default {
   name: "shared-entity-editor",
   mixins: [VModelMixin],
   props: {
-    value: {
+    modelValue: {
       type: models.SharedEntity,
     },
     users: {

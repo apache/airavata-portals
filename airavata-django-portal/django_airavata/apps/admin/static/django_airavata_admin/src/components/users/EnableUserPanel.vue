@@ -5,7 +5,7 @@
       verifying that the user's email address is {{ email }}
     </p>
     <button class="btn" @click="enable">Enable</button>
-  </div></div>
+  </div>
 </template>
 
 <script>

@@ -18,7 +18,7 @@
           v-if="editAvailable && !readOnly"
           :disabled="saved"
           @click="fileContentChanged"
-          >Save</b-button
+          >Save</button
         >
       </div>
     </div>

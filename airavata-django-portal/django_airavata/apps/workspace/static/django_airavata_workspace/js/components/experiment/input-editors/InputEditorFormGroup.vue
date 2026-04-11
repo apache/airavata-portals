@@ -1,22 +1,20 @@
 <template>
-  <form-group
-    :label="label"
-    :label-for="labelFor"
-    :state="state"
-    :description="description"
-  >
+  <div class="mb-3">
+    <label v-if="label" :for="labelFor" class="form-label">{{ label }}</label>
     <slot></slot>
-    <template slot="invalid-feedback">
-      <ul v-if="feedbackMessages && feedbackMessages.length > 1">
+    <div v-if="feedbackMessages && feedbackMessages.length > 1" class="invalid-feedback d-block">
+      <ul>
         <li v-for="feedback in feedbackMessages" :key="feedback">
           {{ feedback }}
         </li>
       </ul>
-      <div v-else-if="feedbackMessages && feedbackMessages.length === 1">
-        {{ feedbackMessages[0] }}
-      </div>
-    </template>
-    <linkify slot="description">{{ description }}</linkify>
+    </div>
+    <div v-else-if="feedbackMessages && feedbackMessages.length === 1" class="invalid-feedback d-block">
+      {{ feedbackMessages[0] }}
+    </div>
+    <small v-if="description" class="form-text text-muted">
+      <linkify>{{ description }}</linkify>
+    </small>
   </div>
 </template>
 

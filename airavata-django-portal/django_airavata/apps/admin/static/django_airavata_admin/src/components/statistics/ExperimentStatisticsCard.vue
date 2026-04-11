@@ -1,10 +1,5 @@
 <template>
-  <div class="card"
-    :bg-variant="bgVariant"
-    body-bg-variant="white"
-    :header-text-variant="headerTextVariant"
-    class="statistics-card"
-  >
+  <div class="card statistics-card">
     <div slot="header" class="text-right">
       <div class="statistic-count text-nowrap">
         <abbr :title="count">{{ displayedCount }}</abbr>
@@ -19,7 +14,7 @@
         <div v-for="state in states" :key="state.value">{{ state.name }}</div>
       </slot>
     </a>
-  </div></div>
+  </div>
 </template>
 
 <script>

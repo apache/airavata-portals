@@ -1,6 +1,6 @@
 import BaseModel from "./BaseModel";
 import DataType from "./DataType";
-import uuidv4 from "uuid/v4";
+import { v4 as uuidv4 } from "uuid";
 import IntermediateOutput from "./IntermediateOutput";
 
 const FIELDS = [

@@ -34,9 +34,8 @@
                 :state="validationFeedback.loginUserName.state"
                 :disabled="!userHasWriteAccess"
                 @input="validate"
-              >
-              </input>
-            </div>
+              />
+            </form-group>
             <form-group
               label="SSH Credential"
               label-for="credential-store-token"
@@ -69,7 +68,7 @@
                   <span v-else> Select a SSH credential </span>
                 </template>
               </ssh-credential-selector>
-            </div>
+            </form-group>
             <form-group
               label="Resource Type"
               label-for="resource-type"
@@ -88,7 +87,7 @@
                   <option :value="null">Select a resource type</option>
                 </template>
               </select>
-            </div>
+            </form-group>
             <!-- SLURM-specific fields -->
             <template v-if="isResourceType('SLURM')">
               <form-group
@@ -100,9 +99,8 @@
                   type="text"
                   v-model="data.allocationProjectNumber"
                   :disabled="!userHasWriteAccess"
-                >
-                </input>
-              </div>
+                />
+              </form-group>
             </template>
             <!-- AWS-specific fields -->
             <template v-if="isResourceType('AWS')">
@@ -115,9 +113,8 @@
                   type="text"
                   v-model="data.specificPreferences.region"
                   :disabled="!userHasWriteAccess"
-                >
-                </input>
-              </div>
+                />
+              </form-group>
               <form-group
                 label="Preferred AMI ID"
                 label-for="preferred-ami-id"
@@ -127,9 +124,8 @@
                   type="text"
                   v-model="data.specificPreferences.preferredAmiId"
                   :disabled="!userHasWriteAccess"
-                >
-                </input>
-              </div>
+                />
+              </form-group>
               <form-group
                 label="Preferred Instance Type"
                 label-for="preferred-instance-type"
@@ -139,9 +135,8 @@
                   type="text"
                   v-model="data.specificPreferences.preferredInstanceType"
                   :disabled="!userHasWriteAccess"
-                >
-                </input>
-              </div>
+                />
+              </form-group>
             </template>
             <form-group
               label="Scratch Location"
@@ -159,9 +154,8 @@
                 :disabled="!userHasWriteAccess"
                 :state="validationFeedback.scratchLocation.state"
                 @input="validate"
-              >
-              </input>
-            </div>
+              />
+            </form-group>
           </div>
         </div>
       </div>
@@ -209,12 +203,11 @@
       </div>
     </div>
     <div class="fixed-footer">
-      <button class="btn"
-        variant="primary"
+      <button class="btn btn-primary btn-sm"
         @click="save"
         :disabled="!valid || !userHasWriteAccess"
       >Save
-      </b-button
+      </button
       >
       <delete-button
         class="ms-2"
@@ -224,9 +217,9 @@
         <strong>{{ computeResource.hostName }}</strong
         >?
       </delete-button>
-      <button class="btn" class="ms-2" variant="secondary" @click="cancel"
+      <button class="btn btn-secondary btn-sm ms-2" @click="cancel"
       >Cancel
-      </b-button
+      </button
       >
     </div>
   </div>

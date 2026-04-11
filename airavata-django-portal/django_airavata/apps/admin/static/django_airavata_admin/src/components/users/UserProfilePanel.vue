@@ -1,13 +1,27 @@
 <template>
-  <div class="card" header="User Profile">
-    <!-- TODO: Replace b-table with native table --><table class="table" :items="items" :fields="fields" small borderless>
-      <template #cell(value)="{ value, item }">
-        <i v-if="item.valid" class="fas fa-check text-success"></i>
-        <i v-if="!item.valid" class="fas fa-times text-danger"></i>
-        {{ value }}
-      </template>
-    </table>
-  </div></div>
+  <div class="card">
+    <div class="card-header">User Profile</div>
+    <div class="card-body p-0">
+      <table class="table table-sm table-borderless mb-0">
+        <thead>
+          <tr>
+            <th>name</th>
+            <th>value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in items" :key="item.name">
+            <td>{{ item.name }}</td>
+            <td>
+              <i v-if="item.valid" class="fas fa-check text-success"></i>
+              <i v-if="!item.valid" class="fas fa-times text-danger"></i>
+              {{ item.value }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </template>
 
 <script>

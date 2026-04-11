@@ -18,10 +18,10 @@
           v-if="data.item.type === 'dir'"
           @click="directorySelected(data.item)"
         >
-          <i class="fa fa-folder-open"></i> {{ data.item.name }}</b-link
+          <i class="fa fa-folder-open"></i> {{ data.item.name }}</a
         >
         <a v-else :href="data.item.downloadURL" :target="downloadTarget">
-          {{ data.item.name }}</b-link
+          {{ data.item.name }}</a
         >
       </template>
       <template slot="cell(modifiedTimestamp)" slot-scope="data">

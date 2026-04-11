@@ -2,13 +2,13 @@
   <div class="card"><div class="card-body">
     <div slot="header" class="d-flex align-items-baseline">
       <h6>{{ experimentOutput.name }}</h6>
-      <div class="dropdown" v-if="showMenu" :text="currentView['name']" class="ms-auto">
+      <div class="dropdown ms-auto" v-if="showMenu" :text="currentView['name']" >
         <a class="dropdown-item"
           v-for="(view, index) in outputViews"
           :key="view['provider-id']"
           :active="view['provider-id'] === currentView['provider-id']"
           @click="selectView(index)"
-          >{{ view["name"] }}</b-dropdown-item
+          >{{ view["name"] }}</a
         >
       </div>
     </div>
@@ -38,12 +38,12 @@
             small
             v-if="currentlyRunningIntermediateOutputFetch"
           ></div>
-          Fetch Latest</b-btn
+          Fetch Latest</button
         >
       </template>
       <template v-else-if="dataProducts.length === 1">
         <button class="btn" size="sm" :href="dataProducts[0].downloadURL + '&download'"
-          >Download</b-btn
+          >Download</button
         >
       </template>
     </div>

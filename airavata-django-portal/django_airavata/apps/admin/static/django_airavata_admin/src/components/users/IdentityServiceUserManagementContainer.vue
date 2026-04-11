@@ -12,8 +12,8 @@
               />
               <span class="input-group-text">
                 <button class="btn" @click="resetSearch">Reset</button>
-                <button class="btn" variant="primary" @click="searchUsers"
-                  >Search</b-button
+                <button class="btn btn-primary btn-sm" @click="searchUsers"
+                  >Search</button
                 >
               </span>
             </div>

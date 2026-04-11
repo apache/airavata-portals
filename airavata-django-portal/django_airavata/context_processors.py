@@ -81,11 +81,48 @@ def airavata_app_registry(request: HttpRequest) -> dict[str, Any]:
     airavata_apps.sort(key=lambda app: f"{app.app_order:09}-{app.verbose_name.lower()}")
     current_app = _get_current_app(request, airavata_apps)
 
+    # Build flat nav groups for the top navbar
+    nav_groups = _build_nav_groups(request, airavata_apps)
+
     return {
         "airavata_apps": airavata_apps,
         "current_airavata_app": current_app,
         "airavata_app_nav": (_get_app_nav(request, current_app) if current_app else None),
+        "nav_groups": nav_groups,
     }
+
+
+def _build_nav_groups(request: HttpRequest, airavata_apps: list[AiravataAppConfig]) -> list[dict[str, Any]]:
+    """Build grouped nav items for sidebar. Matches active state by resolving
+    each nav item's URL against the current request path, so cross-app nav
+    links (e.g. Resources section pointing to workspace URLs) highlight correctly."""
+    active_nav = getattr(request, "active_nav_item", None)
+    groups: list[dict[str, Any]] = []
+    for app in airavata_apps:
+        if not hasattr(app, "nav"):
+            continue
+        nav = [item for item in copy.copy(app.nav) if "enabled" not in item or item["enabled"](request)]
+        if not nav:
+            continue
+        for nav_item in nav:
+            # Match by active_nav_item set in the view function
+            if active_nav and "active_prefixes" in nav_item:
+                nav_item["active"] = active_nav in nav_item["active_prefixes"]
+            else:
+                try:
+                    from django.urls import reverse
+                    item_path = reverse(nav_item["url"])
+                    nav_item["active"] = request.path.startswith(item_path)
+                except Exception:
+                    nav_item["active"] = False
+        group_active = any(item.get("active") for item in nav)
+        groups.append({
+            "label": app.verbose_name,
+            "icon": app.fa_icon_class,
+            "items": nav,
+            "active": group_active,
+        })
+    return groups
 
 
 def _get_current_app(request: HttpRequest, apps: list[AiravataAppConfig]) -> AiravataAppConfig | None:

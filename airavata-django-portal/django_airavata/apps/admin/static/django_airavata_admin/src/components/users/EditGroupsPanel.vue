@@ -5,13 +5,12 @@
       :editable-groups="editableGroups"
       :airavata-internal-user-id="airavataInternalUserId"
     />
-    <button class="btn"
+    <button class="btn btn-primary btn-sm"
       @click="$emit('save', data)"
-      variant="primary"
       :disabled="!areGroupsUpdated"
-      >Save</b-button
+      >Save</button
     >
-  </div></div>
+  </div>
 </template>
 
 <script>

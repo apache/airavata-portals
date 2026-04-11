@@ -17,8 +17,8 @@
           required
           placeholder="Notice Title"
           :state="getValidationState('title')"
-        ></input>
-      </div>
+        />
+      </form-group>
 
       <form-group
         label="Notice Message"
@@ -35,54 +35,26 @@
           :state="getValidationState('notificationMessage')"
           :rows="3"
         ></textarea>
-      </div>
+      </form-group>
 
-      <div class="mb-3" label="Publish Date" label-for="publish-date">
-        <datetime
-          type="datetime"
+      <div class="mb-3">
+        <label for="publish-date" class="form-label">Publish Date</label>
+        <flat-pickr
+          id="publish-date"
           v-model="inputPublishedTime"
-          input-class="my-class"
-          value-zone="UTC"
-          :format="{
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            timeZoneName: 'short',
-          }"
-          :phrases="{ ok: 'Continue', cancel: 'Exit' }"
-          :hour-step="1"
-          :minute-step="5"
-          :min-datetime="today"
-          :week-start="7"
-          use12-hour
-          auto
-        ></datetime>
+          :config="dateTimeConfig"
+          class="form-control"
+        />
       </div>
 
-      <div class="mb-3" label="Expiration Date" label-for="expiration-date">
-        <datetime
-          type="datetime"
+      <div class="mb-3">
+        <label for="expiration-date" class="form-label">Expiration Date</label>
+        <flat-pickr
+          id="expiration-date"
           v-model="inputExpirationTime"
-          input-class="my-class"
-          value-zone="UTC"
-          :format="{
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            timeZoneName: 'short',
-          }"
-          :phrases="{ ok: 'Continue', cancel: 'Exit' }"
-          :hour-step="1"
-          :minute-step="5"
-          :min-datetime="inputPublishedTime"
-          :week-start="7"
-          use12-hour
-          auto
-        ></datetime>
+          :config="expirationDateConfig"
+          class="form-control"
+        />
       </div>
 
       <form-group
@@ -98,32 +70,31 @@
           :state="getValidationState('priority')"
         >
         </select>
-      </div>
+      </form-group>
 
-      <form-group
-        label="Show In Dashboard"
-        label-for="showInDashboard"
-        :state="getValidationState('showInDashboard')"
-      >
-        <form-checkbox
-          id="showInDashboard"
-          v-model="data.showInDashboard"
-          :state="getValidationState('showInDashboard')"
-        >
+      <div class="mb-3">
+        <div class="form-check">
+          <input class="form-check-input"
+            type="checkbox"
+            id="showInDashboard"
+            v-model="data.showInDashboard"
+          />
+          <label class="form-check-label" for="showInDashboard">
+            Show In Dashboard
+          </label>
         </div>
       </div>
 
       <template v-if="!editNotification">
         <div class="row">
           <div id="col-exp-buttons" class="col">
-            <button class="btn"
-              variant="success"
+            <button class="btn btn-primary btn-sm"
               @click="saveNewNotice"
               :disabled="isSaveDisabled"
             >
               Save
             </button>
-            <button class="btn" variant="primary" @click="cancelNewNotice">
+            <button class="btn btn-secondary btn-sm" @click="cancelNewNotice">
               Cancel
             </button>
           </div>
@@ -132,22 +103,16 @@
     </form>
   </div>
 </template>
-<style>
-.my-class {
-  width: 250px;
-}
-</style>
 <script>
 import { models } from "django-airavata-api";
 import { mixins, utils } from "django-airavata-common-ui";
-import { Datetime } from "vue-datetime";
+import FlatPickr from "vue-flatpickr-component";
 import moment from "moment";
-import "vue-datetime/dist/vue-datetime.css";
 
 export default {
   name: "notice-editor",
   components: {
-    datetime: Datetime,
+    FlatPickr,
   },
   mixins: [mixins.VModelMixin],
   props: {
@@ -193,6 +158,24 @@ export default {
     };
   },
   computed: {
+    dateTimeConfig() {
+      return {
+        enableTime: true,
+        dateFormat: "Z",
+        altInput: true,
+        altFormat: "F j, Y h:i K",
+        minDate: this.today,
+      };
+    },
+    expirationDateConfig() {
+      return {
+        enableTime: true,
+        dateFormat: "Z",
+        altInput: true,
+        altFormat: "F j, Y h:i K",
+        minDate: this.inputPublishedTime || this.today,
+      };
+    },
     valid: function () {
       const validation = this.data.validate();
       return Object.keys(validation).length === 0;

@@ -1,97 +1,218 @@
-html,
-body {
-  height: 100%;
-}
+// ============================================================================
+// Design tokens
+// ============================================================================
+$font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+$font-size-xs:    0.75rem;
+$font-size-sm:    0.8125rem;
+$font-size-base:  0.875rem;
+$font-size-md:    1rem;
+$font-size-lg:    1.25rem;
+$font-size-xl:    1.5rem;
+
+$color-text:       #1a1a2e;
+$color-text-muted: #6c757d;
+$color-border:     #e5e7eb;
+$color-bg:         #f8f9fa;
+$color-bg-white:   #ffffff;
+$color-primary:    #4f46e5;
+
+$spacing-xs:  0.25rem;
+$spacing-sm:  0.5rem;
+$spacing-md:  1rem;
+$spacing-lg:  1.5rem;
+$spacing-xl:  2rem;
+
+$sidebar-width:    220px;
+$sidebar-collapsed: 0px;
+$footer-height:    28px;
+$border-radius:    6px;
+$transition:       0.2s ease;
+
+// ============================================================================
+// Base
+// ============================================================================
+html, body { height: 100%; margin: 0; }
 
 body {
-  color: #333;
-  background-color: #f7f7f7;
+  font-family: $font-family;
+  font-size: $font-size-base;
+  line-height: 1.5;
+  color: $color-text;
+  background-color: $color-bg;
   overflow: hidden;
 }
 
-$header_height: 70px;
-$header_height_with_border: $header_height + 1px;
+h1, .h1 { font-size: $font-size-xl; font-weight: 600; margin-bottom: $spacing-xs; }
+h2, .h2 { font-size: $font-size-lg; font-weight: 600; margin-bottom: $spacing-xs; }
+h3, .h3, h4, .h4 { font-size: $font-size-md; font-weight: 600; margin-bottom: $spacing-xs; }
+h5, .h5 { font-size: $font-size-base; font-weight: 600; margin-bottom: $spacing-xs; }
+h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: $color-text-muted; }
 
-.c-header {
+// Legacy (hidden)
+.c-header, .c-nav { display: none; }
+
+// ============================================================================
+// App shell — 3-column layout with footer
+// ============================================================================
+.app-shell {
   display: flex;
-  align-items: center;
-  border-bottom: 1px solid #ddd;
-  background-color: #ffffff;
-  margin-bottom: -$header_height_with_border;
+  height: 100vh;
+  width: 100vw;
 
-  &__logo {
-    margin-right: 1rem;
-    width: 70px;
-    height: 70px;
-    background-color: #eeeeee;
+  &__content {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-
-    svg {
-      display: block;
-    }
-    img {
-      max-width: 100%;
-    }
-  }
-
-  &__title {
-    font-size: 1.25rem;
-    line-height: 1;
-
-    a {
-      color: #333;
-    }
-  }
-
-  &__controls {
-    margin-left: auto;
-    margin-right: 2rem;
+    flex: 1;
+    min-width: 0;
   }
 }
 
-.c-nav {
-  background-color: #444;
-  min-width: 70px;
-  min-height: 60px;
-  padding: 1rem 0;
-  margin-top: -1px;
+// ============================================================================
+// Sidebar (shared left + right)
+// ============================================================================
+.app-sidebar {
   display: flex;
+  flex-direction: column;
+  background: $color-bg-white;
+  border-right: 1px solid $color-border;
+  overflow: hidden;
+  width: $sidebar-width;
+  min-width: 0;
+  flex-shrink: 0;
 
-  &__item {
-    color: #ccc;
-    font-size: 1.5rem;
-    display: block;
-    text-align: center;
-    line-height: 1;
-    flex-grow: 1;
+  &--left {
+    border-right: 1px solid $color-border;
+    border-left: none;
+  }
 
-    &:hover,
-    &:focus {
-      color: #ffffff;
-    }
+  &--right {
+    border-left: 1px solid $color-border;
+    border-right: none;
+  }
 
-    &:active {
-      color: #bbb;
-    }
+  // Left sidebar is always visible — no collapse
+
+  &__header {
+    display: flex;
+    align-items: center;
+    padding: $spacing-sm $spacing-md;
+    border-bottom: 1px solid $color-border;
+    min-height: 48px;
+    flex-shrink: 0;
+  }
+
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-sm;
+  }
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: $color-text;
+
+    img, svg { max-height: 24px; width: auto; }
+  }
+
+  &__brand-text {
+    font-size: $font-size-base;
+    font-weight: 600;
+    margin-left: $spacing-sm;
+    white-space: nowrap;
+  }
+
+  &__group {
+    margin-bottom: $spacing-md;
+  }
+
+  &__group-label {
+    font-size: $font-size-xs;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: $color-text-muted;
+    padding: $spacing-xs $spacing-sm;
+    margin-bottom: 2px;
+  }
+
+  &__link {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: 6px $spacing-sm;
+    border-radius: $border-radius - 2;
+    font-size: $font-size-sm;
+    text-decoration: none;
+    color: $color-text;
+    transition: background $transition;
+
+    &:hover { background: rgba(0, 0, 0, 0.04); color: $color-text; }
 
     &.is-active {
-      color: #ffffff;
+      background: rgba($color-primary, 0.08);
+      color: $color-primary;
+      font-weight: 600;
     }
+
+    i {
+      width: 16px;
+      text-align: center;
+      font-size: $font-size-sm;
+      flex-shrink: 0;
+    }
+
+    span { white-space: nowrap; }
   }
+
+  &__footer {
+    flex-shrink: 0;
+    border-top: 1px solid $color-border;
+    padding: $spacing-sm;
+  }
+
+  &__user {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm;
+    border-radius: $border-radius - 2;
+    text-decoration: none;
+    color: $color-text;
+    font-size: $font-size-sm;
+    width: 100%;
+
+    &:hover { background: rgba(0, 0, 0, 0.04); color: $color-text; }
+  }
+
+  &__avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $color-text-muted;
+    font-size: $font-size-sm;
+    flex-shrink: 0;
+  }
+
+  &__user-info { flex: 1; min-width: 0; }
+  &__user-name { font-weight: 600; font-size: $font-size-sm; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  &__user-email { font-size: $font-size-xs; color: $color-text-muted; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 
-@media screen and (min-width: 768px) {
-  .c-nav {
-    height: 100%;
-    flex-direction: column;
-
-    &__item {
-      flex-grow: 0;
-      margin-bottom: 2rem;
-    }
-  }
+// ============================================================================
+// Main content area
+// ============================================================================
+.app-main {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .stage {
@@ -99,282 +220,512 @@ $header_height_with_border: $header_height + 1px;
   height: 100%;
   display: flex;
   flex-direction: column;
-  // AIRAVATA-3163 Fix the issue with the header scrolling off the page with
-  // scrollIntoView() by making the .stage element have the full height of the
-  // page. The padding-top here is matched by an equal but negative amount of
-  // margin-bottom on .c-header.
-  padding-top: $header_height_with_border;
 }
 
-@media screen and (min-width: 768px) {
-  .stage {
-    flex-direction: row;
+.stage > div:not(.loading) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// ============================================================================
+// Footer bar
+// ============================================================================
+.app-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: $color-bg;
+  border-top: 1px solid $color-border;
+  padding: 0 $spacing-sm;
+  height: $footer-height;
+  font-size: $font-size-xs;
+  color: $color-text-muted;
+  z-index: 100;
+
+  &__left, &__right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__left { flex: 1; }
+  &__right { flex: 0; }
+
+  &__toggle {
+    background: none;
+    border: none;
+    padding: 2px 6px;
+    cursor: pointer;
+    color: $color-text-muted;
+    font-size: $font-size-xs;
+    display: flex;
+    align-items: center;
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.06);
+      color: $color-text;
+    }
   }
 }
 
-/*
- * Wrapper around .main-content and .sidebar
- */
+// ============================================================================
+// Content layout (MainLayout.vue wrapper)
+// ============================================================================
 .main-content-wrapper {
   display: flex;
   flex-direction: row;
   flex-grow: 1;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .main-content {
   flex-grow: 1;
-  padding: 1rem;
-  max-width: 1200px;
+  padding: $spacing-lg;
+  overflow-y: auto;
 
-  &--with-sidebar {
-    max-width: none;
-    overflow-y: auto;
-  }
+  &--with-sidebar { max-width: none; }
 }
 
 .sidebar {
-  flex-basis: 200px;
-  background-color: #ffffff;
+  flex-basis: 280px;
+  flex-shrink: 0;
+  background: $color-bg-white;
+  overflow-y: auto;
+  border-left: 1px solid $color-border;
+
+  &.is-collapsed {
+    flex-basis: 0;
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    border-left: none;
+  }
+}
+
+// Sidebar panel tabs (experiments / notifications switcher)
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid $color-border;
+  flex-shrink: 0;
+
+  &__btn {
+    flex: 1;
+    padding: $spacing-sm;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    color: $color-text-muted;
+    font-size: $font-size-sm;
+    text-align: center;
+    position: relative;
+
+    &:hover { color: $color-text; background: rgba(0, 0, 0, 0.02); }
+    &.is-active { color: $color-primary; border-bottom-color: $color-primary; }
+  }
+
+  &__badge {
+    position: absolute;
+    top: 4px;
+    right: calc(50% - 16px);
+    font-size: 0.6rem;
+    background: #dc3545;
+    color: #fff;
+    border-radius: 999px;
+    padding: 1px 4px;
+    line-height: 1;
+    font-weight: 600;
+  }
+}
+
+.sidebar-panel {
+  flex: 1;
   overflow-y: auto;
 }
 
+// Notification items inside sidebar panel
+.notification-item {
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $color-border;
+  font-size: $font-size-sm;
+
+  &--unread { background: rgba($color-primary, 0.03); }
+
+  &__title { font-weight: 600; font-size: $font-size-sm; }
+  &__body { color: $color-text-muted; margin-top: 2px; font-size: $font-size-xs; }
+  &__time { color: $color-text-muted; margin-top: 2px; font-size: $font-size-xs; font-style: italic; }
+  &__action { font-size: $font-size-xs; color: $color-primary; }
+}
+
+// Footer badge for notification count
+.app-footer__badge {
+  font-size: 0.55rem;
+  background: #dc3545;
+  color: #fff;
+  border-radius: 999px;
+  padding: 1px 3px;
+  line-height: 1;
+  font-weight: 600;
+  margin-left: 2px;
+  vertical-align: top;
+}
+
 .sidebar-header {
-  padding: 1.5rem;
+  padding: $spacing-lg;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid $color-border;
 
-  &__title {
-    font-size: 0.825rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04rem;
-    margin: 0;
-  }
-
-  &__action {
-    margin-left: auto;
-    font-size: 0.825rem;
-  }
+  &__title { font-size: $font-size-xs; text-transform: uppercase; letter-spacing: 0.04rem; margin: 0; }
+  &__action { margin-left: auto; font-size: $font-size-sm; }
 }
 
-@media screen and (min-width: 768px) {
-  .sidebar {
-    min-width: 310px;
-    border-left: 1px solid #ddd;
-  }
-}
-
+// ============================================================================
+// Cards
+// ============================================================================
 .card {
-  background-color: #fff;
-  border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.125);
-  box-shadow: 0 2px 0 #eee;
-  margin-bottom: 30px;
-}
-.card.border-default {
-  border: 1px solid rgba(0, 0, 0, 0.125);
+  background: $color-bg-white;
+  border-radius: $border-radius;
+  border: 1px solid $color-border;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-bottom: $spacing-md;
+
+  .card-body {
+    padding: $spacing-sm $spacing-md;
+  }
 }
 
-/**
- * Make a small card text modifier so we can still use
- * Bootstrap's default styles if needed.
- */
-.card-text--small {
-  line-height: 1.4;
-  font-size: 0.825rem;
-}
+.card.border-default { border: 1px solid $color-border; }
+.card-text--small { line-height: 1.4; font-size: $font-size-sm; }
 
 .card.is-disabled {
-  background-color: #ddd;
-
-  .card-title {
-    color: #999999;
-  }
-
-  .badge {
-    background-color: #ccc;
-    color: #999999;
-  }
+  background: #eee;
+  .card-title { color: #999; }
+  .badge { background: #ccc; color: #999; }
 }
 
-.card-link:hover {
-  text-decoration: none;
-  background-color: #fafafa;
-}
+.card-link:hover { text-decoration: none; background: #fafafa; }
+.card.is-disabled .card-link:hover { background: #ddd; cursor: not-allowed; }
 
-.card.is-disabled .card-link:hover {
-  background-color: #ddd;
-  cursor: not-allowed;
-}
-
-/**
- * Feed
- */
-
+// ============================================================================
+// Feed (recent experiments sidebar)
+// ============================================================================
 .feed {
   list-style: none;
   margin: 0;
   padding: 0;
 
-  &__list-item {
-    padding: 1.5rem;
-    border-bottom: 1px solid #eee;
+  &__list-item { padding: $spacing-md; border-bottom: 1px solid $color-border; }
+  &__label { font-size: $font-size-xs; text-transform: uppercase; color: $color-text-muted; }
+  &__title { font-size: $font-size-base; margin: 0; a { color: $color-text; } }
+  &__item-meta { margin: 0; font-size: $font-size-xs; color: $color-text-muted; }
+}
+
+// ============================================================================
+// Tables
+// ============================================================================
+.table {
+  font-size: $font-size-sm;
+  margin-bottom: 0;
+
+  thead th {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+    font-weight: 500;
+    border-bottom: 1px solid $color-border;
+    padding: 6px $spacing-sm;
+    white-space: nowrap;
+    background: none;
   }
 
-  &__label {
-    font-size: 0.825rem;
-    text-transform: uppercase;
+  tbody td {
+    vertical-align: middle;
+    padding: 6px $spacing-sm;
+    border-bottom: 1px solid lighten($color-border, 3%);
+    color: $color-text;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  &.table-hover tbody tr:hover td {
+    background: rgba(0, 0, 0, 0.015);
+  }
+
+  // Don't highlight rows that contain empty-state placeholders
+  &.table-hover tbody tr:has(.table-empty):hover td {
+    background: none;
+    cursor: default;
+  }
+
+  td a, td .action-link {
+    font-size: $font-size-xs;
+    white-space: nowrap;
+  }
+}
+
+// Empty state for tables
+.table-empty {
+  text-align: center;
+  padding: $spacing-xl $spacing-md;
+  color: $color-text-muted;
+
+  &__icon {
+    font-size: 2rem;
+    margin-bottom: $spacing-sm;
+    opacity: 0.4;
+    display: block;
   }
 
   &__title {
-    font-size: 1rem;
-    margin: 0;
-
-    a {
-      color: #212529;
-    }
+    font-size: $font-size-base;
+    font-weight: 500;
+    margin-bottom: $spacing-xs;
   }
 
-  &__item-meta {
-    margin: 0;
-    font-size: 0.825rem;
+  &__text {
+    font-size: $font-size-sm;
   }
 }
 
-/**
- * Vue.js transitions
- */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s;
-}
-.fade-enter,
-.fade-leave-to {
-  opacity: 0;
-}
-.fade-move {
-  transition: transform 0.3s;
-}
+// ============================================================================
+// Forms
+// ============================================================================
+.form-control, .form-select { font-size: $font-size-base; }
+.form-label { font-size: $font-size-sm; font-weight: 500; margin-bottom: $spacing-xs; }
 
-/**
- * spacing between buttons. .btn-container is a class applied to a wrapper
- * around a button that may be a sibling of a .btn or .action-link
- */
-.btn-container + .btn,
-.btn + .btn,
-.btn-container + .action-link,
-.action-link + .action-link {
-  margin-left: 0.25rem;
-}
-.btn + .btn-block {
-  margin-left: 0px;
-}
-.action-link {
-  white-space: nowrap;
-}
+// ============================================================================
+// Buttons
+// ============================================================================
+.btn { font-size: $font-size-base; border-radius: $border-radius; }
+.btn-sm { font-size: $font-size-sm; }
 
-/**
-  * Styling for the notification dropdown in the header of the website.
-  */
+.btn-container + .btn, .btn + .btn,
+.btn-container + .action-link, .action-link + .action-link { margin-left: $spacing-xs; }
+.btn + .btn-block { margin-left: 0; }
+.action-link { white-space: nowrap; font-size: $font-size-sm; }
 
-.widget-notifications {
-  max-height: 309px;
-  overflow-y: auto;
-}
-.widget-notifications .notification {
-  position: relative;
-  padding: 7px 12px;
-  text-decoration: none;
-}
-.widget-notifications .notification + .notification {
-  border-top: 1px solid #e4e4e4;
-}
-.widget-notifications .notifications-list {
-  position: relative;
-  width: auto;
-  max-height: 300px;
-}
-.widget-notifications .notification-title {
-  font-size: 12px;
-  font-weight: 700;
-  padding-bottom: 1px;
-  width: 250;
-}
-.widget-notifications .notification-description {
-  font-size: 11px;
-  color: #666;
-}
-.widget-notifications .notification-ago {
-  font-size: 11px;
-  font-style: italic;
-  color: #bbb;
-}
-.widget-notifications:hover {
-  text-decoration: none;
-}
+// ============================================================================
+// Badges & alerts
+// ============================================================================
+.badge { font-size: $font-size-xs; font-weight: 500; }
+.alert { font-size: $font-size-base; border-radius: $border-radius; }
 
-.fa-dot-circle {
-  float: right;
-}
-/* Customize notification dropdown scrollbar */
-.widget-notifications::-webkit-scrollbar {
-  width: 12px;
-}
-/* Track */
-.widget-notifications::-webkit-scrollbar-track {
-  -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
-  -webkit-border-radius: 10px;
-  border-radius: 10px;
-}
-/* Handle */
-.widget-notifications::-webkit-scrollbar-thumb {
-  -webkit-border-radius: 10px;
-  border-radius: 10px;
-  /* Change scrollbar color using below property */
-  background: #007bff;
-  -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.2);
-}
-.widget-notifications::-webkit-scrollbar-thumb:window-inactive {
-  background: yellow;
-}
+// ============================================================================
+// Vue transitions
+// ============================================================================
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
+.fade-enter, .fade-leave-to { opacity: 0; }
+.fade-move { transition: transform 0.3s; }
 
-.fa-stack[data-count]:after {
+// ============================================================================
+// Spinner
+// ============================================================================
+#airavata-spinner { display: none; }
+
+.loading {
   position: absolute;
-  right: 1%;
-  top: 0%;
-  content: attr(data-count);
-  font-size: 55%;
-  padding: 0.6em;
-  border-radius: 999px;
-  line-height: 0.75em;
-  color: white;
-  background: #007bff;
-  text-align: center;
-  min-width: 2em;
-  font-weight: bold;
+  z-index: 2000;
+  top: 0; bottom: 0; left: 0; right: 0;
+  background: rgba(255, 255, 255, 0.5);
 }
 
+.sk-folding-cube {
+  margin: 20px auto;
+  width: 40px; height: 40px;
+  position: relative;
+  transform: rotateZ(45deg);
+  top: calc(50% - 40px);
+}
+
+.sk-folding-cube .sk-cube {
+  float: left; width: 50%; height: 50%;
+  position: relative;
+  transform: scale(1.1);
+  color: $color-primary;
+}
+
+.sk-folding-cube .sk-cube:before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: currentColor;
+  animation: sk-foldCubeAngle 2.4s infinite linear both;
+  transform-origin: 100% 100%;
+}
+
+.sk-folding-cube .sk-cube2 { transform: scale(1.1) rotateZ(90deg); }
+.sk-folding-cube .sk-cube3 { transform: scale(1.1) rotateZ(180deg); }
+.sk-folding-cube .sk-cube4 { transform: scale(1.1) rotateZ(270deg); }
+.sk-folding-cube .sk-cube2:before { animation-delay: 0.3s; }
+.sk-folding-cube .sk-cube3:before { animation-delay: 0.6s; }
+.sk-folding-cube .sk-cube4:before { animation-delay: 0.9s; }
+
+@keyframes sk-foldCubeAngle {
+  0%, 10% { transform: perspective(140px) rotateX(-180deg); opacity: 0; }
+  25%, 75% { transform: perspective(140px) rotateX(0deg); opacity: 1; }
+  90%, 100% { transform: perspective(140px) rotateY(180deg); opacity: 0; }
+}
+
+// ============================================================================
+// Fixed footer (for admin app save bars etc.)
+// ============================================================================
 .fixed-footer {
   position: fixed;
-  bottom: 0px;
-  left: 70px;
-  right: 0px;
-  // keep fixed-footer above form controls
+  bottom: $footer-height;
+  left: 0; right: 0;
   z-index: 3;
-  padding-left: calc(1rem + 15px);
-  padding-right: calc(1rem + 15px);
-  // Align the right side with the right side of .main-content when wider than 1200px
-  padding-right: max(
-    calc(100% - 1200px - 70px + 1rem + 15px),
-    calc(1rem + 15px)
-  );
-  padding-top: 1rem;
-  padding-bottom: 1rem;
-  background-color: #f7f7f7;
-  border-top: 1px solid #ddd;
+  padding: $spacing-md $spacing-lg;
+  background: $color-bg;
+  border-top: 1px solid $color-border;
 }
-/* Add to elements that contain a .fixed-footer */
-.has-fixed-footer {
-  padding-bottom: 100px;
+
+.has-fixed-footer { padding-bottom: 100px; }
+
+// ============================================================================
+// Bootstrap overrides — enforce consistent theming
+// ============================================================================
+
+// Primary color override
+.btn-primary {
+  background-color: $color-primary;
+  border-color: $color-primary;
+  &:hover, &:focus { background-color: darken($color-primary, 8%); border-color: darken($color-primary, 8%); }
+  &:active { background-color: darken($color-primary, 12%); border-color: darken($color-primary, 12%); }
+}
+
+.btn-outline-primary {
+  color: $color-primary;
+  border-color: $color-primary;
+  &:hover { background-color: $color-primary; border-color: $color-primary; color: #fff; }
+}
+
+.bg-primary { background-color: $color-primary !important; }
+.text-primary { color: $color-primary !important; }
+.border-primary { border-color: $color-primary !important; }
+
+// Consistent input groups
+.input-group {
+  .form-control, .form-select {
+    font-size: $font-size-base;
+  }
+  .input-group-text {
+    font-size: $font-size-sm;
+    background: $color-bg;
+    border-color: $color-border;
+  }
+  .btn {
+    font-size: $font-size-sm;
+  }
+}
+
+// Consistent dropdown menus
+.dropdown-menu {
+  font-size: $font-size-sm;
+  border: 1px solid $color-border;
+  border-radius: $border-radius;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  .dropdown-item {
+    font-size: $font-size-sm;
+    padding: $spacing-sm $spacing-md;
+
+    &:hover { background: $color-bg; }
+    &.active, &:active { background: rgba($color-primary, 0.08); color: $color-primary; }
+  }
+}
+
+// Consistent modals
+.modal-content {
+  border-radius: $border-radius;
+  border: 1px solid $color-border;
+}
+
+.modal-header {
+  padding: $spacing-md $spacing-lg;
+  border-bottom: 1px solid $color-border;
+
+  .modal-title { font-size: $font-size-md; font-weight: 600; }
+}
+
+.modal-body {
+  padding: $spacing-lg;
+  font-size: $font-size-base;
+}
+
+.modal-footer {
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid $color-border;
+}
+
+// Consistent nav tabs
+.nav-tabs {
+  border-bottom: 1px solid $color-border;
+
+  .nav-link {
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: $spacing-sm $spacing-md;
+
+    &:hover { color: $color-text; border-bottom-color: $color-border; }
+    &.active { color: $color-primary; border-bottom-color: $color-primary; font-weight: 600; }
+  }
+}
+
+// Consistent list groups
+.list-group-item {
+  font-size: $font-size-base;
+  padding: $spacing-sm $spacing-md;
+  border-color: $color-border;
+}
+
+// Consistent pagination
+.pagination {
+  .page-link {
+    font-size: $font-size-sm;
+    border-color: $color-border;
+    color: $color-text;
+
+    &:hover { background: $color-bg; color: $color-primary; }
+  }
+  .page-item.active .page-link {
+    background-color: $color-primary;
+    border-color: $color-primary;
+  }
+}
+
+// Consistent tooltips
+.tooltip {
+  font-size: $font-size-xs;
+}
+
+// Badge overrides
+.badge {
+  &.bg-primary { background-color: $color-primary !important; }
+  &.badge-primary { background-color: $color-primary; color: #fff; }
+}
+
+// Make sure all text elements within main content use consistent sizing
+.main-content {
+  h1, .h1 { font-size: $font-size-xl; font-weight: 600; margin-bottom: $spacing-sm; }
+  h2, .h2 { font-size: $font-size-lg; font-weight: 600; margin-bottom: $spacing-sm; }
+  h3, .h3 { font-size: $font-size-md; font-weight: 600; margin-bottom: $spacing-sm; }
+  h4, .h4 { font-size: $font-size-md; font-weight: 600; margin-bottom: $spacing-xs; }
+  h5, .h5 { font-size: $font-size-base; font-weight: 600; }
+  h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase; color: $color-text-muted; letter-spacing: 0.04em; }
+
+  p { font-size: $font-size-base; line-height: 1.6; }
+  small, .small, .text-muted { font-size: $font-size-sm; }
+
+  // Consistent card body text
+  .card-body { font-size: $font-size-base; }
+  .card-title { font-size: $font-size-base; font-weight: 600; margin-bottom: $spacing-sm; }
+  .card-text { font-size: $font-size-sm; }
 }

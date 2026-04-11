@@ -6,7 +6,7 @@
       </div>
       <div class="col-auto">
         <button class="btn" :to="{ name: 'extended-user-profile' }"
-          >Extended User Profile</b-button
+          >Extended User Profile</button
         >
       </div>
       <div class="col-auto">
@@ -14,12 +14,12 @@
           <a class="dropdown-item"
             :to="{ name: 'identity-service-users' }"
             :exact="true"
-            >Identity Service</b-dropdown-item
+            >Identity Service</a
           >
           <a class="dropdown-item"
             :to="{ name: 'unverified-email-users' }"
             :exact="true"
-            >Unverified Emails</b-dropdown-item
+            >Unverified Emails</a
           >
         </div>
       </div>

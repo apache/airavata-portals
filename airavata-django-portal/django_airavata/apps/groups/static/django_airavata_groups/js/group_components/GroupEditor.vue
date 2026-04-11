@@ -1,10 +1,7 @@
 <template>
   <div>
-    <div class="alert"
-      :variant="showDismissibleAlert.variant"
-      dismissible
-      :show="showDismissibleAlert.dismissable"
-      @dismissed="showDismissibleAlert.dismissable = false"
+    <div :class="['alert', 'alert-' + showDismissibleAlert.variant]"
+      v-if="showDismissibleAlert.dismissable"
     >
       {{ showDismissibleAlert.message }}
     </div>
@@ -22,9 +19,8 @@
           v-model="localGroup.name"
           required
           placeholder="Enter group name"
-        >
-        </input>
-      </div>
+        />
+      </form-group>
 
       <div class="mb-3" id="group2" label="Description:" label-for="description">
         <textarea class="form-control"
@@ -46,10 +42,10 @@
           @change-role-to-member="changeRoleToMember"
           @change-role-to-admin="changeRoleToAdmin"
         />
-      </div></div>
+      </div>
     </form>
     <div class="fixed-footer">
-      <button class="btn" @click="submitForm" variant="primary">Submit</button>  
+      <button class="btn btn-primary btn-sm" @click="submitForm">Submit</button>
     </div>
   </div>
 </template>

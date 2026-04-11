@@ -135,7 +135,7 @@
               :header="jobDetail.jobName"
             >
               <pre>{{ jobDetail.jobDescription }}</pre>
-            </div></div>
+            </div>
           </td>
         </tr>
         <tr>
@@ -257,7 +257,7 @@
           <th scope="row">Experiment Data Dir</th>
           <td>
             <div>{{ experimentDataDir }}</div>
-            <div class="alert" show variant="warning" v-if="archived" class="mt-2">
+            <div class="alert alert-warning mt-2" v-if="archived">
               This directory was archived in
               <b>{{ experimentArchive.archive_name }}</b> on
               {{ experimentArchive.created_date }}.
@@ -274,7 +274,7 @@
             >
               <p>{{ error.userFriendlyMessage }}</p>
               <pre class="pre-scrollable">{{ error.actualErrorMessage }}</pre>
-            </div></div>
+            </div>
           </td>
         </tr>
         <template v-if="failedJobs.length > 0">
@@ -283,10 +283,10 @@
             <td>
               <div class="card" v-if="job.stdOut" :header="job.jobName + ' STDOUT'">
                 <pre class="pre-scrollable">{{ job.stdOut }}</pre>
-              </div></div>
+              </div>
               <div class="card" v-if="job.stdErr" :header="job.jobName + ' STDERR'">
                 <pre class="pre-scrollable">{{ job.stdErr }}</pre>
-              </div></div>
+              </div>
             </td>
           </tr>
         </template>
@@ -340,7 +340,7 @@
                     <pre class="pre-scrollable">{{
                       error.actualErrorMessage
                     }}</pre>
-                  </div></div>
+                  </div>
                 </td>
               </tr>
             </template>
@@ -354,13 +354,13 @@
                     :header="job.jobName"
                   >
                     <pre>{{ job.jobDescription }}</pre>
-                  </div></div>
+                  </div>
                 </td>
               </tr>
             </template>
           </tbody>
         </table>
-      </div></div>
+      </div>
 
       <div class="card"
         v-for="error in process.processErrors"
@@ -369,8 +369,8 @@
       >
         <p>{{ error.userFriendlyMessage }}</p>
         <pre class="pre-scrollable">{{ error.actualErrorMessage }}</pre>
-      </div></div>
-    </div></div>
+      </div>
+    </div>
   </div>
 </template>
 

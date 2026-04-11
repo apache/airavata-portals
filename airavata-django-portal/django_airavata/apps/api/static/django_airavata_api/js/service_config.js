@@ -115,7 +115,7 @@ export default {
   },
   ComputeResources: {
     url: "/api/compute-resources",
-    viewSet: ["retrieve"],
+    viewSet: ["retrieve", "create", "update", "delete"],
     methods: {
       names: {
         url: "/api/compute-resources/all_names/",
@@ -420,7 +420,7 @@ export default {
   },
   StorageResources: {
     url: "/api/storage-resources",
-    viewSet: ["retrieve"],
+    viewSet: ["retrieve", "create", "update", "delete"],
     methods: {
       names: {
         url: "/api/storage-resources/all_names/",

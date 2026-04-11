@@ -6,16 +6,17 @@
     :state="validationFeedback.allowedBatchQueues.state"
   >
     <div v-for="batchQueue in batchQueues" :key="batchQueue.queueName">
-      <form-checkbox
-        :checked="
-          localComputeResourcePolicy.allowedBatchQueues.includes(
-            batchQueue.queueName
-          )
-        "
-        :disabled="readonly"
-        @input="batchQueueChecked(batchQueue, $event)"
-      >
-        {{ batchQueue.queueName }}
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox"
+          :checked="
+            localComputeResourcePolicy.allowedBatchQueues.includes(
+              batchQueue.queueName
+            )
+          "
+          :disabled="readonly"
+          @change="batchQueueChecked(batchQueue, $event.target.checked)"
+        />
+        <label class="form-check-label">{{ batchQueue.queueName }}</label>
       </div>
       <batch-queue-resource-policy
         v-if="
@@ -35,7 +36,7 @@
         @invalid="recordInvalidBatchQueueResourcePolicy(batchQueue)"
       />
     </div>
-  </div>
+  </form-group>
 </template>
 
 <script>

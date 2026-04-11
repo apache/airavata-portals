@@ -4,6 +4,7 @@ import { resolve } from "path";
 
 export default defineConfig({
   plugins: [vue()],
+  base: "/static/common/dist/",
   build: {
     manifest: "manifest.json",
     outDir: resolve(__dirname, "./dist"),
@@ -19,5 +20,6 @@ export default defineConfig({
     alias: {
       "@": resolve(__dirname, "./js"),
     },
+    extensions: [".mjs", ".js", ".ts", ".jsx", ".tsx", ".json", ".vue"],
   },
 });

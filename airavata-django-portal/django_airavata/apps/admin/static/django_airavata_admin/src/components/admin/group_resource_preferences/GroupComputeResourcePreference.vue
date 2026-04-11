@@ -20,8 +20,7 @@
                 :disabled="!userHasWriteAccess"
                 required
                 placeholder="Name of this Group Resource Profile"
-              >
-              </input>
+              />
             </div>
             <form-group
               label="Default SSH Credential"
@@ -33,7 +32,7 @@
                 :readonly="!userHasWriteAccess"
               >
               </ssh-credential-selector>
-            </div>
+            </form-group>
             <share-button ref="shareButton" :entity-id="id" />
           </div>
         </div>
@@ -132,11 +131,10 @@
       </template>
     </list-layout>
     <div class="fixed-footer">
-      <button class="btn"
-        variant="primary"
+      <button class="btn btn-primary btn-sm"
         :disabled="!userHasWriteAccess"
         @click="saveGroupResourceProfile"
-        >Save</b-button
+        >Save</button
       >
       <delete-button
         v-if="id"
@@ -148,8 +146,8 @@
         <strong>{{ data.groupResourceProfileName }}</strong
         >?
       </delete-button>
-      <button class="btn" class="ms-2" variant="secondary" @click="cancel"
-        >Cancel</b-button
+      <button class="btn btn-secondary btn-sm ms-2" @click="cancel"
+        >Cancel</button
       >
     </div>
     <compute-resources-modal

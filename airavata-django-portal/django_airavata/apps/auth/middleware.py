@@ -41,7 +41,7 @@ def authz_token_middleware(
 def set_admin_group_attributes(request: Any, gateway_groups: Any = None) -> None:
     """Set is_gateway_admin and is_read_only_gateway_admin request attrs."""
     if gateway_groups is None:
-        gateway_groups = request.airavata_client.iam.get_gateway_groups()
+        gateway_groups = request.airavata_client.compute.get_gateway_groups()
     admins_group_id = (
         gateway_groups.get("adminsGroupId") if isinstance(gateway_groups, dict) else gateway_groups.admins_group_id
     )
@@ -51,7 +51,7 @@ def set_admin_group_attributes(request: Any, gateway_groups: Any = None) -> None
         else gateway_groups.read_only_admins_group_id
     )
     airavata_internal_user_id = request.user.username + "@" + settings.GATEWAY_ID
-    group_memberships = request.airavata_client.sharing.get_all_groups_user_belongs(airavata_internal_user_id)
+    group_memberships = request.airavata_client.sharing.gm_get_all_groups_user_belongs(airavata_internal_user_id)
     group_ids = [group.id for group in group_memberships]
     request.is_gateway_admin = admins_group_id in group_ids
     request.is_read_only_gateway_admin = read_only_admins_group_id in group_ids
@@ -78,7 +78,7 @@ def gateway_groups_middleware(
             # Load the GatewayGroups and check if user is in the Admins and/or
             # Read Only Admins groups
             if not request.session.get("GATEWAY_GROUPS"):
-                gateway_groups = request.airavata_client.iam.get_gateway_groups()
+                gateway_groups = request.airavata_client.compute.get_gateway_groups()
                 gateway_groups_dict = (
                     copy.deepcopy(gateway_groups.__dict__)
                     if hasattr(gateway_groups, "__dict__")

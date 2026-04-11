@@ -6,30 +6,17 @@
       </slot>
       <slot name="buttons"> </slot>
     </div>
-    <form @submit="onSubmit" @input="onUserInput" novalidate>
-      <form-group
-        label="Project Name"
-        label-for="project-name"
-        :feedback="nameFeedback"
-        :state="nameState"
-      >
-        <input class="form-control"
-          id="project-name"
-          type="text"
-          v-model="data.name"
-          required
-          placeholder="Project name"
-          :state="nameState"
-        ></input>
+    <form @submit.prevent="onSubmit" @input="onUserInput" novalidate>
+      <div class="mb-3">
+        <label for="project-name" class="form-label">Project Name <span class="text-danger">*</span></label>
+        <input class="form-control" :class="{ 'is-invalid': userBeginsInput && nameState === false }"
+          id="project-name" type="text" v-model="data.name" required placeholder="Project name" />
+        <div v-if="userBeginsInput && nameFeedback" class="invalid-feedback">{{ nameFeedback }}</div>
       </div>
-      <div class="mb-3" label="Project Description" label-for="project-description">
-        <textarea class="form-control"
-          id="project-description"
-          type="text"
-          v-model="data.description"
-          placeholder="(Optional) Project description"
-          :rows="3"
-        ></textarea>
+      <div class="mb-3">
+        <label for="project-description" class="form-label">Description</label>
+        <textarea class="form-control" id="project-description" v-model="data.description"
+          placeholder="Optional description" rows="3"></textarea>
       </div>
     </form>
   </div>
@@ -43,14 +30,10 @@ export default {
   name: "project-editor",
   mixins: [mixins.VModelMixin],
   props: {
-    value: {
+    modelValue: {
       type: models.Project,
       required: true,
     },
-  },
-  mounted() {
-    this.$on("input", this.validate);
-    this.validate();
   },
   data() {
     return {
@@ -61,20 +44,14 @@ export default {
     nameFeedback() {
       if (this.userBeginsInput && this.validation.name) {
         return this.validation.name.join("; ");
-      } else {
-        return null;
       }
+      return null;
     },
     nameState() {
       if (this.validation.name) {
-        if (this.userBeginsInput) {
-          return false;
-        } else {
-          return null;
-        }
-      } else {
-        return true;
+        return this.userBeginsInput ? false : null;
       }
+      return true;
     },
     validation() {
       const v = this.data.validate();
@@ -92,8 +69,7 @@ export default {
     onUserInput() {
       this.userBeginsInput = true;
     },
-    onSubmit(event) {
-      event.preventDefault();
+    onSubmit() {
       this.$emit("save");
     },
     reset() {
@@ -101,9 +77,18 @@ export default {
     },
   },
   watch: {
-    value() {
+    data: {
+      handler() {
+        this.validate();
+      },
+      deep: true,
+    },
+    modelValue() {
       this.validate();
     },
+  },
+  mounted() {
+    this.validate();
   },
 };
 </script>

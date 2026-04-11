@@ -1,7 +1,6 @@
 <template>
-  <button class="btn"
+  <button :class="['btn', 'btn-' + variant]"
     ref="copyButton"
-    :variant="variant"
     :disabled="disabled"
     :data-clipboard-text="text"
   >

@@ -1,16 +1,18 @@
 <template>
-  <div class="mb-3" :label="label" :state="state" :description="description">
+  <div class="mb-3">
+    <label v-if="label" class="form-label">{{ label }}</label>
     <slot></slot>
-    <template slot="invalid-feedback">
-      <ul v-if="feedbackMessages && feedbackMessages.length > 1">
+    <div v-if="description" class="form-text">{{ description }}</div>
+    <div v-if="!valid && feedbackMessages && feedbackMessages.length > 0" class="invalid-feedback d-block">
+      <ul v-if="feedbackMessages.length > 1" class="mb-0">
         <li v-for="feedback in feedbackMessages" :key="feedback">
           {{ feedback }}
         </li>
       </ul>
-      <div v-else-if="feedbackMessages && feedbackMessages.length === 1">
+      <div v-else>
         {{ feedbackMessages[0] }}
       </div>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -32,11 +34,6 @@ export default {
     feedbackMessages: {
       type: Array,
       required: true,
-    },
-  },
-  computed: {
-    state() {
-      return this.valid ? null : false;
     },
   },
 };

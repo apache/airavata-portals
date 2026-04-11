@@ -1,242 +1,212 @@
 <template>
-  <div class="card"
-    :title="title"
-    :border-variant="$v.$anyDirty && $v.$invalid ? 'danger' : null"
-  >
-    <div class="mb-3" label="Name" label-cols="3" :disabled="disabled">
-      <input class="form-control" v-model="name" :state="validateState($v.name)" />
-      <div class="invalid-feedback" :state="validateState($v.name)"
-        >This field is required.</b-form-invalid-feedback
-      >
-    </div>
-    <form-group
-      label="Checkbox Label"
-      label-cols="3"
-      :disabled="disabled"
-      v-if="extendedUserProfileField.field_type === 'user_agreement'"
-    >
-      <input class="form-control"
-        v-model="checkbox_label"
-        :state="validateState($v.checkbox_label)"
-        placeholder="E.g. I accept the Terms of Service listed above"
-      />
-      <div class="invalid-feedback" :state="validateState($v.checkbox_label)"
-        >This field is required.</b-form-invalid-feedback
-      >
-    </div>
-    <div class="mb-3" label-cols="3" :disabled="disabled">
-      <template #label>
-        Help text
-        <small class="text-muted text-small">(Optional)</small>
-      </template>
-      <input class="form-control" v-model="help_text" />
-    </div>
-    <div class="mb-3" :disabled="disabled">
-      <div class="form-check"><input class="form-check-input" type="checkbox" v-model="required" switch> Required </div>
-    </div>
-    <div class="card" title="Options" v-if="extendedUserProfileField.supportsChoices">
-      <transition-group name="fade">
-        <template
-          v-for="({ $model: choice, display_text: $v_display_text },
-          index) in $v.choices.$each.$iter"
+  <div class="card">
+    <div class="card-header">{{ title }}</div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label">Name</label>
+        <input :class="['form-control', validateState(v$.name) === false ? 'is-invalid' : '']" v-model="name" />
+        <div class="invalid-feedback" v-if="v$.name.$dirty && v$.name.$error"
+          >This field is required.</div
         >
-          <div class="mb-3" :key="choice.key" :disabled="disabled">
-            <div class="input-group">
-              <input class="form-control"
-                :value="choice.display_text"
-                @input="
-                  handleChoiceDisplayTextChanged(
-                    choice,
-                    $event,
-                    $v_display_text
-                  )
-                "
-                :state="validateState($v_display_text)"
-              />
-              <span class="input-group-text">
-                <button class="btn"
-                  @click="handleChoiceMoveUp(choice)"
-                  :disabled="index === String(0)"
-                  v-b-tooltip.hover.left
-                  title="Move Up"
+      </div>
+      <form-group
+        label="Checkbox Label"
+        :disabled="disabled"
+        v-if="extendedUserProfileField.field_type === 'user_agreement'"
+      >
+        <input :class="['form-control', validateState(v$.checkbox_label) === false ? 'is-invalid' : '']"
+          v-model="checkbox_label"
+          placeholder="E.g. I accept the Terms of Service listed above"
+        />
+        <div class="invalid-feedback" v-if="v$.checkbox_label.$dirty && v$.checkbox_label.$error"
+          >This field is required.</div
+        >
+      </form-group>
+      <div class="mb-3">
+        <label class="form-label">Help text <small class="text-muted">(Optional)</small></label>
+        <input class="form-control" v-model="help_text" />
+      </div>
+      <div class="mb-3">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" v-model="required" id="required-check" />
+          <label class="form-check-label" for="required-check">Required</label>
+        </div>
+      </div>
+      <div class="card mb-3" v-if="extendedUserProfileField.supportsChoices">
+        <div class="card-header">Options</div>
+        <div class="card-body">
+          <transition-group name="fade">
+            <template v-for="(choice, index) in extendedUserProfileField.choices" :key="choice.key">
+              <div :class="['mb-3', { 'opacity-50': disabled }]">
+                <div class="input-group">
+                  <input :class="['form-control', !choice.display_text ? 'is-invalid' : '']"
+                    :value="choice.display_text"
+                    @input="handleChoiceDisplayTextChanged(choice, $event)"
+                  />
+                  <span class="input-group-text">
+                    <button class="btn btn-sm"
+                      @click="handleChoiceMoveUp(choice)"
+                      :disabled="index === 0"
+                      title="Move Up"
+                    >
+                      <i class="fa fa-arrow-up" aria-hidden="true"></i>
+                    </button>
+                    <button class="btn btn-sm"
+                      @click="handleChoiceMoveDown(choice)"
+                      :disabled="index === extendedUserProfileField.choices.length - 1"
+                      title="Move Down"
+                    >
+                      <i class="fa fa-arrow-down" aria-hidden="true"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger"
+                      @click="handleChoiceDeleted(choice)"
+                      title="Delete Option"
+                    >
+                      <i class="fa fa-trash" aria-hidden="true"></i>
+                    </button>
+                  </span>
+                </div>
+                <div class="invalid-feedback d-block" v-if="!choice.display_text"
+                  >This field is required.</div
                 >
-                  <i class="fa fa-arrow-up" aria-hidden="true"></i>
-                </button>
-                <button class="btn"
-                  @click="handleChoiceMoveDown(choice)"
-                  :disabled="
-                    index ===
-                    String(extendedUserProfileField.choices.length - 1)
-                  "
-                  v-b-tooltip.hover.left
-                  title="Move Down"
-                >
-                  <i class="fa fa-arrow-down" aria-hidden="true"></i>
-                </button>
-                <button class="btn"
-                  @click="handleChoiceDeleted(choice)"
-                  variant="danger"
-                  v-b-tooltip.hover.left
-                  title="Delete Option"
-                >
-                  <i class="fa fa-trash" aria-hidden="true"></i>
-                </button>
-              </span>
+              </div>
+            </template>
+            <div v-if="extendedUserProfileField.other" :key="'other'" class="mb-3">
+              <div class="input-group">
+                <input class="form-control"
+                  placeholder="User will see: Other (please specify)"
+                  disabled
+                />
+                <span class="input-group-text">
+                  <button class="btn btn-sm" disabled>
+                    <i class="fa fa-arrow-up" aria-hidden="true"></i>
+                  </button>
+                  <button class="btn btn-sm" disabled>
+                    <i class="fa fa-arrow-down" aria-hidden="true"></i>
+                  </button>
+                  <button class="btn btn-sm btn-danger"
+                    @click="other = false"
+                    title="Remove Other option"
+                  >
+                    <i class="fa fa-trash" aria-hidden="true"></i>
+                  </button>
+                </span>
+              </div>
             </div>
-            <div class="invalid-feedback" :state="validateState($v_display_text)"
-              >This field is required.</b-form-invalid-feedback
+          </transition-group>
+          <div class="mb-3">
+            <button class="btn btn-sm btn-secondary"
+              @click="addChoice({ field: extendedUserProfileField })"
+              >Add Option</button
             >
           </div>
-        </template>
-        <form-group
-          :key="'other'"
-          v-if="extendedUserProfileField.other"
-          :disabled="disabled"
-        >
-          <div class="input-group">
-            <input class="form-control"
-              placeholder="User will see: Other (please specify)"
-              disabled
-            />
-            <span class="input-group-text">
-              <button class="btn" disabled>
-                <i class="fa fa-arrow-up" aria-hidden="true"></i>
-              </button>
-              <button class="btn" disabled>
-                <i class="fa fa-arrow-down" aria-hidden="true"></i>
-              </button>
-              <button class="btn"
-                @click="other = false"
-                variant="danger"
-                v-b-tooltip.hover.left
-                title="Remove Other option"
-              >
-                <i class="fa fa-trash" aria-hidden="true"></i>
-              </button>
-            </span>
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" v-model="other" id="other-check" />
+              <label class="form-check-label" for="other-check">
+                Allow user to type in an "Other" option
+              </label>
+            </div>
           </div>
         </div>
-      </transition-group>
-      <div class="mb-3" :disabled="disabled">
-        <button class="btn"
-          @click="addChoice({ field: extendedUserProfileField })"
-          size="sm"
-          >Add Option</b-button
-        >
       </div>
-      <div class="mb-3" :disabled="disabled">
-        <div class="form-check"><input class="form-check-input" type="checkbox" v-model="other" switch>
-          Allow user to type in an "Other" option
-        </div>
-      </div>
-    </div></div>
 
-    <template v-if="links && links.length > 0">
-      <transition-group name="fade">
-        <div class="card"
-          :title="`Link: ${link.label}`"
-          v-for="{ $model: link, label: $v_label, url: $v_url } in $v.links
-            .$each.$iter"
-          :key="link.key"
-        >
-          <div class="mb-3" label="Label" label-cols="3" :disabled="disabled">
-            <input class="form-control"
-              :value="link.label"
-              @input="handleLinkLabelChanged(link, $event, $v_label)"
-              :state="validateState($v_label)"
-            />
-            <div class="invalid-feedback" :state="validateState($v_label)"
-              >This field is required.</b-form-invalid-feedback
-            >
-          </div>
-          <div class="mb-3" label="URL" label-cols="3" :disabled="disabled">
-            <input class="form-control"
-              :value="link.url"
-              @input="handleLinkURLChanged(link, $event, $v_url)"
-              :state="validateState($v_url)"
-            />
-            <div class="invalid-feedback" :state="validateState($v_url)"
-              >This field is required.</b-form-invalid-feedback
-            >
-          </div>
-          <div class="row">
-            <div>
-              <div class="mb-3" :disabled="disabled">
-                <form-checkbox
-                  :checked="link.display_link"
-                  @input="handleLinkDisplayLinkChanged(link, $event)"
-                  switch
-                >
-                  Show as link?
-                </div>
-              </div>
-            </div>
-            <div>
-              <div class="mb-3" :disabled="disabled">
-                <form-checkbox
-                  :checked="link.display_inline"
-                  @input="handleLinkDisplayInlineChanged(link, $event)"
-                  switch
-                >
-                  Show inline?
-                </div>
-              </div>
-            </div>
-          </div>
-          <button class="btn"
-            @click="handleLinkDeleted(link)"
-            variant="danger"
-            size="sm"
-            :disabled="disabled"
+      <template v-if="links && links.length > 0">
+        <transition-group name="fade">
+          <div class="card mb-2"
+            v-for="(link, linkIdx) in links"
+            :key="link.key"
           >
-            Delete Link
-          </button>
-        </div></div>
-      </transition-group>
-    </template>
-    <button class="btn"
-      @click="addLink({ field: extendedUserProfileField })"
-      size="sm"
-      :disabled="disabled"
-      >Add Link</b-button
-    >
-    <button class="btn"
-      @click="handleMoveUp({ field: extendedUserProfileField })"
-      :disabled="
-        disabled ||
-        extendedUserProfileFields.indexOf(extendedUserProfileField) === 0
-      "
-      size="sm"
-      >Move Up</b-button
-    >
-    <button class="btn"
-      @click="handleMoveDown({ field: extendedUserProfileField })"
-      :disabled="
-        disabled ||
-        extendedUserProfileFields.indexOf(extendedUserProfileField) ===
-          extendedUserProfileFields.length - 1
-      "
-      size="sm"
-      >Move Down</b-button
-    >
-    <button class="btn"
-      @click="handleDelete"
-      variant="danger"
-      size="sm"
-      :disabled="disabled"
-      >Delete</b-button
-    >
-  </div></div>
+            <div class="card-header">Link: {{ link.label }}</div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">Label</label>
+                <input :class="['form-control', !link.label ? 'is-invalid' : '']"
+                  :value="link.label"
+                  @input="handleLinkLabelChanged(link, $event)"
+                />
+                <div class="invalid-feedback" v-if="!link.label"
+                  >This field is required.</div
+                >
+              </div>
+              <div class="mb-3">
+                <label class="form-label">URL</label>
+                <input :class="['form-control', !link.url ? 'is-invalid' : '']"
+                  :value="link.url"
+                  @input="handleLinkURLChanged(link, $event)"
+                />
+                <div class="invalid-feedback" v-if="!link.url"
+                  >This field is required.</div
+                >
+              </div>
+              <div class="row mb-2">
+                <div class="col">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox"
+                      :checked="link.display_link"
+                      @change="handleLinkDisplayLinkChanged(link, $event.target.checked)"
+                      :id="`display-link-${linkIdx}`"
+                    />
+                    <label class="form-check-label" :for="`display-link-${linkIdx}`">Show as link?</label>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox"
+                      :checked="link.display_inline"
+                      @change="handleLinkDisplayInlineChanged(link, $event.target.checked)"
+                      :id="`display-inline-${linkIdx}`"
+                    />
+                    <label class="form-check-label" :for="`display-inline-${linkIdx}`">Show inline?</label>
+                  </div>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-danger"
+                @click="handleLinkDeleted(link)"
+                :disabled="disabled"
+              >
+                Delete Link
+              </button>
+            </div>
+          </div>
+        </transition-group>
+      </template>
+      <div class="d-flex gap-2 mt-2">
+        <button class="btn btn-sm btn-secondary"
+          @click="addLink({ field: extendedUserProfileField })"
+          :disabled="disabled"
+          >Add Link</button
+        >
+        <button class="btn btn-sm btn-secondary"
+          @click="handleMoveUp({ field: extendedUserProfileField })"
+          :disabled="disabled || extendedUserProfileFields.indexOf(extendedUserProfileField) === 0"
+          >Move Up</button
+        >
+        <button class="btn btn-sm btn-secondary"
+          @click="handleMoveDown({ field: extendedUserProfileField })"
+          :disabled="disabled || extendedUserProfileFields.indexOf(extendedUserProfileField) === extendedUserProfileFields.length - 1"
+          >Move Down</button
+        >
+        <button class="btn btn-sm btn-danger"
+          @click="handleDelete"
+          :disabled="disabled"
+          >Delete</button
+        >
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
 import { mapGetters, mapMutations } from "vuex";
-import { validationMixin } from "vuelidate";
-import { required, requiredIf } from "vuelidate/lib/validators";
+import { useVuelidate } from "@vuelidate/core";
+import { required, requiredIf } from "@vuelidate/validators";
 import { errors } from "django-airavata-common-ui";
 export default {
-  mixins: [validationMixin],
   props: ["extendedUserProfileField", "disabled"],
+  setup() {
+    return { v$: useVuelidate() };
+  },
   computed: {
     ...mapGetters("extendedUserProfile", ["extendedUserProfileFields"]),
     name: {
@@ -245,7 +215,7 @@ export default {
       },
       set(value) {
         this.setName({ value, field: this.extendedUserProfileField });
-        this.$v.name.$touch();
+        this.v$.name.$touch();
       },
     },
     checkbox_label: {
@@ -254,7 +224,7 @@ export default {
       },
       set(value) {
         this.setCheckboxLabel({ value, field: this.extendedUserProfileField });
-        this.$v.checkbox_label.$touch();
+        this.v$.checkbox_label.$touch();
       },
     },
     help_text: {
@@ -288,9 +258,7 @@ export default {
         multi_choice: "Multi Choice",
         user_agreement: "User Agreement",
       };
-      return `${fieldTypes[this.extendedUserProfileField.field_type]}: ${
-        this.name
-      }`;
+      return `${fieldTypes[this.extendedUserProfileField.field_type]}: ${this.name}`;
     },
     choices() {
       return this.extendedUserProfileField.choices;
@@ -299,7 +267,7 @@ export default {
       return this.extendedUserProfileField.links;
     },
     valid() {
-      return !this.$v.$invalid;
+      return !this.v$.$invalid;
     },
     checkboxLabelIsRequired() {
       return this.extendedUserProfileField.field_type === "user_agreement";
@@ -307,28 +275,9 @@ export default {
   },
   validations() {
     return {
-      name: {
-        required,
-      },
+      name: { required },
       checkbox_label: {
-        required: requiredIf("checkboxLabelIsRequired"),
-      },
-      choices: {
-        $each: {
-          display_text: {
-            required,
-          },
-        },
-      },
-      links: {
-        $each: {
-          label: {
-            required,
-          },
-          url: {
-            required,
-          },
-        },
+        required: requiredIf(() => this.checkboxLabelIsRequired),
       },
     };
   },
@@ -352,9 +301,8 @@ export default {
       "updateFieldIndex",
       "deleteField",
     ]),
-    handleChoiceDisplayTextChanged(choice, display_text, $v) {
-      this.updateChoiceDisplayText({ choice, display_text });
-      $v.$touch();
+    handleChoiceDisplayTextChanged(choice, event) {
+      this.updateChoiceDisplayText({ choice, display_text: event.target.value });
     },
     handleChoiceDeleted(choice) {
       this.deleteChoice({ field: this.extendedUserProfileField, choice });
@@ -362,28 +310,18 @@ export default {
     handleChoiceMoveUp(choice) {
       let index = this.extendedUserProfileField.choices.indexOf(choice);
       index--;
-      this.updateChoiceIndex({
-        field: this.extendedUserProfileField,
-        choice,
-        index,
-      });
+      this.updateChoiceIndex({ field: this.extendedUserProfileField, choice, index });
     },
     handleChoiceMoveDown(choice) {
       let index = this.extendedUserProfileField.choices.indexOf(choice);
       index++;
-      this.updateChoiceIndex({
-        field: this.extendedUserProfileField,
-        choice,
-        index,
-      });
+      this.updateChoiceIndex({ field: this.extendedUserProfileField, choice, index });
     },
-    handleLinkLabelChanged(link, label, $v) {
-      this.updateLinkLabel({ link, label });
-      $v.$touch();
+    handleLinkLabelChanged(link, event) {
+      this.updateLinkLabel({ link, label: event.target.value });
     },
-    handleLinkURLChanged(link, url, $v) {
-      this.updateLinkURL({ link, url });
-      $v.$touch();
+    handleLinkURLChanged(link, event) {
+      this.updateLinkURL({ link, url: event.target.value });
     },
     handleLinkDisplayLinkChanged(link, display_link) {
       this.updateLinkDisplayLink({ link, display_link });
@@ -405,13 +343,11 @@ export default {
       this.updateFieldIndex({ field, index });
     },
     handleDelete() {
-      this.deleteField({
-        field: this.extendedUserProfileField,
-      });
+      this.deleteField({ field: this.extendedUserProfileField });
     },
     validateState: errors.vuelidateHelpers.validateState,
     touch() {
-      this.$v.$touch();
+      this.v$.$touch();
     },
   },
   watch: {

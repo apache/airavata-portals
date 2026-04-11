@@ -1,66 +1,67 @@
 <template>
   <div>
-    <button class="btn" v-b-modal.modal-new-project variant="primary">
-      <slot> New Project <i class="fa fa-plus" aria-hidden="true"></i> </slot>
+    <button class="btn btn-primary btn-sm" @click="showModal">
+      <slot><i class="fa fa-plus me-1"></i>Create New</slot>
     </button>
-    <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
-      id="modal-new-project"
-      ref="modalNewProject"
-      title="Create New Project"
-      v-on:ok="onCreateProject"
-      v-bind:ok-disabled="okDisabled"
-      @cancel="onCancelNewProject"
-    >
-      <project-editor
-        v-model="newProject"
-        ref="projectEditor"
-        @save="onCreateProject"
-        @valid="valid = true"
-        @invalid="valid = false"
-      >
-        <div slot="title"></div>
-      </project-editor>
+    <div class="modal fade" ref="modal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Create New Project</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Project Name <span class="text-danger">*</span></label>
+              <input class="form-control" type="text" v-model="projectName" placeholder="Project name"
+                @keydown.enter="onCreateProject" ref="nameInput" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Description</label>
+              <textarea class="form-control" v-model="projectDescription" placeholder="Optional description" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-primary btn-sm" @click="onCreateProject" :disabled="!projectName || !projectName.trim()">Create</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import { models, services } from "django-airavata-api";
-import ProjectEditor from "./ProjectEditor.vue";
+import { Modal } from "bootstrap";
 
 export default {
   name: "project-button-new",
   data() {
     return {
-      valid: false,
-      newProject: new models.Project(),
+      projectName: "",
+      projectDescription: "",
     };
   },
-  components: {
-    ProjectEditor,
-  },
   methods: {
-    onCreateProject: function (event) {
-      // Prevent hiding modal, hide it programmatically when project gets created
-      event.preventDefault();
-      services.ProjectService.create({ data: this.newProject }).then(
-        (result) => {
-          this.$refs.modalNewProject.hide();
-          this.$emit("new-project", result);
-          // Reset state
-          this.newProject = new models.Project();
-          this.$refs.projectEditor.reset();
-        }
-      );
+    showModal() {
+      this.projectName = "";
+      this.projectDescription = "";
+      new Modal(this.$refs.modal).show();
+      this.$nextTick(() => {
+        if (this.$refs.nameInput) this.$refs.nameInput.focus();
+      });
     },
-    onCancelNewProject() {
-      this.newProject = new models.Project();
-      this.$refs.projectEditor.reset();
-    },
-  },
-  computed: {
-    okDisabled: function () {
-      return !this.valid;
+    onCreateProject() {
+      if (!this.projectName || !this.projectName.trim()) return;
+      const newProject = new models.Project({
+        name: this.projectName.trim(),
+        description: this.projectDescription,
+      });
+      services.ProjectService.create({ data: newProject }).then(() => {
+        Modal.getInstance(this.$refs.modal).hide();
+        this.$emit("new-project");
+      });
     },
   },
 };

@@ -121,6 +121,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "django_airavata.wsgi.application"
+ASGI_APPLICATION = "django_airavata.asgi.application"
 
 
 # Database
@@ -238,22 +239,18 @@ WAGTAILIMAGES_JPEG_QUALITY = 100
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 
 LOGIN_URL = "django_airavata_auth:login"
-LOGIN_REDIRECT_URL = "django_airavata_workspace:dashboard"
+LOGIN_REDIRECT_URL = "django_airavata_workspace:applications"
 LOGOUT_REDIRECT_URL = "/"
 
 AUTHENTICATION_OPTIONS = {
-    # Control whether username/password authentication is allowed
-    "password": {
-        "name": "your account",
-        # Static path to image
-        # 'logo': '/static/path/to/image'
-    },
-    # Can have multiple external logins
+    # Authentication is handled entirely by Keycloak.
+    # No portal-side password login — users are redirected to Keycloak's login page.
+    # To add external identity providers (CILogon, etc.), configure them in Keycloak
+    # and optionally list them here for direct IdP redirect:
     # 'external': [
     #     {
     #         'idp_alias': 'cilogon',
     #         'name': 'CILogon',
-    #         # Static path to image
     #         'logo': 'path/to/image'
     #     }
     # ]
@@ -272,6 +269,7 @@ DJANGO_VITE = {
         "dev_mode": DEBUG,
         "dev_server_port": 9000,
         "manifest_path": os.path.join(BASE_DIR, "django_airavata", "static", "common", "dist", "manifest.json"),
+        "static_url_prefix": "common/dist",
     },
     "ADMIN": {
         "dev_mode": DEBUG,
@@ -279,6 +277,7 @@ DJANGO_VITE = {
         "manifest_path": os.path.join(
             BASE_DIR, "django_airavata", "apps", "admin", "static", "django_airavata_admin", "dist", "manifest.json"
         ),
+        "static_url_prefix": "django_airavata_admin/dist",
     },
     "AUTH": {
         "dev_mode": DEBUG,
@@ -286,6 +285,7 @@ DJANGO_VITE = {
         "manifest_path": os.path.join(
             BASE_DIR, "django_airavata", "apps", "auth", "static", "django_airavata_auth", "dist", "manifest.json"
         ),
+        "static_url_prefix": "django_airavata_auth/dist",
     },
     "DATAPARSERS": {
         "dev_mode": DEBUG,
@@ -300,6 +300,7 @@ DJANGO_VITE = {
             "dist",
             "manifest.json",
         ),
+        "static_url_prefix": "django_airavata_dataparsers/dist",
     },
     "GROUPS": {
         "dev_mode": DEBUG,
@@ -307,6 +308,7 @@ DJANGO_VITE = {
         "manifest_path": os.path.join(
             BASE_DIR, "django_airavata", "apps", "groups", "static", "django_airavata_groups", "dist", "manifest.json"
         ),
+        "static_url_prefix": "django_airavata_groups/dist",
     },
     "WORKSPACE": {
         "dev_mode": DEBUG,
@@ -321,6 +323,7 @@ DJANGO_VITE = {
             "dist",
             "manifest.json",
         ),
+        "static_url_prefix": "django_airavata_workspace/dist",
     },
 }
 
@@ -594,8 +597,24 @@ _load_dynamic_apps(INSTALLED_APPS, "airavata.djangoapp")
 settings_module = sys.modules[__name__]
 _merge_dynamic_settings(settings_module)
 
+# Apply VITE_DEV_MODE override from settings_local.py to all DJANGO_VITE entries
+if 'VITE_DEV_MODE' in dir():
+    for _vite_key in DJANGO_VITE:
+        DJANGO_VITE[_vite_key]["dev_mode"] = VITE_DEV_MODE
+
 # --- Airavata Server Connection ---
-AIRAVATA_API_HOST = os.environ.get('AIRAVATA_API_HOST', 'localhost')
-AIRAVATA_API_PORT = int(os.environ.get('AIRAVATA_API_PORT', '9090'))
-AIRAVATA_API_SECURE = os.environ.get('AIRAVATA_API_SECURE', 'false').lower() == 'true'
-GATEWAY_ID = os.environ.get('GATEWAY_ID', 'default')
+# Only set defaults if not already defined (e.g., by settings_local.py)
+if 'AIRAVATA_API_HOST' not in dir():
+    AIRAVATA_API_HOST = os.environ.get('AIRAVATA_API_HOST', 'localhost')
+if 'AIRAVATA_API_PORT' not in dir():
+    AIRAVATA_API_PORT = int(os.environ.get('AIRAVATA_API_PORT', '9090'))
+if 'AIRAVATA_API_SECURE' not in dir():
+    AIRAVATA_API_SECURE = os.environ.get('AIRAVATA_API_SECURE', 'false').lower() == 'true'
+if 'GATEWAY_ID' not in dir():
+    GATEWAY_ID = os.environ.get('GATEWAY_ID', 'default')
+
+
+
+
+
+

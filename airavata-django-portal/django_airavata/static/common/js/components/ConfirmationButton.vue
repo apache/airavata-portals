@@ -1,7 +1,6 @@
 <template>
   <div class="confirmation-button">
-    <button class="btn"
-      :variant="variant"
+    <button :class="['btn', 'btn-' + variant]"
       @click="$refs.modal.show()"
       :disabled="disabled"
     >

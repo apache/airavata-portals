@@ -5,21 +5,23 @@ from django.urls import reverse
 
 @login_required
 def home(request):
-    if request.is_gateway_admin or request.is_read_only_gateway_admin:
-        return redirect(reverse("django_airavata_admin:app_catalog"))
-    else:
-        return redirect(reverse("django_airavata_admin:group_resource_profile"))
+    return redirect(reverse("django_airavata_admin:credential_store"))
 
 
 @login_required
 def app_catalog(request):
+    # The list view is merged into the workspace dashboard;
+    # sub-routes (new, edit) still render the admin SPA editor.
+    path = request.path.rstrip("/")
+    if path == "/admin/applications":
+        return redirect(reverse("django_airavata_workspace:applications"))
     request.active_nav_item = "app_catalog"
     return render(request, "admin/admin_base.html")
 
 
 @login_required
 def credential_store(request):
-    request.active_nav_item = "credential_store"
+    request.active_nav_item = "credentials"
     return render(request, "admin/admin_base.html")
 
 

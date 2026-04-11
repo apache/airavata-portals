@@ -32,24 +32,22 @@
         <div class="dropdown" text="Add Field" :disabled="!isGatewayAdmin">
           <a class="dropdown-item" @click="addField('text')">Text</a>
           <a class="dropdown-item" @click="addField('single_choice')"
-            >Single Choice</b-dropdown-item
+            >Single Choice</a
           >
           <a class="dropdown-item" @click="addField('multi_choice')"
-            >Multi Choice</b-dropdown-item
+            >Multi Choice</a
           >
           <a class="dropdown-item" @click="addField('user_agreement')"
-            >User Agreement</b-dropdown-item
+            >User Agreement</a
           >
         </div>
-        <button class="btn"
-          variant="primary"
+        <button class="btn btn-primary btn-sm ms-2"
           @click="save"
-          class="ms-2"
           :disabled="!isGatewayAdmin"
-          >Save</b-button
+          >Save</button
         >
-        <button class="btn" variant="secondary" class="ms-auto" href="/admin/users"
-          >Return to Manage Users</b-button
+        <button class="btn btn-secondary btn-sm ms-auto" href="/admin/users"
+          >Return to Manage Users</button
         >
       </div>
     </div>

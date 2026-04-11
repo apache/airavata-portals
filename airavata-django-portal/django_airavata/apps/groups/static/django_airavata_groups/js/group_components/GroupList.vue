@@ -1,11 +1,8 @@
 <template>
   <div>
-    <div class="alert"
-      dismissible
-      :variant="alertVariant"
-      :show="showDismissibleAlert"
-      @dismissed="showDismissibleAlert = false"
-      >{{ alertMsg }}</b-alert
+    <div :class="['alert', 'alert-' + alertVariant]"
+      v-if="showDismissibleAlert"
+      >{{ alertMsg }}</div
     >
     <table class="table table-hover">
       <thead>
@@ -17,7 +14,17 @@
         </tr>
       </thead>
       <tbody>
+        <tr v-if="!groupsForOwners || groupsForOwners.length === 0">
+          <td colspan="4">
+            <div class="table-empty">
+              <i class="fa fa-users table-empty__icon"></i>
+              <div class="table-empty__title">No groups yet</div>
+              <div class="table-empty__text">Create a group to share resources with other users.</div>
+            </div>
+          </td>
+        </tr>
         <group-list-item
+          v-else
           @deleteSuccess="deleteSuccess"
           @deleteFailed="deleteFailed"
           v-bind:group="group"

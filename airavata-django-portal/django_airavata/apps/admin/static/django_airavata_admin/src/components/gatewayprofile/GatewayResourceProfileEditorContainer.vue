@@ -36,8 +36,8 @@
       v-if="gatewayResourceProfile && gatewayResourceProfile.userHasWriteAccess"
     >
       <div class="col">
-        <button class="btn" variant="primary" @click="save"> Save </button>
-        <button class="btn" variant="secondary" @click="cancel"> Cancel </button>
+        <button class="btn btn-primary btn-sm" @click="save"> Save </button>
+        <button class="btn btn-secondary btn-sm" @click="cancel"> Cancel </button>
       </div>
     </div>
   </div>

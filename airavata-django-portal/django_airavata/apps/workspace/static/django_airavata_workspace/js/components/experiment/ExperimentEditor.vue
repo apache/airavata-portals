@@ -41,8 +41,8 @@
               required
               placeholder="Experiment name"
               :state="getValidationState('experimentName')"
-            ></input>
-          </div>
+            />
+          </form-group>
           <experiment-description-editor
             v-model="localExperiment.description"
           />
@@ -84,7 +84,7 @@
                 </option>
               </optgroup>
             </select>
-          </div>
+          </form-group>
         </div>
       </div>
       <div class="row">
@@ -163,15 +163,13 @@
       </div>
       <div class="row">
         <div id="col-exp-buttons" class="col">
-          <button class="btn"
-            variant="success"
+          <button class="btn btn-success btn-sm"
             @click="saveAndLaunchExperiment"
             :disabled="isSaveDisabled"
           >
             Save and Launch
           </button>
-          <button class="btn"
-            variant="primary"
+          <button class="btn btn-primary btn-sm"
             @click="saveExperiment"
             :disabled="isSaveDisabled"
           >

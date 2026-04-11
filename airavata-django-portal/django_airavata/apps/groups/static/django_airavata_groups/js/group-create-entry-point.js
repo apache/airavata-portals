@@ -6,7 +6,7 @@ entry(({ createApp }) => {
   const app = createApp({
     data() {
       return {
-        next: "/groups/",
+        next: "/resources/sharing/",
       };
     },
     beforeMount() {

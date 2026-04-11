@@ -58,8 +58,7 @@
               :value="getNodeCount"
               required
               @input.stop="updateNodeCount"
-            >
-            </input>
+            />
             <div slot="description">
               <i class="fa fa-info-circle" aria-hidden="true"></i>
               Max Allowed Nodes = {{ maxAllowedNodes }}
@@ -74,8 +73,7 @@
             :value="getTotalCPUCount"
             required
             @input.stop="updateTotalCPUCount"
-          >
-          </input>
+          />
           <div slot="description">
             <i class="fa fa-info-circle" aria-hidden="true"></i>
             Max Allowed Cores = {{ maxAllowedCores
@@ -88,7 +86,7 @@
         <div class="d-flex flex-column" v-if="queue && queue.cpuPerNode > 0">
           <div class="flex-fill"
                style="border: 1px solid #6c757d;border-top-right-radius: 10px;margin-top: 51px;border-left-width: 0px;border-bottom-width: 0px;margin-right: 15px;"></div>
-          <button class="btn" size="sm" pill variant="outline-secondary"
+          <button class="btn btn-sm btn-outline-secondary rounded-pill"
                     v-on:click="enableNodeCountToCpuCheck = !enableNodeCountToCpuCheck">
             <i v-if="enableNodeCountToCpuCheck" class="fa fa-lock" aria-hidden="true"></i>
             <i v-else class="fa fa-unlock" aria-hidden="true"></i>
@@ -107,8 +105,7 @@
             :value="getWallTimeLimit"
             required
             @input.stop="updateWallTimeLimit"
-          >
-          </input>
+          />
         </div>
         <div slot="description">
           <i class="fa fa-info-circle" aria-hidden="true"></i>
@@ -128,9 +125,8 @@
             :max="maxMemory"
             :value="getTotalPhysicalMemory"
             @input.stop="updateTotalPhysicalMemory"
-          >
-          </input>
-        </div>
+          />
+        </form-group>
         <div slot="description">
           <i class="fa fa-info-circle" aria-hidden="true"></i>
           Max Physical Memory = {{ maxMemory }} MB
@@ -139,7 +135,7 @@
       <div>
         <a class="text-secondary" @click="showConfiguration = false">
           <i class="fa fa-times" aria-hidden="true"></i>
-          Hide Settings</b-link
+          Hide Settings</a
         >
       </div>
     </div>

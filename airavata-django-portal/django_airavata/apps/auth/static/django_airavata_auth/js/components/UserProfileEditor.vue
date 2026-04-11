@@ -6,61 +6,63 @@
       description="Only administrators can update a username."
     >
       <input class="form-control" v-model="user.username" />
-    </div>
-    <div class="mb-3" label="First Name" :disabled="disabled">
-      <input class="form-control"
-        v-model="$v.first_name.$model"
+    </form-group>
+    <div class="mb-3" :disabled="disabled">
+      <label class="form-label">First Name</label>
+      <input :class="['form-control', validateState(v$.first_name) === false ? 'is-invalid' : '']"
+        v-model="v$.first_name.$model"
         @keydown.enter="save"
-        :state="validateState($v.first_name)"
       />
     </div>
-    <div class="mb-3" label="Last Name" :disabled="disabled">
-      <input class="form-control"
-        v-model="$v.last_name.$model"
+    <div class="mb-3" :disabled="disabled">
+      <label class="form-label">Last Name</label>
+      <input :class="['form-control', validateState(v$.last_name) === false ? 'is-invalid' : '']"
+        v-model="v$.last_name.$model"
         @keydown.enter="save"
-        :state="validateState($v.last_name)"
       />
     </div>
-    <div class="mb-3" label="Email" :disabled="disabled">
-      <input class="form-control"
-        v-model="$v.email.$model"
+    <div class="mb-3" :disabled="disabled">
+      <label class="form-label">Email</label>
+      <input :class="['form-control', validateState(v$.email) === false ? 'is-invalid' : '']"
+        v-model="v$.email.$model"
         @keydown.enter="save"
-        :state="validateState($v.email)"
       />
-      <div class="invalid-feedback" v-if="!$v.email.email">
+      <div class="invalid-feedback" v-if="v$.email.$dirty && v$.email.email.$invalid">
         {{ email }} is not a valid email address.
       </div>
-      <div class="alert" class="mt-1" show v-if="user.pending_email_change"
+      <div class="alert alert-warning mt-1" v-if="user.pending_email_change"
         >Once you verify your email address at
         <strong>{{ user.pending_email_change.email_address }}</strong
         >, your email address will be updated. If you didn't receive the
         verification email,
         <a @click="$emit('resend-email-verification')"
-          >click here to resend verification link.</b-link
-        ></b-alert
-      >
+          >click here to resend verification link.</a
+        >
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import { errors } from "django-airavata-common-ui";
-import { validationMixin } from "vuelidate";
-import { email, required } from "vuelidate/lib/validators";
+import { useVuelidate } from "@vuelidate/core";
+import { email, required } from "@vuelidate/validators";
 import { mapGetters, mapMutations } from "vuex";
 
 export default {
   name: "user-profile-editor",
-  mixins: [validationMixin],
   props: {
     disabled: {
       type: Boolean,
       default: false,
     },
   },
+  setup() {
+    return { v$: useVuelidate() };
+  },
   created() {
     if (!this.disabled) {
-      this.$v.$touch();
+      this.v$.$touch();
     }
   },
   data() {
@@ -93,7 +95,7 @@ export default {
       },
     },
     valid() {
-      return !this.$v.$invalid;
+      return !this.v$.$invalid;
     },
   },
   validations() {

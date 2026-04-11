@@ -57,10 +57,13 @@ export default {
 
 <style>
 .application-card {
-  height: calc(100% - 30px); /* 30px margin at the botton */
+  height: calc(100% - 1.5rem);
 }
 .application-card .card-link,
 .application-card .card-body {
   height: 100%;
+}
+.application-card .card-title {
+  font-size: 0.875rem;
 }
 </style>

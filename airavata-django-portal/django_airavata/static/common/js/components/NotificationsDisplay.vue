@@ -2,51 +2,36 @@
   <div id="notifications-display">
     <transition-group name="fade" tag="div">
       <template v-for="unhandledError in unhandledErrors">
-        <div class="alert"
+        <div class="alert alert-warning alert-dismissible"
           v-if="isUnauthenticatedError(unhandledError.error)"
-          variant="warning"
           :key="unhandledError.id"
-          show
-          dismissible
-          @dismissed="dismissUnhandledError(unhandledError)"
         >
           Your login session has expired. Please
-          <a class="alert-link" :href="loginLinkWithNext"
-            >log in again</b-link
-          >. You can also
-          <a class="alert-link" :href="loginLink" target="_blank"
-            >login in a separate tab
-            <i class="fa fa-external-link-alt" aria-hidden="true"></i
-          ></a>
+          <a class="alert-link" :href="loginLinkWithNext">log in again</a>.
+          You can also
+          <a class="alert-link" :href="loginLink" target="_blank">login in a separate tab
+            <i class="fa fa-external-link-alt" aria-hidden="true"></i></a>
           and then return to this tab and try again.
         </div>
-        <div class="alert"
+        <div class="alert alert-danger alert-dismissible"
           v-else
-          variant="danger"
           :key="unhandledError.id"
-          show
-          dismissible
-          @dismissed="dismissUnhandledError(unhandledError)"
         >
           {{ unhandledError.message }}
         </div>
       </template>
-      <div class="alert"
+      <div :class="['alert', 'alert-' + variant(notification), 'alert-dismissible']"
         v-for="notification in notifications"
-        :variant="variant(notification)"
         :key="notification.id"
-        :show="notification.duration > 0 ? notification.duration : true"
-        dismissible
-        @dismissed="dismissNotification(notification)"
       >
         {{ notification.message }}
       </div>
     </transition-group>
-    <div class="alert" variant="danger" :show="apiServerBackUp === false">
+    <div class="alert alert-danger" v-if="apiServerDown && apiServerBackUp === false">
       <p>API Server is down.</p>
       <i class="fa fa-sync-alt fa-spin"></i> Checking status ...
     </div>
-    <div class="alert" variant="success" :show="apiServerBackUp" dismissible>
+    <div class="alert alert-success" v-if="apiServerBackUp">
       API Server is back up. Please try again.
     </div>
   </div>

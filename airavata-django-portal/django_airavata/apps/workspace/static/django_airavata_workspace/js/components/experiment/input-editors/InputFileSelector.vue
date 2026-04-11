@@ -7,8 +7,8 @@
     />
   </div>
   <div class="d-flex align-items-center" v-else>
-    <button class="btn" @click="isSelectingFile = true" class="input-file-option"
-      >Select file from storage</b-button
+    <button class="btn input-file-option" @click="isSelectingFile = true" 
+      >Select file from storage</button
     >
     <span class="text-muted mx-3">OR</span>
     <uppy

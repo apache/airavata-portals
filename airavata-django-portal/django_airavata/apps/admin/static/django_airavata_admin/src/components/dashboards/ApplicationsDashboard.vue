@@ -5,7 +5,7 @@
     title="Application Catalog"
     subtitle="Applications"
     new-item-button-text="New Application"
-    :new-button-disabled="!isGatewayAdmin"
+    :new-button-disabled="false"
   >
     <template slot="item-list" slot-scope="slotProps">
       <div class="row">

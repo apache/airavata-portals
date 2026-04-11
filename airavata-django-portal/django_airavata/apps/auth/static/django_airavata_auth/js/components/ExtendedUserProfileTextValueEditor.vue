@@ -1,22 +1,24 @@
 <template>
   <extended-user-profile-value-editor v-bind="$props">
-    <input class="form-control" v-model="value" :state="validateState($v.value)" />
-    <div class="invalid-feedback" :state="validateState($v.value)"
-      >This field is required.</b-form-invalid-feedback
+    <input :class="['form-control', validateState(v$.value) === false ? 'is-invalid' : '']" v-model="value" />
+    <div class="invalid-feedback" v-if="v$.value.$dirty && v$.value.$error"
+      >This field is required.</div
     >
   </extended-user-profile-value-editor>
 </template>
 
 <script>
 import { mapGetters, mapMutations } from "vuex";
-import { validationMixin } from "vuelidate";
-import { requiredIf } from "vuelidate/lib/validators";
+import { useVuelidate } from "@vuelidate/core";
+import { requiredIf } from "@vuelidate/validators";
 import { errors } from "django-airavata-common-ui";
 import ExtendedUserProfileValueEditor from "./ExtendedUserProfileValueEditor.vue";
 export default {
-  mixins: [validationMixin],
   components: { ExtendedUserProfileValueEditor },
   props: ["extendedUserProfileField"],
+  setup() {
+    return { v$: useVuelidate() };
+  },
   computed: {
     ...mapGetters("extendedUserProfile", ["getTextValue"]),
     value: {
@@ -25,11 +27,11 @@ export default {
       },
       set(value) {
         this.setTextValue({ value, id: this.extendedUserProfileField.id });
-        this.$v.$touch();
+        this.v$.$touch();
       },
     },
     valid() {
-      return !this.$v.$invalid;
+      return !this.v$.$invalid;
     },
     required() {
       return this.extendedUserProfileField.required;
@@ -38,7 +40,7 @@ export default {
   validations() {
     return {
       value: {
-        required: requiredIf("required"),
+        required: requiredIf(() => this.required),
       },
     };
   },
@@ -46,7 +48,7 @@ export default {
     ...mapMutations("extendedUserProfile", ["setTextValue"]),
     validateState: errors.vuelidateHelpers.validateState,
     touch() {
-      this.$v.$touch();
+      this.v$.$touch();
     },
   },
   watch: {
