@@ -131,25 +131,62 @@ class ProjectViewSet(APIBackedViewSet):
 
         class ProjectResultIterator(APIResultIterator):
             def get_results(self, limit: int = -1, offset: int = 0) -> list[Any]:
-                return view.request.airavata_client.research.get_user_projects(
+                protos = view.request.airavata_client.research.get_user_projects(
                     view.gateway_id, view.username, limit, offset
                 )
+                return [view._proto_to_compat(p) for p in protos]
 
         return ProjectResultIterator()
 
     def get_instance(self, lookup_value: str) -> Any:
-        return self.request.airavata_client.research.get_project(lookup_value)
+        return self._proto_to_compat(
+            self.request.airavata_client.research.get_project(lookup_value)
+        )
+
+    @staticmethod
+    def _proto_to_compat(proto_project: Any) -> Any:
+        from django_airavata.proto_compat import Project as ProjectCompat
+
+        return ProjectCompat(
+            projectID=proto_project.project_id,
+            owner=proto_project.owner,
+            gatewayId=proto_project.gateway_id,
+            name=proto_project.name,
+            description=proto_project.description,
+            creationTime=proto_project.creation_time if proto_project.creation_time else None,
+        )
 
     def perform_create(self, serializer: Any) -> None:
-        project = serializer.save(owner=self.username, gatewayId=self.gateway_id)
-        project_id = self.request.airavata_client.research.create_project(self.gateway_id, project)
-        project.projectID = project_id
+        from airavata_sdk.generated.org.apache.airavata.model.workspace.workspace_pb2 import (
+            Project as ProjectProto,
+        )
+
+        compat_obj = serializer.save(owner=self.username, gatewayId=self.gateway_id)
+        proto_obj = ProjectProto(
+            owner=getattr(compat_obj, "owner", ""),
+            gateway_id=getattr(compat_obj, "gatewayId", ""),
+            name=getattr(compat_obj, "name", ""),
+            description=getattr(compat_obj, "description", "") or "",
+        )
+        project_id = self.request.airavata_client.research.create_project(self.gateway_id, proto_obj)
+        compat_obj.projectID = project_id
         self._update_most_recent_project(project_id)
 
     def perform_update(self, serializer: Any) -> None:
-        project = serializer.save()
-        self.request.airavata_client.research.update_project(project.projectID, project)
-        self._update_most_recent_project(project.projectID)
+        from airavata_sdk.generated.org.apache.airavata.model.workspace.workspace_pb2 import (
+            Project as ProjectProto,
+        )
+
+        compat_obj = serializer.save()
+        proto_obj = ProjectProto(
+            project_id=getattr(compat_obj, "projectID", ""),
+            owner=getattr(compat_obj, "owner", ""),
+            gateway_id=getattr(compat_obj, "gatewayId", ""),
+            name=getattr(compat_obj, "name", ""),
+            description=getattr(compat_obj, "description", ""),
+        )
+        self.request.airavata_client.research.update_project(compat_obj.projectID, proto_obj)
+        self._update_most_recent_project(compat_obj.projectID)
 
     @action(detail=False)
     def list_all(self, request: Request) -> Response:
@@ -162,6 +199,30 @@ class ProjectViewSet(APIBackedViewSet):
         experiments = request.airavata_client.research.get_experiments_in_project(project_id, -1, 0)
         serializer = serializers.ExperimentSerializer(experiments, many=True, context={"request": request})
         return Response(serializer.data)
+
+    def perform_destroy(self, instance: Any) -> None:
+        project_id = instance.projectID
+
+        # Check for running experiments
+        experiments = self.request.airavata_client.research.get_experiments_in_project(project_id, -1, 0)
+        running_statuses = {"EXECUTING", "LAUNCHED", "SCHEDULED", "VALIDATED"}
+        running = [e for e in experiments if e.experiment_status and e.experiment_status.name in running_statuses]
+        if running:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError(
+                f"Cannot delete: {len(running)} experiment(s) still running. "
+                "Cancel or wait for them to complete first."
+            )
+
+        # Delete all experiments in the project
+        for experiment in experiments:
+            try:
+                self.request.airavata_client.research.delete_experiment(experiment.experiment_id)
+            except Exception:
+                log.warning("Failed to delete experiment %s during project cascade", experiment.experiment_id)
+
+        # Delete the project itself
+        self.request.airavata_client.research.delete_project(project_id)
 
     def _update_most_recent_project(self, project_id: str) -> None:
         prefs = helpers.WorkspacePreferencesHelper().get(self.request)
@@ -352,7 +413,9 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin, GenericAPIBackedViewSet):
         except Exception:
             log.exception(f"Failed to load compute resource for {compute_resource_id}", extra={"request": self.request})
             compute_resource = None
-        if self.request.airavata_client.sharing.user_has_access(experimentModel.projectId, ResourcePermissionType.READ):
+        if self.request.airavata_client.sharing.user_has_access(
+            experimentModel.projectId, self.username + "@" + self.gateway_id, "READ"
+        ):
             project = self.request.airavata_client.research.get_project(experimentModel.projectId)
         else:
             # User may not have access to project, only experiment
@@ -584,12 +647,89 @@ class ApplicationDeploymentViewSet(APIBackedViewSet):
         return Response(serializer.data)
 
 
-class ComputeResourceViewSet(mixins.RetrieveModelMixin, GenericAPIBackedViewSet):
+class ComputeResourceViewSet(APIBackedViewSet):
     serializer_class = serializers.ComputeResourceDescriptionSerializer
     lookup_field = "compute_resource_id"
 
+    def get_list(self) -> list[Any]:
+        from django_airavata.proto_compat import ComputeResourceDescription as ComputeCompat
+
+        all_names = self.request.airavata_client.compute.get_all_compute_resource_names()
+        results = []
+        for rid in all_names:
+            proto = self.request.airavata_client.compute.get_compute_resource(rid)
+            results.append(ComputeCompat(
+                computeResourceId=proto.compute_resource_id,
+                hostName=proto.host_name,
+                resourceDescription=proto.resource_description,
+                enabled=proto.enabled,
+                maxMemoryPerNode=proto.max_memory_per_node,
+                cpusPerNode=proto.cpus_per_node,
+                defaultNodeCount=proto.default_node_count,
+                defaultCPUCount=proto.default_cpu_count,
+                defaultWalltime=proto.default_walltime,
+                batchQueues=[],
+            ))
+        return results
+
     def get_instance(self, lookup_value: str, format: str | None = None) -> Any:
-        return self.request.airavata_client.compute.get_compute_resource(lookup_value)
+        from django_airavata.proto_compat import ComputeResourceDescription as ComputeCompat
+
+        proto = self.request.airavata_client.compute.get_compute_resource(lookup_value)
+        return ComputeCompat(
+            computeResourceId=proto.compute_resource_id,
+            hostName=proto.host_name,
+            resourceDescription=proto.resource_description,
+            enabled=proto.enabled,
+            maxMemoryPerNode=proto.max_memory_per_node,
+            cpusPerNode=proto.cpus_per_node,
+            defaultNodeCount=proto.default_node_count,
+            defaultCPUCount=proto.default_cpu_count,
+            defaultWalltime=proto.default_walltime,
+            batchQueues=[],
+        )
+
+    def perform_create(self, serializer: Any) -> None:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource.compute_resource_pb2 import (
+            ComputeResourceDescription as ComputeResourceDescriptionProto,
+        )
+
+        compat_obj = serializer.save()
+        proto_obj = ComputeResourceDescriptionProto(
+            host_name=getattr(compat_obj, "hostName", ""),
+            resource_description=getattr(compat_obj, "resourceDescription", ""),
+            enabled=getattr(compat_obj, "enabled", True),
+            max_memory_per_node=getattr(compat_obj, "maxMemoryPerNode", 0),
+            cpus_per_node=getattr(compat_obj, "cpusPerNode", 0),
+            default_node_count=getattr(compat_obj, "defaultNodeCount", 0),
+            default_cpu_count=getattr(compat_obj, "defaultCPUCount", 0),
+            default_walltime=getattr(compat_obj, "defaultWalltime", 0),
+        )
+        resource_id = self.request.airavata_client.compute.register_compute_resource(proto_obj)
+        compat_obj.computeResourceId = resource_id
+
+    def perform_update(self, serializer: Any) -> None:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource.compute_resource_pb2 import (
+            ComputeResourceDescription as ComputeResourceDescriptionProto,
+        )
+
+        compat_obj = serializer.save()
+        resource_id = getattr(compat_obj, "computeResourceId", "")
+        proto_obj = ComputeResourceDescriptionProto(
+            compute_resource_id=resource_id,
+            host_name=getattr(compat_obj, "hostName", ""),
+            resource_description=getattr(compat_obj, "resourceDescription", ""),
+            enabled=getattr(compat_obj, "enabled", True),
+            max_memory_per_node=getattr(compat_obj, "maxMemoryPerNode", 0),
+            cpus_per_node=getattr(compat_obj, "cpusPerNode", 0),
+            default_node_count=getattr(compat_obj, "defaultNodeCount", 0),
+            default_cpu_count=getattr(compat_obj, "defaultCPUCount", 0),
+            default_walltime=getattr(compat_obj, "defaultWalltime", 0),
+        )
+        self.request.airavata_client.compute.update_compute_resource(resource_id, proto_obj)
+
+    def perform_destroy(self, instance: Any) -> None:
+        self.request.airavata_client.compute.delete_compute_resource(instance.computeResourceId)
 
     @action(detail=False)
     def all_names(self, request: Request, format: str | None = None) -> Response:
@@ -648,7 +788,11 @@ class GlobusJobSubmissionView(APIView):
 
     def get(self, request: Request, format: str | None = None) -> Response:
         job_submission_id = request.query_params["id"]
-        job_submission = request.airavata_client.compute.get_globus_job_submission(job_submission_id)
+        try:
+            job_submission = request.airavata_client.compute.get_globus_job_submission(job_submission_id)
+        except Exception:
+            log.warning("get_globus_job_submission is not implemented on the server", exc_info=True)
+            return Response(None)
         from . import proto_utils
 
         return Response(proto_utils.create_serializer(GlobusJobSubmission, instance=job_submission).data)
@@ -681,7 +825,7 @@ class GridFtpDataMovementView(APIView):
 
     def get(self, request: Request, format: str | None = None) -> Response:
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.compute.get_grid_ftp_data_movement(data_movement_id)
+        data_movement = request.airavata_client.storage.get_grid_ftp_data_movement(data_movement_id)
         from . import proto_utils
 
         return Response(proto_utils.create_serializer(GridFTPDataMovement, instance=data_movement).data)
@@ -692,7 +836,7 @@ class ScpDataMovementView(APIView):
 
     def get(self, request: Request, format: str | None = None) -> Response:
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.compute.get_scp_data_movement(data_movement_id)
+        data_movement = request.airavata_client.storage.get_scp_data_movement(data_movement_id)
         from . import proto_utils
 
         return Response(proto_utils.create_serializer(SCPDataMovement, instance=data_movement).data)
@@ -703,7 +847,11 @@ class UnicoreDataMovementView(APIView):
 
     def get(self, request: Request, format: str | None = None) -> Response:
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.compute.get_unicore_data_movement(data_movement_id)
+        try:
+            data_movement = request.airavata_client.compute.get_unicore_data_movement(data_movement_id)
+        except Exception:
+            log.warning("get_unicore_data_movement is not implemented on the server", exc_info=True)
+            return Response(None)
         from . import proto_utils
 
         return Response(proto_utils.create_serializer(UnicoreDataMovement, instance=data_movement).data)
@@ -714,7 +862,7 @@ class LocalDataMovementView(APIView):
 
     def get(self, request: Request, format: str | None = None) -> Response:
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.compute.get_local_data_movement(data_movement_id)
+        data_movement = request.airavata_client.storage.get_local_data_movement(data_movement_id)
         from . import proto_utils
 
         return Response(proto_utils.create_serializer(LOCALDataMovement, instance=data_movement).data)
@@ -1230,22 +1378,22 @@ class CredentialSummaryViewSet(APIBackedViewSet):
     serializer_class = serializers.CredentialSummarySerializer
 
     def get_list(self) -> list[Any]:
-        ssh_creds = self.request.airavata_client.credential.get_all_credential_summaries(SummaryType.SSH)
-        pwd_creds = self.request.airavata_client.credential.get_all_credential_summaries(SummaryType.PASSWD)
+        ssh_creds = self.request.airavata_client.credential.get_all_credential_summaries(self.gateway_id, SummaryType.SSH)
+        pwd_creds = self.request.airavata_client.credential.get_all_credential_summaries(self.gateway_id, SummaryType.PASSWD)
         return ssh_creds + pwd_creds
 
     def get_instance(self, lookup_value: str) -> Any:
-        return self.request.airavata_client.credential.get_credential_summary(lookup_value)
+        return self.request.airavata_client.credential.get_credential_summary(lookup_value, self.gateway_id)
 
     @action(detail=False)
     def ssh(self, request: Request) -> Response:
-        summaries = self.request.airavata_client.credential.get_all_credential_summaries(SummaryType.SSH)
+        summaries = self.request.airavata_client.credential.get_all_credential_summaries(self.gateway_id, SummaryType.SSH)
         serializer = self.get_serializer(summaries, many=True)
         return Response(serializer.data)
 
     @action(detail=False)
     def password(self, request: Request) -> Response:
-        summaries = self.request.airavata_client.credential.get_all_credential_summaries(SummaryType.PASSWD)
+        summaries = self.request.airavata_client.credential.get_all_credential_summaries(self.gateway_id, SummaryType.PASSWD)
         serializer = self.get_serializer(summaries, many=True)
         return Response(serializer.data)
 
@@ -1254,8 +1402,10 @@ class CredentialSummaryViewSet(APIBackedViewSet):
         if "description" not in request.data:
             raise ParseError("'description' is required in request")
         description = request.data.get("description")
-        token_id = self.request.airavata_client.credential.generate_and_register_ssh_keys(description)
-        credential_summary = self.request.airavata_client.credential.get_credential_summary(token_id)
+        token_id = self.request.airavata_client.credential.generate_and_register_ssh_keys(
+            self.gateway_id, self.username, description
+        )
+        credential_summary = self.request.airavata_client.credential.get_credential_summary(token_id, self.gateway_id)
         serializer = self.get_serializer(credential_summary)
         return Response(serializer.data)
 
@@ -1266,16 +1416,27 @@ class CredentialSummaryViewSet(APIBackedViewSet):
         username = request.data.get("username")
         password = request.data.get("password")
         description = request.data.get("description")
-        token_id = self.request.airavata_client.credential.register_pwd_credential(username, password, description)
-        credential_summary = self.request.airavata_client.credential.get_credential_summary(token_id)
+        from airavata_sdk.generated.org.apache.airavata.model.credential.store.credential_store_pb2 import (
+            PasswordCredential,
+        )
+
+        pwd_cred = PasswordCredential(
+            portal_user_name=username,
+            login_user_name=username,
+            password=password,
+            description=description,
+            gateway_id=self.gateway_id,
+        )
+        token_id = self.request.airavata_client.credential.register_pwd_credential(self.gateway_id, pwd_cred)
+        credential_summary = self.request.airavata_client.credential.get_credential_summary(token_id, self.gateway_id)
         serializer = self.get_serializer(credential_summary)
         return Response(serializer.data)
 
     def perform_destroy(self, instance: Any) -> None:
         if instance.type == SummaryType.SSH:
-            self.request.airavata_client.credential.delete_ssh_pub_key(instance.token)
+            self.request.airavata_client.credential.delete_ssh_pub_key(instance.token, self.gateway_id)
         elif instance.type == SummaryType.PASSWD:
-            self.request.airavata_client.credential.delete_pwd_credential(instance.token)
+            self.request.airavata_client.credential.delete_pwd_credential(instance.token, self.gateway_id)
 
 
 class CurrentGatewayResourceProfile(APIView):
@@ -1319,12 +1480,54 @@ class ExperimentArchiveView(APIView):
         return Response(result, status=status.HTTP_200_OK)
 
 
-class StorageResourceViewSet(mixins.RetrieveModelMixin, GenericAPIBackedViewSet):
+class StorageResourceViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, GenericAPIBackedViewSet):
     serializer_class = serializers.StorageResourceSerializer
     lookup_field = "storage_resource_id"
 
     def get_instance(self, lookup_value: str, format: str | None = None) -> Any:
-        return self.request.airavata_client.storage.get_storage_resource(lookup_value)
+        from django_airavata.proto_compat import StorageResourceDescription as StorageCompat
+
+        proto = self.request.airavata_client.storage.get_storage_resource(lookup_value)
+        return StorageCompat(
+            storageResourceId=proto.storage_resource_id,
+            hostName=proto.host_name,
+            storageResourceDescription=proto.storage_resource_description,
+            enabled=proto.enabled,
+            creationTime=proto.creation_time if proto.creation_time else None,
+            updateTime=proto.update_time if proto.update_time else None,
+        )
+
+    def perform_create(self, serializer):
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.storageresource.storage_resource_pb2 import (
+            StorageResourceDescription as StorageResourceDescriptionProto,
+        )
+
+        compat_obj = serializer.save()
+        proto_obj = StorageResourceDescriptionProto(
+            host_name=getattr(compat_obj, "hostName", ""),
+            storage_resource_description=getattr(compat_obj, "storageResourceDescription", ""),
+            enabled=getattr(compat_obj, "enabled", True),
+        )
+        resource_id = self.request.airavata_client.storage.register_storage_resource(proto_obj)
+        compat_obj.storageResourceId = resource_id
+
+    def perform_update(self, serializer):
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.storageresource.storage_resource_pb2 import (
+            StorageResourceDescription as StorageResourceDescriptionProto,
+        )
+
+        compat_obj = serializer.save()
+        resource_id = getattr(compat_obj, "storageResourceId", "")
+        proto_obj = StorageResourceDescriptionProto(
+            storage_resource_id=resource_id,
+            host_name=getattr(compat_obj, "hostName", ""),
+            storage_resource_description=getattr(compat_obj, "storageResourceDescription", ""),
+            enabled=getattr(compat_obj, "enabled", True),
+        )
+        self.request.airavata_client.storage.update_storage_resource(resource_id, proto_obj)
+
+    def perform_destroy(self, instance):
+        self.request.airavata_client.storage.delete_storage_resource(instance.storageResourceId)
 
     @action(detail=False)
     def all_names(self, request: Request, format: str | None = None) -> Response:
