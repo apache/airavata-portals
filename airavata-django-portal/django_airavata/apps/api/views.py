@@ -21,9 +21,14 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import viewsets
 
+from airavata_sdk.generated.org.apache.airavata.model.experiment.experiment_pb2 import (
+    ExperimentModel as ExperimentModelProto,
+)
 from django_airavata.apps.admin.models import UserDataArchiveEntry
 from django_airavata.apps.api import user_storage
+from django_airavata.apps.api.proto_helpers import proto_to_dict, proto_list_to_dicts, dict_to_proto
 from django_airavata.apps.api.view_utils import (
     APIBackedViewSet,
     APIResultIterator,
@@ -40,9 +45,6 @@ from django_airavata.proto_compat import (
     CloudJobSubmission,
     ComputeResourcePolicy,
     ComputeResourceReservation,
-    DataType,
-    ExperimentModel,
-    ExperimentSearchFields,
     GlobusJobSubmission,
     GridFTPDataMovement,
     GroupAccountSSHProvisionerConfig,
@@ -120,93 +122,66 @@ class GroupViewSet(APIBackedViewSet):
             )
 
 
-class ProjectViewSet(APIBackedViewSet):
-    serializer_class = serializers.ProjectSerializer
+class ProjectViewSet(viewsets.ViewSet):
     lookup_field = "project_id"
-    pagination_class = APIResultPagination
-    pagination_viewname = "django_airavata_api:project-list"
 
-    def get_list(self) -> APIResultIterator:
-        view = self
-
-        class ProjectResultIterator(APIResultIterator):
-            def get_results(self, limit: int = -1, offset: int = 0) -> list[Any]:
-                protos = view.request.airavata_client.research.get_user_projects(
-                    view.gateway_id, view.username, limit, offset
-                )
-                return [view._proto_to_compat(p) for p in protos]
-
-        return ProjectResultIterator()
-
-    def get_instance(self, lookup_value: str) -> Any:
-        return self._proto_to_compat(
-            self.request.airavata_client.research.get_project(lookup_value)
+    def list(self, request: Request) -> Response:
+        projects = request.airavata_client.research.get_user_projects(
+            settings.GATEWAY_ID, request.user.username, -1, 0
         )
+        return Response(proto_list_to_dicts(projects))
 
-    @staticmethod
-    def _proto_to_compat(proto_project: Any) -> Any:
-        from django_airavata.proto_compat import Project as ProjectCompat
+    def retrieve(self, request: Request, project_id: str | None = None) -> Response:
+        project = request.airavata_client.research.get_project(project_id)
+        return Response(proto_to_dict(project))
 
-        return ProjectCompat(
-            projectID=proto_project.project_id,
-            owner=proto_project.owner,
-            gatewayId=proto_project.gateway_id,
-            name=proto_project.name,
-            description=proto_project.description,
-            creationTime=proto_project.creation_time if proto_project.creation_time else None,
-        )
-
-    def perform_create(self, serializer: Any) -> None:
+    def create(self, request: Request) -> Response:
         from airavata_sdk.generated.org.apache.airavata.model.workspace.workspace_pb2 import (
             Project as ProjectProto,
         )
 
-        compat_obj = serializer.save(owner=self.username, gatewayId=self.gateway_id)
-        proto_obj = ProjectProto(
-            owner=getattr(compat_obj, "owner", ""),
-            gateway_id=getattr(compat_obj, "gatewayId", ""),
-            name=getattr(compat_obj, "name", ""),
-            description=getattr(compat_obj, "description", "") or "",
+        proto = ProjectProto(
+            owner=request.user.username,
+            gateway_id=settings.GATEWAY_ID,
+            name=request.data.get("name", ""),
+            description=request.data.get("description", "") or "",
         )
-        project_id = self.request.airavata_client.research.create_project(self.gateway_id, proto_obj)
-        compat_obj.projectID = project_id
-        self._update_most_recent_project(project_id)
+        project_id = request.airavata_client.research.create_project(settings.GATEWAY_ID, proto)
+        proto.project_id = project_id
+        self._update_most_recent_project(request, project_id)
+        return Response(proto_to_dict(proto), status=201)
 
-    def perform_update(self, serializer: Any) -> None:
+    def update(self, request: Request, project_id: str | None = None) -> Response:
         from airavata_sdk.generated.org.apache.airavata.model.workspace.workspace_pb2 import (
             Project as ProjectProto,
         )
 
-        compat_obj = serializer.save()
-        proto_obj = ProjectProto(
-            project_id=getattr(compat_obj, "projectID", ""),
-            owner=getattr(compat_obj, "owner", ""),
-            gateway_id=getattr(compat_obj, "gatewayId", ""),
-            name=getattr(compat_obj, "name", ""),
-            description=getattr(compat_obj, "description", ""),
+        proto = ProjectProto(
+            project_id=project_id,
+            owner=request.data.get("owner", request.user.username),
+            gateway_id=request.data.get("gateway_id", settings.GATEWAY_ID),
+            name=request.data.get("name", ""),
+            description=request.data.get("description", ""),
         )
-        self.request.airavata_client.research.update_project(compat_obj.projectID, proto_obj)
-        self._update_most_recent_project(compat_obj.projectID)
+        request.airavata_client.research.update_project(project_id, proto)
+        self._update_most_recent_project(request, project_id)
+        return Response(proto_to_dict(proto))
 
-    @action(detail=False)
-    def list_all(self, request: Request) -> Response:
-        projects = self.request.airavata_client.research.get_user_projects(self.gateway_id, self.username, -1, 0)
-        serializer = serializers.ProjectSerializer(projects, many=True, context={"request": request})
-        return Response(serializer.data)
-
-    @action(detail=True)
-    def experiments(self, request: Request, project_id: str | None = None) -> Response:
-        experiments = request.airavata_client.research.get_experiments_in_project(project_id, -1, 0)
-        serializer = serializers.ExperimentSerializer(experiments, many=True, context={"request": request})
-        return Response(serializer.data)
-
-    def perform_destroy(self, instance: Any) -> None:
-        project_id = instance.projectID
+    def destroy(self, request: Request, project_id: str | None = None) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.status.status_pb2 import ExperimentState
 
         # Check for running experiments
-        experiments = self.request.airavata_client.research.get_experiments_in_project(project_id, -1, 0)
-        running_statuses = {"EXECUTING", "LAUNCHED", "SCHEDULED", "VALIDATED"}
-        running = [e for e in experiments if e.experiment_status and e.experiment_status.name in running_statuses]
+        experiments = request.airavata_client.research.get_experiments_in_project(project_id, -1, 0)
+        running_states = {
+            ExperimentState.EXPERIMENT_STATE_EXECUTING,
+            ExperimentState.EXPERIMENT_STATE_LAUNCHED,
+            ExperimentState.EXPERIMENT_STATE_SCHEDULED,
+            ExperimentState.EXPERIMENT_STATE_VALIDATED,
+        }
+        running = [
+            e for e in experiments
+            if e.experiment_status and e.experiment_status[-1].state in running_states
+        ]
         if running:
             from rest_framework.exceptions import ValidationError
             raise ValidationError(
@@ -217,53 +192,80 @@ class ProjectViewSet(APIBackedViewSet):
         # Delete all experiments in the project
         for experiment in experiments:
             try:
-                self.request.airavata_client.research.delete_experiment(experiment.experiment_id)
+                request.airavata_client.research.delete_experiment(experiment.experiment_id)
             except Exception:
                 log.warning("Failed to delete experiment %s during project cascade", experiment.experiment_id)
 
         # Delete the project itself
-        self.request.airavata_client.research.delete_project(project_id)
+        request.airavata_client.research.delete_project(project_id)
+        return Response(status=204)
 
-    def _update_most_recent_project(self, project_id: str) -> None:
-        prefs = helpers.WorkspacePreferencesHelper().get(self.request)
+    @action(detail=False)
+    def list_all(self, request: Request) -> Response:
+        projects = request.airavata_client.research.get_user_projects(
+            settings.GATEWAY_ID, request.user.username, -1, 0
+        )
+        return Response(proto_list_to_dicts(projects))
+
+    @action(detail=True)
+    def experiments(self, request: Request, project_id: str | None = None) -> Response:
+        experiments = request.airavata_client.research.get_experiments_in_project(project_id, -1, 0)
+        return Response(proto_list_to_dicts(experiments))
+
+    @staticmethod
+    def _update_most_recent_project(request: Request, project_id: str) -> None:
+        prefs = helpers.WorkspacePreferencesHelper().get(request)
         prefs.most_recent_project_id = project_id
         prefs.save()
 
 
-class ExperimentViewSet(
-    mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, GenericAPIBackedViewSet
-):
-    serializer_class = serializers.ExperimentSerializer
+class ExperimentViewSet(viewsets.ViewSet):
     lookup_field = "experiment_id"
 
-    def get_instance(self, lookup_value: str) -> Any:
-        return self.request.airavata_client.research.get_experiment(lookup_value)
+    def retrieve(self, request: Request, experiment_id: str | None = None) -> Response:
+        experiment = request.airavata_client.research.get_experiment(experiment_id)
+        return Response(proto_to_dict(experiment))
 
-    def perform_create(self, serializer: Any) -> None:
-        experiment = serializer.save(gatewayId=self.gateway_id, userName=self.username)
-        experiment_id = self.request.airavata_client.research.create_experiment(self.gateway_id, experiment)
-        self._update_workspace_preferences(
-            project_id=experiment.projectId,
-            group_resource_profile_id=experiment.userConfigurationData.groupResourceProfileId,
-            compute_resource_id=experiment.userConfigurationData.computationalResourceScheduling.resourceHostId,
+    def create(self, request: Request) -> Response:
+        experiment = dict_to_proto(
+            request.data,
+            ExperimentModelProto,
         )
-        experiment.experimentId = experiment_id
+        experiment.gateway_id = settings.GATEWAY_ID
+        experiment.user_name = request.user.username
+        experiment_id = request.airavata_client.research.create_experiment(settings.GATEWAY_ID, experiment)
+        self._update_workspace_preferences(
+            request,
+            project_id=experiment.project_id,
+            group_resource_profile_id=experiment.user_configuration_data.group_resource_profile_id,
+            compute_resource_id=experiment.user_configuration_data.computational_resource_scheduling.resource_host_id,
+        )
+        experiment.experiment_id = experiment_id
+        return Response(proto_to_dict(experiment), status=201)
 
-    def perform_update(self, serializer: Any) -> None:
-        experiment = serializer.save(gatewayId=self.gateway_id, userName=self.username)
-        self.request.airavata_client.research.update_experiment(experiment.experimentId, experiment)
-        self._update_workspace_preferences(
-            project_id=experiment.projectId,
-            group_resource_profile_id=experiment.userConfigurationData.groupResourceProfileId,
-            compute_resource_id=experiment.userConfigurationData.computationalResourceScheduling.resourceHostId,
+    def update(self, request: Request, experiment_id: str | None = None) -> Response:
+        experiment = dict_to_proto(
+            request.data,
+            ExperimentModelProto,
         )
+        experiment.gateway_id = settings.GATEWAY_ID
+        experiment.user_name = request.user.username
+        request.airavata_client.research.update_experiment(experiment_id, experiment)
+        self._update_workspace_preferences(
+            request,
+            project_id=experiment.project_id,
+            group_resource_profile_id=experiment.user_configuration_data.group_resource_profile_id,
+            compute_resource_id=experiment.user_configuration_data.computational_resource_scheduling.resource_host_id,
+        )
+        return Response(proto_to_dict(experiment))
 
     @action(methods=["post"], detail=True)
     def launch(self, request: Request, experiment_id: str | None = None) -> Response:
         try:
             experiment = request.airavata_client.research.get_experiment(experiment_id)
-            if experiment.enableEmailNotification:
-                experiment.emailAddresses = [request.user.email]
+            if experiment.enable_email_notification:
+                del experiment.email_addresses[:]
+                experiment.email_addresses.append(request.user.email)
             request.airavata_client.research.update_experiment(experiment_id, experiment)
             request.airavata_client.research.launch_experiment(experiment_id, settings.GATEWAY_ID)
             return Response({"success": True})
@@ -274,20 +276,18 @@ class ExperimentViewSet(
     @action(methods=["get"], detail=True)
     def jobs(self, request: Request, experiment_id: str | None = None) -> Response:
         jobs = request.airavata_client.research.get_job_details(experiment_id)
-        serializer = serializers.JobSerializer(jobs, many=True, context={"request": request})
-        return Response(serializer.data)
+        return Response(proto_list_to_dicts(jobs))
 
     @action(methods=["post"], detail=True)
     def clone(self, request: Request, experiment_id: str | None = None) -> Response:
         cloned_experiment_id = request.airavata_client.research.clone_experiment(experiment_id)
         cloned_experiment = request.airavata_client.research.get_experiment(cloned_experiment_id)
-        serializer = self.serializer_class(cloned_experiment, context={"request": request})
-        return Response(serializer.data)
+        return Response(proto_to_dict(cloned_experiment))
 
     @action(methods=["post"], detail=True)
     def cancel(self, request: Request, experiment_id: str | None = None) -> Response:
         try:
-            request.airavata_client.research.terminate_experiment(experiment_id, self.gateway_id)
+            request.airavata_client.research.terminate_experiment(experiment_id, settings.GATEWAY_ID)
             return Response({"success": True})
         except Exception as e:
             log.exception("Cancel action has thrown the following error", extra={"request": request})
@@ -304,172 +304,241 @@ class ExperimentViewSet(
             log.exception("fetchIntermediateOutputs failed with the following error", extra={"request": request})
             raise e
 
+    @staticmethod
     def _update_workspace_preferences(
-        self, project_id: str, group_resource_profile_id: str, compute_resource_id: str
+        request: Request, project_id: str, group_resource_profile_id: str, compute_resource_id: str
     ) -> None:
-        prefs = helpers.WorkspacePreferencesHelper().get(self.request)
+        prefs = helpers.WorkspacePreferencesHelper().get(request)
         prefs.most_recent_project_id = project_id
         prefs.most_recent_group_resource_profile_id = group_resource_profile_id
         prefs.most_recent_compute_resource_id = compute_resource_id
         prefs.save()
 
 
-class ExperimentSearchViewSet(mixins.ListModelMixin, GenericAPIBackedViewSet):
-    serializer_class = serializers.ExperimentSummarySerializer
-    pagination_class = APIResultPagination
-    pagination_viewname = "django_airavata_api:experiment-search-list"
+class ExperimentSearchViewSet(viewsets.ViewSet):
+    def list(self, request: Request) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.experiment.experiment_pb2 import (
+            ExperimentSearchFields as ProtoSearchFields,
+        )
 
-    def get_list(self) -> APIResultIterator:
-        view = self
+        filters: dict[int, str] = {}
+        for key, value in request.query_params.items():
+            if key in ProtoSearchFields.keys():
+                filters[ProtoSearchFields.Value(key)] = value
 
-        filters: dict[Any, str] = {}
-        for filter_item in self.request.query_params.items():
-            if filter_item[0] in ExperimentSearchFields.__members__:
-                # Lookup enum value for this ExperimentSearchFields
-                search_field = ExperimentSearchFields[filter_item[0]]
-                filters[search_field] = filter_item[1]
-
-        class ExperimentSearchResultIterator(APIResultIterator):
-            def get_results(self, limit: int = -1, offset: int = 0) -> list[Any]:
-                return view.request.airavata_client.research.search_experiments(
-                    view.gateway_id, view.username, filters, limit, offset
-                )
-
-        # Preserve query parameters when moving to next and previous links
-        return ExperimentSearchResultIterator(query_params=self.request.query_params.copy())
-
-    def get_instance(self, lookup_value: str) -> Any:
-        raise NotImplementedError()
+        limit = int(request.query_params.get("limit", "-1"))
+        offset = int(request.query_params.get("offset", "0"))
+        results = request.airavata_client.research.search_experiments(
+            settings.GATEWAY_ID, request.user.username, filters, limit, offset
+        )
+        return Response(proto_list_to_dicts(results))
 
 
-class FullExperimentViewSet(mixins.RetrieveModelMixin, GenericAPIBackedViewSet):
-    serializer_class = serializers.FullExperimentSerializer
+class FullExperimentViewSet(viewsets.ViewSet):
     lookup_field = "experiment_id"
 
-    def get_instance(self, lookup_value: str) -> serializers.FullExperiment:
-        """Get FullExperiment instance with resolved references."""
-        # TODO: move loading experiment and references to airavata_sdk?
-        experimentModel = self.request.airavata_client.research.get_experiment(lookup_value)
-        outputDataProducts = [
-            self.request.airavata_client.research.get_data_product(output.value)
-            for output in experimentModel.experimentOutputs
+    def retrieve(self, request: Request, experiment_id: str | None = None) -> Response:
+        """Retrieve full experiment with resolved references."""
+        from airavata_sdk.generated.org.apache.airavata.model.application.io.application_io_pb2 import (
+            DataType as ProtoDataType,
+        )
+
+        experiment = request.airavata_client.research.get_experiment(experiment_id)
+
+        # Collect output data products
+        output_data_products = [
+            request.airavata_client.research.get_data_product(output.value)
+            for output in experiment.experiment_outputs
             if (
                 output.value
                 and output.value.startswith("airavata-dp")
-                and output.type in (DataType.URI, DataType.STDOUT, DataType.STDERR)
+                and output.type in (ProtoDataType.URI, ProtoDataType.STDOUT, ProtoDataType.STDERR)
             )
         ]
-        outputDataProducts += [
-            self.request.airavata_client.research.get_data_product(dp)
-            for output in experimentModel.experimentOutputs
-            if (output.value and output.type == DataType.URI_COLLECTION)
+        output_data_products += [
+            request.airavata_client.research.get_data_product(dp)
+            for output in experiment.experiment_outputs
+            if (output.value and output.type == ProtoDataType.URI_COLLECTION)
             for dp in output.value.split(",")
             if output.value.startswith("airavata-dp")
         ]
-        appInterfaceId = experimentModel.executionId
+
+        # Load application interface
+        app_interface_id = experiment.execution_id
         try:
-            applicationInterface = self.request.airavata_client.research.get_application_interface(appInterfaceId)
+            application_interface = request.airavata_client.research.get_application_interface(app_interface_id)
         except Exception as e:
             log.warning(f"Failed to load app interface: {e}")
-            applicationInterface = None
-        exp_output_views = output_views.get_output_views(self.request, experimentModel, applicationInterface)
-        inputDataProducts = [
-            self.request.airavata_client.research.get_data_product(inp.value)
-            for inp in experimentModel.experimentInputs
+            application_interface = None
+
+        # Output views — output_views module still expects compat-style attribute names
+        # (experimentOutputs, applicationModules, etc.) so we create a thin adapter
+        exp_output_views = self._get_output_views(request, experiment, application_interface)
+
+        # Collect input data products
+        input_data_products = [
+            request.airavata_client.research.get_data_product(inp.value)
+            for inp in experiment.experiment_inputs
             if (
                 inp.value
                 and inp.value.startswith("airavata-dp")
-                and inp.type in (DataType.URI, DataType.STDOUT, DataType.STDERR)
+                and inp.type in (ProtoDataType.URI, ProtoDataType.STDOUT, ProtoDataType.STDERR)
             )
         ]
-        inputDataProducts += [
-            self.request.airavata_client.research.get_data_product(dp)
-            for inp in experimentModel.experimentInputs
-            if (inp.value and inp.type == DataType.URI_COLLECTION)
+        input_data_products += [
+            request.airavata_client.research.get_data_product(dp)
+            for inp in experiment.experiment_inputs
+            if (inp.value and inp.type == ProtoDataType.URI_COLLECTION)
             for dp in inp.value.split(",")
             if inp.value.startswith("airavata-dp")
         ]
-        applicationModule = None
+
+        # Load application module
+        application_module = None
         try:
-            if applicationInterface is not None:
-                appModuleId = applicationInterface.applicationModules[0]
-                applicationModule = self.request.airavata_client.research.get_application_module(appModuleId)
+            if application_interface is not None:
+                app_module_id = application_interface.application_modules[0]
+                application_module = request.airavata_client.research.get_application_module(app_module_id)
             else:
                 log.warning("Cannot load application model since app interface failed to load")
         except Exception:
-            log.exception("Failed to load app interface/module", extra={"request": self.request})
+            log.exception("Failed to load app interface/module", extra={"request": request})
 
+        # Load compute resource
         compute_resource_id = None
-        user_conf = experimentModel.userConfigurationData
-        if user_conf and user_conf.computationalResourceScheduling:
-            comp_res_sched = user_conf.computationalResourceScheduling
-            compute_resource_id = comp_res_sched.resourceHostId
+        user_conf = experiment.user_configuration_data
+        if user_conf and user_conf.computational_resource_scheduling:
+            compute_resource_id = user_conf.computational_resource_scheduling.resource_host_id
         try:
             compute_resource = (
-                self.request.airavata_client.compute.get_compute_resource(compute_resource_id)
+                request.airavata_client.compute.get_compute_resource(compute_resource_id)
                 if compute_resource_id
                 else None
             )
         except Exception:
-            log.exception(f"Failed to load compute resource for {compute_resource_id}", extra={"request": self.request})
+            log.exception(f"Failed to load compute resource for {compute_resource_id}", extra={"request": request})
             compute_resource = None
-        if self.request.airavata_client.sharing.user_has_access(
-            experimentModel.projectId, self.username + "@" + self.gateway_id, "READ"
+
+        # Load project (user may only have access to experiment, not project)
+        username = request.user.username
+        gateway_id = settings.GATEWAY_ID
+        if request.airavata_client.sharing.user_has_access(
+            experiment.project_id, username + "@" + gateway_id, "READ"
         ):
-            project = self.request.airavata_client.research.get_project(experimentModel.projectId)
+            project = request.airavata_client.research.get_project(experiment.project_id)
         else:
-            # User may not have access to project, only experiment
             project = None
-        job_details = self.request.airavata_client.research.get_job_details(lookup_value)
-        full_experiment = serializers.FullExperiment(
-            experimentModel,
-            project=project,
-            outputDataProducts=outputDataProducts,
-            inputDataProducts=inputDataProducts,
-            applicationModule=applicationModule,
-            computeResource=compute_resource,
-            jobDetails=job_details,
-            outputViews=exp_output_views,
+
+        # Load job details
+        job_details = request.airavata_client.research.get_job_details(experiment_id)
+
+        # Assemble response dict
+        result = {
+            "experiment_id": experiment_id,
+            "experiment": proto_to_dict(experiment),
+            "project": proto_to_dict(project),
+            "output_data_products": proto_list_to_dicts(output_data_products),
+            "input_data_products": proto_list_to_dicts(input_data_products),
+            "application_module": proto_to_dict(application_module),
+            "compute_resource": proto_to_dict(compute_resource),
+            "job_details": proto_list_to_dicts(job_details),
+            "output_views": exp_output_views,
+        }
+        return Response(result)
+
+    @staticmethod
+    def _get_output_views(request: Request, experiment: Any, application_interface: Any) -> dict[str, list[dict[str, Any]]]:
+        """Adapter: output_views module expects compat-style camelCase attributes.
+
+        Create a thin namespace that maps experimentOutputs -> experiment_outputs
+        so the existing output_views.get_output_views function works with proto objects.
+        """
+        from types import SimpleNamespace
+
+        # Wrap each output so output.type uses compat DataType values
+        from django_airavata.proto_compat import DataType as CompatDataType
+        from airavata_sdk.generated.org.apache.airavata.model.application.io.application_io_pb2 import (
+            DataType as ProtoDataType,
         )
-        return full_experiment
+
+        # Build a proto->compat DataType mapping
+        _type_map = {}
+        for compat_name in CompatDataType.__members__:
+            if hasattr(ProtoDataType, compat_name):
+                _type_map[ProtoDataType.Value(compat_name)] = CompatDataType[compat_name]
+
+        wrapped_outputs = []
+        for output in experiment.experiment_outputs:
+            ns = SimpleNamespace(
+                name=output.name,
+                value=output.value,
+                type=_type_map.get(output.type, output.type),
+                metaData=output.meta_data,
+            )
+            wrapped_outputs.append(ns)
+
+        # Wrap experiment to expose experimentOutputs
+        exp_ns = SimpleNamespace(experimentOutputs=wrapped_outputs)
+
+        # Wrap application interface to expose applicationOutputs / applicationModules
+        app_iface_ns = None
+        if application_interface is not None:
+            wrapped_app_outputs = [
+                SimpleNamespace(name=o.name, metaData=o.meta_data, value=o.value, type=o.type)
+                for o in application_interface.application_outputs
+            ]
+            app_iface_ns = SimpleNamespace(
+                applicationOutputs=wrapped_app_outputs,
+                applicationModules=list(application_interface.application_modules),
+            )
+
+        return output_views.get_output_views(request, exp_ns, app_iface_ns)
 
 
-class ApplicationModuleViewSet(APIBackedViewSet):
-    serializer_class = serializers.ApplicationModuleSerializer
+class ApplicationModuleViewSet(viewsets.ViewSet):
     lookup_field = "app_module_id"
 
-    def get_list(self) -> list[Any]:
-        return self.request.airavata_client.research.get_accessible_app_modules(self.gateway_id)
+    def list(self, request: Request) -> Response:
+        modules = request.airavata_client.research.get_accessible_app_modules(settings.GATEWAY_ID)
+        return Response(proto_list_to_dicts(modules))
 
-    def get_instance(self, lookup_value: str) -> Any:
-        return self.request.airavata_client.research.get_application_module(lookup_value)
+    def retrieve(self, request: Request, app_module_id: str | None = None) -> Response:
+        module = request.airavata_client.research.get_application_module(app_module_id)
+        return Response(proto_to_dict(module))
 
-    def perform_create(self, serializer: Any) -> None:
-        app_module = serializer.save()
-        app_module_id = self.request.airavata_client.research.register_application_module(self.gateway_id, app_module)
-        app_module.appModuleId = app_module_id
+    def create(self, request: Request) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.appdeployment.app_deployment_pb2 import (
+            ApplicationModule as AppModuleProto,
+        )
 
-    def perform_update(self, serializer: Any) -> None:
-        app_module = serializer.save()
-        self.request.airavata_client.research.update_application_module(app_module.appModuleId, app_module)
+        proto = dict_to_proto(request.data, AppModuleProto)
+        app_module_id = request.airavata_client.research.register_application_module(settings.GATEWAY_ID, proto)
+        proto.app_module_id = app_module_id
+        return Response(proto_to_dict(proto), status=201)
 
-    def perform_destroy(self, instance: Any) -> None:
-        self.request.airavata_client.research.delete_application_module(instance.appModuleId)
+    def update(self, request: Request, app_module_id: str | None = None) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.appdeployment.app_deployment_pb2 import (
+            ApplicationModule as AppModuleProto,
+        )
+
+        proto = dict_to_proto(request.data, AppModuleProto)
+        proto.app_module_id = app_module_id
+        request.airavata_client.research.update_application_module(app_module_id, proto)
+        return Response(proto_to_dict(proto))
+
+    def destroy(self, request: Request, app_module_id: str | None = None) -> Response:
+        request.airavata_client.research.delete_application_module(app_module_id)
+        return Response(status=204)
 
     @action(detail=True)
     def application_interface(self, request: Request, app_module_id: str) -> Response:
-        all_app_interfaces = request.airavata_client.research.get_all_application_interfaces(self.gateway_id)
-        app_interfaces = []
-        for app_interface in all_app_interfaces:
-            if not app_interface.applicationModules:
-                continue
-            if app_module_id in app_interface.applicationModules:
-                app_interfaces.append(app_interface)
+        all_app_interfaces = request.airavata_client.research.get_all_application_interfaces(settings.GATEWAY_ID)
+        app_interfaces = [
+            ai for ai in all_app_interfaces
+            if ai.application_modules and app_module_id in ai.application_modules
+        ]
         if len(app_interfaces) == 1:
-            serializer = serializers.ApplicationInterfaceDescriptionSerializer(
-                app_interfaces[0], context={"request": request}
-            )
-            return Response(serializer.data)
+            return Response(proto_to_dict(app_interfaces[0]))
         elif len(app_interfaces) > 1:
             log.error(
                 f"More than one application interface found for module {app_module_id}: {app_interfaces}",
@@ -481,12 +550,9 @@ class ApplicationModuleViewSet(APIBackedViewSet):
 
     @action(detail=True)
     def application_deployments(self, request: Request, app_module_id: str) -> Response:
-        all_deployments = self.request.airavata_client.research.get_all_application_deployments(self.gateway_id)
-        app_deployments = [dep for dep in all_deployments if dep.appModuleId == app_module_id]
-        serializer = serializers.ApplicationDeploymentDescriptionSerializer(
-            app_deployments, many=True, context={"request": request}
-        )
-        return Response(serializer.data)
+        all_deployments = request.airavata_client.research.get_all_application_deployments(settings.GATEWAY_ID)
+        app_deployments = [dep for dep in all_deployments if dep.app_module_id == app_module_id]
+        return Response(proto_list_to_dicts(app_deployments))
 
     @action(methods=["post"], detail=True)
     def favorite(self, request: Request, app_module_id: str) -> HttpResponse:
@@ -500,7 +566,6 @@ class ApplicationModuleViewSet(APIBackedViewSet):
             workspace_preferences.applicationpreferences_set.create(
                 username=request.user.username, application_id=app_module_id, favorite=True
             )
-
         return HttpResponse(status=204)
 
     @action(methods=["post"], detail=True)
@@ -515,58 +580,68 @@ class ApplicationModuleViewSet(APIBackedViewSet):
             workspace_preferences.applicationpreferences_set.create(
                 username=request.user.username, application_id=app_module_id, favorite=False
             )
-
         return HttpResponse(status=204)
 
     @action(detail=False)
     def list_all(self, request: Request, format: str | None = None) -> Response:
-        all_modules = self.request.airavata_client.research.get_all_app_modules(self.gateway_id)
-        serializer = self.serializer_class(all_modules, many=True, context={"request": request})
-        return Response(serializer.data)
+        all_modules = request.airavata_client.research.get_all_app_modules(settings.GATEWAY_ID)
+        return Response(proto_list_to_dicts(all_modules))
 
 
-class ApplicationInterfaceViewSet(APIBackedViewSet):
-    serializer_class = serializers.ApplicationInterfaceDescriptionSerializer
+class ApplicationInterfaceViewSet(viewsets.ViewSet):
     lookup_field = "app_interface_id"
 
-    def get_list(self) -> list[Any]:
-        return self.request.airavata_client.research.get_all_application_interfaces(self.gateway_id)
+    def list(self, request: Request) -> Response:
+        interfaces = request.airavata_client.research.get_all_application_interfaces(settings.GATEWAY_ID)
+        return Response(proto_list_to_dicts(interfaces))
 
-    def get_instance(self, lookup_value: str) -> Any:
+    def retrieve(self, request: Request, app_interface_id: str | None = None) -> Response:
         try:
-            return self.request.airavata_client.research.get_application_interface(lookup_value)
+            interface = request.airavata_client.research.get_application_interface(app_interface_id)
         except Exception:
             # If it failed to load, check to see if it exists at all
-            all_interfaces = self.request.airavata_client.research.get_all_application_interfaces(self.gateway_id)
-            interface_ids = map(lambda i: i.applicationInterfaceId, all_interfaces)
-            if lookup_value not in interface_ids:
+            all_interfaces = request.airavata_client.research.get_all_application_interfaces(settings.GATEWAY_ID)
+            interface_ids = [i.application_interface_id for i in all_interfaces]
+            if app_interface_id not in interface_ids:
                 raise Http404("Application interface does not exist") from None
             else:
                 raise  # re-raise
+        return Response(proto_to_dict(interface))
 
-    def perform_create(self, serializer: Any) -> None:
-        application_interface = serializer.save()
-        self._update_input_metadata(application_interface)
-        log.debug(f"application_interface: {application_interface}")
-        app_interface_id = self.request.airavata_client.research.register_application_interface(
-            self.gateway_id, application_interface
-        )
-        application_interface.applicationInterfaceId = app_interface_id
-
-    def perform_update(self, serializer: Any) -> None:
-        application_interface = serializer.save()
-        self._update_input_metadata(application_interface)
-        self.request.airavata_client.research.update_application_interface(
-            application_interface.applicationInterfaceId, application_interface
+    def create(self, request: Request) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.appinterface.app_interface_pb2 import (
+            ApplicationInterfaceDescription as AppInterfaceProto,
         )
 
-    def perform_destroy(self, instance: Any) -> None:
-        self.request.airavata_client.research.delete_application_interface(instance.applicationInterfaceId)
+        proto = dict_to_proto(request.data, AppInterfaceProto)
+        self._update_input_metadata(proto)
+        log.debug(f"application_interface: {proto}")
+        app_interface_id = request.airavata_client.research.register_application_interface(
+            settings.GATEWAY_ID, proto
+        )
+        proto.application_interface_id = app_interface_id
+        return Response(proto_to_dict(proto), status=201)
 
-    def _update_input_metadata(self, app_interface: Any) -> None:
-        for app_input in app_interface.applicationInputs:
-            if app_input.metaData:
-                metadata = json.loads(app_input.metaData)
+    def update(self, request: Request, app_interface_id: str | None = None) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.appinterface.app_interface_pb2 import (
+            ApplicationInterfaceDescription as AppInterfaceProto,
+        )
+
+        proto = dict_to_proto(request.data, AppInterfaceProto)
+        proto.application_interface_id = app_interface_id
+        self._update_input_metadata(proto)
+        request.airavata_client.research.update_application_interface(app_interface_id, proto)
+        return Response(proto_to_dict(proto))
+
+    def destroy(self, request: Request, app_interface_id: str | None = None) -> Response:
+        request.airavata_client.research.delete_application_interface(app_interface_id)
+        return Response(status=204)
+
+    @staticmethod
+    def _update_input_metadata(app_interface: Any) -> None:
+        for app_input in app_interface.application_inputs:
+            if app_input.meta_data:
+                metadata = json.loads(app_input.meta_data)
                 # Automatically add {showOptions: {isRequired: true/false}} to
                 # toggle isRequired on hidden/shown inputs
                 if (
@@ -577,8 +652,8 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
                     if "showOptions" not in metadata["editor"]["dependencies"]:
                         metadata["editor"]["dependencies"]["showOptions"] = {}
                     o = metadata["editor"]["dependencies"]["showOptions"]
-                    o["isRequired"] = app_input.isRequired
-                    app_input.metaData = json.dumps(metadata)
+                    o["isRequired"] = app_input.is_required
+                    app_input.meta_data = json.dumps(metadata)
 
     @action(detail=True)
     def compute_resources(self, request: Request, app_interface_id: str) -> Response:
@@ -588,63 +663,72 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
         return Response(compute_resources)
 
 
-class ApplicationDeploymentViewSet(APIBackedViewSet):
-    serializer_class = serializers.ApplicationDeploymentDescriptionSerializer
+class ApplicationDeploymentViewSet(viewsets.ViewSet):
     lookup_field = "app_deployment_id"
 
-    def get_list(self) -> list[Any]:
-        app_module_id = self.request.query_params.get("appModuleId", None)
-        group_resource_profile_id = self.request.query_params.get("groupResourceProfileId", None)
+    def list(self, request: Request) -> Response:
+        app_module_id = request.query_params.get("appModuleId", None)
+        group_resource_profile_id = request.query_params.get("groupResourceProfileId", None)
         if (app_module_id and not group_resource_profile_id) or (not app_module_id and group_resource_profile_id):
             raise ParseError("Query params appModuleId and groupResourceProfileId are required together.")
         if app_module_id and group_resource_profile_id:
-            client = self.request.airavata_client.research
-            return client.get_application_deployments_for_app_module_and_group_resource_profile(
+            deployments = request.airavata_client.research.get_application_deployments_for_app_module_and_group_resource_profile(
                 app_module_id, group_resource_profile_id
             )
         else:
-            return self.request.airavata_client.research.get_accessible_application_deployments(
-                self.gateway_id, ResourcePermissionType.READ
+            deployments = request.airavata_client.research.get_accessible_application_deployments(
+                settings.GATEWAY_ID
             )
+        return Response(proto_list_to_dicts(deployments))
 
-    def get_instance(self, lookup_value: str) -> Any:
-        return self.request.airavata_client.research.get_application_deployment(lookup_value)
+    def retrieve(self, request: Request, app_deployment_id: str | None = None) -> Response:
+        deployment = request.airavata_client.research.get_application_deployment(app_deployment_id)
+        return Response(proto_to_dict(deployment))
 
-    def perform_create(self, serializer: Any) -> None:
-        application_deployment = serializer.save()
-        app_deployment_id = self.request.airavata_client.research.register_application_deployment(
-            self.gateway_id, application_deployment
-        )
-        application_deployment.appDeploymentId = app_deployment_id
-
-    def perform_update(self, serializer: Any) -> None:
-        application_deployment = serializer.save()
-        self.request.airavata_client.research.update_application_deployment(
-            application_deployment.appDeploymentId, application_deployment
+    def create(self, request: Request) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.appdeployment.app_deployment_pb2 import (
+            ApplicationDeploymentDescription as AppDeploymentProto,
         )
 
-    def perform_destroy(self, instance: Any) -> None:
-        self.request.airavata_client.research.delete_application_deployment(instance.appDeploymentId)
+        proto = dict_to_proto(request.data, AppDeploymentProto)
+        app_deployment_id = request.airavata_client.research.register_application_deployment(
+            settings.GATEWAY_ID, proto
+        )
+        proto.app_deployment_id = app_deployment_id
+        return Response(proto_to_dict(proto), status=201)
+
+    def update(self, request: Request, app_deployment_id: str | None = None) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.appdeployment.app_deployment_pb2 import (
+            ApplicationDeploymentDescription as AppDeploymentProto,
+        )
+
+        proto = dict_to_proto(request.data, AppDeploymentProto)
+        proto.app_deployment_id = app_deployment_id
+        request.airavata_client.research.update_application_deployment(app_deployment_id, proto)
+        return Response(proto_to_dict(proto))
+
+    def destroy(self, request: Request, app_deployment_id: str | None = None) -> Response:
+        request.airavata_client.research.delete_application_deployment(app_deployment_id)
+        return Response(status=204)
 
     @action(detail=True)
     def queues(self, request: Request, app_deployment_id: str) -> Response:
-        """Return queues for this deployment with defaults overridden by deployment defaults if they exist"""
-        app_deployment = self.request.airavata_client.research.get_application_deployment(app_deployment_id)
-        compute_resource = request.airavata_client.compute.get_compute_resource(app_deployment.computeHostId)
+        """Return queues for this deployment with defaults overridden by deployment defaults if they exist."""
+        app_deployment = request.airavata_client.research.get_application_deployment(app_deployment_id)
+        compute_resource = request.airavata_client.compute.get_compute_resource(app_deployment.compute_host_id)
         # Override defaults with app deployment default queue, if defined
         batch_queues = []
-        for batch_queue in compute_resource.batchQueues:
-            if app_deployment.defaultQueueName:
-                if app_deployment.defaultQueueName == batch_queue.queueName:
-                    batch_queue.isDefaultQueue = True
-                    batch_queue.defaultNodeCount = app_deployment.defaultNodeCount
-                    batch_queue.defaultCPUCount = app_deployment.defaultCPUCount
-                    batch_queue.defaultWalltime = app_deployment.defaultWalltime
+        for batch_queue in compute_resource.batch_queues:
+            if app_deployment.default_queue_name:
+                if app_deployment.default_queue_name == batch_queue.queue_name:
+                    batch_queue.is_default_queue = True
+                    batch_queue.default_node_count = app_deployment.default_node_count
+                    batch_queue.default_cpu_count = app_deployment.default_cpu_count
+                    batch_queue.default_walltime = app_deployment.default_walltime
                 else:
-                    batch_queue.isDefaultQueue = False
+                    batch_queue.is_default_queue = False
             batch_queues.append(batch_queue)
-        serializer = serializers.BatchQueueSerializer(batch_queues, many=True, context={"request": request})
-        return Response(serializer.data)
+        return Response(proto_list_to_dicts(batch_queues))
 
 
 class ComputeResourceViewSet(APIBackedViewSet):
@@ -869,14 +953,12 @@ class LocalDataMovementView(APIView):
 
 
 class DataProductView(APIView):
-    serializer_class = serializers.DataProductSerializer
     permission_classes = [IsAuthenticated, DataProductSharedDirPermission]
 
     def get(self, request: Request, format: str | None = None) -> Response:
         data_product_uri = request.query_params["product-uri"]
         data_product = request.airavata_client.research.get_data_product(data_product_uri)
-        serializer = self.serializer_class(data_product, context={"request": request})
-        return Response(serializer.data)
+        return Response(proto_to_dict(data_product))
 
     def put(self, request: Request, format: str | None = None) -> Response:
         data_product_uri = request.query_params["product-uri"]
@@ -895,8 +977,7 @@ def upload_input_file(request: Request) -> JsonResponse:
     try:
         input_file = request.FILES["file"]
         data_product = user_storage.save_input_file(request, input_file, content_type=input_file.content_type)
-        serializer = serializers.DataProductSerializer(data_product, context={"request": request})
-        return JsonResponse({"uploaded": True, "data-product": serializer.data})
+        return JsonResponse({"uploaded": True, "data-product": proto_to_dict(data_product)})
     except Exception as e:
         log.error("Failed to upload file", exc_info=True, extra={"request": request})
         resp = JsonResponse({"uploaded": False, "error": str(e)})
@@ -914,8 +995,7 @@ def tus_upload_finish(request: Request) -> JsonResponse:
 
     try:
         data_product = tus.save_tus_upload(uploadURL, save_upload)
-        serializer = serializers.DataProductSerializer(data_product, context={"request": request})
-        return JsonResponse({"uploaded": True, "data-product": serializer.data})
+        return JsonResponse({"uploaded": True, "data-product": proto_to_dict(data_product)})
     except Exception as e:
         return exceptions.generic_json_exception_response(e, status=400)
 
@@ -942,7 +1022,7 @@ def delete_file(request: Request) -> HttpResponse:
         log.warning(f"Failed to load DataProduct for {data_product_uri}", exc_info=True)
         raise Http404("data product does not exist") from e
     try:
-        if data_product.gatewayId != settings.GATEWAY_ID or data_product.ownerName != request.user.username:
+        if data_product.gateway_id != settings.GATEWAY_ID or data_product.owner_name != request.user.username:
             raise PermissionDenied()
         user_storage.delete(request, data_product)
         return HttpResponse(status=204)
@@ -1461,7 +1541,7 @@ class CurrentGatewayResourceProfile(APIView):
 
 class ExperimentArchiveView(APIView):
     def get(self, request: Request, experiment_id: str | None = None, format: str | None = None) -> Response:
-        experiment: ExperimentModel = request.airavata_client.research.get_experiment(experiment_id)
+        experiment = request.airavata_client.research.get_experiment(experiment_id)
         result = dict(
             archived=False,
             archive_name=None,
@@ -1470,7 +1550,8 @@ class ExperimentArchiveView(APIView):
         )
         try:
             archive_entry = UserDataArchiveEntry.objects.get(
-                entry_path=experiment.userConfigurationData.experimentDataDir, user_data_archive__rolled_back=False
+                entry_path=experiment.user_configuration_data.experiment_data_dir,
+                user_data_archive__rolled_back=False,
             )
             result["archived"] = True
             result["archive_name"] = archive_entry.user_data_archive.archive_name
@@ -1563,29 +1644,36 @@ class StoragePreferenceViewSet(APIBackedViewSet):
         )
 
 
-class ParserViewSet(
-    mixins.CreateModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin,
-    mixins.ListModelMixin,
-    GenericAPIBackedViewSet,
-):
-    serializer_class = serializers.ParserSerializer
+class ParserViewSet(viewsets.ViewSet):
     lookup_field = "parser_id"
 
-    def get_list(self) -> list[Any]:
-        return self.request.airavata_client.research.list_all_parsers(settings.GATEWAY_ID)
+    def list(self, request: Request) -> Response:
+        parsers = request.airavata_client.research.list_all_parsers(settings.GATEWAY_ID)
+        return Response(proto_list_to_dicts(parsers))
 
-    def get_instance(self, lookup_value: str) -> Any:
-        return self.request.airavata_client.research.get_parser(lookup_value, settings.GATEWAY_ID)
+    def retrieve(self, request: Request, parser_id: str | None = None) -> Response:
+        parser = request.airavata_client.research.get_parser(parser_id, settings.GATEWAY_ID)
+        return Response(proto_to_dict(parser))
 
-    def perform_create(self, serializer: Any) -> None:
-        parser = serializer.save()
-        self.request.airavata_client.research.save_parser(parser)
+    def create(self, request: Request) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.parser.parser_pb2 import (
+            Parser as ParserProto,
+        )
 
-    def perform_update(self, serializer: Any) -> None:
-        parser = serializer.save()
-        self.request.airavata_client.research.save_parser(parser)
+        proto = dict_to_proto(request.data, ParserProto)
+        parser_id = request.airavata_client.research.save_parser(proto)
+        proto.id = parser_id
+        return Response(proto_to_dict(proto), status=201)
+
+    def update(self, request: Request, parser_id: str | None = None) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.parser.parser_pb2 import (
+            Parser as ParserProto,
+        )
+
+        proto = dict_to_proto(request.data, ParserProto)
+        proto.id = parser_id
+        request.airavata_client.research.save_parser(proto)
+        return Response(proto_to_dict(proto))
 
 
 class UserStoragePathView(APIView):
@@ -1742,31 +1830,55 @@ class WorkspacePreferencesView(APIView):
         return Response(serializer.data)
 
 
-class ManageNotificationViewSet(APIBackedViewSet):
-    serializer_class = serializers.NotificationSerializer
+class ManageNotificationViewSet(viewsets.ViewSet):
     lookup_field = "notification_id"
 
-    def get_instance(self, lookup_value: str) -> Any:
-        return self.request.airavata_client.research.get_notification(settings.GATEWAY_ID, lookup_value)
+    def list(self, request: Request) -> Response:
+        notifications = request.airavata_client.research.get_all_notifications(settings.GATEWAY_ID)
+        return Response(proto_list_to_dicts(notifications))
 
-    def get_list(self) -> list[Any]:
-        return self.request.airavata_client.research.get_all_notifications(self.gateway_id)
+    def retrieve(self, request: Request, notification_id: str | None = None) -> Response:
+        notification = request.airavata_client.research.get_notification(settings.GATEWAY_ID, notification_id)
+        return Response(proto_to_dict(notification))
 
-    def perform_destroy(self, instance: Any) -> None:
-        self.request.airavata_client.research.delete_notification(settings.GATEWAY_ID, instance.notificationId)
+    def create(self, request: Request) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.workspace.workspace_pb2 import (
+            Notification as NotificationProto,
+        )
 
-    def perform_create(self, serializer: Any) -> None:
-        notification = serializer.save(gatewayId=self.gateway_id)
-        notificationId = self.request.airavata_client.research.create_notification(notification)
-        notification.notificationId = notificationId
+        proto = dict_to_proto(request.data, NotificationProto)
+        proto.gateway_id = settings.GATEWAY_ID
+        notification_id = request.airavata_client.research.create_notification(proto)
+        proto.notification_id = notification_id
+        self._update_notification_extension(request, notification_id)
+        return Response(proto_to_dict(proto), status=201)
 
-        serializer.update_notification_extension(self.request, notification)
+    def update(self, request: Request, notification_id: str | None = None) -> Response:
+        from airavata_sdk.generated.org.apache.airavata.model.workspace.workspace_pb2 import (
+            Notification as NotificationProto,
+        )
 
-    def perform_update(self, serializer: Any) -> None:
-        notification = serializer.save()
-        self.request.airavata_client.research.update_notification(notification)
+        proto = dict_to_proto(request.data, NotificationProto)
+        proto.notification_id = notification_id
+        request.airavata_client.research.update_notification(proto)
+        self._update_notification_extension(request, notification_id)
+        return Response(proto_to_dict(proto))
 
-        serializer.update_notification_extension(self.request, notification)
+    def destroy(self, request: Request, notification_id: str | None = None) -> Response:
+        request.airavata_client.research.delete_notification(settings.GATEWAY_ID, notification_id)
+        return Response(status=204)
+
+    @staticmethod
+    def _update_notification_extension(request: Request, notification_id: str) -> None:
+        """Persist the showInDashboard extension in the Django model."""
+        if "showInDashboard" in request.data:
+            existing_entries = models.NotificationExtension.objects.filter(notification_id=notification_id)
+            if existing_entries.exists():
+                existing_entries.update(showInDashboard=request.data["showInDashboard"])
+            else:
+                models.NotificationExtension.objects.create(
+                    notification_id=notification_id, showInDashboard=request.data["showInDashboard"]
+                )
 
 
 class AckNotificationViewSet(APIView):
@@ -1888,7 +2000,6 @@ class IAMUserViewSet(
 
 class ExperimentStatisticsView(APIView):
     # TODO: restrict to only Admins or Read Only Admins group members
-    serializer_class = serializers.ExperimentStatisticsSerializer
 
     def get(self, request: Request, format: str | None = None) -> Response:
         if "fromTime" in request.GET:
@@ -1910,15 +2021,14 @@ class ExperimentStatisticsView(APIView):
         statistics = request.airavata_client.research.get_experiment_statistics(
             settings.GATEWAY_ID, from_time, to_time, username, application_name, resource_hostname, limit, offset
         )
-        serializer = self.serializer_class(statistics, context={"request": request})
+        stats_dict = proto_to_dict(statistics)
 
         paginator = pagination.LimitOffsetPagination()
-        paginator.count = statistics.allExperimentCount
+        paginator.count = statistics.all_experiment_count
         paginator.limit = limit
         paginator.offset = offset
         paginator.request = request
-        response = paginator.get_paginated_response(serializer.data)
-        # Also add limit and offset to the response
+        response = paginator.get_paginated_response(stats_dict)
         response.data["limit"] = limit
         response.data["offset"] = offset
         return response
