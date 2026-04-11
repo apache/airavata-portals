@@ -54,56 +54,115 @@ READ_PERMISSION_TYPE = "{}:READ"
 log = logging.getLogger(__name__)
 
 
-class GroupViewSet(APIBackedViewSet):
-    serializer_class = serializers.GroupSerializer
+class GroupViewSet(viewsets.ViewSet):
     lookup_field = "group_id"
-    pagination_class = APIResultPagination
-    pagination_viewname = "django_airavata_api:group-list"
 
-    def get_list(self) -> APIResultIterator:
-        view = self
+    def list(self, request: Request) -> Response:
+        groups = request.airavata_client.sharing.get_groups()
+        return Response([self._group_to_dict(request, g) for g in (groups or [])])
 
-        class GroupResultsIterator(APIResultIterator):
-            def get_results(self, limit: int = -1, offset: int = 0) -> list[Any]:
-                groups = view.request.airavata_client.sharing.get_groups()
-                end = offset + limit if limit > 0 else len(groups)
-                return groups[offset:end] if groups else []
+    def retrieve(self, request: Request, group_id: str | None = None) -> Response:
+        group = request.airavata_client.sharing.get_group(group_id)
+        return Response(self._group_to_dict(request, group))
 
-        return GroupResultsIterator()
+    def create(self, request: Request) -> Response:
+        from django_airavata.proto_compat import GroupModel
 
-    def get_instance(self, lookup_value: str) -> Any:
-        return self.request.airavata_client.sharing.get_group(lookup_value)
-
-    def perform_create(self, serializer: Any) -> None:
-        group = serializer.save()
-        group_id = self.request.airavata_client.sharing.create_group(group)
+        owner_id = request.user.username + "@" + settings.GATEWAY_ID
+        group = GroupModel(
+            name=request.data.get("name", ""),
+            description=request.data.get("description"),
+            ownerId=owner_id,
+            members=request.data.get("members", []),
+            admins=request.data.get("admins", []),
+        )
+        group_id = request.airavata_client.sharing.create_group(group)
         group.id = group_id
-        users_added_to_group = set(group.members) - {group.ownerId}
-        self._send_users_added_to_group(users_added_to_group, group)
+        users_added = set(group.members or []) - {owner_id}
+        self._send_users_added_to_group(request, users_added, group)
+        return Response(self._group_to_dict(request, group), status=201)
 
-    def perform_update(self, serializer: Any) -> None:
-        group = serializer.save()
-        sharing_client = self.request.airavata_client.sharing
-        if len(group._added_members) > 0:
-            sharing_client.add_users_to_group(group._added_members, group.id)
-            self._send_users_added_to_group(group._added_members, group)
-        if len(group._removed_members) > 0:
-            sharing_client.remove_users_from_group(group._removed_members, group.id)
-        if len(group._added_admins) > 0:
-            sharing_client.add_group_admins(group.id, group._added_admins)
-        if len(group._removed_admins) > 0:
-            sharing_client.remove_group_admins(group.id, group._removed_admins)
-        sharing_client.update_group(group)
+    def update(self, request: Request, group_id: str | None = None) -> Response:
+        sharing_client = request.airavata_client.sharing
+        existing = sharing_client.get_group(group_id)
 
-    def perform_destroy(self, instance: Any) -> None:  # type: ignore[override]
-        self.request.airavata_client.sharing.delete_group(instance.id, instance.ownerId)
+        # Compute member diffs
+        old_members = set(existing.members or [])
+        new_members = set(request.data.get("members", existing.members or []))
+        added_members = list(new_members - old_members)
+        removed_members = list(old_members - new_members)
 
-    def _send_users_added_to_group(self, internal_user_ids: set[str], group: Any) -> None:
+        # Compute admin diffs
+        old_admins = set(existing.admins or [])
+        new_admins = set(request.data.get("admins", existing.admins or []))
+        added_admins = list(new_admins - old_admins)
+        removed_admins = list(old_admins - new_admins)
+
+        # Add new admins that aren't members to the added_members list
+        admins_not_members = list(set(added_admins) - new_members)
+        added_members.extend(admins_not_members)
+        new_members.update(admins_not_members)
+
+        # Apply changes
+        if added_members:
+            sharing_client.add_users_to_group(added_members, group_id)
+            self._send_users_added_to_group(request, set(added_members), existing)
+        if removed_members:
+            sharing_client.remove_users_from_group(removed_members, group_id)
+        if added_admins:
+            sharing_client.add_group_admins(group_id, added_admins)
+        if removed_admins:
+            sharing_client.remove_group_admins(group_id, removed_admins)
+
+        # Update name/description
+        existing.name = request.data.get("name", existing.name)
+        existing.description = request.data.get("description", existing.description)
+        existing.members = list(new_members)
+        existing.admins = list(new_admins)
+        sharing_client.update_group(existing)
+
+        updated = sharing_client.get_group(group_id)
+        return Response(self._group_to_dict(request, updated))
+
+    def destroy(self, request: Request, group_id: str | None = None) -> Response:
+        group = request.airavata_client.sharing.get_group(group_id)
+        request.airavata_client.sharing.delete_group(group.id, group.ownerId)
+        return Response(status=204)
+
+    def _group_to_dict(self, request: Request, group: Any) -> dict[str, Any]:
+        username = request.user.username + "@" + settings.GATEWAY_ID
+        gateway_groups = self._gateway_groups(request)
+        return {
+            "id": group.id,
+            "name": group.name,
+            "owner_id": group.ownerId,
+            "description": group.description,
+            "members": list(group.members) if group.members else [],
+            "admins": list(group.admins) if group.admins else [],
+            "is_owner": group.ownerId == username,
+            "is_admin": request.airavata_client.sharing.has_admin_access(group.id, username),
+            "is_member": bool(group.members and username in group.members),
+            "is_gateway_admins_group": group.id == gateway_groups.get("adminsGroupId"),
+            "is_read_only_gateway_admins_group": group.id == gateway_groups.get("readOnlyAdminsGroupId"),
+            "is_default_gateway_users_group": group.id == gateway_groups.get("defaultGatewayUsersGroupId"),
+        }
+
+    @staticmethod
+    def _gateway_groups(request: Request) -> dict[str, Any]:
+        if "GATEWAY_GROUPS" in request.session:
+            return request.session["GATEWAY_GROUPS"]
+        else:
+            import copy
+            gateway_groups = request.airavata_client.iam.get_gateway_groups()
+            return copy.deepcopy(gateway_groups.__dict__)
+
+    @staticmethod
+    def _send_users_added_to_group(request: Request, internal_user_ids: set[str], group: Any) -> None:
         for internal_user_id in internal_user_ids:
             user_id, gateway_id = internal_user_id.rsplit("@", maxsplit=1)
-            user_profile = self.request.airavata_client.iam.get_user_profile_by_id(user_id, gateway_id)
+            user_profile = request.airavata_client.iam.get_user_profile_by_id(user_id, gateway_id)
             signals.user_added_to_group.send(
-                sender=self.__class__, user=user_profile, groups=[group], request=self.request
+                sender=GroupViewSet, user=user_profile, groups=[group], request=request
             )
 
 
@@ -934,14 +993,15 @@ def delete_file(request: Request) -> HttpResponse:
         raise Http404(str(e)) from e
 
 
-class UserProfileViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin, GenericAPIBackedViewSet):
-    serializer_class = serializers.UserProfileSerializer
+class UserProfileViewSet(viewsets.ViewSet):
 
-    def get_list(self) -> list[Any]:
-        return self.request.airavata_client.iam.get_all_user_profiles_in_gateway(self.gateway_id, 0, -1)
+    def list(self, request: Request) -> Response:
+        profiles = request.airavata_client.iam.get_all_user_profiles_in_gateway(settings.GATEWAY_ID, 0, -1)
+        return Response(proto_list_to_dicts(profiles))
 
-    def get_instance(self, lookup_value: str) -> Any:
-        return self.request.airavata_client.iam.get_user_profile_by_id(self.request.user.username, self.gateway_id)
+    def retrieve(self, request: Request, pk: str | None = None) -> Response:
+        profile = request.airavata_client.iam.get_user_profile_by_id(request.user.username, settings.GATEWAY_ID)
+        return Response(proto_to_dict(profile))
 
 
 class GroupResourceProfileViewSet(viewsets.ViewSet):
@@ -1042,264 +1102,291 @@ class GroupResourceProfileViewSet(viewsets.ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class SharedEntityViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, GenericAPIBackedViewSet):
-    serializer_class = serializers.SharedEntitySerializer
+class SharedEntityViewSet(viewsets.ViewSet):
     lookup_field = "entity_id"
 
-    def get_instance(self, lookup_value: str) -> dict[str, Any]:
-        users = {}
-        # Only load *directly* granted permissions since these are the only
-        # ones that can be edited
-        # Load accessible users in order of permission precedence: users that
-        # have WRITE permission should also have READ
-        users.update(self._load_directly_accessible_users(lookup_value, ResourcePermissionType.READ))
-        users.update(self._load_directly_accessible_users(lookup_value, ResourcePermissionType.WRITE))
-        users.update(self._load_directly_accessible_users(lookup_value, ResourcePermissionType.MANAGE_SHARING))
-        owner_ids = self._load_directly_accessible_users(lookup_value, ResourcePermissionType.OWNER)
-        # Assume that there is one and only one DIRECT owner (there may be one
-        # or more INDIRECT cascading owners, which would the owners of the
-        # ancestor entities, but getAllDirectlyAccessibleUsers does not return
-        # indirectly cascading owners)
-        owner_id = list(owner_ids.keys())[0]
-        # Remove owner from the users list
-        del users[owner_id]
-        user_list = []
-        for user_id in users:
-            user_list.append({"user": self._load_user_profile(user_id), "permissionType": users[user_id]})
-        groups = {}
-        groups.update(self._load_directly_accessible_groups(lookup_value, ResourcePermissionType.READ))
-        groups.update(self._load_directly_accessible_groups(lookup_value, ResourcePermissionType.WRITE))
-        groups.update(self._load_directly_accessible_groups(lookup_value, ResourcePermissionType.MANAGE_SHARING))
-        group_list = []
-        for group_id in groups:
-            group_list.append({"group": self._load_group(group_id), "permissionType": groups[group_id]})
-        return {
-            "entityId": lookup_value,
-            "userPermissions": user_list,
-            "groupPermissions": group_list,
-            "owner": self._load_user_profile(owner_id),
+    def retrieve(self, request: Request, entity_id: str | None = None) -> Response:
+        assert entity_id is not None, "entity_id is required"
+        result = self._load_direct_permissions(request, entity_id)
+        return Response(result)
+
+    def update(self, request: Request, entity_id: str | None = None) -> Response:
+        assert entity_id is not None, "entity_id is required"
+        existing = self._load_direct_permissions(request, entity_id)
+        new_data = request.data
+
+        # Compute user permission diffs
+        existing_user_perms = {
+            up["user"]["airavata_internal_user_id"]: up["permission_type"]
+            for up in existing["user_permissions"]
         }
-
-    def _load_accessible_users(self, entity_id: str, permission_type: Any) -> dict[str, Any]:
-        users = self.request.airavata_client.sharing.get_all_accessible_users(entity_id, permission_type)
-        return {user_id: permission_type for user_id in users}
-
-    def _load_directly_accessible_users(self, entity_id: str, permission_type: Any) -> dict[str, Any]:
-        users = self.request.airavata_client.sharing.get_all_directly_accessible_users(entity_id, permission_type)
-        return {user_id: permission_type for user_id in users}
-
-    def _load_user_profile(self, user_id: str) -> Any:
-        username = user_id[0 : user_id.rindex("@")]
-        return self.request.airavata_client.iam.get_user_profile_by_id(username, settings.GATEWAY_ID)
-
-    def _load_accessible_groups(self, entity_id: str, permission_type: Any) -> dict[str, Any]:
-        groups = self.request.airavata_client.sharing.get_all_accessible_groups(entity_id, permission_type)
-        return {group_id: permission_type for group_id in groups}
-
-    def _load_directly_accessible_groups(self, entity_id: str, permission_type: Any) -> dict[str, Any]:
-        groups = self.request.airavata_client.sharing.get_all_directly_accessible_groups(entity_id, permission_type)
-        return {group_id: permission_type for group_id in groups}
-
-    def _load_group(self, group_id: str) -> Any:
-        return self.request.airavata_client.sharing.get_group(group_id)
-
-    def perform_update(self, serializer: Any) -> None:
-        shared_entity = serializer.save()
-        entity_id = shared_entity["entityId"]
-        if len(shared_entity["_user_grant_read_permission"]) > 0:
-            self._share_with_users(entity_id, ResourcePermissionType.READ, shared_entity["_user_grant_read_permission"])
-        if len(shared_entity["_user_grant_write_permission"]) > 0:
-            self._share_with_users(
-                entity_id, ResourcePermissionType.WRITE, shared_entity["_user_grant_write_permission"]
-            )
-        if len(shared_entity["_user_grant_manage_sharing_permission"]) > 0:
-            self._share_with_users(
-                entity_id, ResourcePermissionType.MANAGE_SHARING, shared_entity["_user_grant_manage_sharing_permission"]
-            )
-        if len(shared_entity["_user_revoke_read_permission"]) > 0:
-            self._revoke_from_users(
-                entity_id, ResourcePermissionType.READ, shared_entity["_user_revoke_read_permission"]
-            )
-        if len(shared_entity["_user_revoke_write_permission"]) > 0:
-            self._revoke_from_users(
-                entity_id, ResourcePermissionType.WRITE, shared_entity["_user_revoke_write_permission"]
-            )
-        if len(shared_entity["_user_revoke_manage_sharing_permission"]) > 0:
-            self._revoke_from_users(
-                entity_id,
-                ResourcePermissionType.MANAGE_SHARING,
-                shared_entity["_user_revoke_manage_sharing_permission"],
-            )
-        if len(shared_entity["_group_grant_read_permission"]) > 0:
-            self._share_with_groups(
-                entity_id, ResourcePermissionType.READ, shared_entity["_group_grant_read_permission"]
-            )
-        if len(shared_entity["_group_grant_write_permission"]) > 0:
-            self._share_with_groups(
-                entity_id, ResourcePermissionType.WRITE, shared_entity["_group_grant_write_permission"]
-            )
-        if len(shared_entity["_group_grant_manage_sharing_permission"]) > 0:
-            self._share_with_groups(
-                entity_id,
-                ResourcePermissionType.MANAGE_SHARING,
-                shared_entity["_group_grant_manage_sharing_permission"],
-            )
-        if len(shared_entity["_group_revoke_read_permission"]) > 0:
-            self._revoke_from_groups(
-                entity_id, ResourcePermissionType.READ, shared_entity["_group_revoke_read_permission"]
-            )
-        if len(shared_entity["_group_revoke_write_permission"]) > 0:
-            self._revoke_from_groups(
-                entity_id, ResourcePermissionType.WRITE, shared_entity["_group_revoke_write_permission"]
-            )
-        if len(shared_entity["_group_revoke_manage_sharing_permission"]) > 0:
-            self._revoke_from_groups(
-                entity_id,
-                ResourcePermissionType.MANAGE_SHARING,
-                shared_entity["_group_revoke_manage_sharing_permission"],
-            )
-
-    def _share_with_users(self, entity_id: str, permission_type: Any, user_ids: list[str]) -> None:
-        self.request.airavata_client.sharing.share_resource_with_users(
-            entity_id, {user_id: permission_type for user_id in user_ids}
+        new_user_perms = {
+            up["user"]["airavata_internal_user_id"]: up["permission_type"]
+            for up in new_data.get("user_permissions", [])
+        }
+        self._apply_permission_changes(
+            request, entity_id, existing_user_perms, new_user_perms, target="users"
         )
 
-    def _revoke_from_users(self, entity_id: str, permission_type: Any, user_ids: list[str]) -> None:
-        self.request.airavata_client.sharing.revoke_sharing_of_resource_from_users(
-            entity_id, {user_id: permission_type for user_id in user_ids}
+        # Compute group permission diffs
+        existing_group_perms = {
+            gp["group"]["id"]: gp["permission_type"]
+            for gp in existing["group_permissions"]
+        }
+        new_group_perms = {
+            gp["group"]["id"]: gp["permission_type"]
+            for gp in new_data.get("group_permissions", [])
+        }
+        self._apply_permission_changes(
+            request, entity_id, existing_group_perms, new_group_perms, target="groups"
         )
 
-    def _share_with_groups(self, entity_id: str, permission_type: Any, group_ids: list[str]) -> None:
-        self.request.airavata_client.sharing.share_resource_with_groups(
-            entity_id, {group_id: permission_type for group_id in group_ids}
-        )
-
-    def _revoke_from_groups(self, entity_id: str, permission_type: Any, group_ids: list[str]) -> None:
-        self.request.airavata_client.sharing.revoke_sharing_of_resource_from_groups(
-            entity_id, {group_id: permission_type for group_id in group_ids}
-        )
+        # Return updated state
+        result = self._load_direct_permissions(request, entity_id)
+        return Response(result)
 
     @action(methods=["put"], detail=True)
     def merge(self, request: Request, entity_id: str | None = None) -> Response:
-        # Validate updated sharing settings
-        updated = self.get_serializer(data=request.data)
-        updated.is_valid(raise_exception=True)
-        # Get the existing sharing settings and merge in the updated settings
-        existing_instance = self.get_object()
-        existing = self.get_serializer(instance=existing_instance)
-        merged_data = existing.data
-        merged_data["userPermissions"] = existing.data["userPermissions"] + updated.initial_data["userPermissions"]
-        merged_data["groupPermissions"] = existing.data["groupPermissions"] + updated.initial_data["groupPermissions"]
-        # Create a merged_serializer from the existing sharing settings and the
-        # merged settings. This will calculate all permissions that need to be
-        # granted and revoked to go from the exisitng settings to the merged
-        # settings.
-        merged_serializer = self.get_serializer(existing_instance, data=merged_data)
-        merged_serializer.is_valid(raise_exception=True)
-        self.perform_update(merged_serializer)
-        return Response(merged_serializer.data)
+        """Merge incoming permissions with existing ones, then apply diffs."""
+        assert entity_id is not None, "entity_id is required"
+        existing = self._load_direct_permissions(request, entity_id)
+
+        # Merge: existing + incoming
+        merged_user_perms = existing["user_permissions"] + request.data.get("user_permissions", [])
+        merged_group_perms = existing["group_permissions"] + request.data.get("group_permissions", [])
+
+        # Compute user permission diffs (existing -> merged)
+        existing_user_perms = {
+            up["user"]["airavata_internal_user_id"]: up["permission_type"]
+            for up in existing["user_permissions"]
+        }
+        new_user_perms = {
+            up["user"]["airavata_internal_user_id"]: up["permission_type"]
+            for up in merged_user_perms
+        }
+        self._apply_permission_changes(
+            request, entity_id, existing_user_perms, new_user_perms, target="users"
+        )
+
+        # Compute group permission diffs (existing -> merged)
+        existing_group_perms = {
+            gp["group"]["id"]: gp["permission_type"]
+            for gp in existing["group_permissions"]
+        }
+        new_group_perms = {
+            gp["group"]["id"]: gp["permission_type"]
+            for gp in merged_group_perms
+        }
+        self._apply_permission_changes(
+            request, entity_id, existing_group_perms, new_group_perms, target="groups"
+        )
+
+        result = self._load_direct_permissions(request, entity_id)
+        return Response(result)
 
     @action(methods=["get"], detail=True)
     def all(self, request: Request, entity_id: str | None = None) -> Response:
         """Load direct plus indirectly (inherited) shared permissions."""
         assert entity_id is not None, "entity_id is required"
-        users = {}
-        # Load accessible users in order of permission precedence: users that
-        # have WRITE permission should also have READ
-        users.update(self._load_accessible_users(entity_id, ResourcePermissionType.READ))
-        users.update(self._load_accessible_users(entity_id, ResourcePermissionType.WRITE))
-        users.update(self._load_accessible_users(entity_id, ResourcePermissionType.MANAGE_SHARING))
-        owner_ids = self._load_accessible_users(entity_id, ResourcePermissionType.OWNER)
-        # Assume that there is one and only one DIRECT owner (there may be one
-        # or more INDIRECT cascading owners, which would the owners of the
-        # ancestor entities, but getAllAccessibleUsers does not return
-        # indirectly cascading owners)
+        result = self._load_all_permissions(request, entity_id)
+        return Response(result)
+
+    # -- Internal helpers --
+
+    def _load_direct_permissions(self, request: Request, entity_id: str) -> dict[str, Any]:
+        return self._load_permissions(request, entity_id, direct_only=True)
+
+    def _load_all_permissions(self, request: Request, entity_id: str) -> dict[str, Any]:
+        return self._load_permissions(request, entity_id, direct_only=False)
+
+    def _load_permissions(self, request: Request, entity_id: str, direct_only: bool) -> dict[str, Any]:
+        sharing = request.airavata_client.sharing
+        load_users = sharing.get_all_directly_accessible_users if direct_only else sharing.get_all_accessible_users
+        load_groups = sharing.get_all_directly_accessible_groups if direct_only else sharing.get_all_accessible_groups
+
+        users: dict[str, Any] = {}
+        users.update({uid: ResourcePermissionType.READ for uid in load_users(entity_id, ResourcePermissionType.READ)})
+        users.update({uid: ResourcePermissionType.WRITE for uid in load_users(entity_id, ResourcePermissionType.WRITE)})
+        users.update({uid: ResourcePermissionType.MANAGE_SHARING for uid in load_users(entity_id, ResourcePermissionType.MANAGE_SHARING)})
+        owner_ids = {uid: ResourcePermissionType.OWNER for uid in load_users(entity_id, ResourcePermissionType.OWNER)}
         owner_id = list(owner_ids.keys())[0]
-        # Remove owner from the users list
-        del users[owner_id]
+        users.pop(owner_id, None)
+
         user_list = []
-        for user_id in users:
-            user_list.append({"user": self._load_user_profile(user_id), "permissionType": users[user_id]})
-        groups = {}
-        groups.update(self._load_accessible_groups(entity_id, ResourcePermissionType.READ))
-        groups.update(self._load_accessible_groups(entity_id, ResourcePermissionType.WRITE))
-        groups.update(self._load_accessible_groups(entity_id, ResourcePermissionType.MANAGE_SHARING))
+        for uid, perm in users.items():
+            user_list.append({
+                "user": self._user_profile_to_dict(request, uid),
+                "permission_type": perm.name if hasattr(perm, "name") else str(perm),
+            })
+
+        groups: dict[str, Any] = {}
+        groups.update({gid: ResourcePermissionType.READ for gid in load_groups(entity_id, ResourcePermissionType.READ)})
+        groups.update({gid: ResourcePermissionType.WRITE for gid in load_groups(entity_id, ResourcePermissionType.WRITE)})
+        groups.update({gid: ResourcePermissionType.MANAGE_SHARING for gid in load_groups(entity_id, ResourcePermissionType.MANAGE_SHARING)})
+
         group_list = []
-        for group_id in groups:
-            group_list.append({"group": self._load_group(group_id), "permissionType": groups[group_id]})
-        shared_entity = {
-            "entityId": entity_id,
-            "userPermissions": user_list,
-            "groupPermissions": group_list,
-            "owner": self._load_user_profile(owner_id),
+        for gid, perm in groups.items():
+            group = sharing.get_group(gid)
+            group_list.append({
+                "group": self._group_to_dict(group),
+                "permission_type": perm.name if hasattr(perm, "name") else str(perm),
+            })
+
+        owner_profile = self._user_profile_to_dict(request, owner_id)
+        username = request.user.username
+        has_sharing_perm = sharing.user_has_access(
+            entity_id, username + "@" + settings.GATEWAY_ID, "MANAGE_SHARING"
+        )
+
+        return {
+            "entity_id": entity_id,
+            "user_permissions": user_list,
+            "group_permissions": group_list,
+            "owner": owner_profile,
+            "is_owner": owner_profile.get("user_id") == username,
+            "has_sharing_permission": has_sharing_perm,
         }
-        serializer = self.serializer_class(shared_entity, context={"request": request})
-        return Response(serializer.data)
+
+    def _user_profile_to_dict(self, request: Request, internal_user_id: str) -> dict[str, Any]:
+        username = internal_user_id[0:internal_user_id.rindex("@")]
+        profile = request.airavata_client.iam.get_user_profile_by_id(username, settings.GATEWAY_ID)
+        return proto_to_dict(profile)
+
+    @staticmethod
+    def _group_to_dict(group: Any) -> dict[str, Any]:
+        return {
+            "id": group.id,
+            "name": group.name,
+            "owner_id": group.ownerId,
+            "description": group.description,
+            "members": list(group.members) if group.members else [],
+            "admins": list(group.admins) if group.admins else [],
+        }
+
+    def _apply_permission_changes(
+        self,
+        request: Request,
+        entity_id: str,
+        existing_perms: dict[str, str],
+        new_perms: dict[str, str],
+        target: str,
+    ) -> None:
+        sharing = request.airavata_client.sharing
+        share_fn = sharing.share_resource_with_users if target == "users" else sharing.share_resource_with_groups
+        revoke_fn = sharing.revoke_sharing_of_resource_from_users if target == "users" else sharing.revoke_sharing_of_resource_from_groups
+
+        all_ids = existing_perms.keys() | new_perms.keys()
+        grants: dict[str, list[str]] = {"READ": [], "WRITE": [], "MANAGE_SHARING": []}
+        revokes: dict[str, list[str]] = {"READ": [], "WRITE": [], "MANAGE_SHARING": []}
+
+        for id_ in all_ids:
+            revoke_set, grant_set = self._compute_revokes_and_grants(
+                existing_perms.get(id_), new_perms.get(id_)
+            )
+            for perm in revoke_set:
+                revokes[perm].append(id_)
+            for perm in grant_set:
+                grants[perm].append(id_)
+
+        for perm_name, ids in grants.items():
+            if ids:
+                perm_type = ResourcePermissionType[perm_name]
+                share_fn(entity_id, {id_: perm_type for id_ in ids})
+        for perm_name, ids in revokes.items():
+            if ids:
+                perm_type = ResourcePermissionType[perm_name]
+                revoke_fn(entity_id, {id_: perm_type for id_ in ids})
+
+    @staticmethod
+    def _compute_revokes_and_grants(
+        current_permission: str | None = None, new_permission: str | None = None
+    ) -> tuple[set[str], set[str]]:
+        read_perms = {"READ"}
+        write_perms = {"READ", "WRITE"}
+        manage_perms = {"READ", "WRITE", "MANAGE_SHARING"}
+        perm_map = {"READ": read_perms, "WRITE": write_perms, "MANAGE_SHARING": manage_perms}
+        current_set = perm_map.get(current_permission, set()) if current_permission else set()
+        new_set = perm_map.get(new_permission, set()) if new_permission else set()
+        return (current_set - new_set, new_set - current_set)
 
 
-class CredentialSummaryViewSet(APIBackedViewSet):
-    serializer_class = serializers.CredentialSummarySerializer
+class CredentialSummaryViewSet(viewsets.ViewSet):
 
-    def get_list(self) -> list[Any]:
-        ssh_creds = self.request.airavata_client.credential.get_all_credential_summaries(self.gateway_id, SummaryType.SSH)
-        pwd_creds = self.request.airavata_client.credential.get_all_credential_summaries(self.gateway_id, SummaryType.PASSWD)
-        return ssh_creds + pwd_creds
+    def list(self, request: Request) -> Response:
+        gateway_id = settings.GATEWAY_ID
+        ssh_creds = request.airavata_client.credential.get_all_credential_summaries(gateway_id, SummaryType.SSH)
+        pwd_creds = request.airavata_client.credential.get_all_credential_summaries(gateway_id, SummaryType.PASSWD)
+        return Response([self._cred_to_dict(request, c) for c in (ssh_creds + pwd_creds)])
 
-    def get_instance(self, lookup_value: str) -> Any:
-        return self.request.airavata_client.credential.get_credential_summary(lookup_value, self.gateway_id)
+    def retrieve(self, request: Request, pk: str | None = None) -> Response:
+        cred = request.airavata_client.credential.get_credential_summary(pk, settings.GATEWAY_ID)
+        return Response(self._cred_to_dict(request, cred))
+
+    def destroy(self, request: Request, pk: str | None = None) -> Response:
+        gateway_id = settings.GATEWAY_ID
+        cred = request.airavata_client.credential.get_credential_summary(pk, gateway_id)
+        if cred.type == SummaryType.SSH:
+            request.airavata_client.credential.delete_ssh_pub_key(cred.token, gateway_id)
+        elif cred.type == SummaryType.PASSWD:
+            request.airavata_client.credential.delete_pwd_credential(cred.token, gateway_id)
+        return Response(status=204)
 
     @action(detail=False)
     def ssh(self, request: Request) -> Response:
-        summaries = self.request.airavata_client.credential.get_all_credential_summaries(self.gateway_id, SummaryType.SSH)
-        serializer = self.get_serializer(summaries, many=True)
-        return Response(serializer.data)
+        summaries = request.airavata_client.credential.get_all_credential_summaries(settings.GATEWAY_ID, SummaryType.SSH)
+        return Response([self._cred_to_dict(request, c) for c in summaries])
 
     @action(detail=False)
     def password(self, request: Request) -> Response:
-        summaries = self.request.airavata_client.credential.get_all_credential_summaries(self.gateway_id, SummaryType.PASSWD)
-        serializer = self.get_serializer(summaries, many=True)
-        return Response(serializer.data)
+        summaries = request.airavata_client.credential.get_all_credential_summaries(settings.GATEWAY_ID, SummaryType.PASSWD)
+        return Response([self._cred_to_dict(request, c) for c in summaries])
 
     @action(methods=["post"], detail=False)
     def create_ssh(self, request: Request) -> Response:
         if "description" not in request.data:
             raise ParseError("'description' is required in request")
         description = request.data.get("description")
-        token_id = self.request.airavata_client.credential.generate_and_register_ssh_keys(
-            self.gateway_id, self.username, description
+        gateway_id = settings.GATEWAY_ID
+        token_id = request.airavata_client.credential.generate_and_register_ssh_keys(
+            gateway_id, request.user.username, description
         )
-        credential_summary = self.request.airavata_client.credential.get_credential_summary(token_id, self.gateway_id)
-        serializer = self.get_serializer(credential_summary)
-        return Response(serializer.data)
+        cred = request.airavata_client.credential.get_credential_summary(token_id, gateway_id)
+        return Response(self._cred_to_dict(request, cred))
 
     @action(methods=["post"], detail=False)
     def create_password(self, request: Request) -> Response:
         if "username" not in request.data or "password" not in request.data or "description" not in request.data:
             raise ParseError("'username', 'password' and 'description' are all required in request")
-        username = request.data.get("username")
-        password = request.data.get("password")
-        description = request.data.get("description")
         from airavata_sdk.generated.org.apache.airavata.model.credential.store.credential_store_pb2 import (
             PasswordCredential,
         )
 
+        gateway_id = settings.GATEWAY_ID
         pwd_cred = PasswordCredential(
-            portal_user_name=username,
-            login_user_name=username,
-            password=password,
-            description=description,
-            gateway_id=self.gateway_id,
+            portal_user_name=request.data["username"],
+            login_user_name=request.data["username"],
+            password=request.data["password"],
+            description=request.data["description"],
+            gateway_id=gateway_id,
         )
-        token_id = self.request.airavata_client.credential.register_pwd_credential(self.gateway_id, pwd_cred)
-        credential_summary = self.request.airavata_client.credential.get_credential_summary(token_id, self.gateway_id)
-        serializer = self.get_serializer(credential_summary)
-        return Response(serializer.data)
+        token_id = request.airavata_client.credential.register_pwd_credential(gateway_id, pwd_cred)
+        cred = request.airavata_client.credential.get_credential_summary(token_id, gateway_id)
+        return Response(self._cred_to_dict(request, cred))
 
-    def perform_destroy(self, instance: Any) -> None:
-        if instance.type == SummaryType.SSH:
-            self.request.airavata_client.credential.delete_ssh_pub_key(instance.token, self.gateway_id)
-        elif instance.type == SummaryType.PASSWD:
-            self.request.airavata_client.credential.delete_pwd_credential(instance.token, self.gateway_id)
+    @staticmethod
+    def _cred_to_dict(request: Request, cred: Any) -> dict[str, Any]:
+        username = request.user.username + "@" + settings.GATEWAY_ID
+        user_has_write = request.airavata_client.sharing.user_has_access(cred.token, username, "WRITE")
+        return {
+            "type": cred.type.name if hasattr(cred.type, "name") else str(cred.type),
+            "gateway_id": cred.gatewayId if hasattr(cred, "gatewayId") else getattr(cred, "gateway_id", None),
+            "username": cred.username if hasattr(cred, "username") else None,
+            "public_key": cred.publicKey if hasattr(cred, "publicKey") else getattr(cred, "public_key", None),
+            "persisted_time": cred.persistedTime if hasattr(cred, "persistedTime") else getattr(cred, "persisted_time", None),
+            "token": cred.token,
+            "description": cred.description,
+            "user_has_write_access": user_has_write,
+        }
 
 
 class CurrentGatewayResourceProfile(APIView):
@@ -1340,58 +1427,49 @@ class ExperimentArchiveView(APIView):
         return Response(result, status=status.HTTP_200_OK)
 
 
-class StorageResourceViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, GenericAPIBackedViewSet):
-    serializer_class = serializers.StorageResourceSerializer
+class StorageResourceViewSet(viewsets.ViewSet):
     lookup_field = "storage_resource_id"
 
-    def get_instance(self, lookup_value: str, format: str | None = None) -> Any:
-        from django_airavata.proto_compat import StorageResourceDescription as StorageCompat
+    def list(self, request: Request) -> Response:
+        all_names = request.airavata_client.storage.get_all_storage_resource_names()
+        results = []
+        for rid in all_names:
+            proto = request.airavata_client.storage.get_storage_resource(rid)
+            results.append(proto_to_dict(proto))
+        return Response(results)
 
-        proto = self.request.airavata_client.storage.get_storage_resource(lookup_value)
-        return StorageCompat(
-            storageResourceId=proto.storage_resource_id,
-            hostName=proto.host_name,
-            storageResourceDescription=proto.storage_resource_description,
-            enabled=proto.enabled,
-            creationTime=proto.creation_time if proto.creation_time else None,
-            updateTime=proto.update_time if proto.update_time else None,
-        )
+    def retrieve(self, request: Request, storage_resource_id: str | None = None) -> Response:
+        proto = request.airavata_client.storage.get_storage_resource(storage_resource_id)
+        return Response(proto_to_dict(proto))
 
-    def perform_create(self, serializer):
+    def create(self, request: Request) -> Response:
         from airavata_sdk.generated.org.apache.airavata.model.appcatalog.storageresource.storage_resource_pb2 import (
             StorageResourceDescription as StorageResourceDescriptionProto,
         )
 
-        compat_obj = serializer.save()
-        proto_obj = StorageResourceDescriptionProto(
-            host_name=getattr(compat_obj, "hostName", ""),
-            storage_resource_description=getattr(compat_obj, "storageResourceDescription", ""),
-            enabled=getattr(compat_obj, "enabled", True),
-        )
-        resource_id = self.request.airavata_client.storage.register_storage_resource(proto_obj)
-        compat_obj.storageResourceId = resource_id
+        proto = dict_to_proto(request.data, StorageResourceDescriptionProto)
+        resource_id = request.airavata_client.storage.register_storage_resource(proto)
+        proto.storage_resource_id = resource_id
+        return Response(proto_to_dict(proto), status=201)
 
-    def perform_update(self, serializer):
+    def update(self, request: Request, storage_resource_id: str | None = None) -> Response:
         from airavata_sdk.generated.org.apache.airavata.model.appcatalog.storageresource.storage_resource_pb2 import (
             StorageResourceDescription as StorageResourceDescriptionProto,
         )
 
-        compat_obj = serializer.save()
-        resource_id = getattr(compat_obj, "storageResourceId", "")
-        proto_obj = StorageResourceDescriptionProto(
-            storage_resource_id=resource_id,
-            host_name=getattr(compat_obj, "hostName", ""),
-            storage_resource_description=getattr(compat_obj, "storageResourceDescription", ""),
-            enabled=getattr(compat_obj, "enabled", True),
-        )
-        self.request.airavata_client.storage.update_storage_resource(resource_id, proto_obj)
+        proto = dict_to_proto(request.data, StorageResourceDescriptionProto)
+        proto.storage_resource_id = storage_resource_id
+        request.airavata_client.storage.update_storage_resource(storage_resource_id, proto)
+        updated = request.airavata_client.storage.get_storage_resource(storage_resource_id)
+        return Response(proto_to_dict(updated))
 
-    def perform_destroy(self, instance):
-        self.request.airavata_client.storage.delete_storage_resource(instance.storageResourceId)
+    def destroy(self, request: Request, storage_resource_id: str | None = None) -> Response:
+        request.airavata_client.storage.delete_storage_resource(storage_resource_id)
+        return Response(status=204)
 
     @action(detail=False)
     def all_names(self, request: Request, format: str | None = None) -> Response:
-        """Return a map of compute resource names keyed by resource id."""
+        """Return a map of storage resource names keyed by resource id."""
         return Response(request.airavata_client.storage.get_all_storage_resource_names())
 
 
@@ -1470,7 +1548,6 @@ class ParserViewSet(viewsets.ViewSet):
 
 
 class UserStoragePathView(APIView):
-    serializer_class = serializers.UserStoragePathSerializer
     permission_classes = (IsAuthenticated, UserStorageSharedDirPermission)
 
     def get(self, request: Request, path: str = "/", format: str | None = None) -> Response:
@@ -1516,7 +1593,7 @@ class UserStoragePathView(APIView):
             data_product = tus.save_tus_upload(uploadURL, save_file)
         return self._create_response(request, path, uploaded=data_product, experiment_id=experiment_id)
 
-    # Accept wither to replace file or to replace file content text.
+    # Accept either to replace file or to replace file content text.
     def put(self, request: Request, path: str = "/", format: str | None = None) -> Response:
         path = request.POST.get("path", path)
         # Replace the file if the request has a file upload.
@@ -1549,21 +1626,79 @@ class UserStoragePathView(APIView):
     ) -> Response:
         if user_storage.dir_exists(request, path, experiment_id=experiment_id):
             directories, files = user_storage.listdir(request, path, experiment_id=experiment_id)
-            data: dict[str, Any] = {"isDir": True, "directories": directories, "files": files}
+            dirs_out = [self._serialize_directory(request, d) for d in directories]
+            files_out = [self._serialize_file(request, f) for f in files]
+            data: dict[str, Any] = {
+                "is_dir": True,
+                "directories": dirs_out,
+                "files": files_out,
+                "parts": self._split_path(path),
+                "path": path,
+                "user_has_write_access": self._user_has_write_access(request, {"isDir": True, "path": path}),
+            }
             if uploaded is not None:
-                data["uploaded"] = uploaded
-            data["parts"] = self._split_path(path)
-            data["path"] = path
-            serializer = self.serializer_class(data, context={"request": request})
-            return Response(serializer.data)
+                data["uploaded"] = proto_to_dict(uploaded) if hasattr(uploaded, "DESCRIPTOR") else uploaded
+            return Response(data)
         else:
             file = user_storage.get_file_metadata(request, path, experiment_id=experiment_id)
-            data: dict[str, Any] = {"isDir": False, "directories": [], "files": [file]}
+            files_out = [self._serialize_file(request, file)]
+            data = {
+                "is_dir": False,
+                "directories": [],
+                "files": files_out,
+                "parts": self._split_path(path),
+                "user_has_write_access": self._user_has_write_access(request, {"isDir": False, "path": path}),
+            }
             if uploaded is not None:
-                data["uploaded"] = uploaded
-            data["parts"] = self._split_path(path)
-            serializer = self.serializer_class(data, context={"request": request})
-            return Response(serializer.data)
+                data["uploaded"] = proto_to_dict(uploaded) if hasattr(uploaded, "DESCRIPTOR") else uploaded
+            return Response(data)
+
+    @staticmethod
+    def _serialize_file(request: Request, f: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "name": f.get("name"),
+            "download_url": user_storage.get_lazy_download_url(request, data_product_uri=f.get("data-product-uri", "")),
+            "data_product_uri": f.get("data-product-uri"),
+            "created_time": f.get("created_time"),
+            "modified_time": f.get("modified_time"),
+            "mime_type": f.get("mime_type"),
+            "size": f.get("size"),
+            "hidden": f.get("hidden", False),
+        }
+
+    def _serialize_directory(self, request: Request, d: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "name": d.get("name"),
+            "path": d.get("path"),
+            "created_time": d.get("created_time"),
+            "modified_time": d.get("modified_time"),
+            "size": d.get("size"),
+            "hidden": d.get("hidden", False),
+            "is_shared_dir": d.get("isSharedDir", view_utils.is_shared_dir(d.get("path", ""))),
+            "user_has_write_access": self._user_has_write_access(request, d),
+        }
+
+    @staticmethod
+    def _user_has_write_access(request: Request, instance: dict[str, Any]) -> bool:
+        from pathlib import Path as PPath
+
+        if hasattr(settings, "GATEWAY_DATA_STORE_REMOTE_API"):
+            if "userHasWriteAccess" in instance:
+                return instance["userHasWriteAccess"]
+            elif instance.get("isDir", False):
+                path = PPath(instance.get("path", ""))
+                if path != PPath(""):
+                    directories, _ = user_storage.listdir(request, str(path.parent))
+                    for d in directories:
+                        if PPath(d["path"]) == path:
+                            return d.get("userHasWriteAccess", False)
+                    return False
+                else:
+                    return True
+            else:
+                return False
+        is_shared = view_utils.is_shared_path(instance.get("path", ""))
+        return request.is_gateway_admin if is_shared else True
 
     def _split_path(self, path: str) -> list[str]:
         head, tail = os.path.split(path)
@@ -1576,7 +1711,6 @@ class UserStoragePathView(APIView):
 
 
 class ExperimentStoragePathView(APIView):
-    serializer_class = serializers.ExperimentStoragePathSerializer
 
     def get(
         self, request: Request, experiment_id: str | None = None, path: str = "", format: str | None = None
@@ -1588,18 +1722,44 @@ class ExperimentStoragePathView(APIView):
         if user_storage.experiment_dir_exists(request, experiment_id, path):
             directories, files = user_storage.list_experiment_dir(request, experiment_id, path)
 
-            def add_expid(d):
-                d["experiment_id"] = experiment_id
-                return d
+            dirs_out = []
+            for d in directories:
+                dirs_out.append({
+                    "name": d.get("name"),
+                    "path": d.get("path"),
+                    "created_time": d.get("created_time"),
+                    "modified_time": d.get("modified_time"),
+                    "size": d.get("size"),
+                    "url": request.build_absolute_uri(
+                        reverse(
+                            "django_airavata_api:experiment-storage-items",
+                            kwargs={"experiment_id": experiment_id, "path": d.get("path", "")},
+                        )
+                    ),
+                })
+
+            files_out = []
+            for f in files:
+                files_out.append({
+                    "name": f.get("name"),
+                    "download_url": user_storage.get_lazy_download_url(
+                        request, data_product_uri=f.get("data-product-uri", "")
+                    ),
+                    "data_product_uri": f.get("data-product-uri"),
+                    "created_time": f.get("created_time"),
+                    "modified_time": f.get("modified_time"),
+                    "mime_type": f.get("mime_type"),
+                    "size": f.get("size"),
+                    "hidden": f.get("hidden", False),
+                })
 
             data: dict[str, Any] = {
-                "isDir": True,
-                "directories": map(add_expid, directories),
-                "files": map(add_expid, files),
+                "is_dir": True,
+                "directories": dirs_out,
+                "files": files_out,
+                "parts": self._split_path(path),
             }
-            data["parts"] = self._split_path(path)
-            serializer = self.serializer_class(data, context={"request": request})
-            return Response(serializer.data)
+            return Response(data)
         else:
             raise Http404(f"Path '{path}' does not exist for {experiment_id}")
 
@@ -1691,70 +1851,70 @@ class AckNotificationViewSet(APIView):
         return HttpResponse(status=204)
 
 
-class IAMUserViewSet(
-    mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin,
-    mixins.ListModelMixin,
-    mixins.DestroyModelMixin,
-    GenericAPIBackedViewSet,
-):
-    serializer_class = serializers.IAMUserProfile
-    pagination_class = APIResultPagination
+class IAMUserViewSet(viewsets.ViewSet):
     permission_classes = (
         IsAuthenticated,
         IsInAdminsGroupPermission,
     )
     lookup_field = "user_id"
 
-    def get_list(self) -> APIResultIterator:
-        search = self.request.GET.get("search", None)
+    def list(self, request: Request) -> Response:
+        search = request.GET.get("search", None)
+        limit = int(request.GET.get("limit", "-1"))
+        offset = int(request.GET.get("offset", "0"))
+        users = iam_admin_client.get_users(offset, limit, search)
+        return Response([self._convert_user_profile(request, u) for u in users])
 
-        convert_user_profile = self._convert_user_profile
+    def retrieve(self, request: Request, user_id: str | None = None) -> Response:
+        return Response(self._convert_user_profile(request, iam_admin_client.get_user(user_id)))
 
-        class IAMUsersResultIterator(APIResultIterator):
-            def get_results(self, limit: int = -1, offset: int = 0) -> Any:
-                return map(convert_user_profile, iam_admin_client.get_users(offset, limit, search))
+    def update(self, request: Request, user_id: str | None = None) -> Response:
+        sharing_client = request.airavata_client.sharing
+        iam_client = request.airavata_client.iam
 
-        return IAMUsersResultIterator(query_params=self.request.query_params.copy())
+        existing = self._convert_user_profile(request, iam_admin_client.get_user(user_id))
+        existing_group_ids = [g["id"] for g in existing["groups"]]
 
-    def get_instance(self, lookup_value: str) -> dict[str, Any]:
-        return self._convert_user_profile(iam_admin_client.get_user(lookup_value))
+        incoming_groups = request.data.get("groups", [])
+        new_group_ids = [g["id"] if isinstance(g, dict) else g for g in incoming_groups]
 
-    def perform_update(self, serializer: Any) -> None:
-        managed_user_profile = serializer.save()
-        sharing_client = self.request.airavata_client.sharing
-        iam_client = self.request.airavata_client.iam
-        user_id = managed_user_profile["airavataInternalUserId"]
+        added_group_ids = list(set(new_group_ids) - set(existing_group_ids))
+        removed_group_ids = list(set(existing_group_ids) - set(new_group_ids))
+
+        internal_user_id = existing["airavata_internal_user_id"]
+
         added_groups = []
-        for group_id in managed_user_profile["_added_group_ids"]:
+        for group_id in added_group_ids:
             group = sharing_client.get_group(group_id)
-            sharing_client.add_users_to_group([user_id], group_id)
+            sharing_client.add_users_to_group([internal_user_id], group_id)
             added_groups.append(group)
-        if len(added_groups) > 0:
-            user_profile = iam_client.get_user_profile_by_id(managed_user_profile["userId"], settings.GATEWAY_ID)
+        if added_groups:
+            user_profile = iam_client.get_user_profile_by_id(existing["user_id"], settings.GATEWAY_ID)
             signals.user_added_to_group.send(
-                sender=self.__class__, user=user_profile, groups=added_groups, request=self.request
+                sender=self.__class__, user=user_profile, groups=added_groups, request=request
             )
-        for group_id in managed_user_profile["_removed_group_ids"]:
-            sharing_client.remove_users_from_group([user_id], group_id)
+        for group_id in removed_group_ids:
+            sharing_client.remove_users_from_group([internal_user_id], group_id)
 
-    def perform_destroy(self, instance: dict[str, Any]) -> None:
-        iam_admin_client.delete_user(instance["userId"])
+        updated = self._convert_user_profile(request, iam_admin_client.get_user(user_id))
+        return Response(updated)
+
+    def destroy(self, request: Request, user_id: str | None = None) -> Response:
+        iam_admin_client.delete_user(user_id)
+        return Response(status=204)
 
     @action(methods=["post"], detail=True)
     def enable(self, request: Request, user_id: str | None = None) -> Response:
         assert user_id is not None, "user_id is required"
         iam_admin_client.enable_user(user_id)
-        instance = self.get_instance(user_id)
-        serializer = self.serializer_class(instance=instance, context={"request": request})
-        return Response(serializer.data)
+        return Response(self._convert_user_profile(request, iam_admin_client.get_user(user_id)))
 
     @action(methods=["put"], detail=False)
     def update_username(self, request: Request) -> Response:
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        old_username = serializer.validated_data["userId"]
-        new_username = serializer.validated_data["newUsername"]
+        old_username = request.data.get("user_id") or request.data.get("userId")
+        new_username = request.data.get("new_username") or request.data.get("newUsername")
+        if not old_username or not new_username:
+            raise ParseError("'user_id' and 'new_username' are required")
         iam_admin_client.update_username(old_username, new_username)
         # set username_initialized to True so it is treated as valid.
         django_user = get_user_model().objects.get(username=old_username)
@@ -1765,29 +1925,65 @@ class IAMUserViewSet(
         # But this is done to keep it consistent.
         django_user.username = new_username
         django_user.save()
-        instance = self.get_instance(new_username)
-        serializer = self.serializer_class(instance=instance, context={"request": request})
-        return Response(serializer.data)
+        return Response(self._convert_user_profile(request, iam_admin_client.get_user(new_username)))
 
-    def _convert_user_profile(self, user_profile: Any) -> dict[str, Any]:
-        iam_client = self.request.airavata_client.iam
-        sharing_client = self.request.airavata_client.sharing
-        airavata_user_profile_exists = iam_client.does_user_exist(user_profile.userId, self.gateway_id)
+    def _convert_user_profile(self, request: Request, user_profile: Any) -> dict[str, Any]:
+        iam_client = request.airavata_client.iam
+        sharing_client = request.airavata_client.sharing
+        gateway_id = settings.GATEWAY_ID
+        airavata_user_profile_exists = iam_client.does_user_exist(user_profile.userId, gateway_id)
         groups = []
         if airavata_user_profile_exists:
-            groups = sharing_client.get_all_groups_user_belongs(user_profile.airavataInternalUserId)
+            compat_groups = sharing_client.get_all_groups_user_belongs(user_profile.airavataInternalUserId)
+            for g in compat_groups:
+                groups.append({
+                    "id": g.id,
+                    "name": g.name,
+                    "owner_id": g.ownerId,
+                    "description": g.description,
+                })
+
+        # Compute externalIDPUserInfo
+        external_idp_user_info = {}
+        try:
+            User = get_user_model()
+            if User.objects.filter(username=user_profile.userId).exists():
+                django_user = User.objects.get(username=user_profile.userId)
+                claims = django_user.user_profile.idp_userinfo.all()
+                if claims.exists():
+                    external_idp_user_info["idp_alias"] = claims.first().idp_alias
+                    external_idp_user_info["userinfo"] = {}
+                for claim in claims:
+                    external_idp_user_info.setdefault("userinfo", {})[claim.claim] = claim.value
+        except Exception as e:
+            log.warning(f"Failed to load idp_userinfo for {user_profile.userId}", exc_info=e)
+
+        # Compute userProfileInvalidFields
+        user_profile_invalid_fields = []
+        try:
+            User = get_user_model()
+            if User.objects.filter(username=user_profile.userId).exists():
+                django_user = User.objects.get(username=user_profile.userId)
+                if hasattr(django_user, "user_profile"):
+                    user_profile_invalid_fields = django_user.user_profile.invalid_fields
+        except Exception as e:
+            log.warning(f"Failed to get invalid_fields for {user_profile.userId}", exc_info=e)
+
         return {
-            "airavataInternalUserId": user_profile.airavataInternalUserId,
-            "userId": user_profile.userId,
-            "gatewayId": user_profile.gatewayId,
-            "email": user_profile.emails[0],
-            "firstName": user_profile.firstName,
-            "lastName": user_profile.lastName,
+            "airavata_internal_user_id": user_profile.airavataInternalUserId,
+            "user_id": user_profile.userId,
+            "gateway_id": user_profile.gatewayId,
+            "email": user_profile.emails[0] if user_profile.emails else None,
+            "first_name": user_profile.firstName,
+            "last_name": user_profile.lastName,
             "enabled": user_profile.State == Status.ACTIVE,
-            "emailVerified": (user_profile.State == Status.CONFIRMED or user_profile.State == Status.ACTIVE),
-            "airavataUserProfileExists": airavata_user_profile_exists,
-            "creationTime": user_profile.creationTime,
+            "email_verified": (user_profile.State == Status.CONFIRMED or user_profile.State == Status.ACTIVE),
+            "airavata_user_profile_exists": airavata_user_profile_exists,
+            "creation_time": user_profile.creationTime,
             "groups": groups,
+            "user_has_write_access": request.is_gateway_admin,
+            "external_idp_user_info": external_idp_user_info,
+            "user_profile_invalid_fields": user_profile_invalid_fields,
         }
 
 
@@ -1827,33 +2023,28 @@ class ExperimentStatisticsView(APIView):
         return response
 
 
-class UnverifiedEmailUserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericAPIBackedViewSet):
-    serializer_class = serializers.UnverifiedEmailUserProfile
-    pagination_class = APIResultPagination
+class UnverifiedEmailUserViewSet(viewsets.ViewSet):
     permission_classes = (
         IsAuthenticated,
         IsInAdminsGroupPermission,
     )
     lookup_field = "user_id"
 
-    def get_list(self) -> APIResultIterator:
-        get_users = self._get_unverified_email_user_profiles
+    def list(self, request: Request) -> Response:
+        limit = int(request.GET.get("limit", "-1"))
+        offset = int(request.GET.get("offset", "0"))
+        users = self._get_unverified_email_user_profiles(request, limit, offset)
+        return Response(users)
 
-        class UnverifiedEmailUsersResultIterator(APIResultIterator):
-            def get_results(self, limit: int = -1, offset: int = 0) -> list[dict[str, Any]]:
-                return get_users(limit, offset)
-
-        return UnverifiedEmailUsersResultIterator()
-
-    def get_instance(self, lookup_value: str) -> dict[str, Any]:
-        users = self._get_unverified_email_user_profiles(limit=1, username=lookup_value)
+    def retrieve(self, request: Request, user_id: str | None = None) -> Response:
+        users = self._get_unverified_email_user_profiles(request, limit=1, username=user_id)
         if len(users) == 0:
-            raise Http404(f"No unverified email record found for user {lookup_value}")
-        else:
-            return users[0]
+            raise Http404(f"No unverified email record found for user {user_id}")
+        return Response(users[0])
 
+    @staticmethod
     def _get_unverified_email_user_profiles(
-        self, limit: int = -1, offset: int = 0, username: str | None = None
+        request: Request, limit: int = -1, offset: int = 0, username: str | None = None
     ) -> list[dict[str, Any]]:
         unverified_emails = (
             EmailVerification.objects.filter(verified=False).order_by("username").values("username").distinct()
@@ -1868,21 +2059,21 @@ class UnverifiedEmailUserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixi
             if iam_admin_client.is_user_exist(unverified_username):
                 user_profile = iam_admin_client.get_user(unverified_username)
                 if user_profile.State == Status.CONFIRMED or user_profile.State == Status.ACTIVE:
-                    # TODO: test this
                     EmailVerification.objects.filter(username=unverified_username).update(verified=True)
                     continue
                 results.append(
                     {
-                        "userId": user_profile.userId,
-                        "gatewayId": user_profile.gatewayId,
-                        "email": user_profile.emails[0],
-                        "firstName": user_profile.firstName,
-                        "lastName": user_profile.lastName,
+                        "user_id": user_profile.userId,
+                        "gateway_id": user_profile.gatewayId,
+                        "email": user_profile.emails[0] if user_profile.emails else None,
+                        "first_name": user_profile.firstName,
+                        "last_name": user_profile.lastName,
                         "enabled": user_profile.State == Status.ACTIVE,
-                        "emailVerified": (
+                        "email_verified": (
                             user_profile.State == Status.CONFIRMED or user_profile.State == Status.ACTIVE
                         ),
-                        "creationTime": user_profile.creationTime,
+                        "creation_time": user_profile.creationTime,
+                        "user_has_write_access": request.is_gateway_admin,
                     }
                 )
             else:
