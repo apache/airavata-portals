@@ -4,11 +4,11 @@ import DataProduct from "./DataProduct";
 
 const FIELDS = [
   {
-    name: "processStatus",
+    name: "process_status",
     type: ProcessStatus,
   },
   {
-    name: "dataProducts",
+    name: "data_products",
     type: DataProduct,
     list: true,
   },

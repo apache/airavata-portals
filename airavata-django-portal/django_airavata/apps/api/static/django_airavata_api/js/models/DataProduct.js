@@ -4,32 +4,32 @@ import DataReplicaLocation from "./DataReplicaLocation";
 import URL from "url-parse";
 
 const FIELDS = [
-  "productUri",
-  "gatewayId",
-  "parentProductUri",
-  "productName",
-  "productDescription",
-  "ownerName",
-  "dataProductType",
-  "productSize",
+  "product_uri",
+  "gateway_id",
+  "parent_product_uri",
+  "product_name",
+  "product_description",
+  "owner_name",
+  "data_product_type",
+  "product_size",
   {
-    name: "creationTime",
+    name: "creation_time",
     type: "date",
   },
   {
-    name: "lastModifiedTime",
+    name: "last_modified_time",
     type: "date",
   },
-  "productMetadata",
+  "product_metadata",
   {
-    name: "replicaLocations",
+    name: "replica_locations",
     type: DataReplicaLocation,
     list: true,
   },
-  "downloadURL",
-  "isInputFileUpload",
+  "download_url",
+  "is_input_file_upload",
   "filesize",
-  "userHasWriteAccess",
+  "user_has_write_access",
 ];
 
 const FILENAME_REGEX = /[^/]+$/;
@@ -42,8 +42,8 @@ export default class DataProduct extends BaseModel {
   }
 
   get filename() {
-    if (this.replicaLocations && this.replicaLocations.length > 0) {
-      const firstReplicaLocation = this.replicaLocations[0];
+    if (this.replica_locations && this.replica_locations.length > 0) {
+      const firstReplicaLocation = this.replica_locations[0];
       const fileURL = new URL(firstReplicaLocation.filePath);
       const filenameMatch = FILENAME_REGEX.exec(fileURL.pathname);
       if (filenameMatch) {
@@ -62,8 +62,8 @@ export default class DataProduct extends BaseModel {
   }
 
   get mimeType() {
-    return this.productMetadata && this.productMetadata["mime-type"]
-      ? this.productMetadata["mime-type"]
+    return this.product_metadata && this.product_metadata["mime-type"]
+      ? this.product_metadata["mime-type"]
       : null;
   }
 }

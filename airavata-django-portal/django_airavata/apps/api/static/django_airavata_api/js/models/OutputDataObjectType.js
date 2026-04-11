@@ -11,33 +11,33 @@ const FIELDS = [
     type: DataType,
     default: DataType.URI,
   },
-  "applicationArgument",
+  "application_argument",
   {
-    name: "isRequired",
+    name: "is_required",
     type: "boolean",
     default: false,
   },
   {
-    name: "requiredToAddedToCommandLine",
+    name: "required_to_added_to_command_line",
     type: "boolean",
     default: false,
   },
   {
-    name: "dataMovement",
+    name: "data_movement",
     type: "boolean",
     default: false,
   },
   "location",
-  "searchQuery",
+  "search_query",
   {
-    name: "outputStreaming",
+    name: "output_streaming",
     type: "boolean",
     default: false,
   },
-  "storageResourceId",
-  "metaData",
+  "storage_resource_id",
+  "meta_data",
   {
-    name: "intermediateOutput",
+    name: "intermediate_output",
     type: IntermediateOutput,
   }
 ];
@@ -54,7 +54,7 @@ export default class OutputDataObjectType extends BaseModel {
   }
 
   get fileMetadata() {
-    return this.metaData ? this.metaData["file-metadata"] : null;
+    return this.meta_data ? this.meta_data["file-metadata"] : null;
   }
 
   get fileMetadataMimeType() {

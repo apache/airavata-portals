@@ -43,7 +43,7 @@ export default {
         return "N/A";
       } else {
         return this.applicationInterface
-          ? this.applicationInterface.applicationName
+          ? this.applicationInterface.application_name
           : "";
       }
     },

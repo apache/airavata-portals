@@ -39,7 +39,7 @@ const createExperiment = async function ({
     groupResourceProfile
   );
   const deployment = deployments.find(
-    (d) => d.computeHostId === computeResourceId
+    (d) => d.compute_host_id === computeResourceId
   );
   if (!deployment) {
     throw new Error(
@@ -52,30 +52,30 @@ const createExperiment = async function ({
 
   const experiment = applicationInterface.createExperiment();
   if (experimentName) {
-    experiment.experimentName = experimentName;
+    experiment.experiment_name = experimentName;
   } else {
-    experiment.experimentName = `${
-      applicationInterface.applicationName
+    experiment.experiment_name = `${
+      applicationInterface.application_name
     } on ${new Date().toLocaleString([], {
       dateStyle: "medium",
       timeStyle: "short",
     })}`;
   }
-  experiment.projectId = projectId;
-  experiment.userConfigurationData.groupResourceProfileId =
-    groupResourceProfile.groupResourceProfileId;
-  experiment.userConfigurationData.computationalResourceScheduling.resourceHostId = computeResourceId;
-  experiment.userConfigurationData.computationalResourceScheduling.totalCPUCount =
-    queueDescription.defaultCPUCount;
-  experiment.userConfigurationData.computationalResourceScheduling.nodeCount =
-    queueDescription.defaultNodeCount;
-  experiment.userConfigurationData.computationalResourceScheduling.wallTimeLimit =
-    queueDescription.defaultWalltime;
-  experiment.userConfigurationData.computationalResourceScheduling.queueName =
-    queueDescription.queueName;
+  experiment.project_id = projectId;
+  experiment.user_configuration_data.group_resource_profile_id =
+    groupResourceProfile.group_resource_profile_id;
+  experiment.user_configuration_data.computational_resource_scheduling.resource_host_id = computeResourceId;
+  experiment.user_configuration_data.computational_resource_scheduling.total_cpu_count =
+    queueDescription.default_cpu_count;
+  experiment.user_configuration_data.computational_resource_scheduling.node_count =
+    queueDescription.default_node_count;
+  experiment.user_configuration_data.computational_resource_scheduling.wall_time_limit =
+    queueDescription.default_walltime;
+  experiment.user_configuration_data.computational_resource_scheduling.queue_name =
+    queueDescription.queue_name;
 
   if (experimentInputs) {
-    for (let input of experiment.experimentInputs) {
+    for (let input of experiment.experiment_inputs) {
       if (input.name in experimentInputs) {
         input.value = experimentInputs[input.name];
       }
@@ -87,7 +87,7 @@ const createExperiment = async function ({
 const loadApplicationInterfaceByName = async function (applicationName) {
   const applicationInterfaces = await services.ApplicationInterfaceService.list();
   const applicationInterface = applicationInterfaces.find(
-    (ai) => ai.applicationName === applicationName
+    (ai) => ai.application_name === applicationName
   );
   if (!applicationInterface) {
     throw new Error(
@@ -129,8 +129,8 @@ const loadComputeResourceIdByName = async function (computeResourceName) {
 const loadGroupResourceProfile = async function (computeResourceId) {
   const groupResourceProfiles = await services.GroupResourceProfileService.list();
   const groupResourceProfile = groupResourceProfiles.find((grp) => {
-    for (let computePref of grp.computePreferences) {
-      if (computePref.computeResourceId === computeResourceId) {
+    for (let computePref of grp.compute_preferences) {
+      if (computePref.compute_resource_id === computeResourceId) {
         return true;
       }
     }
@@ -149,20 +149,20 @@ const loadApplicationDeployments = async function (
   groupResourceProfile
 ) {
   return await services.ApplicationDeploymentService.list({
-    appModuleId: applicationModuleId,
-    groupResourceProfileId: groupResourceProfile.groupResourceProfileId,
+    app_module_id: applicationModuleId,
+    group_resource_profile_id: groupResourceProfile.group_resource_profile_id,
   });
 };
 
 const loadQueue = async function (applicationDeployment) {
   const queues = await services.ApplicationDeploymentService.getQueues({
-    lookup: applicationDeployment.appDeploymentId,
+    lookup: applicationDeployment.app_deployment_id,
   });
-  const queue = queues.find((q) => q.isDefaultQueue);
+  const queue = queues.find((q) => q.is_default_queue);
   if (!queue) {
     throw new Error(
       "Couldn't find a default queue for deployment " +
-        applicationDeployment.appDeploymentId
+        applicationDeployment.app_deployment_id
     );
   }
   return queue;
@@ -207,7 +207,7 @@ const readExperimentDataObject = async function (
   }
   const experiment = await loadExperiment(experimentId);
   const dataObjectsField =
-    dataType === "input" ? "experimentInputs" : "experimentOutputs";
+    dataType === "input" ? "experiment_inputs" : "experiment_outputs";
   const dataObject = experiment[dataObjectsField].find(
     (dataObj) => dataObj.name === name
   );

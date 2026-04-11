@@ -3,46 +3,46 @@ import ComputationalResourceSchedulingModel from "./ComputationalResourceSchedul
 
 const FIELDS = [
   {
-    name: "airavataAutoSchedule",
+    name: "airavata_auto_schedule",
     type: "boolean",
     default: false,
   },
   {
-    name: "overrideManualScheduledParams",
+    name: "override_manual_scheduled_params",
     type: "boolean",
     default: false,
   },
   {
-    name: "shareExperimentPublicly",
+    name: "share_experiment_publicly",
     type: "boolean",
     default: false,
   },
   {
-    name: "computationalResourceScheduling",
+    name: "computational_resource_scheduling",
     type: ComputationalResourceSchedulingModel,
     default: BaseModel.defaultNewInstance(ComputationalResourceSchedulingModel),
   },
   {
-    name: "throttleResources",
+    name: "throttle_resources",
     type: "boolean",
     default: false,
   },
-  "userDN",
+  "user_dn",
   {
-    name: "generateCert",
+    name: "generate_cert",
     type: "boolean",
     default: false,
   },
-  "inputStorageResourceId",
-  "outputStorageResourceId",
-  "experimentDataDir",
+  "input_storage_resource_id",
+  "output_storage_resource_id",
+  "experiment_data_dir",
   {
-    name: "useUserCRPref",
+    name: "use_user_cr_pref",
     type: "boolean",
     default: false,
   },
-  "groupResourceProfileId",
-  "autoScheduledCompResourceSchedulingList",
+  "group_resource_profile_id",
+  "auto_scheduled_comp_resource_scheduling_list",
 ];
 
 export default class UserConfigurationData extends BaseModel {
@@ -52,10 +52,10 @@ export default class UserConfigurationData extends BaseModel {
 
   validate() {
     const validationResults = {};
-    const computationalResourceSchedulingValidation = this.computationalResourceScheduling.validate();
+    const computationalResourceSchedulingValidation = this.computational_resource_scheduling.validate();
     if (Object.keys(computationalResourceSchedulingValidation).length > 0) {
       validationResults[
-        "computationalResourceScheduling"
+        "computational_resource_scheduling"
       ] = computationalResourceSchedulingValidation;
     }
     return validationResults;

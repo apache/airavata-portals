@@ -42,7 +42,7 @@
         >
       </template>
       <template v-else-if="dataProducts.length === 1">
-        <button class="btn" size="sm" :href="dataProducts[0].downloadURL + '&download'"
+        <button class="btn" size="sm" :href="dataProducts[0].download_url + '&download'"
           >Download</button
         >
       </template>
@@ -114,7 +114,7 @@ export default {
     ]),
     outputViews() {
       return this.fullExperiment
-        ? this.fullExperiment.outputViews[this.experimentOutput.name]
+        ? this.fullExperiment.output_views[this.experimentOutput.name]
         : [];
     },
     dataProducts() {
@@ -203,12 +203,12 @@ export default {
     fetchIntermediateOutputStatusMessage() {
       let msg = "";
       if (
-        this.experimentOutput.intermediateOutput &&
-        this.experimentOutput.intermediateOutput.processStatus &&
-        this.experimentOutput.intermediateOutput.processStatus.isFinished
+        this.experimentOutput.intermediate_output &&
+        this.experimentOutput.intermediate_output.process_status &&
+        this.experimentOutput.intermediate_output.process_status.isFinished
       ) {
-        const timestamp = this.experimentOutput.intermediateOutput.processStatus
-          .timeOfStateChange;
+        const timestamp = this.experimentOutput.intermediate_output.process_status
+          .time_of_state_change;
         msg +=
           "Latest output fetched on " +
           timestamp.toLocaleString([], {
@@ -218,11 +218,11 @@ export default {
           ". ";
       }
       if (
-        this.experimentOutput.intermediateOutput &&
-        this.experimentOutput.intermediateOutput.processStatus
+        this.experimentOutput.intermediate_output &&
+        this.experimentOutput.intermediate_output.process_status
       ) {
         if (
-          this.experimentOutput.intermediateOutput.processStatus.state ===
+          this.experimentOutput.intermediate_output.process_status.state ===
           ProcessState.FAILED
         ) {
           msg += "Last fetch failed, please try again.";

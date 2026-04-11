@@ -1,27 +1,27 @@
 import BaseModel from "./BaseModel";
 
 const FIELDS = [
-  "replicaId",
-  "productUri",
-  "replicaName",
-  "replicaDescription",
+  "replica_id",
+  "product_uri",
+  "replica_name",
+  "replica_description",
   {
-    name: "creationTime",
+    name: "creation_time",
     type: "date",
   },
   {
-    name: "lastModifiedTime",
+    name: "last_modified_time",
     type: "date",
   },
   {
-    name: "validUntilTime",
+    name: "valid_until_time",
     type: "date",
   },
-  "replicaLocationCategory",
-  "replicaPersistentType",
-  "storageResourceId",
-  "filePath",
-  "replicaMetadata",
+  "replica_location_category",
+  "replica_persistent_type",
+  "storage_resource_id",
+  "file_path",
+  "replica_metadata",
 ];
 
 export default class DataReplicaLocation extends BaseModel {

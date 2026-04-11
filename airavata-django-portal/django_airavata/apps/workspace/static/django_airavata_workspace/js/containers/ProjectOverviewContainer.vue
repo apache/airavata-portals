@@ -34,12 +34,12 @@
               No experiments yet
             </div>
             <div v-else class="list-group list-group-flush">
-              <a v-for="exp in recentExperiments" :key="exp.experimentId"
+              <a v-for="exp in recentExperiments" :key="exp.experiment_id"
                 :href="viewExperimentUrl(exp)"
                 class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
               >
                 <span>{{ exp.name }}</span>
-                <experiment-status-badge :statusName="exp.experimentStatus.name" />
+                <experiment-status-badge :statusName="exp.experiment_status.name" />
               </a>
             </div>
           </div>
@@ -138,15 +138,15 @@ export default {
       return "/workspace/applications";
     },
     formattedCreationTime() {
-      if (this.project && this.project.creationTime) {
-        return moment(new Date(this.project.creationTime)).fromNow();
+      if (this.project && this.project.creation_time) {
+        return moment(new Date(this.project.creation_time)).fromNow();
       }
       return "";
     },
   },
   methods: {
     viewExperimentUrl(experiment) {
-      return `/workspace/projects/${encodeURIComponent(this.projectId)}/experiments/${encodeURIComponent(experiment.experimentId)}/`;
+      return `/workspace/projects/${encodeURIComponent(this.projectId)}/experiments/${encodeURIComponent(experiment.experiment_id)}/`;
     },
     showDeleteModal() {
       this.$refs.deleteModal.show();

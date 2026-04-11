@@ -50,7 +50,7 @@ export default {
     services.ExperimentService.retrieve({ lookup: this.experimentId })
       .then((experiment) => {
         this.experiment = experiment;
-        const appInterfaceId = experiment.executionId;
+        const appInterfaceId = experiment.execution_id;
         return services.ApplicationInterfaceService.retrieve(
           {
             lookup: appInterfaceId,
@@ -62,7 +62,7 @@ export default {
       })
       .then((appInterface) => {
         this.appInterface = appInterface;
-        const appModuleId = appInterface.applicationModules[0];
+        const appModuleId = appInterface.application_modules[0];
         return services.ApplicationModuleService.retrieve({
           lookup: appModuleId,
         });
@@ -72,9 +72,9 @@ export default {
       })
       .catch((error) => {
         const message = errors.ErrorUtils.isNotFoundError(error)
-          ? `Application interface (${this.experiment.executionId}) was not found.
+          ? `Application interface (${this.experiment.execution_id}) was not found.
            If it has been deleted then you won't be able to edit this experiment.`
-          : `Unable to load application interface (${this.experiment.executionId}) or module`;
+          : `Unable to load application interface (${this.experiment.execution_id}) or module`;
         notifications.NotificationList.add(
           new notifications.Notification({
             type: "ERROR",

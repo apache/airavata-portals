@@ -1,7 +1,7 @@
 import BaseModel from "./BaseModel";
 import { v4 as uuidv4 } from "uuid";
 
-const FIELDS = ["command", "commandOrder"];
+const FIELDS = ["command", "command_order"];
 
 export default class CommandObject extends BaseModel {
   constructor(data = {}) {

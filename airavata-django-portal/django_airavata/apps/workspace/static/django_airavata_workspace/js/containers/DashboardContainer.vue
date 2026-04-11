@@ -41,7 +41,7 @@
                 </div>
               </td>
             </tr>
-            <tr v-for="item in allApplicationData" :key="item.appModule.appModuleId">
+            <tr v-for="item in allApplicationData" :key="item.appModule.app_module_id">
               <td>
                 <a href="#" @click.prevent="toggleFavorite(item.appModule)" :title="isFavorite(item.appModule) ? 'Remove from favorites' : 'Add to favorites'">
                   <i :class="isFavorite(item.appModule) ? 'fa fa-star text-warning' : 'far fa-star text-muted'"></i>
@@ -49,14 +49,14 @@
               </td>
               <td>
                 <a href="#" @click.prevent="handleAppSelected(item.appModule)" :class="{ 'text-muted': item.disabled }">
-                  {{ item.appModule.appModuleName }}
+                  {{ item.appModule.app_module_name }}
                 </a>
               </td>
               <td>
-                <span v-if="item.appModule.appModuleVersion" class="badge bg-secondary">{{ item.appModule.appModuleVersion }}</span>
+                <span v-if="item.appModule.app_module_version" class="badge bg-secondary">{{ item.appModule.app_module_version }}</span>
                 <span v-else class="text-muted">-</span>
               </td>
-              <td class="text-muted">{{ truncate(item.appModule.appModuleDescription, 60) }}</td>
+              <td class="text-muted">{{ truncate(item.appModule.app_module_description, 60) }}</td>
               <td>
                 <a href="#" class="action-link me-2" @click.prevent="handleAppSelected(item.appModule)" v-if="!item.disabled" title="Launch experiment">
                   <i class="fa fa-play"></i> Launch
@@ -84,7 +84,7 @@
             <button type="button" class="btn-close" @click="deleteTarget = null"></button>
           </div>
           <div class="modal-body">
-            <p>Are you sure you want to delete <strong>{{ deleteTarget.appModuleName }}</strong>?</p>
+            <p>Are you sure you want to delete <strong>{{ deleteTarget.app_module_name }}</strong>?</p>
             <p class="text-muted mb-0" style="font-size:0.8125rem;">This will also remove its interface and all deployments.</p>
           </div>
           <div class="modal-footer">
@@ -126,16 +126,16 @@ export default {
       urls.navigateToCreateExperiment(appModule);
     },
     editUrl(appModule) {
-      return "/admin/applications/" + appModule.appModuleId;
+      return "/admin/applications/" + appModule.app_module_id;
     },
     toggleFavorite(appModule) {
       const action = this.isFavorite(appModule) ? "unfavorite" : "favorite";
-      services.ApplicationModuleService[action]({ lookup: appModule.appModuleId })
+      services.ApplicationModuleService[action]({ lookup: appModule.app_module_id })
         .then(() => services.WorkspacePreferencesService.get())
         .then((prefs) => (this.workspacePreferences = prefs));
     },
     isFavorite(appModule) {
-      return this.favoriteApplicationIds.indexOf(appModule.appModuleId) >= 0;
+      return this.favoriteApplicationIds.indexOf(appModule.app_module_id) >= 0;
     },
     truncate(text, len) {
       if (!text) return "";
@@ -147,10 +147,10 @@ export default {
     deleteApplication() {
       if (!this.deleteTarget) return;
       this.deleting = true;
-      services.ApplicationModuleService.delete({ lookup: this.deleteTarget.appModuleId })
+      services.ApplicationModuleService.delete({ lookup: this.deleteTarget.app_module_id })
         .then(() => {
           this.allApplicationModules = this.allApplicationModules.filter(
-            (m) => m.appModuleId !== this.deleteTarget.appModuleId
+            (m) => m.app_module_id !== this.deleteTarget.app_module_id
           );
           this.deleteTarget = null;
         })
@@ -183,14 +183,14 @@ export default {
   computed: {
     accessibleModuleIds() {
       return this.accessibleAppModules
-        ? this.accessibleAppModules.map((a) => a.appModuleId)
+        ? this.accessibleAppModules.map((a) => a.app_module_id)
         : [];
     },
     allApplicationData() {
       return this.allApplicationModules
         ? this.allApplicationModules.map((app) => ({
             appModule: app,
-            disabled: this.accessibleModuleIds.indexOf(app.appModuleId) < 0,
+            disabled: this.accessibleModuleIds.indexOf(app.app_module_id) < 0,
           }))
         : [];
     },

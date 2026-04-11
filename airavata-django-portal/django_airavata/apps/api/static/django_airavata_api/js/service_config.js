@@ -75,7 +75,7 @@ export default {
         modelClass: BatchQueue,
       },
     },
-    queryParams: ["appModuleId", "groupResourceProfileId"],
+    queryParams: ["app_module_id", "group_resource_profile_id"],
     modelClass: ApplicationDeploymentDescription,
   },
   ApplicationInterfaces: {
@@ -206,7 +206,7 @@ export default {
     url: "/api/experiment-archives",
     methods: {
       get: {
-        url: "/api/experiment-archives/<experimentId>/",
+        url: "/api/experiment-archives/<experiment_id>/",
         requestType: "get",
       },
     },
@@ -249,7 +249,7 @@ export default {
     url: "/api/experiment-storage",
     methods: {
       get: {
-        url: "/api/experiment-storage/<experimentId>/<path>",
+        url: "/api/experiment-storage/<experiment_id>/<path>",
         requestType: "get",
         modelClass: ExperimentStoragePath,
         // NOTE: caller needs to explicitly escape experimentId, but path shouldn't be escaped

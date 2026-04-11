@@ -5,16 +5,16 @@
         <form-group
           label="Compute Resource"
           label-for="compute-resource"
-          :feedback="getValidationFeedback('resourceHostId')"
-          :state="getValidationState('resourceHostId')"
+          :feedback="getValidationFeedback('resource_host_id')"
+          :state="getValidationState('resource_host_id')"
         >
           <select class="form-select"
             id="compute-resource"
-            v-model="resourceHostId"
+            v-model="resource_host_id"
             :options="computeResourceOptions"
             required
             @change="computeResourceChanged"
-            :state="getValidationState('resourceHostId')"
+            :state="getValidationState('resource_host_id')"
             :disabled="
               !computeResourceOptions || computeResourceOptions.length === 0
             "
@@ -76,7 +76,7 @@ export default {
       computeResources: {},
       applicationDeployments: [],
       selectedGroupResourceProfileData: null,
-      resourceHostId: this.value.resourceHostId,
+      resource_host_id: this.value.resource_host_id,
       invalidQueueSettings: false,
       workspacePreferences: null,
     };
@@ -103,10 +103,10 @@ export default {
     computeResourceOptions: function () {
       const computeResourceOptions = this.applicationDeployments.map((dep) => {
         return {
-          value: dep.computeHostId,
+          value: dep.compute_host_id,
           text:
-            dep.computeHostId in this.computeResources
-              ? this.computeResources[dep.computeHostId]
+            dep.compute_host_id in this.computeResources
+              ? this.computeResources[dep.compute_host_id]
               : "",
         };
       });
@@ -121,7 +121,7 @@ export default {
         (crp) => {
           return (
             crp.computeResourceId ===
-            this.localComputationalResourceScheduling.resourceHostId
+            this.localComputationalResourceScheduling.resource_host_id
           );
         }
       );
@@ -134,26 +134,26 @@ export default {
         (bqrp) => {
           return (
             bqrp.computeResourceId ===
-            this.localComputationalResourceScheduling.resourceHostId
+            this.localComputationalResourceScheduling.resource_host_id
           );
         }
       );
     },
     appDeploymentId: function () {
       // We'll only be able to figure out the appDeploymentId when a
-      // resourceHostId is selected and the application deployments are
+      // resource_host_id is selected and the application deployments are
       // loaded
-      if (!this.resourceHostId || this.applicationDeployments.length === 0) {
+      if (!this.resource_host_id || this.applicationDeployments.length === 0) {
         return null;
       }
       // Find application deployment that corresponds to this compute resource
       let selectedApplicationDeployment = this.applicationDeployments.find(
-        (dep) => dep.computeHostId === this.resourceHostId
+        (dep) => dep.compute_host_id === this.resource_host_id
       );
       if (!selectedApplicationDeployment) {
         throw new Error("Failed to find application deployment!");
       }
-      return selectedApplicationDeployment.appDeploymentId;
+      return selectedApplicationDeployment.app_deployment_id;
     },
     validation() {
       const queueInfo = {}; // QueueSettingsEditor will validate queue information
@@ -167,13 +167,13 @@ export default {
   },
   methods: {
     computeResourceChanged: function (selectedComputeResourceId) {
-      this.data.resourceHostId = selectedComputeResourceId;
+      this.data.resource_host_id = selectedComputeResourceId;
     },
     loadApplicationDeployments: function (appModuleId, groupResourceProfileId) {
       services.ApplicationDeploymentService.list(
         {
-          appModuleId: appModuleId,
-          groupResourceProfileId: groupResourceProfileId,
+          app_module_id: appModuleId,
+          group_resource_profile_id: groupResourceProfileId,
         },
         { ignoreErrors: true }
       )
@@ -220,9 +220,9 @@ export default {
     queueSettingsChanged: function () {
       // QueueSettingsEditor updates the full
       // ComputationalResourceSchedulingModel instance but doesn't know
-      // the resourceHostId so we need to copy it back into the instance
+      // the resource_host_id so we need to copy it back into the instance
       // whenever it changes
-      this.localComputationalResourceScheduling.resourceHostId = this.resourceHostId;
+      this.localComputationalResourceScheduling.resource_host_id = this.resource_host_id;
       this.$emit("input", this.data);
     },
     queueSettingsValidityChanged(valid) {
@@ -249,17 +249,17 @@ export default {
   },
   watch: {
     computeResourceOptions: function (newOptions) {
-      // If the selected resourceHostId is not in the new list of
+      // If the selected resource_host_id is not in the new list of
       // computeResourceOptions, reset it to null
       if (
-        this.resourceHostId !== null &&
-        !newOptions.find((opt) => opt.value === this.resourceHostId)
+        this.resource_host_id !== null &&
+        !newOptions.find((opt) => opt.value === this.resource_host_id)
       ) {
-        this.resourceHostId = null;
+        this.resource_host_id = null;
       }
       // Apply preferred (most recently used) compute resource
       if (
-        this.resourceHostId === null &&
+        this.resource_host_id === null &&
         this.workspacePreferences.most_recent_compute_resource_id &&
         newOptions.find(
           (opt) =>
@@ -267,13 +267,13 @@ export default {
             this.workspacePreferences.most_recent_compute_resource_id
         )
       ) {
-        this.resourceHostId = this.workspacePreferences.most_recent_compute_resource_id;
+        this.resource_host_id = this.workspacePreferences.most_recent_compute_resource_id;
       }
       // If none selected, just pick the first one
-      if (this.resourceHostId === null && newOptions.length > 0) {
-        this.resourceHostId = newOptions[0].value;
+      if (this.resource_host_id === null && newOptions.length > 0) {
+        this.resource_host_id = newOptions[0].value;
       }
-      this.computeResourceChanged(this.resourceHostId);
+      this.computeResourceChanged(this.resource_host_id);
     },
     groupResourceProfileId: function (newGroupResourceProfileId) {
       this.loadApplicationDeployments(
@@ -282,7 +282,7 @@ export default {
       );
       if (
         this.selectedGroupResourceProfileData &&
-        this.selectedGroupResourceProfileData.groupResourceProfileId !==
+        this.selectedGroupResourceProfileData.group_resource_profile_id !==
           newGroupResourceProfileId
       ) {
         this.loadGroupResourceProfile();

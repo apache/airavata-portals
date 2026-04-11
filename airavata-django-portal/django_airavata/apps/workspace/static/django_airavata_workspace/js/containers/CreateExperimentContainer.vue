@@ -55,13 +55,13 @@ export default {
     Promise.all([loadAppModule, loadAppInterface])
       .then(([appModule, appInterface]) => {
         const experiment = appInterface.createExperiment();
-        experiment.experimentName =
-          appModule.appModuleName + " on " + moment().format("lll");
+        experiment.experiment_name =
+          appModule.app_module_name + " on " + moment().format("lll");
         this.appModule = appModule;
         this.appInterface = appInterface;
         if (this.userInputValues) {
           Object.keys(this.userInputValues).forEach((k) => {
-            const experimentInput = experiment.experimentInputs.find(
+            const experimentInput = experiment.experiment_inputs.find(
               (inp) => inp.name === k
             );
             if (experimentInput) {
@@ -70,7 +70,7 @@ export default {
           });
         }
         if (this.experimentDataDir) {
-          experiment.userConfigurationData.experimentDataDir = this.experimentDataDir;
+          experiment.user_configuration_data.experiment_data_dir = this.experimentDataDir;
         }
         this.experiment = experiment;
       })

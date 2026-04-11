@@ -86,13 +86,13 @@
                     </div>
                   </td>
                 </tr>
-                <tr v-for="experiment in (experiments || [])" :key="experiment.experimentId">
+                <tr v-for="experiment in (experiments || [])" :key="experiment.experiment_id">
                   <td><a :href="viewLink(experiment)">{{ experiment.name }}</a></td>
                   <td v-if="applicationName(experiment)">{{ applicationName(experiment) }}</td>
                   <td v-else class="text-muted">N/A</td>
-                  <td>{{ experiment.userName }}</td>
-                  <td><span :title="experiment.creationTime">{{ fromNow(experiment.creationTime) }}</span></td>
-                  <td><experiment-status-badge :statusName="experiment.experimentStatus.name" /></td>
+                  <td>{{ experiment.user_name }}</td>
+                  <td><span :title="experiment.creation_time">{{ fromNow(experiment.creation_time) }}</span></td>
+                  <td><experiment-status-badge :statusName="experiment.experiment_status.name" /></td>
                   <td>
                     <span v-if="applicationName(experiment)">
                       <a v-if="experiment.isEditable" :href="editLink(experiment)" class="action-link">Edit <i class="fa fa-edit"></i></a>
@@ -238,22 +238,22 @@ export default {
       return urls.viewExperiment(this.projectId, experiment);
     },
     applicationName: function (experiment) {
-      if (experiment.executionId in this.applicationInterfaces) {
+      if (experiment.execution_id in this.applicationInterfaces) {
         if (
-          this.applicationInterfaces[experiment.executionId] instanceof
+          this.applicationInterfaces[experiment.execution_id] instanceof
           models.ApplicationInterfaceDefinition
         ) {
-          return this.applicationInterfaces[experiment.executionId]
-            .applicationName;
+          return this.applicationInterfaces[experiment.execution_id]
+            .application_name;
         } else if (
-          this.applicationInterfaces[experiment.executionId] === null
+          this.applicationInterfaces[experiment.execution_id] === null
         ) {
           return null;
         }
       } else {
         const request = services.ApplicationInterfaceService.retrieve(
           {
-            lookup: experiment.executionId,
+            lookup: experiment.execution_id,
           },
           {
             ignoreErrors: true,
@@ -262,7 +262,7 @@ export default {
           .then((result) => {
             this.$set(
               this.applicationInterfaces,
-              experiment.executionId,
+              experiment.execution_id,
               result
             );
           })
@@ -270,7 +270,7 @@ export default {
             if (errors.ErrorUtils.isNotFoundError(error)) {
               this.$set(
                 this.applicationInterfaces,
-                experiment.executionId,
+                experiment.execution_id,
                 null
               );
             } else {
@@ -278,13 +278,13 @@ export default {
             }
           })
           .catch(utils.FetchUtils.reportError);
-        this.$set(this.applicationInterfaces, experiment.executionId, request);
+        this.$set(this.applicationInterfaces, experiment.execution_id, request);
       }
       return "...";
     },
     clone(experiment) {
       services.ExperimentService.clone({
-        lookup: experiment.experimentId,
+        lookup: experiment.experiment_id,
       }).then((clonedExperiment) => {
         urls.navigateToEditExperiment(this.projectId, clonedExperiment);
       });
@@ -300,8 +300,8 @@ export default {
       if (this.appInterfaces) {
         const options = this.appInterfaces.map((appInterface) => {
           return {
-            value: appInterface.applicationInterfaceId,
-            text: appInterface.applicationName,
+            value: appInterface.application_interface_id,
+            text: appInterface.application_name,
           };
         });
         return utils.StringUtils.sortIgnoreCase(options, (o) => o.text);

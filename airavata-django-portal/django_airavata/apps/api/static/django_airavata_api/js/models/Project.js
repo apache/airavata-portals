@@ -1,17 +1,17 @@
 import BaseModel from "./BaseModel";
 
 const FIELDS = [
-  "projectID",
+  "project_id",
   "name",
   "description",
   "owner",
-  "gatewayId",
+  "gateway_id",
   {
-    name: "creationTime",
+    name: "creation_time",
     type: "date",
   },
-  "userHasWriteAccess",
-  "isOwner",
+  "user_has_write_access",
+  "is_owner",
 ];
 
 export default class Project extends BaseModel {

@@ -2,38 +2,38 @@ import BaseModel from "./BaseModel";
 import ExperimentSummary from "./ExperimentSummary";
 
 const FIELDS = [
-  "allExperimentCount",
-  "completedExperimentCount",
-  "cancelledExperimentCount",
-  "failedExperimentCount",
-  "createdExperimentCount",
-  "runningExperimentCount",
+  "all_experiment_count",
+  "completed_experiment_count",
+  "cancelled_experiment_count",
+  "failed_experiment_count",
+  "created_experiment_count",
+  "running_experiment_count",
   {
-    name: "allExperiments",
+    name: "all_experiments",
     type: ExperimentSummary,
     list: true,
   },
   {
-    name: "completedExperiments",
+    name: "completed_experiments",
     type: ExperimentSummary,
     list: true,
   },
   {
-    name: "failedExperiments",
+    name: "failed_experiments",
     type: ExperimentSummary,
     list: true,
   },
   {
-    name: "cancelledExperiments",
+    name: "cancelled_experiments",
     type: ExperimentSummary,
     list: true,
   },
   {
-    name: "createdExperiments",
+    name: "created_experiments",
     type: ExperimentSummary,
     list: true,
   },
-  { name: "runningExperiments", type: ExperimentSummary, list: true },
+  { name: "running_experiments", type: ExperimentSummary, list: true },
 ];
 
 export default class ExperimentStatistics extends BaseModel {

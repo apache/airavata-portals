@@ -4,7 +4,7 @@ export default {
       "/workspace/projects/" +
       encodeURIComponent(projectId) +
       "/experiments/" +
-      encodeURIComponent(experiment.experimentId) +
+      encodeURIComponent(experiment.experiment_id) +
       "/edit"
     );
   },
@@ -22,7 +22,7 @@ export default {
       "/workspace/projects/" +
       encodeURIComponent(projectId) +
       "/experiments/" +
-      encodeURIComponent(experiment.experimentId) +
+      encodeURIComponent(experiment.experiment_id) +
       "/" +
       (launching ? "?launching=true" : "")
     );
@@ -35,7 +35,7 @@ export default {
   createExperiment(appModule) {
     return (
       "/workspace/applications/" +
-      encodeURIComponent(appModule.appModuleId) +
+      encodeURIComponent(appModule.app_module_id) +
       "/create_experiment"
     );
   },
@@ -43,13 +43,13 @@ export default {
     window.location.assign(this.createExperiment(appModule));
   },
   projectOverview(project) {
-    return "/workspace/projects/" + encodeURIComponent(project.projectID) + "/";
+    return "/workspace/projects/" + encodeURIComponent(project.project_id) + "/";
   },
   navigateToProjectOverview(project) {
     window.location.assign(this.projectOverview(project));
   },
   editProject(project) {
-    return "/workspace/projects/" + encodeURIComponent(project.projectID) + "/edit";
+    return "/workspace/projects/" + encodeURIComponent(project.project_id) + "/edit";
   },
   projectsList() {
     return "/workspace/";

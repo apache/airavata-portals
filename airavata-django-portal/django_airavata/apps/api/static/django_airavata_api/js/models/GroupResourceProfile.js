@@ -4,37 +4,37 @@ import ComputeResourcePolicy from "./ComputeResourcePolicy";
 import GroupComputeResourcePreference from "./GroupComputeResourcePreference";
 
 const FIELDS = [
-  "gatewayId",
-  "groupResourceProfileId",
-  "groupResourceProfileName",
+  "gateway_id",
+  "group_resource_profile_id",
+  "group_resource_profile_name",
   {
-    name: "computePreferences",
+    name: "compute_preferences",
     type: GroupComputeResourcePreference,
     list: true,
     default: BaseModel.defaultNewInstance(Array),
   },
   {
-    name: "computeResourcePolicies",
+    name: "compute_resource_policies",
     type: ComputeResourcePolicy,
     list: true,
     default: BaseModel.defaultNewInstance(Array),
   },
   {
-    name: "batchQueueResourcePolicies",
+    name: "batch_queue_resource_policies",
     type: BatchQueueResourcePolicy,
     list: true,
     default: BaseModel.defaultNewInstance(Array),
   },
   {
-    name: "creationTime",
+    name: "creation_time",
     type: "date",
   },
   {
-    name: "updatedTime",
+    name: "updated_time",
     type: "date",
   },
-  "defaultCredentialStoreToken",
-  "userHasWriteAccess", // true if current user has write access
+  "default_credential_store_token",
+  "user_has_write_access", // true if current user has write access
 ];
 
 export default class GroupResourceProfile extends BaseModel {

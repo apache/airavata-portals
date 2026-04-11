@@ -35,7 +35,7 @@
                 <project-list-item
                   v-for="project in (projects || [])"
                   :project="project"
-                  :key="project.projectID"
+                  :key="project.project_id"
                   @delete="onDeleteProject"
                 />
               </tbody>
@@ -52,7 +52,7 @@
     <project-delete-modal
       v-if="deleteTarget"
       ref="deleteModal"
-      :projectId="deleteTarget.projectID"
+      :projectId="deleteTarget.project_id"
       :projectName="deleteTarget.name"
       @delete="confirmDelete"
     />
