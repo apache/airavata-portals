@@ -1,17 +1,18 @@
+import BreadcrumbNav from "./components/BreadcrumbNav.vue";
 import ApplicationCard from "./components/ApplicationCard.vue";
-import ApplicationName from "./components/ApplicationName";
+import ApplicationName from "./components/ApplicationName.vue";
 import AutocompleteTextInput from "./components/AutocompleteTextInput.vue";
 import ClipboardCopyButton from "./components/ClipboardCopyButton.vue";
 import ClipboardCopyLink from "./components/ClipboardCopyLink.vue";
-import ComputeResourceName from "./components/ComputeResourceName";
+import ComputeResourceName from "./components/ComputeResourceName.vue";
 import ConfirmationButton from "./components/ConfirmationButton.vue";
 import ConfirmationDialog from "./components/ConfirmationDialog.vue";
-import DataProductViewer from "./components/DataProductViewer";
+import DataProductViewer from "./components/DataProductViewer.vue";
 import DeleteButton from "./components/DeleteButton.vue";
 import DeleteLink from "./components/DeleteLink.vue";
-import ExperimentStatusBadge from "./components/ExperimentStatusBadge";
-import FavoriteToggle from "./components/FavoriteToggle";
-import GatewayGroupsBadge from "./components/GatewayGroupsBadge";
+import ExperimentStatusBadge from "./components/ExperimentStatusBadge.vue";
+import FavoriteToggle from "./components/FavoriteToggle.vue";
+import GatewayGroupsBadge from "./components/GatewayGroupsBadge.vue";
 import HumanDate from "./components/HumanDate.vue";
 import Linkify from "./components/Linkify.vue";
 import MainLayout from "./components/MainLayout.vue";
@@ -21,9 +22,9 @@ import Sidebar from "./components/Sidebar.vue";
 import SidebarFeed from "./components/SidebarFeed.vue";
 import SidebarHeader from "./components/SidebarHeader.vue";
 import UnsavedChangesGuard from "./components/UnsavedChangesGuard.vue";
-import Uppy from "./components/Uppy";
-import ValidatedForm from "./components/ValidatedForm";
-import ValidatedFormGroup from "./components/ValidatedFormGroup";
+import Uppy from "./components/Uppy.vue";
+import ValidatedForm from "./components/ValidatedForm.vue";
+import ValidatedFormGroup from "./components/ValidatedFormGroup.vue";
 
 import GlobalErrorHandler from "./errors/GlobalErrorHandler";
 import ValidationErrors from "./errors/ValidationErrors";
@@ -42,6 +43,7 @@ import * as utils from "./utils";
 import entry from "./entry";
 
 const components = {
+  BreadcrumbNav,
   Pager,
   ApplicationCard,
   ApplicationName,
