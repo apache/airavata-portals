@@ -7,9 +7,9 @@
       </pre>
       <div v-else v-for="dp in dataProducts" :key="dp.productUri">
         <img
-          v-if="dp.isImage && dp.downloadURL"
+          v-if="dp.isImage && dp.download_url"
           class="image-preview rounded"
-          :src="dp.downloadURL"
+          :src="dp.download_url"
         />
         <data-product-viewer :data-product="dp" :mime-type="fileMimeType" />
       </div>
@@ -135,7 +135,7 @@ export default {
         this.intermediateOutputDataProduct &&
         (this.intermediateOutputDataProduct.isText ||
           this.fileMimeType === "text/plain") &&
-        this.intermediateOutputDataProduct.downloadURL &&
+        this.intermediateOutputDataProduct.download_url &&
         this.intermediateOutputDataProduct.filesize < MAX_DISPLAY_TEXT_FILE_SIZE
       );
     },
@@ -144,7 +144,7 @@ export default {
         this.dataProducts &&
         this.dataProducts.length === 1 &&
         (this.dataProducts[0].isText || this.fileMimeType === "text/plain") &&
-        this.dataProducts[0].downloadURL &&
+        this.dataProducts[0].download_url &&
         this.dataProducts[0].filesize < MAX_DISPLAY_TEXT_FILE_SIZE
       );
     },
@@ -153,7 +153,7 @@ export default {
     async loadIntermediateOutputText() {
       if (this.isIntermediateOutputFileDisplayable) {
         this.intermediateOutputText = await utils.FetchUtils.get(
-          this.intermediateOutputDataProduct.downloadURL,
+          this.intermediateOutputDataProduct.download_url,
           "",
           {
             responseType: "text",
@@ -164,7 +164,7 @@ export default {
     async loadFinalOutputText() {
       if (this.isFinalOutputFileDisplayable) {
         this.finalOutputText = await utils.FetchUtils.get(
-          this.dataProducts[0].downloadURL,
+          this.dataProducts[0].download_url,
           "",
           {
             responseType: "text",

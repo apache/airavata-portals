@@ -37,7 +37,7 @@ export default {
       return session.Session.username;
     },
     userHasWriteAccess() {
-      return this.userStoragePath.userHasWriteAccess;
+      return this.userStoragePath.user_has_write_access;
     },
   },
   data() {

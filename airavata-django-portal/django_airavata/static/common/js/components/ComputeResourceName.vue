@@ -35,7 +35,7 @@ export default {
       if (this.notAvailable) {
         return "N/A";
       } else {
-        return this.computeResource ? this.computeResource.hostName : "";
+        return this.computeResource ? this.computeResource.host_name : "";
       }
     },
   },

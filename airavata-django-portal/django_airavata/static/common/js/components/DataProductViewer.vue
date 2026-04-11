@@ -40,14 +40,14 @@ export default {
       }
     },
     downloadURL() {
-      if (!this.dataProduct.downloadURL) {
+      if (!this.dataProduct.download_url) {
         return null;
-      } else if (this.mimeType) {
-        return `${this.dataProduct.downloadURL}&mime-type=${encodeURIComponent(
-          this.mimeType
+      } else if (this.mime_type) {
+        return `${this.dataProduct.download_url}&mime-type=${encodeURIComponent(
+          this.mime_type
         )}`;
       } else {
-        return this.dataProduct.downloadURL;
+        return this.dataProduct.download_url;
       }
     },
     linkTarget() {

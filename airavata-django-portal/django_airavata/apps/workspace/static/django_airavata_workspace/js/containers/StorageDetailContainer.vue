@@ -15,7 +15,7 @@
       <div class="row align-items-center mb-3">
         <div class="col">
           <h1 class="h4 mb-0">
-            {{ resource.hostName }}
+            {{ resource.host_name }}
             <span class="badge bg-success ms-2" style="font-size:0.75rem;" v-if="resource.enabled">Enabled</span>
             <span class="badge bg-secondary ms-2" style="font-size:0.75rem;" v-else>Disabled</span>
           </h1>
@@ -47,11 +47,11 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Host Name <span class="text-danger">*</span></label>
-              <input type="text" class="form-control form-control-sm" v-model="resource.hostName" />
+              <input type="text" class="form-control form-control-sm" v-model="resource.host_name" />
             </div>
             <div class="col-md-6">
               <label class="form-label">Description</label>
-              <input type="text" class="form-control form-control-sm" v-model="resource.storageResourceDescription" placeholder="Optional description" />
+              <input type="text" class="form-control form-control-sm" v-model="resource.storage_resource_description" placeholder="Optional description" />
             </div>
             <div class="col-12">
               <div class="form-check form-switch">
@@ -78,7 +78,7 @@
 
       <!-- Save button -->
       <div class="d-flex justify-content-end">
-        <button class="btn btn-primary btn-sm" @click="save" :disabled="saving || !resource.hostName">
+        <button class="btn btn-primary btn-sm" @click="save" :disabled="saving || !resource.host_name">
           <span v-if="saving"><i class="fa fa-spinner fa-spin me-1"></i>Saving...</span>
           <span v-else><i class="fa fa-save me-1"></i>Save</span>
         </button>
@@ -130,7 +130,7 @@ export default {
       this.loading = false;
     },
     async save() {
-      if (!this.resource.hostName) return;
+      if (!this.resource.host_name) return;
       this.saving = true;
       try {
         await services.StorageResourceService.update({
@@ -163,7 +163,7 @@ export default {
       };
     },
     async confirmDelete() {
-      if (!window.confirm(`Delete storage resource "${this.resource.hostName}"? This action cannot be undone.`)) return;
+      if (!window.confirm(`Delete storage resource "${this.resource.host_name}"? This action cannot be undone.`)) return;
       try {
         await services.StorageResourceService.delete({ lookup: this.storageResourceId });
         window.location.href = "/resources/storage";

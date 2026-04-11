@@ -20,18 +20,18 @@
         >
           <i class="fa fa-folder-open"></i> {{ data.item.name }}</a
         >
-        <a v-else :href="data.item.downloadURL" :target="downloadTarget">
+        <a v-else :href="data.item.download_url" :target="downloadTarget">
           {{ data.item.name }}</a
         >
       </template>
       <template slot="cell(modifiedTimestamp)" slot-scope="data">
-        <human-date :date="data.item.modifiedTime" />
+        <human-date :date="data.item.modified_time" />
       </template>
       <template slot="cell(actions)" slot-scope="data">
         <a
           v-if="data.item.type === 'file'"
           class="action-link"
-          :href="`${data.item.downloadURL}&download`"
+          :href="`${data.item.download_url}&download`"
         >
           Download File
           <i class="fa fa-download" aria-hidden="true"></i>
@@ -106,20 +106,20 @@ export default {
               name: d.name,
               path: d.path,
               type: "dir",
-              modifiedTime: d.modifiedTime,
-              modifiedTimestamp: d.modifiedTime.getTime(), // for sorting
+              modifiedTime: d.modified_time,
+              modifiedTimestamp: d.modified_time.getTime(), // for sorting
               size: d.size,
             };
           });
         const files = this.experimentStoragePath.files.map((f) => {
           return {
             name: f.name,
-            mimeType: f.mimeType,
+            mimeType: f.mime_type,
             type: "file",
-            dataProductURI: f.dataProductURI,
-            downloadURL: f.downloadURL,
-            modifiedTime: f.modifiedTime,
-            modifiedTimestamp: f.modifiedTime.getTime(), // for sorting
+            dataProductURI: f.data_product_uri,
+            downloadURL: f.download_url,
+            modifiedTime: f.modified_time,
+            modifiedTimestamp: f.modified_time.getTime(), // for sorting
             size: f.size,
           };
         });

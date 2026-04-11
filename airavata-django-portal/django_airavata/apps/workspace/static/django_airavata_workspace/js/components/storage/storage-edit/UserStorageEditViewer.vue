@@ -84,19 +84,19 @@ export default {
   },
   computed: {
     isText() {
-      return /text\/.*/.test(this.mimeType);
+      return /text\/.*/.test(this.mime_type);
     },
     isImage() {
-      return /image\/.*/.test(this.mimeType);
+      return /image\/.*/.test(this.mime_type);
     },
     isAudio() {
-      return /audio\/.*/.test(this.mimeType);
+      return /audio\/.*/.test(this.mime_type);
     },
     isVideo() {
-      return /video\/.*/.test(this.mimeType);
+      return /video\/.*/.test(this.mime_type);
     },
     isPdf() {
-      return /pdf/.test(this.mimeType);
+      return /pdf/.test(this.mime_type);
     },
     downloadUrl() {
       return `/sdk/download/?data-product-uri=${this.dataProductUri}`;

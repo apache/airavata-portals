@@ -3,8 +3,8 @@
     <user-storage-edit-viewer
       v-if="userStoragePath && isFile"
       :file-name="file.name"
-      :data-product-uri="file.dataProductURI"
-      :mime-type="file.mimeType"
+      :data-product-uri="file.data_product_uri"
+      :mime-type="file.mime_type"
       @file-content-changed="(fileContent) => $emit('file-content-changed', fileContent)"
     />
 
@@ -57,28 +57,28 @@
               <td>
                 <a v-if="item.type === 'dir'" href="#" @click.prevent="directorySelected(item)">
                   <i class="fa fa-folder me-1 text-warning"></i>{{ item.name }}
-                  <span v-if="item.isSharedDir" class="badge bg-secondary ms-1">shared</span>
+                  <span v-if="item.is_shared_dir" class="badge bg-secondary ms-1">shared</span>
                 </a>
                 <span v-else>
                   <i class="fa fa-file me-1 text-muted"></i>
                   <user-storage-link
-                    :data-product-uri="item.dataProductURI"
-                    :mime-type="item.mimeType"
+                    :data-product-uri="item.data_product_uri"
+                    :mime-type="item.mime_type"
                     :file-name="item.name"
                     :allow-preview="allowPreview"
                   />
                 </span>
               </td>
               <td>{{ getFormattedSize(item.size) }}</td>
-              <td><human-date :date="item.modifiedTime" /></td>
+              <td><human-date :date="item.modified_time" /></td>
               <td>
                 <button class="btn btn-primary btn-sm me-1" v-if="includeSelectFileAction && item.type === 'file'"
                   @click="$emit('file-selected', item)" :disabled="isAlreadySelected(item)">Select</button>
                 <a v-if="includeDownloadAction && item.type === 'file'" class="action-link me-2"
-                  :href="`${item.downloadURL}&download`"><i class="fa fa-download"></i> Download</a>
+                  :href="`${item.download_url}&download`"><i class="fa fa-download"></i> Download</a>
                 <a v-if="includeDownloadAction && item.type === 'dir'" class="action-link me-2"
                   :href="`/sdk/download-dir/?path=${item.path}`"><i class="fa fa-file-archive"></i> Zip</a>
-                <delete-link v-if="includeDeleteAction && item.userHasWriteAccess && !item.isSharedDir"
+                <delete-link v-if="includeDeleteAction && item.user_has_write_access && !item.is_shared_dir"
                   @delete="deleteItem(item)">
                   Are you sure you want to delete <strong>{{ item.name }}</strong>?
                 </delete-link>
@@ -143,10 +143,10 @@ export default {
   },
   computed: {
     isDir() {
-      return this.userStoragePath.isDir;
+      return this.userStoragePath.is_dir;
     },
     isFile() {
-      return !this.userStoragePath.isDir;
+      return !this.userStoragePath.is_dir;
     },
 
     // Return the first file available. This is assuming the path is a file.
@@ -201,24 +201,24 @@ export default {
               name: d.name,
               path: d.path,
               type: "dir",
-              modifiedTime: d.modifiedTime,
-              modifiedTimestamp: d.modifiedTime ? d.modifiedTime.getTime() : 0,
+              modifiedTime: d.modified_time,
+              modifiedTimestamp: d.modified_time ? d.modified_time.getTime() : 0,
               size: d.size,
-              userHasWriteAccess: d.userHasWriteAccess,
-              isSharedDir: d.isSharedDir,
+              userHasWriteAccess: d.user_has_write_access,
+              isSharedDir: d.is_shared_dir,
             };
           });
         const files = this.userStoragePath.files.map((f) => {
           return {
             name: f.name,
-            mimeType: f.mimeType,
+            mimeType: f.mime_type,
             type: "file",
-            dataProductURI: f.dataProductURI,
-            downloadURL: f.downloadURL,
-            modifiedTime: f.modifiedTime,
-            modifiedTimestamp: f.modifiedTime ? f.modifiedTime.getTime() : 0,
+            dataProductURI: f.data_product_uri,
+            downloadURL: f.download_url,
+            modifiedTime: f.modified_time,
+            modifiedTimestamp: f.modified_time ? f.modified_time.getTime() : 0,
             size: f.size,
-            userHasWriteAccess: f.userHasWriteAccess,
+            userHasWriteAccess: f.user_has_write_access,
           };
         });
         return dirs.concat(files);
@@ -230,7 +230,7 @@ export default {
       return this.downloadInNewWindow ? "_blank" : "_self";
     },
     userHasWriteAccess() {
-      return this.userStoragePath.userHasWriteAccess;
+      return this.userStoragePath.user_has_write_access;
     },
   },
   methods: {
@@ -249,7 +249,7 @@ export default {
       if (item.type === "dir") {
         this.$emit("delete-dir", item.path);
       } else if (item.type === "file") {
-        this.$emit("delete-file", item.dataProductURI);
+        this.$emit("delete-file", item.data_product_uri);
       }
     },
     directorySelected(item) {
@@ -258,17 +258,17 @@ export default {
     isAlreadySelected(item) {
       return (
         this.selectedDataProductUris.find(
-          (uri) => item.type === "file" && uri === item.dataProductURI
+          (uri) => item.type === "file" && uri === item.data_product_uri
         ) !== undefined
       );
     },
     sortCompare(aRow, bRow, key) {
       if (key === "name") {
         // Sort the shared directory first
-        if (aRow.isSharedDir) {
+        if (aRow.is_shared_dir) {
           return -1;
         }
-        if (bRow.isSharedDir) {
+        if (bRow.is_shared_dir) {
           return 1;
         }
         const a = aRow[key];

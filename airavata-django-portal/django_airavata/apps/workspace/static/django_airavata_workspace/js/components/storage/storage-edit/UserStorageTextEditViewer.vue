@@ -81,10 +81,10 @@ export default {
       return !this.dataProduct || this.dataProduct.filesize < MAX_EDIT_FILESIZE;
     },
     userHasWriteAccess() {
-      return this.dataProduct && this.dataProduct.userHasWriteAccess;
+      return this.dataProduct && this.dataProduct.user_has_write_access;
     },
     readOnly() {
-      return !this.userHasWriteAccess;
+      return !this.user_has_write_access;
     },
   },
   methods: {

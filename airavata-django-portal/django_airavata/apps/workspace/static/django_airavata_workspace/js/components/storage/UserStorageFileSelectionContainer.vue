@@ -65,7 +65,7 @@ export default {
       return this.loadUserStoragePath(mostRecentPath);
     },
     fileSelected(file) {
-      this.$emit("file-selected", file.dataProductURI);
+      this.$emit("file-selected", file.data_product_uri);
     },
   },
 };

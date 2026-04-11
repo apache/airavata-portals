@@ -19,12 +19,12 @@ const FIELDS = [
     list: true,
   },
   {
-    name: "isDir",
+    name: "is_dir",
     type: "boolean",
     list: false,
   },
   {
-    name: "userHasWriteAccess",
+    name: "user_has_write_access",
     type: "boolean",
     default: true,
   },

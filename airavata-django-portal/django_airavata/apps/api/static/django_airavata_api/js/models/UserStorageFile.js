@@ -2,13 +2,13 @@ import BaseModel from "./BaseModel";
 
 const FIELDS = [
   "name",
-  "downloadURL",
-  "dataProductURI",
-  { name: "createdTime", type: "date" },
-  { name: "modifiedTime", type: "date" },
+  "download_url",
+  "data_product_uri",
+  { name: "created_time", type: "date" },
+  { name: "modified_time", type: "date" },
   "size",
-  "mimeType",
-  "userHasWriteAccess",
+  "mime_type",
+  "user_has_write_access",
 ];
 
 export default class UserStorageFile extends BaseModel {

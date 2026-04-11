@@ -198,7 +198,7 @@ export default {
       return this.isJobActive && !this.currentlyRunningIntermediateOutputFetch;
     },
     fetchLatestDisabled() {
-      return !this.canFetchIntermediateOutput || !this.userHasWriteAccess;
+      return !this.canFetchIntermediateOutput || !this.user_has_write_access;
     },
     fetchIntermediateOutputStatusMessage() {
       let msg = "";

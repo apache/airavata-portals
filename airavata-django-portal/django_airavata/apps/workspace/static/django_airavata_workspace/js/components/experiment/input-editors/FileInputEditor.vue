@@ -4,7 +4,7 @@
       <user-storage-link
         class="me-auto"
         :data-product-uri="dataProduct.productUri"
-        :mime-type="dataProduct.mimeType"
+        :mime-type="dataProduct.mime_type"
         :file-name="dataProduct.productName"
       />
       <delete-link
@@ -92,7 +92,7 @@ export default {
     loadDataProduct(dataProductURI) {
       services.DataProductService.retrieve({ lookup: dataProductURI })
         .then((dataProduct) => {
-          if (dataProduct.downloadURL === null) {
+          if (dataProduct.download_url === null) {
             // Null out this field when the file is no longer available. Force
             // user to select or upload another file.
             this.data = null;

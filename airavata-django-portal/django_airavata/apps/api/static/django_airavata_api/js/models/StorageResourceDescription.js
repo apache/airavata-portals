@@ -1,13 +1,13 @@
 import BaseModel from "./BaseModel";
 
 const FIELDS = [
-  "storageResourceId",
-  "hostName",
-  "storageResourceDescription",
+  "storage_resource_id",
+  "host_name",
+  "storage_resource_description",
   "enabled",
-  "dataMovementInterfaces",
-  "creationTime",
-  "updateTime",
+  "data_movement_interfaces",
+  "creation_time",
+  "update_time",
 ];
 
 export default class StorageResourceDescription extends BaseModel {

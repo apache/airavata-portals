@@ -103,7 +103,7 @@ export default {
     async loadSettings() {
       const el = document.getElementById("gateway-settings");
       if (el) {
-        this.gatewayId = el.dataset.gatewayId || "";
+        this.gateway_id = el.dataset.gateway_id || "";
         this.portalTitle = el.dataset.portalTitle || "";
       }
 
@@ -117,15 +117,15 @@ export default {
         const profile = await utils.FetchUtils.get("/api/gateway-resource-profile/");
         this.gatewayResourceProfile = profile;
         const pref =
-          profile.storagePreferences && profile.storagePreferences.length > 0
-            ? profile.storagePreferences[0]
+          profile.storage_preferences && profile.storage_preferences.length > 0
+            ? profile.storage_preferences[0]
             : null;
         if (pref) {
-          this.storageResourceId = pref.storageResourceId || null;
-          this.fileSystemRootLocation = pref.fileSystemRootLocation || "";
-          this.loginUserName = pref.loginUserName || "";
+          this.storageResourceId = pref.storage_resource_id || null;
+          this.fileSystemRootLocation = pref.file_system_root_location || "";
+          this.loginUserName = pref.login_user_name || "";
           this.resourceSpecificCredentialStoreToken =
-            pref.resourceSpecificCredentialStoreToken || null;
+            pref.resource_specific_credential_store_token || null;
         }
       } catch {
         this.gatewayResourceProfile = null;
@@ -135,19 +135,19 @@ export default {
       this.saving = true;
       try {
         const updatedPref = {
-          storageResourceId: this.storageResourceId,
-          fileSystemRootLocation: this.fileSystemRootLocation,
-          loginUserName: this.loginUserName,
-          resourceSpecificCredentialStoreToken:
+          storage_resource_id: this.storageResourceId,
+          file_system_root_location: this.fileSystemRootLocation,
+          login_user_name: this.loginUserName,
+          resource_specific_credential_store_token:
             this.resourceSpecificCredentialStoreToken,
         };
         const existingPrefs =
           this.gatewayResourceProfile &&
-          this.gatewayResourceProfile.storagePreferences
-            ? this.gatewayResourceProfile.storagePreferences.slice(1)
+          this.gatewayResourceProfile.storage_preferences
+            ? this.gatewayResourceProfile.storage_preferences.slice(1)
             : [];
         const updatedProfile = Object.assign({}, this.gatewayResourceProfile, {
-          storagePreferences: [updatedPref, ...existingPrefs],
+          storage_preferences: [updatedPref, ...existingPrefs],
         });
         await utils.FetchUtils.put("/api/gateway-resource-profile/", updatedProfile);
         this.gatewayResourceProfile = updatedProfile;

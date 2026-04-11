@@ -108,7 +108,7 @@
                 >{{ part }}</li>
               </ol>
             </nav>
-            <div v-if="userStoragePath && userStoragePath.userHasWriteAccess" class="d-flex gap-2">
+            <div v-if="userStoragePath && userStoragePath.user_has_write_access" class="d-flex gap-2">
               <div class="input-group input-group-sm" style="max-width:240px;">
                 <input class="form-control" v-model="newDirName" placeholder="New directory" @keydown.enter="addDirectory" />
                 <button class="btn btn-outline-secondary" @click="addDirectory" :disabled="!newDirName"><i class="fa fa-folder-plus"></i></button>
@@ -151,13 +151,13 @@
                   </span>
                 </td>
                 <td>{{ formatSize(item.size) }}</td>
-                <td class="text-muted">{{ item.modifiedTime ? formatDate(item.modifiedTime) : '-' }}</td>
+                <td class="text-muted">{{ item.modified_time ? formatDate(item.modified_time) : '-' }}</td>
                 <td>
                   <a v-if="item.type === 'dir'" class="action-link me-2"
                     :href="`/sdk/download-dir/?path=${item.path}`"><i class="fa fa-file-archive"></i> Zip</a>
-                  <a v-if="item.type === 'file' && item.downloadURL" class="action-link me-2"
-                    :href="`${item.downloadURL}&download`"><i class="fa fa-download"></i> Download</a>
-                  <a v-if="item.userHasWriteAccess" href="#" class="action-link text-danger"
+                  <a v-if="item.type === 'file' && item.download_url" class="action-link me-2"
+                    :href="`${item.download_url}&download`"><i class="fa fa-download"></i> Download</a>
+                  <a v-if="item.user_has_write_access" href="#" class="action-link text-danger"
                     @click.prevent="deleteItem(item)"><i class="fa fa-trash"></i> Delete</a>
                 </td>
               </tr>
@@ -193,7 +193,7 @@ export default {
       return this.currentPath ? this.currentPath.split("/").filter(Boolean) : [];
     },
     items() {
-      if (!this.userStoragePath || !this.userStoragePath.isDir) return [];
+      if (!this.userStoragePath || !this.userStoragePath.is_dir) return [];
       const dirs = (this.userStoragePath.directories || [])
         .filter((d) => !d.hidden)
         .map((d) => ({
@@ -201,18 +201,18 @@ export default {
           path: d.path,
           type: "dir",
           size: d.size,
-          modifiedTime: d.modifiedTime,
-          userHasWriteAccess: d.userHasWriteAccess,
+          modifiedTime: d.modified_time,
+          userHasWriteAccess: d.user_has_write_access,
         }));
       const files = (this.userStoragePath.files || []).map((f) => ({
         name: f.name,
         path: f.path,
         type: "file",
         size: f.size,
-        modifiedTime: f.modifiedTime,
-        downloadURL: f.downloadURL,
-        dataProductURI: f.dataProductURI,
-        userHasWriteAccess: f.userHasWriteAccess,
+        modifiedTime: f.modified_time,
+        downloadURL: f.download_url,
+        dataProductURI: f.data_product_uri,
+        userHasWriteAccess: f.user_has_write_access,
       }));
       return dirs.concat(files);
     },
@@ -314,8 +314,8 @@ export default {
       if (!confirm("Delete " + item.name + "?")) return;
       if (item.type === "dir") {
         await utils.FetchUtils.delete("/api/user-storage/~/" + item.path);
-      } else if (item.dataProductURI) {
-        await utils.FetchUtils.delete("/api/delete-file?data-product-uri=" + encodeURIComponent(item.dataProductURI));
+      } else if (item.data_product_uri) {
+        await utils.FetchUtils.delete("/api/delete-file?data-product-uri=" + encodeURIComponent(item.data_product_uri));
       }
       this.navigateTo(this.currentPath);
     },
