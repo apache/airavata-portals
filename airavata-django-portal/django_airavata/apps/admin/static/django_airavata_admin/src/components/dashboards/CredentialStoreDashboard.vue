@@ -39,11 +39,11 @@
             <tr v-for="cred in sshKeys" :key="cred.token">
               <td>{{ cred.description || '-' }}</td>
               <td>{{ cred.username }}</td>
-              <td><human-date :date="cred.persistedTime" /></td>
+              <td><human-date :date="cred.persisted_time" /></td>
               <td>
-                <clipboard-copy-link :text="(cred.publicKey || '').trim()" class="action-link me-2" />
+                <clipboard-copy-link :text="(cred.public_key || '').trim()" class="action-link me-2" />
                 <share-button :entity-id="cred.token" :disallow-editing-admin-groups="false" :auto-add-admin-groups="false" />
-                <delete-link v-if="cred.userHasWriteAccess" @delete="deleteSSHCredential(cred)">
+                <delete-link v-if="cred.user_has_write_access" @delete="deleteSSHCredential(cred)">
                   Are you sure you want to delete <strong>{{ cred.description }}</strong>?
                 </delete-link>
               </td>
@@ -79,7 +79,7 @@ export default {
   data() {
     return {
       sshKeys: [],
-      userIsAdmin: session.Session.isGatewayAdmin,
+      userIsAdmin: session.Session.is_gateway_admin,
       adminsGroup: null,
     };
   },
@@ -101,7 +101,7 @@ export default {
     showNewSharedSSHCredentialModel() {
       if (!this.adminsGroup) {
         services.GroupService.list({ limit: -1 }).then((groups) => {
-          this.adminsGroup = groups.filter((g) => g.isGatewayAdminsGroup)[0];
+          this.adminsGroup = groups.filter((g) => g.is_gateway_admins_group)[0];
           this.$refs.newSharedSSHCredentialModal.show();
         });
       } else {
@@ -113,7 +113,7 @@ export default {
         const sharedEntity = new models.SharedEntity();
         services.UserProfileService.retrieve({ lookup: session.Session.username }).then((userProfile) => {
           sharedEntity.owner = userProfile;
-          sharedEntity.isOwner = session.Session.username == sharedEntity.owner.userId;
+          sharedEntity.is_owner = session.Session.username == sharedEntity.owner.user_id;
           sharedEntity.addGroup({
             group: this.adminsGroup,
             permissionType: models.ResourcePermissionType.MANAGE_SHARING,

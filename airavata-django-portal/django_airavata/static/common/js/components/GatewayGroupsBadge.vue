@@ -15,22 +15,22 @@ export default {
   },
   computed: {
     variant() {
-      if (this.group.isGatewayAdminsGroup) {
+      if (this.group.is_gateway_admins_group) {
         return "danger";
-      } else if (this.group.isReadOnlyGatewayAdminsGroup) {
+      } else if (this.group.is_read_only_gateway_admins_group) {
         return "warning";
-      } else if (this.group.isDefaultGatewayUsersGroup) {
+      } else if (this.group.is_default_gateway_users_group) {
         return "primary";
       } else {
         return "secondary";
       }
     },
     name() {
-      if (this.group.isGatewayAdminsGroup) {
+      if (this.group.is_gateway_admins_group) {
         return "Admins";
-      } else if (this.group.isReadOnlyGatewayAdminsGroup) {
+      } else if (this.group.is_read_only_gateway_admins_group) {
         return "Read Only Admins";
-      } else if (this.group.isDefaultGatewayUsersGroup) {
+      } else if (this.group.is_default_gateway_users_group) {
         return "Default";
       } else {
         return this.group.name;

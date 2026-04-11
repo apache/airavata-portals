@@ -2,7 +2,7 @@
   <ul class="nav nav-tabs mt-3 px-2" content->
     <li class="nav-item"
       title="User Profile"
-      :active="iamUserProfile.airavataUserProfileExists"
+      :active="iamUserProfile.airavata_user_profile_exists"
     >
       <div class="alert alert-warning"
         v-if="!iamUserProfile.userProfileComplete"
@@ -16,42 +16,42 @@
         <strong>Troubleshooting</strong> tab to fix the user's username.
       </div>
       <edit-groups-panel
-        v-if="iamUserProfile.airavataUserProfileExists"
+        v-if="iamUserProfile.airavata_user_profile_exists"
         :value="localIAMUserProfile.groups"
         :editable-groups="editableGroups"
-        :airavata-internal-user-id="iamUserProfile.airavataInternalUserId"
+        :airavata-internal-user-id="iamUserProfile.airavata_internal_user_id"
         @save="groupsUpdated"
       />
       <user-profile-panel :iamUserProfile="iamUserProfile" />
       <extended-user-profile-panel :iamUserProfile="iamUserProfile" />
       <external-idp-user-info-panel
         v-if="hasExternalIDPUserInfo"
-        :externalIDPUserInfo="localIAMUserProfile.externalIDPUserInfo"
+        :externalIDPUserInfo="localIAMUserProfile.external_idp_user_info"
       />
     </li>
     <li class="nav-item"
       title="Troubleshooting"
-      :active="!iamUserProfile.airavataUserProfileExists"
+      :active="!iamUserProfile.airavata_user_profile_exists"
     >
       <activate-user-panel
         v-if="
           iamUserProfile.enabled &&
-          iamUserProfile.emailVerified &&
+          iamUserProfile.email_verified &&
           iamUserProfile.userProfileComplete &&
-          !iamUserProfile.airavataUserProfileExists
+          !iamUserProfile.airavata_user_profile_exists
         "
-        :username="iamUserProfile.userId"
+        :username="iamUserProfile.user_id"
         @activate-user="$emit('enable-user', $event)"
       />
       <enable-user-panel
-        v-if="!iamUserProfile.enabled && !iamUserProfile.emailVerified"
-        :username="iamUserProfile.userId"
+        v-if="!iamUserProfile.enabled && !iamUserProfile.email_verified"
+        :username="iamUserProfile.user_id"
         :email="iamUserProfile.email"
         @enable-user="$emit('enable-user', $event)"
       />
       <delete-user-panel
-        v-if="!iamUserProfile.enabled && !iamUserProfile.emailVerified"
-        :username="iamUserProfile.userId"
+        v-if="!iamUserProfile.enabled && !iamUserProfile.email_verified"
+        :username="iamUserProfile.user_id"
         @delete-user="$emit('delete-user', $event)"
       />
       <div class="alert alert-danger" v-if="isUsernameInvalid">
@@ -59,9 +59,9 @@
         they can complete their user profile.
       </div>
       <change-username-panel
-        :username="iamUserProfile.userId"
+        :username="iamUserProfile.user_id"
         :email="iamUserProfile.email"
-        :airavata-user-profile-exists="iamUserProfile.airavataUserProfileExists"
+        :airavata-user-profile-exists="iamUserProfile.airavata_user_profile_exists"
         @update-username="$emit('update-username', $event)"
       />
     </li>
@@ -119,12 +119,12 @@ export default {
   computed: {
     hasExternalIDPUserInfo() {
       return (
-        Object.keys(this.localIAMUserProfile.externalIDPUserInfo).length !== 0
+        Object.keys(this.localIAMUserProfile.external_idp_user_info).length !== 0
       );
     },
     isUsernameInvalid() {
       return (
-        this.iamUserProfile.userProfileInvalidFields.indexOf("username") >= 0
+        this.iamUserProfile.user_profile_invalid_fields.indexOf("username") >= 0
       );
     },
   },

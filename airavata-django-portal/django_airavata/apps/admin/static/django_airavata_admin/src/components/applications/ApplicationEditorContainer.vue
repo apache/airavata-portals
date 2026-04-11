@@ -37,7 +37,7 @@
           v-if="appModule"
           v-model="appModule"
           @input="appModuleIsDirty = true"
-          :readonly="!appModule.userHasWriteAccess"
+          :readonly="!appModule.user_has_write_access"
           :validation-errors="appModuleValidationErrors"
         />
         <router-view
@@ -45,7 +45,7 @@
           v-if="appInterface"
           v-model="appInterface"
           @input="appInterfaceIsDirty = true"
-          :readonly="!appInterface.userHasWriteAccess"
+          :readonly="!appInterface.user_has_write_access"
         />
         <router-view
           name="deployments"
@@ -53,7 +53,7 @@
           :deployments="appDeployments"
           @new="createNewDeployment"
           @delete="deleteApplicationDeployment"
-          :readonly="!appModule.userHasWriteAccess"
+          :readonly="!appModule.user_has_write_access"
         />
         <router-view
           name="deployment"
@@ -145,7 +145,7 @@ export default {
       );
     },
     readonly() {
-      return this.appModule && !this.appModule.userHasWriteAccess;
+      return this.appModule && !this.appModule.user_has_write_access;
     },
   },
   created() {
@@ -461,7 +461,7 @@ export default {
       });
     },
     saveSharedEntity(sharedEntity, appDeployment) {
-      return sharedEntity.entityId
+      return sharedEntity.entity_id
         ? this.updateSharedEntity(sharedEntity, appDeployment)
         : this.mergeSharedEntity(sharedEntity, appDeployment);
     },

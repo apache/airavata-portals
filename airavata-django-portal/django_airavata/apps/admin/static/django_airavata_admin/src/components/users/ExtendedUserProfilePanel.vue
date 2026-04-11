@@ -57,7 +57,7 @@ export default {
   created() {
     this.loadExtendedUserProfileFields();
     this.loadExtendedUserProfileValues({
-      username: this.iamUserProfile.userId,
+      username: this.iamUserProfile.user_id,
     });
   },
   computed: {

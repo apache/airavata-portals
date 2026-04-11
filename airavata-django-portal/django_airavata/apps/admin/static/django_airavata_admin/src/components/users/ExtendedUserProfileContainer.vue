@@ -19,7 +19,7 @@
           <extended-user-profile-field-editor
             ref="extendedUserProfileFieldEditors"
             :extendedUserProfileField="field"
-            :disabled="!field.userHasWriteAccess"
+            :disabled="!field.user_has_write_access"
             @valid="recordValidChildComponent(field)"
             @invalid="recordInvalidChildComponent(field)"
           />
@@ -130,7 +130,7 @@ export default {
       return this.childComponentsAreValid;
     },
     isGatewayAdmin() {
-      return session.Session.isGatewayAdmin;
+      return session.Session.is_gateway_admin;
     },
   },
 };

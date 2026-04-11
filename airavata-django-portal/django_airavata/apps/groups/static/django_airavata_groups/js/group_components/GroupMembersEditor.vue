@@ -179,7 +179,7 @@
                 :name="data.item.name"
                 :id="data.item.id"
                 :role="data.item.role"
-                :isOwner="group.isOwner"
+                :isOwner="group.is_owner"
                 @change-role="changeRole"
               />
             </template>
@@ -248,7 +248,7 @@ export default {
       }
       const result = {};
       this.userProfiles.forEach((up) => {
-        result[up.airavataInternalUserId] = up;
+        result[up.airavata_internal_user_id] = up;
       });
       return result;
     },
@@ -263,16 +263,16 @@ export default {
           .map((m) => {
             const userProfile = this.userProfilesMap[m];
             const isAdmin = this.admins.indexOf(m) >= 0;
-            const isOwner = this.group.ownerId === m;
+            const isOwner = this.group.owner_id === m;
             // Owners can edit all members and admins can edit non-admin members
             // (except the owners role isn't editable)
             const editable =
               !isOwner &&
-              (this.group.isOwner || (this.group.isAdmin && !isAdmin));
+              (this.group.is_owner || (this.group.is_admin && !isAdmin));
             return {
               id: m,
-              name: userProfile.firstName + " " + userProfile.lastName,
-              username: userProfile.userId,
+              name: userProfile.first_name + " " + userProfile.last_name,
+              username: userProfile.user_id,
               email: userProfile.email,
               role: isOwner ? "OWNER" : isAdmin ? "ADMIN" : "MEMBER",
               editable: editable,
@@ -292,15 +292,15 @@ export default {
           // Filter out current members
           .filter(
             (userProfile) =>
-              this.group.members.indexOf(userProfile.airavataInternalUserId) < 0
+              this.group.members.indexOf(userProfile.airavata_internal_user_id) < 0
           )
           .map((userProfile) => {
             return {
-              id: userProfile.airavataInternalUserId,
-              name: userProfile.firstName + " " + userProfile.lastName,
-              username: userProfile.userId,
+              id: userProfile.airavata_internal_user_id,
+              name: userProfile.first_name + " " + userProfile.last_name,
+              username: userProfile.user_id,
               email: userProfile.email,
-              _showDetails: this.showingDetails[userProfile.airavataInternalUserId] || false,
+              _showDetails: this.showingDetails[userProfile.airavata_internal_user_id] || false,
             };
           })
       );
@@ -320,8 +320,8 @@ export default {
   methods: {
     toggleDetails(row) {
       row.toggleDetails();
-      this.showingDetails[row.item.airavataInternalUserId] = !this
-        .showingDetails[row.item.airavataInternalUserId];
+      this.showingDetails[row.item.airavata_internal_user_id] = !this
+        .showingDetails[row.item.airavata_internal_user_id];
     },
     isUserSelected(user){
       if (this.selectedUsers.length>0){

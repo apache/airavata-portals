@@ -50,7 +50,7 @@ export default {
       }
     },
     isGatewayAdmin() {
-      return session.Session.isGatewayAdmin;
+      return session.Session.is_gateway_admin;
     },
   },
   methods: {

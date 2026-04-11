@@ -62,9 +62,9 @@ def user_session_data(request: HttpRequest) -> dict[str, str]:
     data: dict[str, Any] = {}
     if request.user.is_authenticated:
         data["username"] = request.user.username
-        data["airavataInternalUserId"] = request.user.username + "@" + settings.GATEWAY_ID
+        data["airavata_internal_user_id"] = request.user.username + "@" + settings.GATEWAY_ID
         # is_gateway_admin may not be set if a failure occurs during login
-        data["isGatewayAdmin"] = getattr(request, "is_gateway_admin", False)
+        data["is_gateway_admin"] = getattr(request, "is_gateway_admin", False)
     return {"user_session_data": json.dumps(data)}
 
 

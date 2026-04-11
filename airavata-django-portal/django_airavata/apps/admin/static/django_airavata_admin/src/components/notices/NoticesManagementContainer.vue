@@ -43,7 +43,7 @@
                       <td><human-date :date="item.publishedTime" /></td>
                       <td><human-date :date="item.expirationTime" /></td>
                       <td>
-                        <template v-if="item.userHasWriteAccess">
+                        <template v-if="item.user_has_write_access">
                           <a class="action-link" @click="editNotice(item)">
                             Edit
                             <i class="fa fa-edit" aria-hidden="true"></i>
@@ -130,7 +130,7 @@ export default {
       return this.notices ? this.notices : [];
     },
     isGatewayAdmin() {
-      return session.Session.isGatewayAdmin;
+      return session.Session.is_gateway_admin;
     },
   },
   methods: {

@@ -44,7 +44,7 @@ export default {
         return [
           {
             name: "Username",
-            value: this.iamUserProfile.userId,
+            value: this.iamUserProfile.user_id,
             valid: this.isValid("username"),
           },
           {
@@ -54,12 +54,12 @@ export default {
           },
           {
             name: "First Name",
-            value: this.iamUserProfile.firstName,
+            value: this.iamUserProfile.first_name,
             valid: this.isValid("first_name"),
           },
           {
             name: "Last Name",
-            value: this.iamUserProfile.lastName,
+            value: this.iamUserProfile.last_name,
             valid: this.isValid("last_name"),
           },
         ];
@@ -69,7 +69,7 @@ export default {
   methods: {
     isValid(fieldName) {
       return (
-        this.iamUserProfile.userProfileInvalidFields.indexOf(fieldName) < 0
+        this.iamUserProfile.user_profile_invalid_fields.indexOf(fieldName) < 0
       );
     },
   },

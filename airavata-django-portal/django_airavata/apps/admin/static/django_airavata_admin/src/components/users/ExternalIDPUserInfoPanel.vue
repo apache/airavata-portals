@@ -15,15 +15,15 @@ export default {
   props: ["externalIDPUserInfo"],
   computed: {
     userinfo() {
-      return this.externalIDPUserInfo.userinfo
-        ? this.externalIDPUserInfo.userinfo
+      return this.external_idp_user_info.userinfo
+        ? this.external_idp_user_info.userinfo
         : {};
     },
     items() {
       return Object.keys(this.userinfo).map((claim) => {
         return {
           claim: claim,
-          value: this.externalIDPUserInfo.userinfo[claim],
+          value: this.external_idp_user_info.userinfo[claim],
         };
       });
     },

@@ -11,7 +11,7 @@ export default class GroupPermission extends BaseModel {
           type: Group,
         },
         {
-          name: "permissionType",
+          name: "permission_type",
           type: ResourcePermissionType,
         },
       ],

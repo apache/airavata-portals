@@ -11,7 +11,7 @@ export default class UserPermission extends BaseModel {
           type: UserProfile,
         },
         {
-          name: "permissionType",
+          name: "permission_type",
           type: ResourcePermissionType,
         },
       ],

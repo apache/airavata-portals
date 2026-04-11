@@ -28,9 +28,9 @@ export default {
     },
     createNewGroup() {
       const group = new models.Group();
-      const ownerId = session.Session.airavataInternalUserId;
+      const ownerId = session.Session.airavata_internal_user_id;
       group.members.push(ownerId);
-      group.ownerId = ownerId;
+      group.owner_id = ownerId;
       return group;
     },
   },

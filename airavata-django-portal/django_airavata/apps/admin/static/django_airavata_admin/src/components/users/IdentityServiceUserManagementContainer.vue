@@ -34,7 +34,7 @@
               </template>
               <template slot="cell(action)" slot-scope="data">
                 <button class="btn"
-                  v-if="data.item.userHasWriteAccess"
+                  v-if="data.item.user_has_write_access"
                   @click="toggleDetails(data)"
                 >
                   Edit
@@ -139,14 +139,14 @@ export default {
         ? this.usersPaginator.results.map((u) => {
             const user = u.clone();
             user._showDetails =
-              this.showingDetails[u.airavataInternalUserId] || false;
+              this.showingDetails[u.airavata_internal_user_id] || false;
             return user;
           })
         : [];
     },
     editableGroups() {
       return this.allGroups
-        ? this.allGroups.filter((g) => g.isAdmin || g.isOwner)
+        ? this.allGroups.filter((g) => g.is_admin || g.is_owner)
         : [];
     },
     currentOffset() {
@@ -162,7 +162,7 @@ export default {
     },
     groupsUpdated(user) {
       services.IAMUserProfileService.update({
-        lookup: user.userId,
+        lookup: user.user_id,
         data: user,
       }).finally(() => {
         this.reloadUserProfiles();
@@ -182,8 +182,8 @@ export default {
     },
     toggleDetails(row) {
       row.toggleDetails();
-      this.showingDetails[row.item.airavataInternalUserId] = !this
-        .showingDetails[row.item.airavataInternalUserId];
+      this.showingDetails[row.item.airavata_internal_user_id] = !this
+        .showingDetails[row.item.airavata_internal_user_id];
     },
     searchUsers() {
       // Reset paginator when starting a search
