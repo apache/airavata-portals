@@ -1,5 +1,5 @@
 {% extends './base.html' %}
 
 {% block content %}
-<div id="dashboard" data-view-all-experiments="{% url 'django_airavata_workspace:experiments' %}" data-username="{{ request.user.username }}" />
+<div id="dashboard" data-view-all-experiments="{% url 'django_airavata_workspace:experiments' %}" data-username="{{ request.user.username }}"></div>
 {% endblock content %}

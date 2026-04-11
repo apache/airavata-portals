@@ -2,8 +2,8 @@
 
 {% block content %}
 <div id="{{ bundle_name }}"
-  data-experiments-data="{{ experiments_data }}"
-  {% if project_id %}data-project-id="{{ project_id }}"{% endif %}
+  data-project-id="{{ project_id }}"
+  data-project-name="{{ project_name }}"
   {% if breadcrumbs_json %}data-breadcrumbs="{{ breadcrumbs_json }}"{% endif %}
 ></div>
 {% endblock content %}

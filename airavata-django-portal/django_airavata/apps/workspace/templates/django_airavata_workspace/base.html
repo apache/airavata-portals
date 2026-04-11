@@ -3,7 +3,14 @@
 {% load static django_vite %}
 
 {% block content %}
-<div id="{{ bundle_name }}"/>
+<div id="{{ bundle_name }}"
+  {% if storage_resource_id %}data-storage-resource-id="{{ storage_resource_id }}"{% endif %}
+  {% if compute_resource_id %}data-compute-resource-id="{{ compute_resource_id }}"{% endif %}
+  {% if gateway_id %}data-gateway-id="{{ gateway_id }}"{% endif %}
+  {% if portal_title %}data-portal-title="{{ portal_title }}"{% endif %}
+  {% if project_id %}data-project-id="{{ project_id }}"{% endif %}
+  {% if breadcrumbs_json %}data-breadcrumbs="{{ breadcrumbs_json }}"{% endif %}
+></div>
 {% endblock content %}
 
 {% block scripts %}
