@@ -153,6 +153,44 @@ async def ssh_run_info(request: HttpRequest) -> JsonResponse:
 
 @login_required
 @require_POST
+async def sync_slurm_accounting(request: HttpRequest) -> JsonResponse:
+    """Sync SLURM accounting info for a compute resource via Airavata API."""
+    body: dict[str, Any] = json.loads(request.body)
+    compute_resource_id: str = body["compute_resource_id"]
+    credential_token: str = body["credential_token"]
+    gateway_id: str = settings.GATEWAY_ID
+
+    try:
+        result = request.airavata_client.resource.sync_slurm_accounting(
+            compute_resource_id=compute_resource_id,
+            credential_token=credential_token,
+            gateway_id=gateway_id,
+        )
+
+        partitions: list[dict[str, Any]] = []
+        for p in result.partitions:
+            partitions.append({
+                "name": p.name,
+                "totalNodes": p.total_nodes,
+                "maxCpusPerNode": p.max_cpus_per_node,
+                "maxMemMbPerNode": p.max_mem_mb_per_node,
+                "maxGpusPerNode": p.max_gpus_per_node,
+                "gpuTypes": list(p.gpu_types),
+                "accounts": list(p.accounts),
+            })
+
+        return JsonResponse({
+            "partitions": partitions,
+            "lastSyncedEpochMs": result.last_synced_epoch_ms,
+        })
+
+    except Exception as e:
+        logger.error("SLURM accounting sync failed for %s: %s", compute_resource_id, e)
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+@require_POST
 async def ssh_close(request: HttpRequest) -> JsonResponse:
     """Close an SSH session."""
     body: dict[str, Any] = json.loads(request.body)

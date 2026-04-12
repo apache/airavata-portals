@@ -83,6 +83,7 @@ urlpatterns = [
     re_path(r"^ssh/run/$", views_ssh.ssh_run, name="ssh-run"),
     re_path(r"^ssh/run-info/$", views_ssh.ssh_run_info, name="ssh-run-info"),
     re_path(r"^ssh/close/$", views_ssh.ssh_close, name="ssh-close"),
+    re_path(r"^ssh/sync-slurm-accounting/$", views_ssh.sync_slurm_accounting, name="sync_slurm_accounting"),
 ]
 
 urlpatterns = router.urls + format_suffix_patterns(urlpatterns)
