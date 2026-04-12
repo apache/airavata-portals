@@ -1005,7 +1005,7 @@ class GroupResourceProfileViewSet(viewsets.ViewSet):
     lookup_field = "group_resource_profile_id"
 
     def list(self, request: Request) -> Response:
-        results = request.airavata_client.compute.get_group_resource_list(settings.GATEWAY_ID)
+        results = request.airavata_client.compute.get_group_resource_list()
         return Response(proto_list_to_dicts(results))
 
     def retrieve(self, request: Request, group_resource_profile_id: str | None = None) -> Response:

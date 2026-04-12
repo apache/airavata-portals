@@ -42,7 +42,7 @@ class WorkspacePreferencesHelper:
     def _get_first_group_resource_profile(self, request: Any) -> Any:
         "Return first accessible group resource profile"
 
-        group_resource_profiles = request.airavata_client.compute.get_group_resource_list(settings.GATEWAY_ID)
+        group_resource_profiles = request.airavata_client.compute.get_group_resource_list()
         if len(group_resource_profiles) > 0:
             return group_resource_profiles[0]
         else:
@@ -60,7 +60,7 @@ class WorkspacePreferencesHelper:
                 logger.warning("_check: no writeable projects found, unsetting most_recent_project_id")
                 prefs.most_recent_project_id = None
                 prefs.save()
-        group_resource_profiles = request.airavata_client.compute.get_group_resource_list(settings.GATEWAY_ID)
+        group_resource_profiles = request.airavata_client.compute.get_group_resource_list()
         group_resource_profile_ids = list(map(lambda g: g.group_resource_profile_id, group_resource_profiles))
         if (
             not prefs.most_recent_group_resource_profile_id
