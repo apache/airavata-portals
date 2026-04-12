@@ -10,15 +10,16 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
+from typing import Final
 
 import asyncssh
 
 from django_airavata.apps.api.sse import EventBus
 
-logger = logging.getLogger(__name__)
+logger: Final = logging.getLogger(__name__)
 
-MAX_SESSIONS_PER_USER = 5
-SESSION_TIMEOUT = 300  # 5 minutes
+MAX_SESSIONS_PER_USER: Final[int] = 5
+SESSION_TIMEOUT: Final[int] = 300  # 5 minutes
 
 
 @dataclass
@@ -36,7 +37,7 @@ class SSHSessionManager:
     """Manages SSH sessions with interactive authentication."""
 
     def __init__(self, event_bus: EventBus) -> None:
-        self._bus = event_bus
+        self._bus: Final = event_bus
         self._sessions: dict[str, SSHSession] = {}
 
     def _user_session_count(self, user_id: int) -> int:
@@ -62,13 +63,13 @@ class SSHSessionManager:
             })
             return
 
-        session = SSHSession(session_id=session_id, user_id=user_id, hostname=hostname)
+        session: SSHSession = SSHSession(session_id=session_id, user_id=user_id, hostname=hostname)
         self._sessions[session_id] = session
 
         try:
-            key = asyncssh.import_private_key(private_key_pem)
+            key: asyncssh.SSHKey = asyncssh.import_private_key(private_key_pem)
 
-            conn = await asyncssh.connect(
+            conn: asyncssh.SSHClientConnection = await asyncssh.connect(
                 hostname,
                 port=port,
                 username=username,
@@ -92,7 +93,30 @@ class SSHSessionManager:
                 "type": "ssh_result",
                 "session_id": session_id,
                 "success": False,
+                "error_type": "INVALID_KEY",
                 "message": f"Invalid SSH key: {e}",
+                "data": None,
+            })
+
+        except asyncssh.PermissionDenied as e:
+            self._cleanup_session(session_id)
+            self._bus.push_event(user_id, {
+                "type": "ssh_result",
+                "session_id": session_id,
+                "success": False,
+                "error_type": "AUTH_FAILED",
+                "message": str(e),
+                "data": None,
+            })
+
+        except (ConnectionRefusedError, asyncssh.ConnectionLost) as e:
+            self._cleanup_session(session_id)
+            self._bus.push_event(user_id, {
+                "type": "ssh_result",
+                "session_id": session_id,
+                "success": False,
+                "error_type": "HOST_UNREACHABLE",
+                "message": str(e),
                 "data": None,
             })
 
@@ -102,13 +126,14 @@ class SSHSessionManager:
                 "type": "ssh_result",
                 "session_id": session_id,
                 "success": False,
+                "error_type": "NETWORK_ERROR",
                 "message": str(e),
                 "data": None,
             })
 
     async def submit_response(self, session_id: str, response: str) -> bool:
         """Submit a response to a pending interactive prompt."""
-        session = self._sessions.get(session_id)
+        session: SSHSession | None = self._sessions.get(session_id)
         if not session:
             return False
         session.pending_response = response
@@ -118,15 +143,15 @@ class SSHSessionManager:
 
     async def run_command(self, session_id: str, command: str) -> str:
         """Run a command on an established SSH session."""
-        session = self._sessions.get(session_id)
+        session: SSHSession | None = self._sessions.get(session_id)
         if not session or not session.conn:
             raise ValueError(f"No active session: {session_id}")
 
         session.last_activity = time.monotonic()
 
         try:
-            result = await session.conn.run(command, check=False)
-            output = result.stdout or ""
+            result: asyncssh.SSHCompletedProcess = await session.conn.run(command, check=False)
+            output: str = result.stdout or ""
 
             for line in output.strip().split("\n"):
                 if line:
@@ -150,7 +175,7 @@ class SSHSessionManager:
 
     async def close_session(self, session_id: str) -> None:
         """Close an SSH session and clean up."""
-        session = self._sessions.get(session_id)
+        session: SSHSession | None = self._sessions.get(session_id)
         if session and session.conn:
             session.conn.close()
         self._cleanup_session(session_id)
@@ -160,8 +185,8 @@ class SSHSessionManager:
 
     async def cleanup_expired(self) -> None:
         """Remove sessions inactive for SESSION_TIMEOUT seconds."""
-        now = time.monotonic()
-        expired = [
+        now: float = time.monotonic()
+        expired: list[str] = [
             sid for sid, s in self._sessions.items()
             if now - s.last_activity > SESSION_TIMEOUT
         ]

@@ -7,33 +7,34 @@ import json
 import logging
 import os
 import uuid
+from typing import Any, Final
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, StreamingHttpResponse
+from django.http import HttpRequest, JsonResponse, StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from django_airavata.apps.api.sse import event_bus
 from django_airavata.apps.api.ssh_manager import SSHSessionManager
 
-logger = logging.getLogger(__name__)
+logger: Final = logging.getLogger(__name__)
 
 # Singleton SSH session manager
-ssh_manager = SSHSessionManager(event_bus)
+ssh_manager: Final = SSHSessionManager(event_bus)
 
 # Path to the HPC info script
-INFO_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "scripts", "info.sh")
+INFO_SCRIPT_PATH: Final[str] = os.path.join(os.path.dirname(__file__), "scripts", "info.sh")
 
 
 @csrf_exempt
 @login_required
 @require_GET
-async def sse_events(request):
+async def sse_events(request: HttpRequest) -> StreamingHttpResponse:
     """SSE endpoint — streams events to the authenticated user."""
-    user_id = request.user.id
+    user_id: int = request.user.id
 
-    async def stream():
+    async def stream() -> Any:
         try:
             async for line in event_bus.event_stream(user_id):
                 yield line
@@ -50,15 +51,15 @@ async def sse_events(request):
 
 @login_required
 @require_POST
-async def ssh_test(request):
+async def ssh_test(request: HttpRequest) -> JsonResponse:
     """Start an SSH test connection."""
-    body = json.loads(request.body)
-    hostname = body["hostname"]
-    port = body.get("port", 22)
-    credential_token = body["credential_token"]
-    session_id = str(uuid.uuid4())
-    user_id = request.user.id
-    gateway_id = settings.GATEWAY_ID
+    body: dict[str, Any] = json.loads(request.body)
+    hostname: str = body["hostname"]
+    port: int = body.get("port", 22)
+    credential_token: str = body["credential_token"]
+    session_id: str = str(uuid.uuid4())
+    user_id: int = request.user.id
+    gateway_id: str = settings.GATEWAY_ID
 
     # Fetch the SSH private key from the credential store
     try:
@@ -67,7 +68,8 @@ async def ssh_test(request):
         )
         private_key_pem = credential.privateKey
     except Exception as e:
-        return JsonResponse({"error": f"Failed to fetch credential: {e}"}, status=400)
+        logger.warning("Failed to fetch credential token %s: %s", credential_token, e)
+        return JsonResponse({"error": f"Failed to fetch credential: {e}", "error_type": "INVALID_KEY"}, status=400)
 
     # Start connection as a background task
     asyncio.create_task(
@@ -86,13 +88,13 @@ async def ssh_test(request):
 
 @login_required
 @require_POST
-async def ssh_respond(request):
+async def ssh_respond(request: HttpRequest) -> JsonResponse:
     """Submit a response to an interactive SSH prompt."""
-    body = json.loads(request.body)
-    session_id = body["session_id"]
-    response_text = body["response"]
+    body: dict[str, Any] = json.loads(request.body)
+    session_id: str = body["session_id"]
+    response_text: str = body["response"]
 
-    ok = await ssh_manager.submit_response(session_id, response_text)
+    ok: bool = await ssh_manager.submit_response(session_id, response_text)
     if not ok:
         return JsonResponse({"error": "Session not found"}, status=404)
     return JsonResponse({"ok": True})
@@ -100,14 +102,14 @@ async def ssh_respond(request):
 
 @login_required
 @require_POST
-async def ssh_run(request):
+async def ssh_run(request: HttpRequest) -> JsonResponse:
     """Run a command on an established SSH session."""
-    body = json.loads(request.body)
-    session_id = body["session_id"]
-    command = body["command"]
+    body: dict[str, Any] = json.loads(request.body)
+    session_id: str = body["session_id"]
+    command: str = body["command"]
 
     try:
-        output = await ssh_manager.run_command(session_id, command)
+        output: str = await ssh_manager.run_command(session_id, command)
         return JsonResponse({"output": output})
     except ValueError as e:
         return JsonResponse({"error": str(e)}, status=404)
@@ -115,24 +117,24 @@ async def ssh_run(request):
 
 @login_required
 @require_POST
-async def ssh_run_info(request):
+async def ssh_run_info(request: HttpRequest) -> JsonResponse:
     """Run the HPC info.sh script on an established SSH session."""
-    body = json.loads(request.body)
-    session_id = body["session_id"]
+    body: dict[str, Any] = json.loads(request.body)
+    session_id: str = body["session_id"]
 
     with open(INFO_SCRIPT_PATH) as f:
         script_content = f.read()
 
     try:
-        output = await ssh_manager.run_command(
+        output: str = await ssh_manager.run_command(
             session_id, f"sh -s <<'INFOSCRIPT'\n{script_content}\nINFOSCRIPT"
         )
 
-        partitions = []
-        lines = output.strip().split("\n")
+        partitions: list[dict[str, Any]] = []
+        lines: list[str] = output.strip().split("\n")
         if len(lines) > 1:
             for line in lines[1:]:
-                parts = line.split("|")
+                parts: list[str] = line.split("|")
                 if len(parts) >= 7:
                     partitions.append({
                         "partition": parts[0],
@@ -151,10 +153,10 @@ async def ssh_run_info(request):
 
 @login_required
 @require_POST
-async def ssh_close(request):
+async def ssh_close(request: HttpRequest) -> JsonResponse:
     """Close an SSH session."""
-    body = json.loads(request.body)
-    session_id = body["session_id"]
+    body: dict[str, Any] = json.loads(request.body)
+    session_id: str = body["session_id"]
 
     await ssh_manager.close_session(session_id)
     return JsonResponse({"ok": True})
