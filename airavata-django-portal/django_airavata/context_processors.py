@@ -37,16 +37,16 @@ def get_notifications(request: AiravataRequest) -> dict[str, Any]:
                 notification_data["url"] = (
                     request.build_absolute_uri(reverse("django_airavata_api:ack-notifications"))
                     + "?id="
-                    + str(notification.notificationId)
+                    + str(notification.notification_id)
                 )
 
                 try:
                     notification_status = User_Notifications.objects.get(
-                        notification_id=notification.notificationId, username=request.user.username
+                        notification_id=notification.notification_id, username=request.user.username
                     )
                 except ObjectDoesNotExist:
                     notification_status = User_Notifications.objects.create(
-                        username=request.user.username, notification_id=notification.notificationId
+                        username=request.user.username, notification_id=notification.notification_id
                     )
                 notification_data["is_read"] = notification_status.is_read
                 if not notification_status.is_read:

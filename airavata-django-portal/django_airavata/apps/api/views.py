@@ -1376,10 +1376,10 @@ class CredentialSummaryViewSet(viewsets.ViewSet):
         user_has_write = request.airavata_client.sharing.user_has_access(cred.token, username, "WRITE")
         return {
             "type": cred.type.name if hasattr(cred.type, "name") else str(cred.type),
-            "gateway_id": cred.gatewayId if hasattr(cred, "gatewayId") else getattr(cred, "gateway_id", None),
-            "username": cred.username if hasattr(cred, "username") else None,
-            "public_key": cred.publicKey if hasattr(cred, "publicKey") else getattr(cred, "public_key", None),
-            "persisted_time": cred.persistedTime if hasattr(cred, "persistedTime") else getattr(cred, "persisted_time", None),
+            "gateway_id": getattr(cred, "gateway_id", None),
+            "username": getattr(cred, "username", None),
+            "public_key": getattr(cred, "public_key", None),
+            "persisted_time": getattr(cred, "persisted_time", None),
             "token": cred.token,
             "description": cred.description,
             "user_has_write_access": user_has_write,
@@ -1850,7 +1850,7 @@ class AckNotificationViewSet(APIView):
                 notification.save()
             except ObjectDoesNotExist:
                 models.User_Notifications.objects.create(
-                    username=request.user.username, notification_id=notification.notificationId
+                    username=request.user.username, notification_id=notification.notification_id
                 )
         return HttpResponse(status=204)
 
@@ -1976,14 +1976,14 @@ class IAMUserViewSet(viewsets.ViewSet):
         return {
             "airavata_internal_user_id": user_profile.airavataInternalUserId,
             "user_id": user_profile.userId,
-            "gateway_id": user_profile.gatewayId,
+            "gateway_id": user_profile.gateway_id,
             "email": user_profile.emails[0] if user_profile.emails else None,
             "first_name": user_profile.firstName,
             "last_name": user_profile.lastName,
             "enabled": user_profile.State == Status.ACTIVE,
             "email_verified": (user_profile.State == Status.CONFIRMED or user_profile.State == Status.ACTIVE),
             "airavata_user_profile_exists": airavata_user_profile_exists,
-            "creation_time": user_profile.creationTime,
+            "creation_time": user_profile.creation_time,
             "groups": groups,
             "user_has_write_access": request.is_gateway_admin,
             "external_idp_user_info": external_idp_user_info,
@@ -2068,7 +2068,7 @@ class UnverifiedEmailUserViewSet(viewsets.ViewSet):
                 results.append(
                     {
                         "user_id": user_profile.userId,
-                        "gateway_id": user_profile.gatewayId,
+                        "gateway_id": user_profile.gateway_id,
                         "email": user_profile.emails[0] if user_profile.emails else None,
                         "first_name": user_profile.firstName,
                         "last_name": user_profile.lastName,
@@ -2076,7 +2076,7 @@ class UnverifiedEmailUserViewSet(viewsets.ViewSet):
                         "email_verified": (
                             user_profile.State == Status.CONFIRMED or user_profile.State == Status.ACTIVE
                         ),
-                        "creation_time": user_profile.creationTime,
+                        "creation_time": user_profile.creation_time,
                         "user_has_write_access": request.is_gateway_admin,
                     }
                 )

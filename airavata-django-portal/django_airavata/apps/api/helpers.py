@@ -24,10 +24,10 @@ class WorkspacePreferencesHelper:
     def _create_default(self, request: Any) -> models.WorkspacePreferences:
         workspace_preferences = models.WorkspacePreferences.create(request.user.username)
         most_recent_project = self._get_most_recent_project(request)
-        workspace_preferences.most_recent_project_id = most_recent_project.projectID
+        workspace_preferences.most_recent_project_id = most_recent_project.project_id if most_recent_project else None
         first_grp = self._get_first_group_resource_profile(request)
         workspace_preferences.most_recent_group_resource_profile_id = (
-            first_grp.groupResourceProfileId if first_grp else None
+            first_grp.group_resource_profile_id if first_grp else None
         )
         return workspace_preferences
 
@@ -35,7 +35,7 @@ class WorkspacePreferencesHelper:
         "Return most recent writeable project."
         projects = request.airavata_client.research.get_user_projects(settings.GATEWAY_ID, request.user.username, -1, 0)
         for project in projects:
-            if self._can_write(request, project.projectID):
+            if self._can_write(request, project.project_id):
                 return project
         return None
 
@@ -53,15 +53,15 @@ class WorkspacePreferencesHelper:
         if not prefs.most_recent_project_id or not self._can_write(request, prefs.most_recent_project_id):
             most_recent_project = self._get_most_recent_project(request)
             if most_recent_project is not None:
-                logger.info(f"_check: updating most_recent_project_id to {most_recent_project.projectID}")
-                prefs.most_recent_project_id = most_recent_project.projectID
+                logger.info(f"_check: updating most_recent_project_id to {most_recent_project.project_id}")
+                prefs.most_recent_project_id = most_recent_project.project_id
                 prefs.save()
             else:
                 logger.warning("_check: no writeable projects found, unsetting most_recent_project_id")
                 prefs.most_recent_project_id = None
                 prefs.save()
         group_resource_profiles = request.airavata_client.compute.get_group_resource_list(settings.GATEWAY_ID)
-        group_resource_profile_ids = list(map(lambda g: g.groupResourceProfileId, group_resource_profiles))
+        group_resource_profile_ids = list(map(lambda g: g.group_resource_profile_id, group_resource_profiles))
         if (
             not prefs.most_recent_group_resource_profile_id
             or prefs.most_recent_group_resource_profile_id not in group_resource_profile_ids

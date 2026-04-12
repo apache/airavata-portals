@@ -199,8 +199,8 @@ def edit_experiment(request, project_id, experiment_id):
 
     project = request.airavata_client.research.get_project(project_id)
     experiment = request.airavata_client.research.get_experiment(experiment_id)
-    applicationInterface = request.airavata_client.research.get_application_interface(experiment.executionId)
-    app_module_id = applicationInterface.applicationModules[0]
+    applicationInterface = request.airavata_client.research.get_application_interface(experiment.execution_id)
+    app_module_id = applicationInterface.application_modules[0]
 
     breadcrumbs = [
         {"label": "Projects", "url": "/workspace/"},
