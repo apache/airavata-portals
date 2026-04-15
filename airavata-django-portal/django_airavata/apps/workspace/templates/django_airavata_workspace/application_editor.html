@@ -1,0 +1,9 @@
+{% extends './base.html' %}
+
+{% block content %}
+
+<div id="application-editor"
+  {% if app_module_id %}data-app-module-id="{{ app_module_id }}"{% endif %}
+></div>
+
+{% endblock content %}

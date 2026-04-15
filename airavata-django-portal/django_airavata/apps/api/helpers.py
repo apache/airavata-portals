@@ -72,7 +72,9 @@ class WorkspacePreferencesHelper:
             prefs.save()
 
     def _can_write(self, request: Any, entity_id: str) -> bool:
-        return request.airavata_client.sharing.user_has_access(entity_id, ResourcePermissionType.WRITE)
+        user_id = request.user.username + "@" + settings.GATEWAY_ID
+        return request.airavata_client.sharing.user_has_access(entity_id, user_id, "WRITE")
 
     def _can_read(self, request: Any, entity_id: str) -> bool:
-        return request.airavata_client.sharing.user_has_access(entity_id, ResourcePermissionType.READ)
+        user_id = request.user.username + "@" + settings.GATEWAY_ID
+        return request.airavata_client.sharing.user_has_access(entity_id, user_id, "READ")

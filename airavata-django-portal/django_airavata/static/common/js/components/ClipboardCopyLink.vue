@@ -1,20 +1,20 @@
 <template>
   <div style="display: inline-block;">
-    <a
-      href="#"
+    <button
+      type="button"
       ref="copyLink"
       :data-clipboard-text="text"
-      class="action-link"
+      class="btn btn-outline-primary btn-pill"
       :class="linkClasses"
     >
+      <slot name="icon">
+        <i class="far fa-clipboard me-1"></i>
+      </slot>
       <slot>
         Copy Key
       </slot>
-      <slot name="icon">
-        <i class="far fa-clipboard"></i>
-      </slot>
-    </a>
-    <div class="tooltip" :show="show" :disabled="!show" :target="() => $refs.copyLink">
+    </button>
+    <div v-if="show" class="tooltip show position-absolute" role="tooltip">
       <slot name="tooltip">Copied!</slot>
     </div>
   </div>
@@ -55,3 +55,4 @@ export default {
   },
 };
 </script>
+

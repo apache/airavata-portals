@@ -164,8 +164,9 @@
               <thead class="table-light">
                 <tr>
                   <th>Partition</th>
-                  <th>Nodes</th>
-                  <th>CPUs</th>
+                  <th>Max Walltime (hrs)</th>
+                  <th>Max Nodes</th>
+                  <th>CPUs/Node</th>
                   <th>Memory (MB)</th>
                   <th>GPUs</th>
                   <th>GPU Types</th>
@@ -175,7 +176,8 @@
               </thead>
               <tbody>
                 <tr v-for="(p, idx) in partitions" :key="idx">
-                  <td><input type="text" class="form-control form-control-sm" v-model="p.partition" placeholder="e.g. general" /></td>
+                  <td><input type="text" class="form-control form-control-sm" v-model="p.partition" placeholder="e.g. debug" /></td>
+                  <td><input type="number" class="form-control form-control-sm" v-model.number="p.maxRunTime" min="1" style="width:90px;" placeholder="hours" /></td>
                   <td><input type="number" class="form-control form-control-sm" v-model.number="p.nodes" min="1" style="width:80px;" /></td>
                   <td><input type="number" class="form-control form-control-sm" v-model.number="p.maxCpusPerNode" min="1" style="width:80px;" /></td>
                   <td><input type="number" class="form-control form-control-sm" v-model.number="p.maxMemMbPerNode" min="0" style="width:100px;" /></td>
@@ -194,29 +196,60 @@
         </div>
       </div>
 
-      <!-- Card 4: Job Submission -->
+      <!-- Card 4: SSH Job Submission -->
       <div class="card mb-3">
-        <div class="card-header" style="font-size:0.875rem;font-weight:600;">Job Submission</div>
+        <div class="card-header" style="font-size:0.875rem;font-weight:600;">SSH Job Submission</div>
         <div class="card-body">
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label form-label-sm">Resource Manager</label>
-              <select class="form-select form-select-sm" v-model="jobSubmission.resourceManager">
+              <select class="form-select form-select-sm" v-model="jobSubmission.resourceManagerType">
                 <option value="">-- Select --</option>
                 <option value="SLURM">SLURM</option>
                 <option value="PBS">PBS</option>
-                <option value="SGE">SGE</option>
+                <option value="LSF">LSF</option>
+                <option value="UGE">UGE</option>
+                <option value="HTCONDOR">HTCONDOR</option>
                 <option value="FORK">FORK</option>
               </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-sm">Job Manager Bin Path</label>
+              <input type="text" class="form-control form-control-sm" v-model="jobSubmission.jobManagerBinPath" placeholder="/usr/bin" />
             </div>
             <div class="col-md-4">
               <label class="form-label form-label-sm">SSH Port</label>
               <input type="number" class="form-control form-control-sm" v-model.number="jobSubmission.sshPort" min="1" max="65535" placeholder="22" />
             </div>
             <div class="col-md-4">
+              <label class="form-label form-label-sm">Security Protocol</label>
+              <select class="form-select form-select-sm" v-model="jobSubmission.securityProtocol">
+                <option value="SSH_KEYS">SSH Keys</option>
+                <option value="USERNAME_PASSWORD">Username/Password</option>
+                <option value="GSI">GSI</option>
+                <option value="KERBEROS">Kerberos</option>
+                <option value="OAUTH">OAuth</option>
+                <option value="LOCAL">Local</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-sm">Monitor Mode</label>
+              <select class="form-select form-select-sm" v-model="jobSubmission.monitorMode">
+                <option value="POLL_JOB_MANAGER">Poll Job Manager</option>
+                <option value="XSEDE_AMQP_SUBSCRIBE">XSEDE AMQP Subscribe</option>
+                <option value="JOB_EMAIL_NOTIFICATION_MONITOR">Email Notification</option>
+                <option value="CLOUD_JOB_MONITOR">Cloud Job Monitor</option>
+                <option value="MONITOR_FORK">Monitor Fork</option>
+                <option value="MONITOR_LOCAL">Monitor Local</option>
+              </select>
+            </div>
+            <div class="col-md-4">
               <label class="form-label form-label-sm">Alternative SSH Host</label>
               <input type="text" class="form-control form-control-sm" v-model="jobSubmission.alternativeSshHostname" placeholder="Optional" />
             </div>
+          </div>
+          <div class="form-text mt-2" style="font-size:0.75rem;">
+            SSH submission is saved separately from the general compute resource details.
           </div>
         </div>
       </div>
@@ -254,9 +287,16 @@ export default {
       sshCredentialToken: null,
       partitions: [],
       jobSubmission: {
-        resourceManager: "",
+        // Backing state for the SSH job submission + its embedded
+        // ResourceJobManager. These fields are persisted via a separate
+        // endpoint from the main compute resource PUT.
+        submissionInterfaceId: null,
+        resourceManagerType: "",
+        jobManagerBinPath: "",
         sshPort: 22,
         alternativeSshHostname: "",
+        securityProtocol: "SSH_KEYS",
+        monitorMode: "POLL_JOB_MANAGER",
       },
       saving: false,
       saveError: null,
@@ -280,35 +320,57 @@ export default {
         this.resource = await services.ComputeResourceService.retrieve({
           lookup: this.computeResourceId,
         });
-        // Pull job submission info if available
+        // Find the first SSH-protocol submission interface, if any.
+        let sshInterfaceId = null;
         if (
           this.resource.job_submission_interfaces &&
           this.resource.job_submission_interfaces.length > 0
         ) {
-          const iface = this.resource.job_submission_interfaces[0];
-          if (iface.job_submission_interface_id) {
-            this.jobSubmission.resourceManager =
-              iface.job_submission_protocol || "";
+          const sshIface = this.resource.job_submission_interfaces.find(
+            (i) =>
+              i.job_submission_protocol === "SSH" ||
+              i.job_submission_protocol === "SSH_FORK"
+          );
+          if (sshIface) {
+            sshInterfaceId = sshIface.job_submission_interface_id;
           }
         }
-        // Pull SSH job submission info (sshPort, alternativeSshHostname)
-        if (
-          this.resource.ssh_job_submission
-        ) {
-          this.jobSubmission.sshPort =
-            this.resource.ssh_job_submission.ssh_port || 22;
-          this.jobSubmission.alternativeSshHostname =
-            this.resource.ssh_job_submission.alternative_ssh_hostname || "";
-          this.jobSubmission.resourceManager =
-            this.resource.ssh_job_submission.resource_manager || "";
+        // Load the SSH submission detail (separate endpoint).
+        if (sshInterfaceId) {
+          try {
+            const sshDetail = await utils.FetchUtils.get(
+              "/api/job/submission/ssh",
+              { id: sshInterfaceId }
+            );
+            if (sshDetail) {
+              this.jobSubmission.submissionInterfaceId = sshInterfaceId;
+              this.jobSubmission.sshPort = sshDetail.ssh_port || 22;
+              this.jobSubmission.alternativeSshHostname =
+                sshDetail.alternative_ssh_host_name || "";
+              this.jobSubmission.securityProtocol =
+                sshDetail.security_protocol || "SSH_KEYS";
+              this.jobSubmission.monitorMode =
+                sshDetail.monitor_mode || "POLL_JOB_MANAGER";
+              const rjm = sshDetail.resource_job_manager || {};
+              this.jobSubmission.resourceManagerType =
+                rjm.resource_job_manager_type || "";
+              this.jobSubmission.jobManagerBinPath =
+                rjm.job_manager_bin_path || "";
+            }
+          } catch (e) {
+            // Non-fatal: form stays at defaults.
+            // eslint-disable-next-line no-console
+            console.warn("Failed to load SSH submission details", e);
+          }
         }
-        // Load existing batch queues as partitions
+        // Load existing batch queues as partitions.
         if (
           this.resource.batch_queues &&
           this.resource.batch_queues.length > 0
         ) {
           this.partitions = this.resource.batch_queues.map((q) => ({
             partition: q.queue_name || "",
+            maxRunTime: q.max_run_time || null,
             nodes: q.max_nodes || null,
             maxCpusPerNode: q.cpu_per_node || null,
             maxMemMbPerNode: q.max_memory || null,
@@ -326,6 +388,7 @@ export default {
     addPartitionRow() {
       this.partitions.push({
         partition: "",
+        maxRunTime: null,
         nodes: null,
         maxCpusPerNode: null,
         maxMemMbPerNode: null,
@@ -389,6 +452,7 @@ export default {
         if (result && result.partitions && result.partitions.length > 0) {
           this.partitions = result.partitions.map((p) => ({
             partition: p.partition || "",
+            maxRunTime: p.maxRunTime || p.maxWalltimeHours || null,
             nodes: p.nodes || null,
             maxCpusPerNode: p.maxCpusPerNode || null,
             maxMemMbPerNode: p.maxMemMbPerNode || null,
@@ -410,13 +474,17 @@ export default {
       this.saveError = null;
       this.saveSuccess = false;
       try {
-        // Map partitions back to batchQueues
-        const batch_queues = this.partitions.map((p) => ({
-          queue_name: p.partition,
-          max_nodes: p.nodes || undefined,
-          cpu_per_node: p.maxCpusPerNode || undefined,
-          max_memory: p.maxMemMbPerNode || undefined,
-        }));
+        // Map partitions back to batch_queues. max_run_time is what the
+        // server uses as the walltime cap for SLURM submissions.
+        const batch_queues = this.partitions
+          .filter((p) => p.partition && p.partition.trim())
+          .map((p) => ({
+            queue_name: p.partition.trim(),
+            max_run_time: p.maxRunTime || undefined,
+            max_nodes: p.nodes || undefined,
+            cpu_per_node: p.maxCpusPerNode || undefined,
+            max_memory: p.maxMemMbPerNode || undefined,
+          }));
 
         const payload = {
           ...this.resource,
@@ -427,6 +495,14 @@ export default {
           lookup: this.computeResourceId,
           data: payload,
         });
+
+        // Save the SSH submission separately, if the user has selected
+        // a resource manager type. The SSH submission is NOT part of the
+        // ComputeResourceDescription proto, so it has its own endpoint.
+        if (this.jobSubmission.resourceManagerType) {
+          await this.saveSshSubmission();
+        }
+
         this.saveSuccess = true;
         // Reload to reflect server state
         await this.loadResource();
@@ -434,6 +510,43 @@ export default {
         this.saveError = e?.message || "Failed to save compute resource.";
       }
       this.saving = false;
+    },
+
+    async saveSshSubmission() {
+      const ssh_job_submission = {
+        security_protocol: this.jobSubmission.securityProtocol || "SSH_KEYS",
+        ssh_port: this.jobSubmission.sshPort || 22,
+        monitor_mode:
+          this.jobSubmission.monitorMode || "POLL_JOB_MANAGER",
+        alternative_ssh_host_name:
+          this.jobSubmission.alternativeSshHostname || "",
+        resource_job_manager: {
+          resource_job_manager_type:
+            this.jobSubmission.resourceManagerType,
+          job_manager_bin_path:
+            this.jobSubmission.jobManagerBinPath || "",
+        },
+      };
+
+      if (this.jobSubmission.submissionInterfaceId) {
+        ssh_job_submission.job_submission_interface_id =
+          this.jobSubmission.submissionInterfaceId;
+        await services.ComputeResourceService.updateSshSubmission({
+          lookup: this.computeResourceId,
+          data: {
+            submission_id: this.jobSubmission.submissionInterfaceId,
+            ssh_job_submission,
+          },
+        });
+      } else {
+        await services.ComputeResourceService.addSshSubmission({
+          lookup: this.computeResourceId,
+          data: {
+            priority: 0,
+            ssh_job_submission,
+          },
+        });
+      }
     },
 
     async deleteResource() {

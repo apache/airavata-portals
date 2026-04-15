@@ -18,18 +18,19 @@
         <div v-if="loading" class="text-center py-4 text-muted">
           <i class="fa fa-spinner fa-spin me-1"></i> Loading storage resources...
         </div>
-        <table v-else class="table table-hover">
+        <table v-else class="table table-hover table-sm">
           <thead>
             <tr>
               <th>Name</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th class="text-nowrap">Type</th>
+              <th class="text-nowrap">Owner</th>
+              <th class="text-nowrap">Status</th>
+              <th class="text-nowrap" style="width: 1%">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="align-middle">
             <tr v-if="storageList.length === 0">
-              <td colspan="4">
+              <td colspan="5">
                 <div class="table-empty">
                   <i class="fa fa-hdd table-empty__icon"></i>
                   <div class="table-empty__title">No storage resources configured</div>
@@ -43,14 +44,20 @@
                 <a :href="'/resources/storage/' + storage.id" class="text-decoration-none"><strong>{{ storage.name }}</strong></a>
               </td>
               <td><span class="badge bg-secondary">SFTP</span></td>
-              <td><span class="badge bg-success">Connected</span></td>
               <td>
-                <a href="#" class="action-link" @click.stop.prevent="openStorage(storage)">
-                  <i class="fa fa-folder-open"></i> Browse
-                </a>
-                <a href="#" class="action-link text-danger ms-2" @click.stop.prevent="confirmDeleteStorage(storage)">
-                  <i class="fa fa-trash"></i> Delete
-                </a>
+                <span class="fw-medium text-muted">gateway</span>
+                <span class="badge bg-primary ms-1">Gateway</span>
+              </td>
+              <td><span class="badge bg-success">Connected</span></td>
+              <td class="text-nowrap" style="width: 1%">
+                <div class="d-flex gap-2 justify-content-end flex-nowrap">
+                  <button type="button" class="btn btn-outline-primary btn-pill" @click.stop="openStorage(storage)">
+                    <i class="fa fa-folder-open me-1"></i>Browse
+                  </button>
+                  <button type="button" class="btn btn-outline-danger btn-pill" @click.stop="confirmDeleteStorage(storage)">
+                    <i class="fa fa-trash me-1"></i>Delete
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -117,16 +124,16 @@
           </div>
 
           <!-- File/dir table -->
-          <table class="table table-hover">
+          <table class="table table-hover table-sm">
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Size</th>
-                <th>Last Modified</th>
-                <th>Actions</th>
+                <th class="text-nowrap">Size</th>
+                <th class="text-nowrap">Last Modified</th>
+                <th class="text-nowrap" style="width: 1%">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="align-middle">
               <tr v-if="!userStoragePath">
                 <td colspan="4" class="text-center text-muted py-3">
                   <i class="fa fa-spinner fa-spin me-1"></i> Loading...
@@ -151,14 +158,16 @@
                   </span>
                 </td>
                 <td>{{ formatSize(item.size) }}</td>
-                <td class="text-muted">{{ item.modified_time ? formatDate(item.modified_time) : '-' }}</td>
-                <td>
-                  <a v-if="item.type === 'dir'" class="action-link me-2"
-                    :href="`/sdk/download-dir/?path=${item.path}`"><i class="fa fa-file-archive"></i> Zip</a>
-                  <a v-if="item.type === 'file' && item.download_url" class="action-link me-2"
-                    :href="`${item.download_url}&download`"><i class="fa fa-download"></i> Download</a>
-                  <a v-if="item.user_has_write_access" href="#" class="action-link text-danger"
-                    @click.prevent="deleteItem(item)"><i class="fa fa-trash"></i> Delete</a>
+                <td class="text-muted text-nowrap">{{ item.modified_time ? formatDate(item.modified_time) : '-' }}</td>
+                <td class="text-nowrap" style="width: 1%">
+                  <div class="d-flex gap-2 justify-content-end flex-nowrap">
+                    <a v-if="item.type === 'dir'" class="btn btn-outline-primary btn-pill"
+                      :href="`/sdk/download-dir/?path=${item.path}`"><i class="fa fa-file-archive me-1"></i>Zip</a>
+                    <a v-if="item.type === 'file' && item.download_url" class="btn btn-outline-primary btn-pill"
+                      :href="`${item.download_url}&download`"><i class="fa fa-download me-1"></i>Download</a>
+                    <button v-if="item.user_has_write_access" type="button" class="btn btn-outline-danger btn-pill"
+                      @click="deleteItem(item)"><i class="fa fa-trash me-1"></i>Delete</button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -357,3 +366,4 @@ export default {
   },
 };
 </script>
+

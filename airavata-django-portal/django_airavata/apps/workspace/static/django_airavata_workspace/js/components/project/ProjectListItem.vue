@@ -1,15 +1,21 @@
 <template>
   <tr>
-    <td><a :href="overviewLink">{{ project.name }}</a></td>
-    <td>{{ project.owner }}</td>
-    <td v-bind:title="project.creation_time">{{ creationTime }}</td>
     <td>
-      <a :href="editLink" v-if="project.user_has_write_access" class="action-link">
-        Edit <i class="fa fa-edit" aria-hidden="true"></i>
-      </a>
-      <a href="#" v-if="project.is_owner" class="action-link text-danger ms-2" @click.prevent="$emit('delete', project)">
-        Delete <i class="fa fa-trash" aria-hidden="true"></i>
-      </a>
+      <i class="fa fa-folder me-2 text-muted"></i>
+      <a :href="overviewLink" class="text-decoration-none"><strong>{{ project.name }}</strong></a>
+    </td>
+    <td>
+      <span class="fw-medium">{{ ownerUsername }}</span>
+      <span class="badge bg-secondary ms-1" v-if="isCurrentUser">You</span>
+      <span class="badge bg-primary ms-1" v-else-if="isAdmin">Admin</span>
+    </td>
+    <td class="text-nowrap" v-bind:title="project.creation_time">{{ creationTime }}</td>
+    <td class="text-nowrap" style="width: 1%">
+      <div class="d-flex gap-2 justify-content-end flex-nowrap">
+        <button type="button" class="btn btn-outline-danger btn-pill" @click="$emit('delete', project)">
+          <i class="fa fa-trash me-1" aria-hidden="true"></i>Delete
+        </button>
+      </div>
     </td>
   </tr>
 </template>
@@ -17,6 +23,7 @@
 <script>
 import urls from "../../utils/urls";
 import moment from "moment";
+import { session } from "django-airavata-api";
 
 export default {
   name: "project-list-item",
@@ -30,11 +37,19 @@ export default {
     overviewLink() {
       return urls.projectOverview(this.project);
     },
-    editLink() {
-      return urls.editProject(this.project);
+    ownerUsername() {
+      const owner = this.project.owner || "";
+      const lastAt = owner.lastIndexOf("@");
+      return lastAt > 0 ? owner.substring(0, lastAt) : owner;
+    },
+    isCurrentUser() {
+      return this.ownerUsername === session.Session.username;
+    },
+    isAdmin() {
+      const name = this.ownerUsername;
+      return name === "default-admin" || name === "admin";
     },
   },
 };
 </script>
 
-<style></style>

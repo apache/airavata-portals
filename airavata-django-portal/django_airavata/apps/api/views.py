@@ -31,6 +31,8 @@ from django_airavata.apps.admin.models import UserDataArchiveEntry
 from django_airavata.apps.api import user_storage
 from django_airavata.apps.api.proto_helpers import proto_to_dict, proto_list_to_dicts, dict_to_proto
 from django_airavata.apps.api.view_utils import (
+    APIResultIterator,
+    APIResultPagination,
     DataProductSharedDirPermission,
     IsInAdminsGroupPermission,
     UserStorageSharedDirPermission,
@@ -38,7 +40,6 @@ from django_airavata.apps.api.view_utils import (
 from django_airavata.apps.auth import iam_admin_client
 from django_airavata.apps.auth.models import EmailVerification
 from django_airavata.proto_compat import (
-    ResourcePermissionType,
     Status,
     SummaryType,
 )
@@ -55,11 +56,13 @@ class GroupViewSet(viewsets.ViewSet):
     lookup_field = "group_id"
 
     def list(self, request: Request) -> Response:
-        groups = request.airavata_client.sharing.get_groups()
+        limit = int(request.query_params.get("limit", "-1"))
+        offset = int(request.query_params.get("offset", "0"))
+        groups = request.airavata_client.sharing.get_groups(settings.GATEWAY_ID, offset, limit)
         return Response([self._group_to_dict(request, g) for g in (groups or [])])
 
     def retrieve(self, request: Request, group_id: str | None = None) -> Response:
-        group = request.airavata_client.sharing.get_group(group_id)
+        group = request.airavata_client.sharing.get_group(settings.GATEWAY_ID, group_id)
         return Response(self._group_to_dict(request, group))
 
     def create(self, request: Request) -> Response:
@@ -81,7 +84,8 @@ class GroupViewSet(viewsets.ViewSet):
 
     def update(self, request: Request, group_id: str | None = None) -> Response:
         sharing_client = request.airavata_client.sharing
-        existing = sharing_client.get_group(group_id)
+        gateway_id = settings.GATEWAY_ID
+        existing = sharing_client.get_group(gateway_id, group_id)
 
         # Compute member diffs
         old_members = set(existing.members or [])
@@ -102,14 +106,14 @@ class GroupViewSet(viewsets.ViewSet):
 
         # Apply changes
         if added_members:
-            sharing_client.add_users_to_group(added_members, group_id)
+            sharing_client.add_users_to_group(gateway_id, added_members, group_id)
             self._send_users_added_to_group(request, set(added_members), existing)
         if removed_members:
-            sharing_client.remove_users_from_group(removed_members, group_id)
+            sharing_client.remove_users_from_group(gateway_id, removed_members, group_id)
         if added_admins:
-            sharing_client.add_group_admins(group_id, added_admins)
+            sharing_client.add_group_admins(gateway_id, group_id, added_admins)
         if removed_admins:
-            sharing_client.remove_group_admins(group_id, removed_admins)
+            sharing_client.remove_group_admins(gateway_id, group_id, removed_admins)
 
         # Update name/description
         existing.name = request.data.get("name", existing.name)
@@ -118,40 +122,106 @@ class GroupViewSet(viewsets.ViewSet):
         existing.admins = list(new_admins)
         sharing_client.update_group(existing)
 
-        updated = sharing_client.get_group(group_id)
+        updated = sharing_client.get_group(gateway_id, group_id)
         return Response(self._group_to_dict(request, updated))
 
     def destroy(self, request: Request, group_id: str | None = None) -> Response:
-        group = request.airavata_client.sharing.get_group(group_id)
-        request.airavata_client.sharing.delete_group(group.id, group.ownerId)
+        # group_id is already provided by the router; no need to re-read the
+        # group from the sharing service just to extract its id.
+        request.airavata_client.sharing.delete_group(settings.GATEWAY_ID, group_id)
         return Response(status=204)
 
     def _group_to_dict(self, request: Request, group: Any) -> dict[str, Any]:
         username = request.user.username + "@" + settings.GATEWAY_ID
         gateway_groups = self._gateway_groups(request)
-        return {
-            "id": group.id,
-            "name": group.name,
-            "owner_id": group.ownerId,
-            "description": group.description,
-            "members": list(group.members) if group.members else [],
-            "admins": list(group.admins) if group.admins else [],
-            "is_owner": group.ownerId == username,
-            "is_admin": request.airavata_client.sharing.has_admin_access(group.id, username),
-            "is_member": bool(group.members and username in group.members),
-            "is_gateway_admins_group": group.id == gateway_groups.get("adminsGroupId"),
-            "is_read_only_gateway_admins_group": group.id == gateway_groups.get("readOnlyAdminsGroupId"),
-            "is_default_gateway_users_group": group.id == gateway_groups.get("defaultGatewayUsersGroupId"),
-        }
+        sharing_client = request.airavata_client.sharing
+
+        # The proto UserGroup uses snake_case field names (group_id, owner_id,
+        # group_admins). It does NOT carry members inline -- those must be
+        # fetched separately from the sharing service. Use getattr with
+        # defaults so that a malformed/partial message cannot explode the
+        # whole list endpoint.
+        try:
+            group_id = getattr(group, "group_id", None) or getattr(group, "id", None)
+            name = getattr(group, "name", None)
+            description = getattr(group, "description", None)
+            owner_id = getattr(group, "owner_id", None) or getattr(group, "ownerId", None)
+
+            # group_admins is a repeated GroupAdmin message (each with admin_id);
+            # the portal UI expects a flat list of user id strings.
+            raw_admins = getattr(group, "group_admins", None) or getattr(group, "admins", None) or []
+            admins: list[str] = []
+            for a in raw_admins:
+                if isinstance(a, str):
+                    admins.append(a)
+                else:
+                    admin_id = getattr(a, "admin_id", None) or getattr(a, "adminId", None)
+                    if admin_id:
+                        admins.append(admin_id)
+
+            # Fetch members lazily from the sharing service. Failures here
+            # must not bring down the whole list endpoint.
+            members: list[str] = []
+            if group_id:
+                try:
+                    users = sharing_client.get_group_members_of_type_user(
+                        settings.GATEWAY_ID, group_id, 0, -1
+                    ) or []
+                    for u in users:
+                        uid = getattr(u, "user_id", None) or getattr(u, "userId", None)
+                        if uid:
+                            members.append(uid)
+                except Exception:
+                    log.warning(
+                        "Failed to fetch members for group %s", group_id, exc_info=True
+                    )
+
+            try:
+                is_admin = bool(
+                    group_id
+                    and sharing_client.has_admin_access(
+                        settings.GATEWAY_ID, group_id, username
+                    )
+                )
+            except Exception:
+                log.warning(
+                    "Failed to check admin access for group %s", group_id, exc_info=True
+                )
+                is_admin = False
+
+            return {
+                "id": group_id,
+                "name": name,
+                "owner_id": owner_id,
+                "description": description,
+                "members": members,
+                "admins": admins,
+                "is_owner": owner_id == username,
+                "is_admin": is_admin,
+                "is_member": username in members,
+                "is_gateway_admins_group": group_id == gateway_groups.get("adminsGroupId"),
+                "is_read_only_gateway_admins_group": group_id == gateway_groups.get("readOnlyAdminsGroupId"),
+                "is_default_gateway_users_group": group_id == gateway_groups.get("defaultGatewayUsersGroupId"),
+            }
+        except Exception:
+            log.exception("Failed to serialize group: %r", group)
+            raise
 
     @staticmethod
     def _gateway_groups(request: Request) -> dict[str, Any]:
         if "GATEWAY_GROUPS" in request.session:
             return request.session["GATEWAY_GROUPS"]
-        else:
-            import copy
-            gateway_groups = request.airavata_client.iam.get_gateway_groups()
-            return copy.deepcopy(gateway_groups.__dict__)
+        # Fallback: fetch from compute service. The auth middleware normally
+        # populates this in the session using MessageToDict(..., preserving_proto_field_name=False)
+        # so keys are camelCase (adminsGroupId, ...). Use the same shape here so
+        # callers can uniformly use .get("adminsGroupId").
+        from google.protobuf.json_format import MessageToDict
+        try:
+            gateway_groups = request.airavata_client.compute.get_gateway_groups()
+            return MessageToDict(gateway_groups, preserving_proto_field_name=False)
+        except Exception:
+            log.warning("Failed to fetch gateway groups", exc_info=True)
+            return {}
 
     @staticmethod
     def _send_users_added_to_group(request: Request, internal_user_ids: set[str], group: Any) -> None:
@@ -163,10 +233,28 @@ class GroupViewSet(viewsets.ViewSet):
             )
 
 
+class _ProjectResultIterator(APIResultIterator):
+    def __init__(self, request: Request, query_params=None) -> None:
+        super().__init__(query_params)
+        self._request = request
+
+    def get_results(self, limit: int = -1, offset: int = 0) -> list[dict]:
+        projects = self._request.airavata_client.research.get_user_projects(
+            settings.GATEWAY_ID, self._request.user.username, limit, offset
+        )
+        return proto_list_to_dicts(projects)
+
+
 class ProjectViewSet(viewsets.ViewSet):
     lookup_field = "project_id"
 
     def list(self, request: Request) -> Response:
+        iterator = _ProjectResultIterator(request, request.query_params)
+        paginator = APIResultPagination()
+        page = paginator.paginate_queryset(iterator, request)
+        if page is not None:
+            return paginator.get_paginated_response(page)
+        # No pagination requested (limit <= 0): return all results
         projects = request.airavata_client.research.get_user_projects(
             settings.GATEWAY_ID, request.user.username, -1, 0
         )
@@ -774,6 +862,7 @@ class ApplicationDeploymentViewSet(viewsets.ViewSet):
 
 class ComputeResourceViewSet(viewsets.ViewSet):
     lookup_field = "compute_resource_id"
+    lookup_value_regex = "[^/]+"
 
     def list(self, request: Request) -> Response:
         all_names = request.airavata_client.compute.get_all_compute_resource_names()
@@ -839,6 +928,48 @@ class ComputeResourceViewSet(viewsets.ViewSet):
         details = request.airavata_client.compute.get_compute_resource(compute_resource_id)
         data = proto_to_dict(details)
         return Response([queue["queue_name"] for queue in data.get("batch_queues", [])])
+
+    @action(detail=True, methods=["post", "put"], url_path="ssh_submission")
+    def ssh_submission(self, request: Request, compute_resource_id: str, format: str | None = None) -> Response:
+        """Create (POST) or update (PUT) the SSH job submission for a compute resource.
+
+        On POST, expects request body to contain an ``ssh_job_submission`` dict
+        (SSHJobSubmission proto) and optional ``priority`` (int, default 0).
+        A new submission is registered and attached to the compute resource.
+
+        On PUT, expects the same body plus the existing ``submission_id`` (from
+        ``job_submission_interface_id``). The existing submission is updated in
+        place.
+        """
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource.compute_resource_pb2 import (
+            SSHJobSubmission as SSHJobSubmissionProto,
+        )
+
+        payload = request.data or {}
+        ssh_dict = payload.get("ssh_job_submission") or {}
+        priority = int(payload.get("priority", 0))
+        ssh_proto = dict_to_proto(ssh_dict, SSHJobSubmissionProto)
+
+        if request.method == "POST":
+            submission_id = request.airavata_client.compute.add_ssh_job_submission_details(
+                compute_resource_id=compute_resource_id,
+                priority=priority,
+                ssh_job_submission=ssh_proto,
+            )
+            return Response({"submission_id": submission_id}, status=status.HTTP_201_CREATED)
+
+        # PUT
+        submission_id = payload.get("submission_id") or ssh_dict.get("job_submission_interface_id")
+        if not submission_id:
+            return Response(
+                {"detail": "submission_id is required for PUT"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        request.airavata_client.compute.update_ssh_job_submission_details(
+            submission_id=submission_id,
+            ssh_job_submission=ssh_proto,
+        )
+        return Response({"job_submission_interface_id": submission_id})
 
 
 class LocalJobSubmissionView(APIView):
@@ -1202,10 +1333,10 @@ class SharedEntityViewSet(viewsets.ViewSet):
         load_groups = sharing.get_all_directly_accessible_groups if direct_only else sharing.get_all_accessible_groups
 
         users: dict[str, Any] = {}
-        users.update({uid: ResourcePermissionType.READ for uid in load_users(entity_id, ResourcePermissionType.READ)})
-        users.update({uid: ResourcePermissionType.WRITE for uid in load_users(entity_id, ResourcePermissionType.WRITE)})
-        users.update({uid: ResourcePermissionType.MANAGE_SHARING for uid in load_users(entity_id, ResourcePermissionType.MANAGE_SHARING)})
-        owner_ids = {uid: ResourcePermissionType.OWNER for uid in load_users(entity_id, ResourcePermissionType.OWNER)}
+        users.update({uid: "READ" for uid in load_users(entity_id, "READ")})
+        users.update({uid: "WRITE" for uid in load_users(entity_id, "WRITE")})
+        users.update({uid: "MANAGE_SHARING" for uid in load_users(entity_id, "MANAGE_SHARING")})
+        owner_ids = {uid: "OWNER" for uid in load_users(entity_id, "OWNER")}
         owner_id = list(owner_ids.keys())[0]
         users.pop(owner_id, None)
 
@@ -1213,20 +1344,20 @@ class SharedEntityViewSet(viewsets.ViewSet):
         for uid, perm in users.items():
             user_list.append({
                 "user": self._user_profile_to_dict(request, uid),
-                "permission_type": perm.name if hasattr(perm, "name") else str(perm),
+                "permission_type": perm,
             })
 
         groups: dict[str, Any] = {}
-        groups.update({gid: ResourcePermissionType.READ for gid in load_groups(entity_id, ResourcePermissionType.READ)})
-        groups.update({gid: ResourcePermissionType.WRITE for gid in load_groups(entity_id, ResourcePermissionType.WRITE)})
-        groups.update({gid: ResourcePermissionType.MANAGE_SHARING for gid in load_groups(entity_id, ResourcePermissionType.MANAGE_SHARING)})
+        groups.update({gid: "READ" for gid in load_groups(entity_id, "READ")})
+        groups.update({gid: "WRITE" for gid in load_groups(entity_id, "WRITE")})
+        groups.update({gid: "MANAGE_SHARING" for gid in load_groups(entity_id, "MANAGE_SHARING")})
 
         group_list = []
         for gid, perm in groups.items():
-            group = sharing.get_group(gid)
+            group = sharing.get_group(settings.GATEWAY_ID, gid)
             group_list.append({
                 "group": self._group_to_dict(group),
-                "permission_type": perm.name if hasattr(perm, "name") else str(perm),
+                "permission_type": perm,
             })
 
         owner_profile = self._user_profile_to_dict(request, owner_id)
@@ -1287,12 +1418,10 @@ class SharedEntityViewSet(viewsets.ViewSet):
 
         for perm_name, ids in grants.items():
             if ids:
-                perm_type = ResourcePermissionType[perm_name]
-                share_fn(entity_id, {id_: perm_type for id_ in ids})
+                share_fn(entity_id, {id_: perm_name for id_ in ids})
         for perm_name, ids in revokes.items():
             if ids:
-                perm_type = ResourcePermissionType[perm_name]
-                revoke_fn(entity_id, {id_: perm_type for id_ in ids})
+                revoke_fn(entity_id, {id_: perm_name for id_ in ids})
 
     @staticmethod
     def _compute_revokes_and_grants(
@@ -1426,6 +1555,7 @@ class ExperimentArchiveView(APIView):
 
 class StorageResourceViewSet(viewsets.ViewSet):
     lookup_field = "storage_resource_id"
+    lookup_value_regex = "[^/]+"
 
     def list(self, request: Request) -> Response:
         all_names = request.airavata_client.storage.get_all_storage_resource_names()
@@ -1472,6 +1602,7 @@ class StorageResourceViewSet(viewsets.ViewSet):
 
 class StoragePreferenceViewSet(viewsets.ViewSet):
     lookup_field = "storage_resource_id"
+    lookup_value_regex = "[^/]+"
 
     def list(self, request: Request) -> Response:
         results = request.airavata_client.compute.get_all_gateway_storage_preferences(settings.GATEWAY_ID)
@@ -2114,6 +2245,53 @@ class SettingsAPIView(APIView):
             "tus_endpoint": settings.TUS_ENDPOINT,
             "pga_url": settings.PGA_URL,
         })
+
+
+class LocalSettingsFileView(APIView):
+    """Read or write django_airavata/settings_local.py.
+
+    Restricted to gateway admins. Writing this file is dangerous: it lets an
+    admin execute arbitrary Python on next portal restart. Only enable in
+    trusted deployments.
+    """
+
+    def _settings_local_path(self) -> str:
+        # django_airavata/apps/api/views.py -> django_airavata/settings_local.py
+        return os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            "settings_local.py",
+        )
+
+    def _check_admin(self, request: Request) -> None:
+        if not getattr(request, "is_gateway_admin", False):
+            raise PermissionDenied("Only gateway admins may access settings_local.py")
+
+    def get(self, request: Request, format: str | None = None) -> Response:
+        self._check_admin(request)
+        path = self._settings_local_path()
+        try:
+            with open(path, "r") as f:
+                content = f.read()
+        except FileNotFoundError:
+            content = ""
+        return Response({"content": content, "path": path})
+
+    def post(self, request: Request, format: str | None = None) -> Response:
+        self._check_admin(request)
+        content = request.data.get("content")
+        if content is None or not isinstance(content, str):
+            return Response(
+                {"detail": "Request must include a 'content' string."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        path = self._settings_local_path()
+        with open(path, "w") as f:
+            f.write(content)
+        log.warning(
+            "settings_local.py was overwritten via API by user %s",
+            getattr(request.user, "username", "<unknown>"),
+        )
+        return Response({"content": content, "path": path})
 
 
 class APIServerStatusCheckView(APIView):

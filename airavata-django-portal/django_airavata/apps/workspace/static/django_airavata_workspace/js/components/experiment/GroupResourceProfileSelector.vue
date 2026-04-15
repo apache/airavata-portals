@@ -5,13 +5,17 @@
         <select class="form-select"
           id="group-resource-profile"
           v-model="groupResourceProfileId"
-          :options="groupResourceProfileOptions"
           required
-          @change="groupResourceProfileChanged"
+          @change="emitValueChanged"
         >
-          <template slot="first">
-            <option :value="null" disabled>Select an allocation</option>
-          </template>
+          <option :value="null" disabled>Select an allocation</option>
+          <option
+            v-for="option in groupResourceProfileOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.text }}
+          </option>
         </select>
       </div>
     </div>
@@ -46,8 +50,8 @@ export default {
         const groupResourceProfileOptions = this.groupResourceProfiles.map(
           (groupResourceProfile) => {
             return {
-              value: groupResourceProfile.groupResourceProfileId,
-              text: groupResourceProfile.groupResourceProfileName,
+              value: groupResourceProfile.group_resource_profile_id,
+              text: groupResourceProfile.group_resource_profile_name,
             };
           }
         );
@@ -100,7 +104,7 @@ export default {
     selectedValueInGroupResourceProfileList(groupResourceProfiles) {
       return (
         groupResourceProfiles
-          .map((grp) => grp.groupResourceProfileId)
+          .map((grp) => grp.group_resource_profile_id)
           .indexOf(this.value) >= 0
       );
     },

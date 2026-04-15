@@ -3,17 +3,21 @@
     <select class="form-select"
       id="group-resource-profile"
       :value="groupResourceProfileId"
-      :options="groupResourceProfileOptions"
       required
-      @change="groupResourceProfileChanged"
+      @change="groupResourceProfileChanged($event.target.value)"
       @input.stop
       :disabled="disabled"
     >
-      <template slot="first">
-        <option :value="null" disabled>
-          <slot name="null-option">Select an allocation</slot>
-        </option>
-      </template>
+      <option :value="null" disabled>
+        <slot name="null-option">Select an allocation</slot>
+      </option>
+      <option
+        v-for="opt in groupResourceProfileOptions"
+        :key="opt.value"
+        :value="opt.value"
+      >
+        {{ opt.text }}
+      </option>
     </select>
   </div>
 </template>

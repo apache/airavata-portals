@@ -505,6 +505,23 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
 .btn { font-size: $font-size-base; border-radius: $border-radius; }
 .btn-sm { font-size: $font-size-sm; }
 
+// Small pill-shaped action buttons (used in tables, list rows, etc.)
+// Defined globally so <a> and <button> elements render identically
+// regardless of the component's scoped styles.
+.btn-pill {
+  --bs-btn-padding-y: 0.125rem;
+  --bs-btn-padding-x: 0.5rem;
+  --bs-btn-font-size: 0.75rem;
+  --bs-btn-line-height: 1.2;
+  --bs-btn-border-radius: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-decoration: none;
+}
+.btn-pill:hover {
+  text-decoration: none;
+}
+
 .btn-container + .btn, .btn + .btn,
 .btn-container + .action-link, .action-link + .action-link { margin-left: $spacing-xs; }
 .btn + .btn-block { margin-left: 0; }

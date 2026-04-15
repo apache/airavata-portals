@@ -7,7 +7,7 @@
       </div>
       <div class="col-auto">
         <a href="/resources/sharing/create" class="btn btn-primary btn-sm">
-          <i class="fa fa-plus me-1"></i>Create New Group
+          <i class="fa fa-plus me-1"></i>Create New
         </a>
       </div>
     </div>

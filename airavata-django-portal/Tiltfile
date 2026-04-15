@@ -1,16 +1,13 @@
 # Tiltfile for Airavata Django Portal
 
-# --- Infrastructure (MariaDB + Adminer from docker-compose) ---
-# Disabled: Django uses SQLite by default and airavata's compose already occupies port 13306
-# docker_compose('./compose/docker-compose.yaml')
-
 # --- Django backend dev server ---
 local_resource(
     'django-server',
+    serve_env={'DJANGO_SETTINGS_MODULE': 'django_airavata.settings'},
     serve_cmd=' && '.join([
         'uv sync',
         'uv run manage.py migrate --run-syncdb',
-        'uv run uvicorn django_airavata.asgi:application --host 0.0.0.0 --port 8000 --reload --reload-dir django_airavata',
+        'uv run manage.py runserver 0.0.0.0:8000',
     ]),
     deps=['django_airavata/'],
     ignore=[
@@ -26,44 +23,22 @@ local_resource(
     ),
     links=[
         link('http://localhost:8000', 'Portal'),
-        link('http://localhost:18888', 'Adminer'),
     ],
 )
 
-# --- Frontend dev servers ---
-# Build order: api (webpack) -> common -> plugin-api -> apps
-# api and common are libraries; they use `watch` mode instead of `serve`.
-
+# --- Frontend: install + production build for all packages ---
+# All apps get a production build first. The active dev app (below) then
+# starts a Vite dev server with HMR for hot reload on port 9000.
 local_resource(
-    'frontend-api',
-    serve_cmd='yarn && yarn run watch',
-    serve_dir='django_airavata/apps/api',
-    deps=['django_airavata/apps/api/static'],
+    'frontend-build',
+    cmd='yarn install && yarn workspaces run build',
     resource_deps=['django-server'],
     labels=['frontend'],
 )
 
-local_resource(
-    'frontend-common',
-    serve_cmd='yarn && yarn run watch',
-    serve_dir='django_airavata/static/common',
-    deps=['django_airavata/static/common/js'],
-    resource_deps=['frontend-api'],
-    labels=['frontend'],
-)
-
-local_resource(
-    'frontend-workspace-plugin-api',
-    serve_cmd='yarn && yarn run watch',
-    serve_dir='django_airavata/apps/workspace/django-airavata-workspace-plugin-api',
-    deps=['django_airavata/apps/workspace/django-airavata-workspace-plugin-api/js'],
-    resource_deps=['frontend-common'],
-    labels=['frontend'],
-)
-
-# Vue apps with HMR (vue-cli-service serve on port 9000)
-# Only one can run at a time since they all bind port 9000.
-# By default we start 'admin'. Toggle others in the Tilt UI.
+# --- Frontend: Vite dev server for the active app (HMR on port 9000) ---
+# Only one app can run HMR at a time. Change VITE_DEV_APP in settings_local.py
+# and toggle the matching resource here.
 
 FRONTEND_APPS = {
     'admin':       'django_airavata/apps/admin',
@@ -76,10 +51,10 @@ FRONTEND_APPS = {
 for name, path_prefix in FRONTEND_APPS.items():
     local_resource(
         'frontend-' + name,
-        serve_cmd='yarn && yarn run serve',
+        serve_cmd='yarn run dev',
         serve_dir=path_prefix,
-        resource_deps=['frontend-common', 'frontend-workspace-plugin-api'],
+        resource_deps=['frontend-build'],
         labels=['frontend-apps'],
-        auto_init=(name == 'admin'),
+        auto_init=(name == 'workspace'),
         links=[link('http://localhost:9000', name + ' (HMR)')],
     )

@@ -1,9 +1,16 @@
 <template>
   <select class="form-select"
     :value="value"
-    :options="options"
-    @input="$emit('input', $event)"
-  />
+    @change="$emit('input', $event.target.value)"
+  >
+    <option
+      v-for="opt in options"
+      :key="opt.value"
+      :value="opt.value"
+    >
+      {{ opt.text }}
+    </option>
+  </select>
 </template>
 
 <script>

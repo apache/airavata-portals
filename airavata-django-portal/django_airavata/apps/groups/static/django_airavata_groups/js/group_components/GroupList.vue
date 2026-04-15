@@ -8,9 +8,9 @@
       <thead>
         <tr>
           <th>Name</th>
-          <th>Owner</th>
-          <th>Description</th>
-          <th id="group-list-actions-header">Actions</th>
+          <th class="text-nowrap">Owner</th>
+          <th class="text-nowrap">Description</th>
+          <th class="text-nowrap" style="width: 1%">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -68,8 +68,4 @@ export default {
 };
 </script>
 
-<style>
-#group-list-actions-header {
-  min-width: 150px;
-}
-</style>
+<style></style>

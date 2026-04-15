@@ -65,6 +65,7 @@ urlpatterns = [
     re_path(r"ack-notifications/<slug:id>/", views.AckNotificationViewSet.as_view(), name="ack-notifications"),
     re_path(r"ack-notifications/", views.AckNotificationViewSet.as_view(), name="ack-notifications"),
     re_path(r"^log", views.LogRecordConsumer.as_view(), name="log"),
+    re_path(r"^settings/local/?$", views.LocalSettingsFileView.as_view(), name="settings-local"),
     re_path(r"^settings", views.SettingsAPIView.as_view(), name="settings"),
     re_path(r"^api-status-check/", views.APIServerStatusCheckView.as_view(), name="api-status-check"),
     re_path(r"^notebook-output", views.notebook_output_view, name="notebook-output"),

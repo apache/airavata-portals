@@ -17,16 +17,16 @@
 
     <div class="card">
       <div class="card-body">
-        <table class="table table-hover">
+        <table class="table table-hover table-sm">
           <thead>
             <tr>
               <th>Description</th>
-              <th>User</th>
-              <th>Created</th>
-              <th>Actions</th>
+              <th class="text-nowrap">User</th>
+              <th class="text-nowrap">Created</th>
+              <th class="text-nowrap" style="width: 1%">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="align-middle">
             <tr v-if="sshKeys.length === 0">
               <td colspan="4">
                 <div class="table-empty">
@@ -37,15 +37,21 @@
               </td>
             </tr>
             <tr v-for="cred in sshKeys" :key="cred.token">
-              <td>{{ cred.description || '-' }}</td>
-              <td>{{ cred.username }}</td>
-              <td><human-date :date="cred.persisted_time" /></td>
+              <td><i class="fa fa-key me-2 text-muted"></i><strong>{{ cred.description || '-' }}</strong></td>
               <td>
-                <clipboard-copy-link :text="(cred.public_key || '').trim()" class="action-link me-2" />
-                <share-button :entity-id="cred.token" :disallow-editing-admin-groups="false" :auto-add-admin-groups="false" />
-                <delete-link v-if="cred.user_has_write_access" @delete="deleteSSHCredential(cred)">
-                  Are you sure you want to delete <strong>{{ cred.description }}</strong>?
-                </delete-link>
+                <span class="fw-medium">{{ cred.username }}</span>
+                <span class="badge bg-secondary ms-1" v-if="cred.username === currentUsername">You</span>
+                <span class="badge bg-primary ms-1" v-else-if="isAdminUser(cred.username)">Admin</span>
+              </td>
+              <td class="text-nowrap"><human-date :date="cred.persisted_time" /></td>
+              <td class="text-nowrap" style="width: 1%">
+                <div class="d-flex gap-2 justify-content-end flex-nowrap">
+                  <clipboard-copy-link :text="(cred.public_key || '').trim()" />
+                  <share-button :entity-id="cred.token" :disallow-editing-admin-groups="false" :auto-add-admin-groups="false" />
+                  <delete-link v-if="cred.user_has_write_access" @delete="deleteSSHCredential(cred)">
+                    Are you sure you want to delete <strong>{{ cred.description }}</strong>?
+                  </delete-link>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -80,10 +86,14 @@ export default {
     return {
       sshKeys: [],
       userIsAdmin: session.Session.is_gateway_admin,
+      currentUsername: session.Session.username,
       adminsGroup: null,
     };
   },
   methods: {
+    isAdminUser(username) {
+      return username === "default-admin" || username === "admin";
+    },
     fetchSSHKeys() {
       services.CredentialSummaryService.allSSHCredentials().then(
         (creds) => (this.sshKeys = creds)

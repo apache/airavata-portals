@@ -11,17 +11,21 @@
           <select class="form-select"
             id="compute-resource"
             v-model="resource_host_id"
-            :options="computeResourceOptions"
             required
-            @change="computeResourceChanged"
+            @change="computeResourceChanged($event.target.value)"
             :state="getValidationState('resource_host_id')"
             :disabled="
               !computeResourceOptions || computeResourceOptions.length === 0
             "
           >
-            <template slot="first">
-              <option :value="null" disabled>Select a Compute Resource</option>
-            </template>
+            <option :value="null" disabled>Select a Compute Resource</option>
+            <option
+              v-for="opt in computeResourceOptions"
+              :key="opt.value"
+              :value="opt.value"
+            >
+              {{ opt.text }}
+            </option>
           </select>
         </form-group>
       </div>

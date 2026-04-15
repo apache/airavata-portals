@@ -20,13 +20,17 @@ from typing import Any
 
 
 class DataType(enum.IntEnum):
-    STRING = 0
-    INTEGER = 1
-    FLOAT = 2
-    URI = 3
-    URI_COLLECTION = 4
-    STDOUT = 5
-    STDERR = 6
+    # Values MUST match the protobuf DataType enum in
+    # airavata-api/.../application_io.proto so that comparisons against
+    # proto-valued output.type fields work correctly.
+    DATA_TYPE_UNKNOWN = 0
+    STRING = 1
+    INTEGER = 2
+    FLOAT = 3
+    URI = 4
+    URI_COLLECTION = 5
+    STDOUT = 6
+    STDERR = 7
 
 
 class ExperimentState(enum.IntEnum):

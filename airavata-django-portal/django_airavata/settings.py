@@ -597,10 +597,14 @@ _load_dynamic_apps(INSTALLED_APPS, "airavata.djangoapp")
 settings_module = sys.modules[__name__]
 _merge_dynamic_settings(settings_module)
 
-# Apply VITE_DEV_MODE override from settings_local.py to all DJANGO_VITE entries
+# Apply VITE_DEV_MODE override from settings_local.py to all DJANGO_VITE entries.
+# If VITE_DEV_APP is set, only that app gets dev_mode=True (others use built assets).
 if 'VITE_DEV_MODE' in dir():
     for _vite_key in DJANGO_VITE:
         DJANGO_VITE[_vite_key]["dev_mode"] = VITE_DEV_MODE
+if 'VITE_DEV_APP' in dir():
+    if VITE_DEV_APP in DJANGO_VITE:
+        DJANGO_VITE[VITE_DEV_APP]["dev_mode"] = True
 
 # --- Airavata Server Connection ---
 # Only set defaults if not already defined (e.g., by settings_local.py)

@@ -52,12 +52,12 @@ export default {
     return "/workspace/projects/" + encodeURIComponent(project.project_id) + "/edit";
   },
   projectsList() {
-    return "/workspace/";
+    return "/workspace/projects";
   },
   navigateToProjectsList() {
     window.location.assign(this.projectsList());
   },
-  datasetsList(projectId) {
-    return "/workspace/projects/" + encodeURIComponent(projectId) + "/datasets";
+  artifactsList(projectId) {
+    return "/workspace/projects/" + encodeURIComponent(projectId) + "/artifacts";
   },
 };

@@ -16,6 +16,13 @@ class AiravataClientMiddleware:
         self.get_response = get_response
 
     def __call__(self, request: Any) -> HttpResponse:
+        # Bypass for the async SSE endpoint. The sync middleware would otherwise
+        # force Django to run the async view via async_to_sync, which blocks the
+        # single WSGI worker thread on the long-lived event stream and starves
+        # all other requests. The SSE view does not use request.airavata_client.
+        if request.path.startswith("/api/events"):
+            return self.get_response(request)
+
         access_token = _get_access_token(request)
         gateway_id = settings.GATEWAY_ID
         username = request.user.username if request.user.is_authenticated else ""

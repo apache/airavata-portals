@@ -15,5 +15,10 @@ def proto_list_to_dicts(proto_list):
 
 
 def dict_to_proto(data, proto_class):
-    """Convert a dict (from request.data) to a proto object."""
-    return ParseDict(data, proto_class())
+    """Convert a dict (from request.data) to a proto object.
+
+    Unknown fields are ignored so that computed/display-only flags added by
+    the portal on reads (e.g. ``user_has_write_access``) can be echoed back on
+    writes without breaking the strict protobuf schema.
+    """
+    return ParseDict(data, proto_class(), ignore_unknown_fields=True)

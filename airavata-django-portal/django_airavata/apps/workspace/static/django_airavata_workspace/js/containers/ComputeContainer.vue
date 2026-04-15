@@ -18,18 +18,19 @@
         <div v-if="loading" class="text-center py-4 text-muted">
           <i class="fa fa-spinner fa-spin me-1"></i> Loading compute resources...
         </div>
-        <table v-else class="table table-hover">
+        <table v-else class="table table-hover table-sm">
           <thead>
             <tr>
               <th>Name</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th class="text-nowrap">Type</th>
+              <th class="text-nowrap">Owner</th>
+              <th class="text-nowrap">Status</th>
+              <th class="text-nowrap" style="width: 1%">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="align-middle">
             <tr v-if="computeResources.length === 0">
-              <td colspan="4">
+              <td colspan="5">
                 <div class="table-empty">
                   <i class="fa fa-server table-empty__icon"></i>
                   <div class="table-empty__title">No compute resources available</div>
@@ -46,57 +47,27 @@
               </td>
               <td><span class="badge bg-secondary">HPC</span></td>
               <td>
+                <span class="fw-medium text-muted">gateway</span>
+                <span class="badge bg-primary ms-1">Gateway</span>
+              </td>
+              <td>
                 <span class="badge bg-success" v-if="resource.enabled">Enabled</span>
                 <span class="badge bg-secondary" v-else>Disabled</span>
               </td>
-              <td>
-                <a href="#" class="action-link me-2" @click.prevent="viewResource(resource)">
-                  <i class="fa fa-eye"></i> View
-                </a>
-                <a href="#" class="action-link text-danger" @click.prevent="confirmDelete(resource)">
-                  <i class="fa fa-trash"></i> Delete
-                </a>
+              <td class="text-nowrap" style="width: 1%">
+                <div class="d-flex gap-2 justify-content-end flex-nowrap">
+                  <a :href="'/resources/compute/' + resource.id" class="btn btn-outline-primary btn-pill">
+                    <i class="fa fa-eye me-1"></i>View
+                  </a>
+                  <button type="button" class="btn btn-outline-danger btn-pill" @click="confirmDelete(resource)">
+                    <i class="fa fa-trash me-1"></i>Delete
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
         <div v-if="computeResources.length > 0" class="text-end text-muted" style="font-size:0.75rem; padding: 6px 8px;">Showing {{ computeResources.length }}</div>
-      </div>
-    </div>
-
-    <!-- Resource detail panel -->
-    <div v-if="selectedResource" class="card mt-3">
-      <div class="card-body">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <h2 class="h5 mb-0">{{ selectedResource.name }}</h2>
-          <a href="#" class="text-muted" @click.prevent="selectedResource = null" style="font-size:0.8125rem;">
-            <i class="fa fa-times"></i> Close
-          </a>
-        </div>
-        <table class="table">
-          <tbody>
-            <tr>
-              <td class="text-muted" style="width:180px;">Host Name</td>
-              <td>{{ selectedResourceDetail ? selectedResourceDetail.host_name : '-' }}</td>
-            </tr>
-            <tr>
-              <td class="text-muted">Description</td>
-              <td>{{ selectedResourceDetail ? (selectedResourceDetail.resource_description || '-') : '-' }}</td>
-            </tr>
-            <tr>
-              <td class="text-muted">Enabled</td>
-              <td>{{ selectedResourceDetail ? (selectedResourceDetail.enabled ? 'Yes' : 'No') : '-' }}</td>
-            </tr>
-            <tr v-if="selectedResourceDetail && selectedResourceDetail.batch_queues && selectedResourceDetail.batch_queues.length > 0">
-              <td class="text-muted">Queues</td>
-              <td>
-                <span v-for="q in selectedResourceDetail.batch_queues" :key="q.queue_name" class="badge bg-secondary me-1">
-                  {{ q.queue_name }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
 
@@ -161,8 +132,6 @@ export default {
     return {
       loading: true,
       computeResources: [],
-      selectedResource: null,
-      selectedResourceDetail: null,
       newHostName: "",
       newDescription: "",
       registering: false,
@@ -173,25 +142,18 @@ export default {
     async loadComputeResources() {
       this.loading = true;
       try {
-        const names = await services.ComputeResourceService.names();
-        this.computeResources = Object.entries(names).map(([id, name]) => ({
-          id,
-          name,
-          enabled: true,
+        // Use the full list endpoint so the "Enabled" badge reflects the
+        // real server-side flag instead of a hardcoded default.
+        const resources = await services.ComputeResourceService.list();
+        this.computeResources = (resources || []).map((r) => ({
+          id: r.compute_resource_id,
+          name: r.host_name,
+          enabled: !!r.enabled,
         }));
       } catch {
         this.computeResources = [];
       }
       this.loading = false;
-    },
-    async viewResource(resource) {
-      this.selectedResource = resource;
-      this.selectedResourceDetail = null;
-      try {
-        this.selectedResourceDetail = await services.ComputeResourceService.retrieve({ lookup: resource.id });
-      } catch {
-        this.selectedResourceDetail = null;
-      }
     },
     showRegisterModal() {
       this.newHostName = "";
@@ -225,10 +187,6 @@ export default {
       }
       try {
         await services.ComputeResourceService.delete({ lookup: resource.id });
-        if (this.selectedResource && this.selectedResource.id === resource.id) {
-          this.selectedResource = null;
-          this.selectedResourceDetail = null;
-        }
         await this.loadComputeResources();
       } catch (e) {
         window.alert(e?.message || "Failed to delete compute resource.");
@@ -240,3 +198,4 @@ export default {
   },
 };
 </script>
+

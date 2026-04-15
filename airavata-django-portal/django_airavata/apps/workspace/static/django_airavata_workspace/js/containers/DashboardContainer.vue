@@ -21,19 +21,20 @@
           <i class="fa fa-spinner fa-spin me-1"></i> Loading applications...
         </div>
 
-        <table class="table table-hover" v-if="!loading">
+        <table class="table table-hover table-sm" v-if="!loading">
           <thead>
             <tr>
               <th style="width:30px;"></th>
               <th>Name</th>
-              <th>Version</th>
-              <th>Description</th>
-              <th>Actions</th>
+              <th class="text-nowrap">Version</th>
+              <th class="text-nowrap">Owner</th>
+              <th class="text-nowrap">Description</th>
+              <th class="text-nowrap" style="width: 1%">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="align-middle">
             <tr v-if="allApplicationData.length === 0">
-              <td colspan="5">
+              <td colspan="6">
                 <div class="table-empty">
                   <i class="fa fa-rocket table-empty__icon"></i>
                   <div class="table-empty__title">No applications available</div>
@@ -48,25 +49,29 @@
                 </a>
               </td>
               <td>
-                <a href="#" @click.prevent="handleAppSelected(item.appModule)" :class="{ 'text-muted': item.disabled }">
-                  {{ item.appModule.app_module_name }}
+                <i class="fa fa-cube me-2 text-muted"></i>
+                <a :href="editUrl(item.appModule)" class="text-decoration-none" :class="{ 'text-muted': item.disabled }">
+                  <strong>{{ item.appModule.app_module_name }}</strong>
                 </a>
               </td>
               <td>
                 <span v-if="item.appModule.app_module_version" class="badge bg-secondary">{{ item.appModule.app_module_version }}</span>
                 <span v-else class="text-muted">-</span>
               </td>
-              <td class="text-muted">{{ truncate(item.appModule.app_module_description, 60) }}</td>
               <td>
-                <a href="#" class="action-link me-2" @click.prevent="handleAppSelected(item.appModule)" v-if="!item.disabled" title="Launch experiment">
-                  <i class="fa fa-play"></i> Launch
-                </a>
-                <a :href="editUrl(item.appModule)" class="action-link me-2" title="Edit application">
-                  <i class="fa fa-edit"></i> Edit
-                </a>
-                <a href="#" class="action-link text-danger" @click.prevent="confirmDelete(item.appModule)" title="Delete application">
-                  <i class="fa fa-trash"></i> Delete
-                </a>
+                <span class="fw-medium text-muted">default-admin</span>
+                <span class="badge bg-primary ms-1">Admin</span>
+              </td>
+              <td class="text-muted">{{ truncate(item.appModule.app_module_description, 60) }}</td>
+              <td class="text-nowrap" style="width: 1%">
+                <div class="d-flex gap-2 justify-content-end flex-nowrap">
+                  <a :href="runExperimentUrl(item.appModule)" class="btn btn-outline-primary btn-pill" v-if="!item.disabled" title="Run experiment">
+                    <i class="fa fa-play me-1"></i>Run Experiment
+                  </a>
+                  <button type="button" class="btn btn-outline-danger btn-pill" @click="confirmDelete(item.appModule)" title="Delete application">
+                    <i class="fa fa-trash me-1"></i>Delete
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -96,6 +101,7 @@
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -126,7 +132,10 @@ export default {
       urls.navigateToCreateExperiment(appModule);
     },
     editUrl(appModule) {
-      return "/admin/applications/" + appModule.app_module_id;
+      return "/workspace/applications/" + appModule.app_module_id + "/";
+    },
+    runExperimentUrl(appModule) {
+      return "/workspace/applications/" + appModule.app_module_id + "/create_experiment";
     },
     toggleFavorite(appModule) {
       const action = this.isFavorite(appModule) ? "unfavorite" : "favorite";
@@ -208,3 +217,4 @@ export default {
   },
 };
 </script>
+

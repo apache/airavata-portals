@@ -13,16 +13,16 @@
       <div class="col">
         <div class="card">
           <div class="card-body">
-            <table class="table table-hover">
+            <table class="table table-hover table-sm">
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Owner</th>
-                  <th>Creation Time</th>
-                  <th>Actions</th>
+                  <th class="text-nowrap">Owner</th>
+                  <th class="text-nowrap">Creation Time</th>
+                  <th class="text-nowrap" style="width: 1%">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody class="align-middle">
                 <tr v-if="!projects || projects.length === 0">
                   <td colspan="4">
                     <div class="table-empty">

@@ -71,9 +71,14 @@ export default class BaseModel {
   }
 
   convertDateField(fieldValue, fieldDefault) {
-    return typeof fieldValue !== "undefined"
-      ? new Date(fieldValue)
-      : fieldDefault;
+    if (typeof fieldValue === "undefined") {
+      return fieldDefault;
+    }
+    // Handle Unix timestamp strings (milliseconds since epoch)
+    if (typeof fieldValue === "string" && /^\d+$/.test(fieldValue)) {
+      return new Date(Number(fieldValue));
+    }
+    return new Date(fieldValue);
   }
 
   convertModelField(modelClass, fieldValue, fieldDefault) {

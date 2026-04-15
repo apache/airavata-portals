@@ -1,11 +1,11 @@
 """Django Airavata Auth Middleware."""
 
-import copy
 import logging
 from collections.abc import Callable
 from typing import Any
 
 from django.conf import settings
+from google.protobuf.json_format import MessageToDict
 from django.contrib.auth import logout
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
@@ -79,10 +79,8 @@ def gateway_groups_middleware(
             # Read Only Admins groups
             if not request.session.get("GATEWAY_GROUPS"):
                 gateway_groups = request.airavata_client.compute.get_gateway_groups()
-                gateway_groups_dict = (
-                    copy.deepcopy(gateway_groups.__dict__)
-                    if hasattr(gateway_groups, "__dict__")
-                    else dict(gateway_groups)
+                gateway_groups_dict = MessageToDict(
+                    gateway_groups, preserving_proto_field_name=False
                 )
                 request.session["GATEWAY_GROUPS"] = gateway_groups_dict
             set_admin_group_attributes(request, gateway_groups=request.session.get("GATEWAY_GROUPS"))

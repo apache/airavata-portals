@@ -10,6 +10,10 @@ export default defineConfig({
     outDir: resolve(__dirname, "./static/django_airavata_workspace/dist"),
     rollupOptions: {
       input: {
+        dashboard: resolve(
+          __dirname,
+          "./static/django_airavata_workspace/js/entry-dashboard.js"
+        ),
         "project-list": resolve(
           __dirname,
           "./static/django_airavata_workspace/js/entry-project-list.js"
@@ -50,6 +54,10 @@ export default defineConfig({
           __dirname,
           "./static/django_airavata_workspace/js/entry-datasets.js"
         ),
+        "datasets-list": resolve(
+          __dirname,
+          "./static/django_airavata_workspace/js/entry-datasets-list.js"
+        ),
         credentials: resolve(
           __dirname,
           "./static/django_airavata_workspace/js/entry-credentials.js"
@@ -69,6 +77,10 @@ export default defineConfig({
         "project-overview": resolve(
           __dirname,
           "./static/django_airavata_workspace/js/entry-project-overview.js"
+        ),
+        "application-editor": resolve(
+          __dirname,
+          "./static/django_airavata_workspace/js/entry-application-editor.js"
         ),
       },
     },

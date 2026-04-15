@@ -115,7 +115,7 @@ export default {
   },
   ComputeResources: {
     url: "/api/compute-resources",
-    viewSet: ["retrieve", "create", "update", "delete"],
+    viewSet: ["list", "retrieve", "create", "update", "delete"],
     methods: {
       names: {
         url: "/api/compute-resources/all_names/",
@@ -124,6 +124,16 @@ export default {
       namesList: {
         url: "/api/compute-resources/all_names_list/",
         requestType: "get",
+      },
+      addSshSubmission: {
+        url: "/api/compute-resources/<lookup>/ssh_submission/",
+        requestType: "post",
+        bodyParams: { name: "data" },
+      },
+      updateSshSubmission: {
+        url: "/api/compute-resources/<lookup>/ssh_submission/",
+        requestType: "put",
+        bodyParams: { name: "data" },
       },
     },
     modelClass: ComputeResourceDescription,

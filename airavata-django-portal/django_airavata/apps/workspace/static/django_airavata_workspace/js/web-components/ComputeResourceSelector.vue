@@ -3,15 +3,19 @@
     <select class="form-select"
       id="compute-resource"
       v-model="resourceHostId"
-      :options="computeResourceOptions"
       required
-      @input="computeResourceChanged"
+      @change="computeResourceChanged"
       @input.stop
       :disabled="disabled || computeResourceOptions.length === 0"
     >
-      <template slot="first">
-        <option :value="null" disabled>Select a Compute Resource</option>
-      </template>
+      <option :value="null" disabled>Select a Compute Resource</option>
+      <option
+        v-for="opt in computeResourceOptions"
+        :key="opt.value"
+        :value="opt.value"
+      >
+        {{ opt.text }}
+      </option>
     </select>
   </div>
 </template>

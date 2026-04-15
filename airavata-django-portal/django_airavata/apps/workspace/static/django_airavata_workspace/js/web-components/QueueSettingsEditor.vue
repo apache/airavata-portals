@@ -39,11 +39,17 @@
         <select class="form-select"
           id="queue"
           :value="selectedQueueName"
-          :options="queueOptions"
           required
-          @change="queueChanged"
+          @change="queueChanged($event.target.value)"
           @input.stop
         >
+          <option
+            v-for="opt in queueOptions"
+            :key="opt.value"
+            :value="opt.value"
+          >
+            {{ opt.text }}
+          </option>
         </select>
         <div slot="description">{{ queueDescription }}</div>
       </div>

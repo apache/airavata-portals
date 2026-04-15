@@ -33,11 +33,27 @@ ENTRY_POINTS = {
     "user-storage": "static/django_airavata_workspace/js/entry-user-storage.js",
     "compute": "static/django_airavata_workspace/js/entry-compute.js",
     "datasets": "static/django_airavata_workspace/js/entry-datasets.js",
+    "datasets-list": "static/django_airavata_workspace/js/entry-datasets-list.js",
     "credentials": "static/django_airavata_workspace/js/entry-credentials.js",
     "gateway-settings": "static/django_airavata_workspace/js/entry-gateway-settings.js",
     "storage-detail": "static/django_airavata_workspace/js/entry-storage-detail.js",
     "compute-detail": "static/django_airavata_workspace/js/entry-compute-detail.js",
+    "application-editor": "static/django_airavata_workspace/js/entry-application-editor.js",
+    "dashboard": "static/django_airavata_workspace/js/entry-dashboard.js",
 }
+
+
+@login_required
+def dashboard(request):
+    request.active_nav_item = "home"
+    return render(
+        request,
+        "django_airavata_workspace/dashboard.html",
+        {
+            "bundle_name": "dashboard",
+            "entry_point": ENTRY_POINTS["dashboard"],
+        },
+    )
 
 
 @login_required
@@ -107,6 +123,33 @@ def applications(request):
 
 
 @login_required
+def new_application(request):
+    request.active_nav_item = "applications"
+    return render(
+        request,
+        "django_airavata_workspace/application_editor.html",
+        {
+            "bundle_name": "application-editor",
+            "entry_point": ENTRY_POINTS["application-editor"],
+        },
+    )
+
+
+@login_required
+def edit_application(request, app_module_id):
+    request.active_nav_item = "applications"
+    return render(
+        request,
+        "django_airavata_workspace/application_editor.html",
+        {
+            "bundle_name": "application-editor",
+            "entry_point": ENTRY_POINTS["application-editor"],
+            "app_module_id": app_module_id,
+        },
+    )
+
+
+@login_required
 def edit_project(request, project_id):
     request.active_nav_item = "projects"
 
@@ -124,7 +167,7 @@ def project_overview(request, project_id):
     project = request.airavata_client.research.get_project(project_id)
 
     breadcrumbs = [
-        {"label": "Projects", "url": "/workspace/"},
+        {"label": "Projects", "url": "/workspace/projects"},
         {"label": project.name, "url": None},
     ]
 
@@ -155,7 +198,7 @@ def create_experiment(request, app_module_id):
     if app_interface.status_code != 200:
         raise Exception("Failed to load application module data: {}".format(app_interface.data["detail"]))
     user_input_values = {}
-    for app_input in app_interface.data["applicationInputs"]:
+    for app_input in app_interface.data.get("application_inputs", []):
         if app_input["type"] == DataType.URI and app_input["name"] in request.GET:
             user_file_value = request.GET[app_input["name"]]
             try:
@@ -203,7 +246,7 @@ def edit_experiment(request, project_id, experiment_id):
     app_module_id = applicationInterface.application_modules[0]
 
     breadcrumbs = [
-        {"label": "Projects", "url": "/workspace/"},
+        {"label": "Projects", "url": "/workspace/projects"},
         {"label": project.name, "url": f"/workspace/projects/{project_id}/"},
         {"label": "Experiments", "url": f"/workspace/projects/{project_id}/experiments"},
         {"label": "Edit Experiment", "url": None},
@@ -252,7 +295,7 @@ def view_experiment(request, project_id, experiment_id):
     full_experiment_json = JSONRenderer().render(response.data).decode("utf-8")
 
     breadcrumbs = [
-        {"label": "Projects", "url": "/workspace/"},
+        {"label": "Projects", "url": "/workspace/projects"},
         {"label": project.name, "url": f"/workspace/projects/{project_id}/"},
         {"label": "Experiments", "url": f"/workspace/projects/{project_id}/experiments"},
         {"label": "Experiment", "url": None},
@@ -350,20 +393,21 @@ def gateway_settings(request):
             "entry_point": ENTRY_POINTS["gateway-settings"],
             "gateway_id": settings.GATEWAY_ID,
             "portal_title": getattr(settings, "PORTAL_TITLE", "Airavata Portal"),
+            "is_gateway_admin": getattr(request, "is_gateway_admin", False),
         },
     )
 
 
 @login_required
-def datasets(request, project_id):
+def artifacts(request, project_id):
     request.active_nav_item = "projects"
 
     project = request.airavata_client.research.get_project(project_id)
 
     breadcrumbs = [
-        {"label": "Projects", "url": "/workspace/"},
+        {"label": "Projects", "url": "/workspace/projects"},
         {"label": project.name, "url": f"/workspace/projects/{project_id}/"},
-        {"label": "Datasets", "url": None},
+        {"label": "Artifacts", "url": None},
     ]
 
     return render(
@@ -374,6 +418,19 @@ def datasets(request, project_id):
             "entry_point": ENTRY_POINTS.get("datasets", ""),
             "project_id": project_id,
             "breadcrumbs_json": json.dumps(breadcrumbs),
+        },
+    )
+
+
+@login_required
+def datasets_list(request):
+    request.active_nav_item = "datasets"
+    return render(
+        request,
+        "django_airavata_workspace/datasets_list.html",
+        {
+            "bundle_name": "datasets-list",
+            "entry_point": ENTRY_POINTS["datasets-list"],
         },
     )
 
@@ -392,7 +449,7 @@ def experiments_list(request, project_id):
         experiments_json = JSONRenderer().render(response.data).decode("utf-8")
 
     breadcrumbs = [
-        {"label": "Projects", "url": "/workspace/"},
+        {"label": "Projects", "url": "/workspace/projects"},
         {"label": project.name, "url": f"/workspace/projects/{project_id}/"},
         {"label": "Experiments", "url": None},
     ]

@@ -11,9 +11,13 @@
         "
       />
     </td>
-    <td>{{ ownerUsername }}</td>
-    <td>{{ group.description }}</td>
     <td>
+      <span class="fw-medium">{{ ownerUsername }}</span>
+      <span class="badge bg-secondary ms-1" v-if="isCurrentUser">You</span>
+      <span class="badge bg-primary ms-1" v-else-if="isAdmin">Admin</span>
+    </td>
+    <td>{{ group.description }}</td>
+    <td class="text-nowrap" style="width: 1%">
       <a
         v-if="group.is_owner || group.is_admin"
         class="action-link"
@@ -54,7 +58,7 @@
 </template>
 
 <script>
-import { services } from "django-airavata-api";
+import { services, session } from "django-airavata-api";
 import { components } from "django-airavata-common-ui";
 
 export default {
@@ -92,6 +96,13 @@ export default {
         return this.group.owner_id.substring(0, lastAtIndex);
       }
       return this.group.owner_id;
+    },
+    isCurrentUser() {
+      return this.ownerUsername === session.Session.username;
+    },
+    isAdmin() {
+      const name = this.ownerUsername;
+      return name === "default-admin" || name === "admin";
     },
   },
   methods: {

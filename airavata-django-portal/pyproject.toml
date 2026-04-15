@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv.sources]
-airavata-python-sdk = { path = "../../../airavata/fix-sharing-init/airavata-python-sdk", editable = true }
+airavata-python-sdk = { path = "../../airavata/airavata-python-sdk", editable = true }
 
 [project]
 name = "airavata-django-portal"

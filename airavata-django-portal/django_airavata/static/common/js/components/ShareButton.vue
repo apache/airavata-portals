@@ -1,12 +1,14 @@
 <template>
-  <div class="share-button btn-container">
-    <button class="btn btn-outline-primary btn-sm"
-      :title="title"
+  <div class="share-button">
+    <button
+      type="button"
+      class="btn btn-outline-secondary btn-pill"
       :disabled="!shareButtonEnabled"
-      @click="openSharingSettingsModal"
+      :title="title"
+      @click="handleShareClick"
     >
-      Share
-      <span class="badge">{{ totalCount }}</span>
+      <i class="fa fa-share-alt me-1" aria-hidden="true"></i>Share
+      <span class="badge bg-secondary ms-1" v-if="totalCount > 0">{{ totalCount }}</span>
     </button>
     <!-- Bootstrap 5 modal -->
     <div
@@ -59,6 +61,7 @@
 
 <script>
 import { models, services } from "django-airavata-api";
+import { Modal } from "bootstrap";
 import SharedEntityEditor from "./SharedEntityEditor.vue";
 
 export default {
@@ -97,6 +100,7 @@ export default {
       readOnlyAdminsGroup: null,
       users: null,
       groups: null,
+      bsModal: null,
     };
   },
   computed: {
@@ -194,15 +198,15 @@ export default {
       // values of the props.
       const promises = [];
       let loadedSharedEntity = null;
-      if (this.entity_id) {
+      if (this.entityId) {
         promises.push(
-          this.loadSharedEntity(this.entity_id).then(
+          this.loadSharedEntity(this.entityId).then(
             (sharedEntity) => (loadedSharedEntity = sharedEntity)
           )
         );
       }
       if (
-        !this.entity_id &&
+        !this.entityId &&
         (!this.sharedEntity || !this.sharedEntity.entity_id) &&
         (!this.defaultGatewayUsersGroup ||
           !this.adminsGroup ||
@@ -231,7 +235,7 @@ export default {
       Promise.all(promises).then(() => {
         if (this.sharedEntity) {
           this.localSharedEntity = this.sharedEntity.clone();
-        } else if (this.entity_id) {
+        } else if (this.entityId) {
           this.localSharedEntity = loadedSharedEntity;
         } else {
           this.localSharedEntity = new models.SharedEntity();
@@ -327,7 +331,16 @@ export default {
       this.localSharedEntity = this.sharedEntityCopy;
       this.closeModal();
     },
+    handleShareClick: function () {
+      if (!this.shareButtonEnabled) {
+        return;
+      }
+      this.openSharingSettingsModal();
+    },
     openSharingSettingsModal: function () {
+      if (!this.localSharedEntity) {
+        return;
+      }
       this.sharedEntityCopy = this.localSharedEntity.clone();
       if (!this.users) {
         services.ServiceFactory.service("UserProfiles")
@@ -339,16 +352,15 @@ export default {
           this.groups = groups;
         });
       }
-      const modalEl = this.$refs.sharingSettingsModal;
-      // eslint-disable-next-line no-undef
-      const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-      bsModal.show();
+      if (!this.bsModal) {
+        this.bsModal = new Modal(this.$refs.sharingSettingsModal);
+      }
+      this.bsModal.show();
     },
     closeModal: function () {
-      const modalEl = this.$refs.sharingSettingsModal;
-      // eslint-disable-next-line no-undef
-      const bsModal = bootstrap.Modal.getInstance(modalEl);
-      if (bsModal) bsModal.hide();
+      if (this.bsModal) {
+        this.bsModal.hide();
+      }
     },
   },
   mounted: function () {
@@ -379,12 +391,11 @@ export default {
 </script>
 
 <style scoped>
-button {
-  background-color: white;
-  white-space: nowrap;
-}
 .share-button {
   display: inline-block;
+}
+.share-button > button {
+  white-space: nowrap;
 }
 .share-button :deep(.modal-share-settings .modal-body) {
   max-height: 50vh;

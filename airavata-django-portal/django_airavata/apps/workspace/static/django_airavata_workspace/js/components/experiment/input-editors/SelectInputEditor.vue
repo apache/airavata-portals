@@ -2,12 +2,19 @@
   <select class="form-select"
     :id="id"
     v-model="data"
-    :options="selectOptions"
-    stacked
     :disabled="readOnly"
     :state="componentValidState"
-    @input="valueChanged"
-  />
+    @change="valueChanged"
+  >
+    <option :value="null" disabled>Select...</option>
+    <option
+      v-for="opt in selectOptions"
+      :key="opt.value"
+      :value="opt.value"
+    >
+      {{ opt.text }}
+    </option>
+  </select>
 </template>
 
 <script>

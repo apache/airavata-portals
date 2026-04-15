@@ -1,5 +1,6 @@
 import BaseModel from "./BaseModel";
 import BatchQueue from "./BatchQueue";
+import JobSubmissionInterface from "./JobSubmissionInterface";
 
 const FIELDS = [
   "compute_resource_id",
@@ -21,9 +22,13 @@ const FIELDS = [
     type: BatchQueue,
     list: true,
   },
+  {
+    name: "job_submission_interfaces",
+    type: JobSubmissionInterface,
+    list: true,
+  },
   // TODO: map these
   // 'file_systems',
-  // 'job_submission_interfaces',
   // 'data_movement_interfaces',
   "max_memory_per_node",
   "gateway_usage_reporting",

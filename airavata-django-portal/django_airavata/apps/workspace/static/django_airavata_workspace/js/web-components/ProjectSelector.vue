@@ -1,9 +1,7 @@
 <template>
   <div class="mb-3" label="Project">
     <select class="form-select" v-model="projectId" required>
-      <template slot="first">
-        <option :value="null" disabled>Select a Project</option>
-      </template>
+      <option :value="null" disabled>Select a Project</option>
       <optgroup label="My Projects">
         <option
           v-for="project in myProjectOptions"

@@ -65,15 +65,15 @@
     </div>
         <div class="card">
           <div class="card-body">
-            <table class="table table-hover">
+            <table class="table table-hover table-sm">
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Application</th>
-                  <th>User</th>
-                  <th>Creation Time</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th class="text-nowrap">Application</th>
+                  <th class="text-nowrap">User</th>
+                  <th class="text-nowrap">Creation Time</th>
+                  <th class="text-nowrap">Status</th>
+                  <th class="text-nowrap" style="width: 1%">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -93,11 +93,11 @@
                   <td>{{ experiment.user_name }}</td>
                   <td><span :title="experiment.creation_time">{{ fromNow(experiment.creation_time) }}</span></td>
                   <td><experiment-status-badge :statusName="experiment.experiment_status.name" /></td>
-                  <td>
-                    <span v-if="applicationName(experiment)">
-                      <a v-if="experiment.isEditable" :href="editLink(experiment)" class="action-link">Edit <i class="fa fa-edit"></i></a>
-                      <a v-else href="#" @click.prevent="clone(experiment)" class="action-link">Clone <i class="fa fa-copy"></i></a>
-                    </span>
+                  <td class="text-nowrap" style="width: 1%">
+                    <div class="d-flex gap-2 justify-content-end flex-nowrap" v-if="applicationName(experiment)">
+                      <a v-if="experiment.isEditable" :href="editLink(experiment)" class="btn btn-sm btn-outline-primary"><i class="fa fa-edit me-1"></i>Edit</a>
+                      <button v-else type="button" @click="clone(experiment)" class="btn btn-sm btn-outline-primary"><i class="fa fa-copy me-1"></i>Clone</button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
