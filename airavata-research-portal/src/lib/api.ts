@@ -40,9 +40,17 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response interceptor
+// Response interceptor — unwraps gRPC JsonResponse / JsonListResponse envelopes
 api.interceptors.response.use(
-    (response: AxiosResponse) => response,
+    (response: AxiosResponse) => {
+      const d = response.data;
+      if (d && typeof d === 'object' && typeof d.json === 'string') {
+        try {
+          response.data = JSON.parse(d.json);
+        } catch {/* leave as-is */}
+      }
+      return response;
+    },
     (error) => {
       console.error('API Error:', error.response?.data || error.message);
       return Promise.reject(error);

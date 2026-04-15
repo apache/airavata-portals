@@ -11,7 +11,7 @@ import {ResourceTypeEnum} from "@/interfaces/ResourceTypeEnum";
 
 const getNotebooks = async () => {
   try {
-    const response = await api.get(`${CONTROLLER.resources}/`, {
+    const response = await api.get(`${CONTROLLER.resources}`, {
       params: {
         type: ResourceTypeEnum.NOTEBOOK,
         pageNumber: 0,

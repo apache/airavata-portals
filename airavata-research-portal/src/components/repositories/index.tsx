@@ -11,7 +11,7 @@ import { ResourceTypeEnum } from "@/interfaces/ResourceTypeEnum";
 
 const getRepositories = async () => {
   try {
-    const response = await api.get(`${CONTROLLER.resources}/`, {
+    const response = await api.get(`${CONTROLLER.resources}`, {
       params: {
         type: ResourceTypeEnum.REPOSITORY,
         pageNumber: 0,

@@ -14,7 +14,7 @@ import { CONTROLLER } from "@/lib/controller";
 
 const getDatasets = async () => {
   try {
-    const response = await api.get(`${CONTROLLER.resources}/`, {
+    const response = await api.get(`${CONTROLLER.resources}`, {
       params: {
         type: ResourceTypeEnum.DATASET,
         pageNumber: 0,

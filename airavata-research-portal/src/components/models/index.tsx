@@ -13,7 +13,7 @@ import { ResourceTypeEnum } from "@/interfaces/ResourceTypeEnum";
 
 const getModels = async () => {
   try {
-    const response = await api.get(`${CONTROLLER.resources}/`, {
+    const response = await api.get(`${CONTROLLER.resources}`, {
       params: {
         type: ResourceTypeEnum.MODEL,
         pageNumber: 0,
