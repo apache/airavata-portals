@@ -38,17 +38,19 @@ def initialize_user_profile(sender, request, user, **kwargs):
     # have an Airavata user profile (See IAMAdminServices.enableUser). The
     # following is necessary for users coming from federated login who don't
     # need to verify their email.
-    if request.authz_token is not None:
-        iam_client = create_airavata_client(request.authz_token["accessToken"], settings.GATEWAY_ID).iam
-        if not iam_client.does_user_exist(user.username, settings.GATEWAY_ID):
-            if user.user_profile.is_complete:
-                iam_client.initialize_user_profile()
-                log.info(f"initialized user profile for {user.username}")
-                # Since user profile created, inform admins of new user
-                utils.send_new_user_email(request, user.username, user.email, user.first_name, user.last_name)
-                log.info(f"sent new user email for user {user.username}")
-            else:
-                log.info(f"user profile not complete for {user.username}, skipping initializing Airavata user profile")
-
-    else:
+    if request.authz_token is None:
         log.warning(f"Logged in user {user.username} has no access token")
+        return
+    try:
+        iam_client = create_airavata_client(request.authz_token["accessToken"], settings.GATEWAY_ID).iam
+        if iam_client.does_user_exist(user.username, settings.GATEWAY_ID):
+            return
+        if not user.user_profile.is_complete:
+            log.info(f"user profile not complete for {user.username}, skipping initializing Airavata user profile")
+            return
+        iam_client.initialize_user_profile()
+        log.info(f"initialized user profile for {user.username}")
+        utils.send_new_user_email(request, user.username, user.email, user.first_name, user.last_name)
+        log.info(f"sent new user email for user {user.username}")
+    except (AttributeError, Exception) as e:
+        log.warning(f"initialize_user_profile failed (IAM RPC may be unimplemented); skipping: {e}")
