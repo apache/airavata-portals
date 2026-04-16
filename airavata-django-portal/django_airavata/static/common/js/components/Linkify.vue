@@ -8,7 +8,7 @@ export default {
   render: function (createElement) {
     // Find top level text nodes and run linkify on the text, converting them
     // into an array of links and text nodes
-    const children = this.$slots.default
+    const children = (this.$slots.default || [])
       .map((node) => {
         if (node.text) {
           const tokens = linkify.tokenize(node.text);

@@ -1150,9 +1150,10 @@ class GroupResourceProfileViewSet(viewsets.ViewSet):
 
         proto = dict_to_proto(request.data, GroupResourceProfileProto)
         proto.gateway_id = settings.GATEWAY_ID
-        profile_id = request.airavata_client.compute.create_group_resource_profile(
+        response = request.airavata_client.compute.create_group_resource_profile(
             group_resource_profile=proto
         )
+        profile_id = response.group_resource_profile_id
         created = request.airavata_client.compute.get_group_resource_profile(profile_id)
         return Response(proto_to_dict(created), status=status.HTTP_201_CREATED)
 
