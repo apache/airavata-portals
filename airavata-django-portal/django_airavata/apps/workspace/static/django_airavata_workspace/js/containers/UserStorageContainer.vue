@@ -281,10 +281,7 @@ export default {
       }
     },
     openStorage(storage) {
-      this.activeStorage = storage;
-      this.currentPath = "";
-      this.updateHash();
-      this.loadPath("~/");
+      window.location.href = "/resources/storage/" + storage.id + "/";
     },
     closeStorage() {
       this.activeStorage = null;

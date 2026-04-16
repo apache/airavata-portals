@@ -53,6 +53,11 @@ urlpatterns = [
     ),
     re_path(r"^applications$", views.applications, name="applications"),
     # Resources
-    re_path(r"^storage", views.user_storage, name="storage"),
+    re_path(
+        r"^storage/(?P<storage_resource_id>[^/]+)/$",
+        views.storage_detail,
+        name="storage_detail",
+    ),
+    re_path(r"^storage$", views.user_storage, name="storage"),
     re_path(r"^compute", views.compute_resources, name="compute"),
 ]
