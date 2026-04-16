@@ -37,6 +37,7 @@ ENTRY_POINTS = {
     "credentials": "static/django_airavata_workspace/js/entry-credentials.js",
     "gateway-settings": "static/django_airavata_workspace/js/entry-gateway-settings.js",
     "storage-detail": "static/django_airavata_workspace/js/entry-storage-detail.js",
+    "storage-tree": "static/django_airavata_workspace/js/entry-storage-tree.js",
     "compute-detail": "static/django_airavata_workspace/js/entry-compute-detail.js",
     "application-editor": "static/django_airavata_workspace/js/entry-application-editor.js",
     "dashboard": "static/django_airavata_workspace/js/entry-dashboard.js",
@@ -351,6 +352,21 @@ def storage_detail(request, storage_resource_id):
             "bundle_name": "storage-detail",
             "entry_point": ENTRY_POINTS["storage-detail"],
             "storage_resource_id": storage_resource_id,
+        },
+    )
+
+
+@login_required
+def storage_tree(request, storage_resource_id, path=""):
+    request.active_nav_item = "storage"
+    return render(
+        request,
+        "django_airavata_workspace/base.html",
+        {
+            "bundle_name": "storage-tree",
+            "entry_point": ENTRY_POINTS["storage-tree"],
+            "storage_resource_id": storage_resource_id,
+            "storage_path": path or "",
         },
     )
 

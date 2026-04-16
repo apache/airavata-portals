@@ -5,6 +5,7 @@
 {% block content %}
 <div id="{{ bundle_name }}"
   {% if storage_resource_id %}data-storage-resource-id="{{ storage_resource_id }}"{% endif %}
+  {% if storage_path is not None %}data-storage-path="{{ storage_path }}"{% endif %}
   {% if compute_resource_id %}data-compute-resource-id="{{ compute_resource_id }}"{% endif %}
   {% if gateway_id %}data-gateway-id="{{ gateway_id }}"{% endif %}
   {% if portal_title %}data-portal-title="{{ portal_title }}"{% endif %}

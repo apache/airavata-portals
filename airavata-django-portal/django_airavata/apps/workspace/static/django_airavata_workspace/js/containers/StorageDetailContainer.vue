@@ -21,6 +21,9 @@
           </h1>
         </div>
         <div class="col-auto d-flex gap-2">
+          <a :href="'/resources/storage/' + storageResourceId + '/tree'" class="btn btn-primary btn-sm">
+            <i class="fa fa-folder-open me-1"></i>View Files
+          </a>
           <button class="btn btn-outline-secondary btn-sm" @click="testConnection" :disabled="testing">
             <span v-if="testing"><i class="fa fa-spinner fa-spin me-1"></i>Testing...</span>
             <span v-else><i class="fa fa-plug me-1"></i>Test Connection</span>
