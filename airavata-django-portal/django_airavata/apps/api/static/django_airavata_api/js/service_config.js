@@ -380,6 +380,28 @@ export default {
         requestType: "get",
         modelClass: Project,
       },
+      members: {
+        url: "/api/projects/<lookup>/members/",
+        requestType: "get",
+      },
+      addMember: {
+        url: "/api/projects/<lookup>/members/",
+        requestType: "post",
+        bodyParams: { name: "data" },
+      },
+      removeMember: {
+        url: "/api/projects/<lookup>/members/<user_name>/",
+        requestType: "delete",
+      },
+      addAdmin: {
+        url: "/api/projects/<lookup>/admins/",
+        requestType: "post",
+        bodyParams: { name: "data" },
+      },
+      removeAdmin: {
+        url: "/api/projects/<lookup>/admins/<user_name>/",
+        requestType: "delete",
+      },
     },
     queryParams: ["limit", "offset"],
     modelClass: Project,

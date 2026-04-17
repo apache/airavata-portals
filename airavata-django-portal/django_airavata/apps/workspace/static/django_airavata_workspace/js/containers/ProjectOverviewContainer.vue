@@ -67,6 +67,8 @@
       </div>
     </div>
 
+    <project-members-card v-if="project && project.project_id" :project="project" />
+
     <div class="row">
       <!-- Experiments -->
       <div class="col-md-6 mb-3">
@@ -168,6 +170,7 @@ import { services } from "django-airavata-api";
 import { components as comps } from "django-airavata-common-ui";
 import moment from "moment";
 import ProjectDeleteModal from "../components/project/ProjectDeleteModal.vue";
+import ProjectMembersCard from "../components/project/ProjectMembersCard.vue";
 
 export default {
   name: "project-overview-container",
@@ -180,6 +183,7 @@ export default {
     "breadcrumb-nav": comps.BreadcrumbNav,
     "experiment-status-badge": comps.ExperimentStatusBadge,
     "project-delete-modal": ProjectDeleteModal,
+    "project-members-card": ProjectMembersCard,
     pager: comps.Pager,
   },
   data() {

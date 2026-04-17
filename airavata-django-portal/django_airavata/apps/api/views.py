@@ -341,6 +341,31 @@ class ProjectViewSet(viewsets.ViewSet):
         experiments = request.airavata_client.research.get_experiments_in_project(project_id, -1, 0)
         return Response(proto_list_to_dicts(experiments))
 
+    @action(detail=True, methods=["get", "post"])
+    def members(self, request: Request, project_id: str | None = None) -> Response:
+        if request.method == "POST":
+            user_name = request.data.get("user_name", "")
+            request.airavata_client.research.add_project_member(project_id, user_name)
+            return Response(status=204)
+        result = request.airavata_client.research.list_project_members(project_id)
+        return Response(result)
+
+    @action(detail=True, methods=["delete"], url_path=r"members/(?P<user_name>[^/.]+)")
+    def remove_member(self, request: Request, project_id: str | None = None, user_name: str | None = None) -> Response:
+        request.airavata_client.research.remove_project_member(project_id, user_name)
+        return Response(status=204)
+
+    @action(detail=True, methods=["post"])
+    def admins(self, request: Request, project_id: str | None = None) -> Response:
+        user_name = request.data.get("user_name", "")
+        request.airavata_client.research.add_project_admin(project_id, user_name)
+        return Response(status=204)
+
+    @action(detail=True, methods=["delete"], url_path=r"admins/(?P<user_name>[^/.]+)")
+    def remove_admin(self, request: Request, project_id: str | None = None, user_name: str | None = None) -> Response:
+        request.airavata_client.research.remove_project_admin(project_id, user_name)
+        return Response(status=204)
+
     @staticmethod
     def _update_most_recent_project(request: Request, project_id: str) -> None:
         prefs = helpers.WorkspacePreferencesHelper().get(request)
