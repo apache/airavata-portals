@@ -44,7 +44,6 @@ FRONTEND_APPS = {
     'admin':       'django_airavata/apps/admin',
     'auth':        'django_airavata/apps/auth',
     'dataparsers': 'django_airavata/apps/dataparsers',
-    'groups':      'django_airavata/apps/groups',
     'workspace':   'django_airavata/apps/workspace',
 }
 

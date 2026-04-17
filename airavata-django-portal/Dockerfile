@@ -23,13 +23,6 @@ RUN yarn
 COPY ./django_airavata/apps/dataparsers/ .
 RUN yarn run build
 
-# build groups javascript
-WORKDIR /code/django_airavata/apps/groups
-COPY ./django_airavata/apps/groups/package.json ./django_airavata/apps/groups/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/groups/ .
-RUN yarn run build
-
 # build auth javascript
 WORKDIR /code/django_airavata/apps/auth
 COPY ./django_airavata/apps/auth/package.json ./django_airavata/apps/auth/yarn.lock ./
@@ -87,8 +80,6 @@ WORKDIR /code/django_airavata/static/common/dist
 COPY --from=build-stage /code/django_airavata/static/common/dist .
 WORKDIR /code/django_airavata/apps/admin/static/django_airavata_admin
 COPY --from=build-stage /code/django_airavata/apps/admin/static/django_airavata_admin .
-WORKDIR /code/django_airavata/apps/groups/static/django_airavata_groups
-COPY --from=build-stage /code/django_airavata/apps/groups/static/django_airavata_groups .
 WORKDIR /code/django_airavata/apps/auth/static/django_airavata_auth
 COPY --from=build-stage /code/django_airavata/apps/auth/static/django_airavata_auth .
 WORKDIR /code/django_airavata/apps/workspace/static/django_airavata_workspace

@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     "django_airavata.apps.workspace.apps.WorkspaceConfig",
     "rest_framework",
     "django_airavata.apps.api.apps.ApiConfig",
-    "django_airavata.apps.groups.apps.GroupsConfig",
     "django_airavata.apps.dataparsers.apps.DataParsersConfig",
     "django.contrib.humanize",
     # wagtail related apps
@@ -301,14 +300,6 @@ DJANGO_VITE = {
             "manifest.json",
         ),
         "static_url_prefix": "django_airavata_dataparsers/dist",
-    },
-    "GROUPS": {
-        "dev_mode": DEBUG,
-        "dev_server_port": 9000,
-        "manifest_path": os.path.join(
-            BASE_DIR, "django_airavata", "apps", "groups", "static", "django_airavata_groups", "dist", "manifest.json"
-        ),
-        "static_url_prefix": "django_airavata_groups/dist",
     },
     "WORKSPACE": {
         "dev_mode": DEBUG,

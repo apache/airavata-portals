@@ -26,7 +26,6 @@ urlpatterns = [
     re_path(r"^resources/compute/(?P<compute_resource_id>[^/]+)$", workspace_views.compute_detail, name="compute_detail"),
     re_path(r"^resources/compute$", workspace_views.compute_resources, name="compute"),
     re_path(r"^resources/credentials", workspace_views.credentials, name="credentials"),
-    re_path(r"^resources/sharing", include("django_airavata.apps.groups.urls")),
     # Gateway settings
     re_path(r"^gateway/settings$", workspace_views.gateway_settings, name="gateway_settings"),
     re_path(r"^home$", views.home, name="home"),
