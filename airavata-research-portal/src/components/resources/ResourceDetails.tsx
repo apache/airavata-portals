@@ -17,7 +17,7 @@
  *  under the License.
  */
 
-import {useLocation, useNavigate, useParams} from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import {
   Avatar,
   Badge,
@@ -33,8 +33,8 @@ import {
   Spinner,
   Text,
 } from "@chakra-ui/react";
-import {useEffect, useState} from "react";
-import {BiArrowBack} from "react-icons/bi";
+import { useEffect, useState } from "react";
+import { BiArrowBack } from "react-icons/bi";
 import api from "@/lib/api";
 import {
   DatasetResource,
@@ -43,20 +43,24 @@ import {
   RepositoryResource,
   Resource,
 } from "@/interfaces/ResourceType";
-import {Tag} from "@/interfaces/TagType";
-import {isValidImaage, resourceTypeToColor} from "@/lib/util";
-import {ResourceTypeBadge} from "./ResourceTypeBadge";
-import {ResourceTypeEnum} from "@/interfaces/ResourceTypeEnum";
-import {ModelSpecificBox} from "../models/ModelSpecificBox";
-import {NotebookSpecificDetails} from "../notebooks/NotebookSpecificDetails";
-import {RepositorySpecificDetails} from "../repositories/RepositorySpecificDetails";
-import {CONTROLLER} from "@/lib/controller";
-import {DatasetSpecificDetails} from "../datasets/DatasetSpecificDetails";
-import {ResourceOptions} from "@/components/resources/ResourceOptions.tsx";
-import {toaster} from "@/components/ui/toaster.tsx";
-import {PrivacyEnum} from "@/interfaces/PrivacyEnum.ts";
-import {PrivateResourceTooltip} from "@/components/resources/PrivateResourceTooltip.tsx";
-import {useAuth} from "react-oidc-context";
+import { Tag } from "@/interfaces/TagType";
+import { isAdmin, isValidImaage, resourceTypeToColor } from "@/lib/util";
+import { ResourceTypeBadge } from "./ResourceTypeBadge";
+import { ResourceTypeEnum } from "@/interfaces/ResourceTypeEnum";
+import { ModelSpecificBox } from "../models/ModelSpecificBox";
+import { NotebookSpecificDetails } from "../notebooks/NotebookSpecificDetails";
+import { RepositorySpecificDetails } from "../repositories/RepositorySpecificDetails";
+import { CONTROLLER } from "@/lib/controller";
+import { DatasetSpecificDetails } from "../datasets/DatasetSpecificDetails";
+import { ResourceOptions } from "@/components/resources/ResourceOptions.tsx";
+import { toaster } from "@/components/ui/toaster.tsx";
+import { PrivacyEnum } from "@/interfaces/PrivacyEnum.ts";
+import { PrivateResourceTooltip } from "@/components/resources/PrivateResourceTooltip.tsx";
+import { useAuth } from "react-oidc-context";
+import { ResourceVerification } from "./ResourceVerification";
+import { ResourceAuthor } from "@/interfaces/ResourceAuthor.ts";
+import { VerificationControls } from "./admin/VerificationControls";
+import { VerificationActivities } from "./VerificationActivities";
 
 async function getResource(id: string) {
   const response = await api.get(`${CONTROLLER.resources}/public/${id}`);
@@ -64,12 +68,13 @@ async function getResource(id: string) {
 }
 
 const ResourceDetails = () => {
-  const {id} = useParams();
+  const { id } = useParams();
   const [resource, setResource] = useState<Resource | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const {state} = useLocation();
+  const { state } = useLocation();
   const auth = useAuth();
+
   useEffect(() => {
     if (!id || auth.isLoading) return;
 
@@ -82,8 +87,8 @@ const ResourceDetails = () => {
         toaster.create({
           title: "Resource not found",
           description: `id: ${id}`,
-          type: "error"
-        })
+          type: "error",
+        });
       } finally {
         setLoading(false);
       }
@@ -94,9 +99,9 @@ const ResourceDetails = () => {
 
   if (loading) {
     return (
-        <Center my={8}>
-          <Spinner/>
-        </Center>
+      <Center my={8}>
+        <Spinner />
+      </Center>
     );
   } else if (!resource) {
     return null;
@@ -106,143 +111,161 @@ const ResourceDetails = () => {
 
   const goToResources = () => {
     navigate(
-        "/resources?resourceTypes=REPOSITORY%2CNOTEBOOK%2CDATASET%2CMODEL"
-    )
-  }
+      "/resources?resourceTypes=REPOSITORY%2CNOTEBOOK%2CDATASET%2CMODEL"
+    );
+  };
+
+  const isAdminUser = isAdmin(auth.user?.profile.email || "");
 
   return (
-      <>
-        <Container maxW="breakpoint-lg" mx="auto" p={4} mt={16}>
-          <Box>
-            <Button
-                variant="plain"
-                p={0}
-                onClick={goToResources}
-            >
-              <HStack
-                  alignItems="center"
-                  mb={4}
-                  display="inline-flex"
-                  _hover={{
-                    bg: "gray.300",
-                  }}
-                  p={1}
-                  rounded="md"
-              >
-                <Icon>
-                  <BiArrowBack/>
-                </Icon>
-                Back
-              </HStack>
-            </Button>
-          </Box>
-
-          <HStack
-              alignItems={"flex-start"}
+    <>
+      <Container maxW="breakpoint-lg" mx="auto" p={4} mt={16}>
+        <Box>
+          <Button variant="plain" p={0} onClick={goToResources}>
+            <HStack
+              alignItems="center"
               mb={4}
-              gap={8}
-              justifyContent="space-between"
-          >
-            <Box w={'full'}>
-              <ResourceTypeBadge type={resource.type}/>
+              display="inline-flex"
+              _hover={{
+                bg: "gray.300",
+              }}
+              p={1}
+              rounded="md"
+            >
+              <Icon>
+                <BiArrowBack />
+              </Icon>
+              Back
+            </HStack>
+          </Button>
+        </Box>
 
-              <HStack mt={2} justifyContent={'space-between'} alignItems={'center'} flexWrap={'wrap'}>
-                <Heading as="h1" size="4xl">
-                  {resource.name}
-                </Heading>
-
-                <HStack>
-                  {resource.privacy === PrivacyEnum.PRIVATE &&
-                      <PrivateResourceTooltip/>
-                  }
-                  <ResourceOptions
-                      resource={resource}
-                      onDeleteSuccess={goToResources}
-                      deleteable={true}
-                      onUnStarSuccess={() => {
-                      }}
-                  />
-                </HStack>
-
+        <HStack
+          alignItems={"flex-start"}
+          mb={4}
+          gap={8}
+          justifyContent="space-between"
+        >
+          <Box w={"full"}>
+            <HStack justifyContent="space-between" w="full">
+              <HStack gap={2} flexWrap="wrap">
+                <ResourceTypeBadge type={resource.type} />
+                <ResourceVerification
+                  resource={resource}
+                  setResource={setResource}
+                />
               </HStack>
-
-              <HStack mt={2}>
-                {resource.tags.map((tag: Tag) => (
-                    <Badge
-                        key={tag.id}
-                        size="lg"
-                        rounded="md"
-                        colorPalette={resourceTypeToColor(resource.type)}
-                    >
-                      {tag.value}
-                    </Badge>
-                ))}
-              </HStack>
-
-              <HStack mt={8}>
-                {resource.authors.map((author: string) => {
-                  return (
-                      <HStack key={author}>
-                        <Avatar.Root shape="full" size="xl">
-                          <Avatar.Fallback name={author}/>
-                          <Avatar.Image src={author}/>
-                        </Avatar.Root>
-
-                        <Box>
-                          <Text fontWeight="bold">{author}</Text>
-                        </Box>
-                      </HStack>
-                  );
-                })}
-              </HStack>
-            </Box>
-
-            <Box>
-              {validImage && (
-                  <Image
-                      src={resource.headerImage}
-                      alt="Notebook Header"
-                      rounded="md"
-                      maxW="300px"
-                  />
+              {isAdminUser && (
+                <VerificationControls
+                  resource={resource}
+                  setResource={setResource}
+                />
               )}
-            </Box>
-          </HStack>
+            </HStack>
+            <HStack
+              mt={1}
+              justifyContent={"space-between"}
+              alignItems={"center"}
+              flexWrap={"wrap"}
+            >
+              <Heading as="h1" size="4xl">
+                {resource.name}
+              </Heading>
 
-          <Separator my={6}/>
-          <Box>
-            <Heading fontWeight="bold" size="2xl">
-              About
-            </Heading>
+              <HStack>
+                {resource.privacy === PrivacyEnum.PRIVATE && (
+                  <PrivateResourceTooltip />
+                )}
+                <ResourceOptions
+                  resource={resource}
+                  onDeleteSuccess={goToResources}
+                  deleteable={true}
+                  onUnStarSuccess={() => {}}
+                />
+              </HStack>
+            </HStack>
 
-            <Text>{resource.description}</Text>
+            <HStack mt={2}>
+              {resource.tags.map((tag: Tag) => (
+                <Badge
+                  key={tag.id}
+                  size="lg"
+                  rounded="md"
+                  colorPalette={resourceTypeToColor(resource.type)}
+                >
+                  {tag.value}
+                </Badge>
+              ))}
+            </HStack>
+
+            <HStack mt={8} wrap={"wrap"}>
+              {resource.authors.map((author: ResourceAuthor) => {
+                return (
+                  <HStack key={author.authorId}>
+                    <Avatar.Root shape="full" size="xs">
+                      <Avatar.Fallback name={author.authorId} />
+                      <Avatar.Image src={author.authorId} />
+                    </Avatar.Root>
+
+                    <Box>
+                      <Text fontWeight="bold" fontSize={"sm"}>
+                        {author.authorId}
+                      </Text>
+                    </Box>
+                  </HStack>
+                );
+              })}
+            </HStack>
           </Box>
 
-          <Separator my={8}/>
-
           <Box>
-            {(resource.type as ResourceTypeEnum) ===
-                ResourceTypeEnum.REPOSITORY && (
-                    <RepositorySpecificDetails
-                        repository={resource as RepositoryResource}
-                    />
-                )}
-
-            {(resource.type as ResourceTypeEnum) === ResourceTypeEnum.DATASET && (
-                <DatasetSpecificDetails dataset={resource as DatasetResource}/>
+            {validImage && (
+              <Image
+                src={resource.headerImage}
+                alt="Notebook Header"
+                rounded="md"
+                maxW="300px"
+              />
             )}
-
-            {(resource.type as ResourceTypeEnum) === ResourceTypeEnum.MODEL && (
-                <ModelSpecificBox model={resource as ModelResource}/>
-            )}
-
-            {(resource.type as ResourceTypeEnum) ===
-                ResourceTypeEnum.NOTEBOOK && (
-                    <NotebookSpecificDetails notebook={resource as NotebookResource}/>
-                )}
           </Box>
-        </Container>
-      </>
+        </HStack>
+
+        <VerificationActivities resource={resource} />
+
+        <Separator my={6} />
+        <Box>
+          <Heading fontWeight="bold" size="2xl">
+            About
+          </Heading>
+
+          <Text>{resource.description}</Text>
+        </Box>
+
+        <Separator my={8} />
+
+        <Box>
+          {(resource.type as ResourceTypeEnum) ===
+            ResourceTypeEnum.REPOSITORY && (
+            <RepositorySpecificDetails
+              repository={resource as RepositoryResource}
+            />
+          )}
+
+          {(resource.type as ResourceTypeEnum) === ResourceTypeEnum.DATASET && (
+            <DatasetSpecificDetails dataset={resource as DatasetResource} />
+          )}
+
+          {(resource.type as ResourceTypeEnum) === ResourceTypeEnum.MODEL && (
+            <ModelSpecificBox model={resource as ModelResource} />
+          )}
+
+          {(resource.type as ResourceTypeEnum) ===
+            ResourceTypeEnum.NOTEBOOK && (
+            <NotebookSpecificDetails notebook={resource as NotebookResource} />
+          )}
+        </Box>
+      </Container>
+    </>
   );
 };
 

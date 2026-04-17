@@ -32,37 +32,49 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import ApacheAiravataLogo from "../assets/airavata-logo.png";
-import {Link, useNavigate} from "react-router";
-import {RxHamburgerMenu} from "react-icons/rx";
-import {IoClose} from "react-icons/io5";
-import {UserMenu} from "@/components/auth/UserMenu";
-import {useAuth} from "react-oidc-context";
+import { Link, useNavigate } from "react-router";
+import { RxHamburgerMenu } from "react-icons/rx";
+import { IoClose, IoEyeOffOutline } from "react-icons/io5";
+import { UserMenu } from "@/components/auth/UserMenu";
+import { useAuth } from "react-oidc-context";
+import { isAdmin } from "@/lib/util";
 
 const NAV_CONTENT = [
   {
     title: "Catalog",
     url: "/resources?resourceTypes=REPOSITORY%2CNOTEBOOK%2CDATASET%2CMODEL",
     needsAuth: false,
+    isAdminOnly: false,
   },
   {
     title: "Sessions",
     url: "/sessions",
     needsAuth: true,
+    isAdminOnly: false,
   },
   {
     title: "Add",
     url: "/add",
     needsAuth: true,
+    isAdminOnly: false,
   },
   {
     title: "Starred",
     url: "/resources/starred",
     needsAuth: true,
+    isAdminOnly: false,
   },
   {
     title: "Events",
     url: "/events",
     needsAuth: false,
+    isAdminOnly: false,
+  },
+  {
+    title: "Pending",
+    url: "/admin/pending-resources",
+    needsAuth: true,
+    isAdminOnly: true,
   },
   // {
   //   title: "Datasets",
@@ -85,94 +97,105 @@ const NAV_CONTENT = [
 interface NavLinkProps extends ButtonProps {
   title: string;
   url: string;
+  isAdminOnly: boolean;
 }
 
 const NavBar = () => {
-  const {open, onToggle} = useDisclosure();
+  const { open, onToggle } = useDisclosure();
   const navigate = useNavigate();
   const auth = useAuth();
 
   const filteredNavContent = NAV_CONTENT.filter((item) => {
-    if (item.needsAuth) {
+    if (item.isAdminOnly && !isAdmin(auth.user?.profile?.email || "")) {
+      return false;
+    } else if (item.needsAuth) {
       return auth.isAuthenticated;
     }
-    return true; // Show all items that do not require authentication
+    return true;
   });
 
-  const NavLink = ({title, url, ...props}: NavLinkProps) => (
-      <Button
-          variant="plain"
-          px={2}
-          _hover={{bg: "gray.200"}}
-          onClick={() => {
-            navigate(url);
-            onToggle();
-          }}
-          {...props}
-      >
-        <Text color="gray.700" fontSize="md" textAlign="left">
-          {title}
-        </Text>
-      </Button>
+  const NavLink = ({ title, url, isAdminOnly, ...props }: NavLinkProps) => (
+    <Button
+      variant="plain"
+      px={2}
+      _hover={{ bg: "gray.200" }}
+      color={isAdminOnly ? "blue.400" : "gray.700"}
+      onClick={() => {
+        navigate(url);
+        onToggle();
+      }}
+      {...props}
+    >
+      <Text fontSize="md" textAlign="left">
+        {title}
+      </Text>
+      {isAdminOnly && <IoEyeOffOutline size={16} title="Admin Only" />}
+    </Button>
   );
 
   return (
-      <Box position="sticky" top="0" zIndex="1000" bg="white" boxShadow="sm">
-        <Flex align="center" p={4}>
-          {/* Hamburger Menu (Mobile Only) */}
-          <IconButton
-              aria-label="Toggle Navigation"
-              display={{base: "inline-flex", md: "none"}}
-              onClick={onToggle}
-              variant="ghost"
-              mr={2}
+    <Box position="sticky" top="0" zIndex="1000" bg="white" boxShadow="sm">
+      <Flex align="center" p={4}>
+        {/* Hamburger Menu (Mobile Only) */}
+        <IconButton
+          aria-label="Toggle Navigation"
+          display={{ base: "inline-flex", md: "none" }}
+          onClick={onToggle}
+          variant="ghost"
+          mr={2}
+        >
+          {open ? <IoClose size={24} /> : <RxHamburgerMenu size={24} />}
+        </IconButton>
+
+        {/* Logo */}
+        <Link to="/">
+          <Image src={ApacheAiravataLogo} alt="Logo" boxSize="30px" />
+        </Link>
+
+        {/* Desktop Nav Links */}
+        <HStack ml={4} display={{ base: "none", md: "flex" }}>
+          {filteredNavContent.map((item) => (
+            <NavLink
+              key={item.title}
+              title={item.title}
+              url={item.url}
+              isAdminOnly={item.isAdminOnly}
+            />
+          ))}
+        </HStack>
+
+        <Spacer />
+
+        {/* User Profile */}
+        <UserMenu />
+      </Flex>
+
+      {/* Mobile Nav Links (Collapse) */}
+      <Collapsible.Root open={open}>
+        <Collapsible.Content>
+          <Stack
+            direction="column"
+            bg="white"
+            px={4}
+            pb={4}
+            spaceY={2}
+            display={{ md: "none" }}
           >
-            {open ? <IoClose size={24}/> : <RxHamburgerMenu size={24}/>}
-          </IconButton>
-
-          {/* Logo */}
-          <Link to="/">
-            <Image src={ApacheAiravataLogo} alt="Logo" boxSize="30px"/>
-          </Link>
-
-          {/* Desktop Nav Links */}
-          <HStack ml={4} display={{base: "none", md: "flex"}}>
             {filteredNavContent.map((item) => (
-                <NavLink key={item.title} title={item.title} url={item.url}/>
+              <Box key={item.title} w="100%">
+                <NavLink
+                  key={item.title}
+                  title={item.title}
+                  url={item.url}
+                  isAdminOnly={item.isAdminOnly}
+                  width="100%"
+                />
+              </Box>
             ))}
-          </HStack>
-
-          <Spacer/>
-
-          {/* User Profile */}
-          <UserMenu/>
-        </Flex>
-
-        {/* Mobile Nav Links (Collapse) */}
-        <Collapsible.Root open={open}>
-          <Collapsible.Content>
-            <Stack
-                direction="column"
-                bg="white"
-                px={4}
-                pb={4}
-                spaceY={2}
-                display={{md: "none"}}
-            >
-              {filteredNavContent.map((item) => (
-                  <Box key={item.title} w="100%">
-                    <NavLink
-                        key={item.title}
-                        title={item.title}
-                        url={item.url}
-                        width="100%"
-                    />
-                  </Box>
-              ))}
-            </Stack>
-          </Collapsible.Content>
-        </Collapsible.Root>
-      </Box>
+          </Stack>
+        </Collapsible.Content>
+      </Collapsible.Root>
+    </Box>
   );
 };
 

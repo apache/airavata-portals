@@ -17,32 +17,44 @@
  *  under the License.
  */
 
-import {ModelResource, Resource} from "@/interfaces/ResourceType";
-import {Tag} from "@/interfaces/TagType";
-import {isValidImaage, resourceTypeToColor} from "@/lib/util";
-import {Avatar, Badge, Box, Card, HStack, Image, Text,} from "@chakra-ui/react";
-import {ResourceTypeBadge} from "../resources/ResourceTypeBadge";
-import {ResourceTypeEnum} from "@/interfaces/ResourceTypeEnum";
-import {ModelCardButton} from "../models/ModelCardButton";
-import {useState} from "react";
-import {Link} from 'react-router';
-import {ResourceOptions} from "@/components/resources/ResourceOptions.tsx";
-import {PrivacyEnum} from "@/interfaces/PrivacyEnum.ts";
-import {PrivateResourceTooltip} from "@/components/resources/PrivateResourceTooltip.tsx";
+import { ModelResource, Resource } from "@/interfaces/ResourceType";
+import { Tag } from "@/interfaces/TagType";
+import { isValidImaage, resourceTypeToColor } from "@/lib/util";
+import {
+  Avatar,
+  Badge,
+  Box,
+  Card,
+  Flex,
+  HStack,
+  Image,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
+import { ResourceTypeBadge } from "../resources/ResourceTypeBadge";
+import { ResourceTypeEnum } from "@/interfaces/ResourceTypeEnum";
+import { ModelCardButton } from "../models/ModelCardButton";
+import { useState } from "react";
+import { Link } from "react-router";
+import { ResourceOptions } from "@/components/resources/ResourceOptions.tsx";
+import { PrivacyEnum } from "@/interfaces/PrivacyEnum.ts";
+import { PrivateResourceTooltip } from "@/components/resources/PrivateResourceTooltip.tsx";
+import { StatusEnum } from "@/interfaces/StatusEnum";
+import { MdOutlineVerifiedUser } from "react-icons/md";
+import { ResourceAuthor } from "@/interfaces/ResourceAuthor";
 
 export const ResourceCard = ({
-                               resource,
-                               size = "sm",
-                               deletable = true,
-                               removeOnUnStar = false,
-                             }: {
+  resource,
+  size = "sm",
+  deletable = true,
+  removeOnUnStar = false,
+}: {
   resource: Resource;
   size?: "sm" | "md" | "lg";
   deletable?: boolean;
   removeOnUnStar?: boolean;
 }) => {
   const [hideCard, setHideCard] = useState(false);
-  const author = resource.authors[0];
 
   const isValidImage = isValidImaage(resource.headerImage);
 
@@ -50,106 +62,130 @@ export const ResourceCard = ({
 
   const linkToWithType = `${resource.type}/${resource.id}`;
 
-  const link = '/resources/' + linkToWithType;
+  const link = "/resources/" + linkToWithType;
   const hideCardCallback = () => {
     setHideCard(true);
-  }
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const dummyOnUnStarSuccess = (_: string) => {
-  }
+  const dummyOnUnStarSuccess = (_: string) => {};
 
   const content = (
-      <Card.Root
-          overflow="hidden"
-          size={size}
-      >
-        {isValidImage && (
-            <Box position="relative" width="full">
-              <ResourceTypeBadge
-                  type={resource.type}
-                  position="absolute"
-                  top="2"
-                  left="2"
-                  zIndex="1"
-                  boxShadow="md"
-              />
+    <Card.Root overflow="hidden" size={size}>
+      {isValidImage && (
+        <Box position="relative" width="full">
+          <ResourceTypeBadge
+            type={resource.type}
+            position="absolute"
+            top="2"
+            left="2"
+            zIndex="1"
+            boxShadow="md"
+          />
 
-              {/* Full-width Image */}
-              <Image
-                  src={resource.headerImage}
-                  alt={resource.name}
-                  width="100%" // Ensure full width
-                  height="200px"
-                  objectFit="cover"
-              />
-            </Box>
-        )}
+          {/* Full-width Image */}
+          <Image
+            src={resource.headerImage}
+            alt={resource.name}
+            width="100%" // Ensure full width
+            height="200px"
+            objectFit="cover"
+          />
+        </Box>
+      )}
 
-        <Card.Header>
-          <HStack justifyContent={'space-between'} alignItems={'center'} flexWrap={'wrap'}>
-            <Card.Title>{resource.name}</Card.Title>
+      <Card.Header>
+        <HStack
+          justifyContent={"space-between"}
+          alignItems={"center"}
+          flexWrap={"wrap"}
+        >
+          <Card.Title>
+            <Text>{resource.name}</Text>
+          </Card.Title>
 
-            <HStack alignItems={'center'}>
-              {resource.privacy === PrivacyEnum.PRIVATE &&
-                  <PrivateResourceTooltip/>
+          <HStack alignItems={"center"}>
+            {resource.privacy === PrivacyEnum.PRIVATE && (
+              <PrivateResourceTooltip />
+            )}
+            <ResourceOptions
+              deleteable={deletable}
+              resource={resource}
+              onDeleteSuccess={hideCardCallback}
+              onUnStarSuccess={
+                removeOnUnStar ? hideCardCallback : dummyOnUnStarSuccess
               }
-              <ResourceOptions deleteable={deletable} resource={resource} onDeleteSuccess={hideCardCallback}
-                               onUnStarSuccess={removeOnUnStar ? hideCardCallback : dummyOnUnStarSuccess}/>
-            </HStack>
+            />
           </HStack>
-        </Card.Header>
+        </HStack>
+      </Card.Header>
 
-        <Link to={link} target={"_blank"}>
-          <Box
-              _hover={{bg: resourceTypeToColor(resource.type) + ".100"}}
-          >
-            <Card.Body gap="2">
+      <Link to={link} target={"_blank"}>
+        <Box _hover={{ bg: resourceTypeToColor(resource.type) + ".100" }}>
+          <Card.Body gap="2">
+            <Flex gap={1} alignItems="center">
               {!isValidImage && (
+                <ResourceTypeBadge type={resource.type} size="xs" />
+              )}
+
+              {resource.status === StatusEnum.VERIFIED && (
+                <Badge
+                  colorPalette="green"
+                  fontWeight="bold"
+                  px="2"
+                  py="1"
+                  borderRadius="md"
+                  size="xs"
+                >
+                  <MdOutlineVerifiedUser />
+                  Verified
+                </Badge>
+              )}
+            </Flex>
+
+            {/* Card Content */}
+            <HStack flexWrap="wrap">
+              {resource.tags.map((tag: Tag) => (
+                <Badge
+                  key={tag.id}
+                  size="md"
+                  rounded="md"
+                  colorPalette={resourceTypeToColor(resource.type)}
+                >
+                  {tag.value}
+                </Badge>
+              ))}
+            </HStack>
+            <Text color="fg.muted" lineClamp={2}>
+              {resource.description}
+            </Text>
+          </Card.Body>
+
+          <Card.Footer justifyContent="space-between" pt={4}>
+            <VStack alignItems={"flex-start"}>
+              {resource.authors.map((author: ResourceAuthor) => (
+                <HStack key={author.authorId}>
+                  <Avatar.Root shape="full" size="xs">
+                    <Avatar.Fallback name={author.authorId} />
+                    <Avatar.Image src={author.authorId} />
+                  </Avatar.Root>
+
                   <Box>
-                    <ResourceTypeBadge type={resource.type}/>
+                    <Text fontWeight="bold" fontSize={"sm"}>
+                      {author.authorId}
+                    </Text>
                   </Box>
-              )}
+                </HStack>
+              ))}
+            </VStack>
 
-              {/* Card Content */}
-              <HStack flexWrap="wrap">
-                {resource.tags.map((tag: Tag) => (
-                    <Badge
-                        key={tag.id}
-                        size="md"
-                        rounded="md"
-                        colorPalette={resourceTypeToColor(resource.type)}
-                    >
-                      {tag.value}
-                    </Badge>
-                ))}
-              </HStack>
-              <Text color="fg.muted" lineClamp={2}>
-                {resource.description}
-              </Text>
-            </Card.Body>
-
-            <Card.Footer justifyContent="space-between" pt={4}>
-              {author && (
-                  <HStack>
-                    <Avatar.Root shape="full" size="sm">
-                      <Avatar.Fallback name={author}/>
-                      <Avatar.Image src={author}/>
-                    </Avatar.Root>
-
-                    <Box>
-                      <Text fontWeight="bold">{author}</Text>
-                    </Box>
-                  </HStack>
-              )}
-
-              {(resource.type as ResourceTypeEnum) === ResourceTypeEnum.MODEL && (
-                  <ModelCardButton model={resource as ModelResource}/>
-              )}
-            </Card.Footer>
-          </Box>
-        </Link>
-      </Card.Root>
+            {(resource.type as ResourceTypeEnum) === ResourceTypeEnum.MODEL && (
+              <ModelCardButton model={resource as ModelResource} />
+            )}
+          </Card.Footer>
+        </Box>
+      </Link>
+    </Card.Root>
   );
 
   // if (clickable) {

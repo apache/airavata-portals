@@ -22,4 +22,5 @@ export const CONTROLLER = {
   hub: "/hub",
   resources: "/resources",
   sessions: "/sessions",
+  admin: "/admin"
 }

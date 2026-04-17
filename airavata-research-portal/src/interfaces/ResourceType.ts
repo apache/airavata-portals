@@ -1,7 +1,9 @@
-import { PrivacyEnum } from "./PrivacyEnum";
-import { ResourceTypeEnum } from "./ResourceTypeEnum";
-import { StatusEnum } from "./StatusEnum";
-import { Tag } from "./TagType";
+import {PrivacyEnum} from "./PrivacyEnum";
+import {ResourceTypeEnum} from "./ResourceTypeEnum";
+import {StatusEnum} from "./StatusEnum";
+import {Tag} from "./TagType";
+import {ResourceAuthor} from "@/interfaces/ResourceAuthor.ts";
+
 // import { User } from "./UserType";
 
 export interface Resource {
@@ -9,7 +11,7 @@ export interface Resource {
   name: string;
   description: string;
   headerImage: string;
-  authors: string[];
+  authors: ResourceAuthor[];
   tags: Tag[];
   status: StatusEnum;
   privacy: PrivacyEnum;
