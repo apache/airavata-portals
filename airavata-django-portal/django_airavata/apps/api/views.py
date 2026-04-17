@@ -366,6 +366,26 @@ class ProjectViewSet(viewsets.ViewSet):
         request.airavata_client.research.remove_project_admin(project_id, user_name)
         return Response(status=204)
 
+    @action(detail=True, methods=["get", "put"], url_path="resource_profile")
+    def resource_profile(self, request: Request, project_id: str | None = None) -> Response:
+        """GET or PUT the project's resource profile (ProjectResourceProfile).
+
+        GET → returns the existing profile, or 404 if none.
+        PUT → creates or updates the profile with the request body.
+        """
+        if request.method == "GET":
+            try:
+                profile = request.airavata_client.research.get_project_resource_profile(project_id)
+                if profile is None:
+                    return Response(status=status.HTTP_404_NOT_FOUND)
+                return Response(profile)
+            except Exception as e:
+                log.warning("Could not load resource profile for %s: %s", project_id, e)
+                return Response(status=status.HTTP_404_NOT_FOUND)
+        # PUT
+        request.airavata_client.research.update_project_resource_profile(project_id, request.data)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     @staticmethod
     def _update_most_recent_project(request: Request, project_id: str) -> None:
         prefs = helpers.WorkspacePreferencesHelper().get(request)

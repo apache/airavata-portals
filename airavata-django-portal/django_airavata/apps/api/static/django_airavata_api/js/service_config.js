@@ -402,6 +402,15 @@ export default {
         url: "/api/projects/<lookup>/admins/<user_name>/",
         requestType: "delete",
       },
+      resourceProfile: {
+        url: "/api/projects/<lookup>/resource_profile/",
+        requestType: "get",
+      },
+      updateResourceProfile: {
+        url: "/api/projects/<lookup>/resource_profile/",
+        requestType: "put",
+        bodyParams: { name: "data" },
+      },
     },
     queryParams: ["limit", "offset"],
     modelClass: Project,
