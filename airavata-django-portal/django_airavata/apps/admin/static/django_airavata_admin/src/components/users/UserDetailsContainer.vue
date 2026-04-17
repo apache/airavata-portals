@@ -15,13 +15,6 @@
         <strong>Change Username</strong> under the
         <strong>Troubleshooting</strong> tab to fix the user's username.
       </div>
-      <edit-groups-panel
-        v-if="iamUserProfile.airavata_user_profile_exists"
-        :value="localIAMUserProfile.groups"
-        :editable-groups="editableGroups"
-        :airavata-internal-user-id="iamUserProfile.airavata_internal_user_id"
-        @save="groupsUpdated"
-      />
       <user-profile-panel :iamUserProfile="iamUserProfile" />
       <extended-user-profile-panel :iamUserProfile="iamUserProfile" />
       <external-idp-user-info-panel
@@ -73,7 +66,6 @@ import ActivateUserPanel from "./ActivateUserPanel";
 import EnableUserPanel from "./EnableUserPanel";
 import DeleteUserPanel from "./DeleteUserPanel";
 import ChangeUsernamePanel from "./ChangeUsernamePanel.vue";
-import EditGroupsPanel from "./EditGroupsPanel.vue";
 import ExternalIDPUserInfoPanel from "./ExternalIDPUserInfoPanel.vue";
 import UserProfilePanel from "./UserProfilePanel.vue";
 import ExtendedUserProfilePanel from "./ExtendedUserProfilePanel.vue";
@@ -85,17 +77,12 @@ export default {
       type: models.IAMUserProfile,
       required: true,
     },
-    editableGroups: {
-      type: Array,
-      required: true,
-    },
   },
   components: {
     EnableUserPanel,
     DeleteUserPanel,
     ActivateUserPanel,
     ChangeUsernamePanel,
-    EditGroupsPanel,
     "external-idp-user-info-panel": ExternalIDPUserInfoPanel,
     UserProfilePanel,
     ExtendedUserProfilePanel,
@@ -108,12 +95,6 @@ export default {
   watch: {
     iamUserProfile(newValue) {
       this.localIAMUserProfile = newValue.clone();
-    },
-  },
-  methods: {
-    groupsUpdated(groups) {
-      this.localIAMUserProfile.groups = groups;
-      this.$emit("groups-updated", this.localIAMUserProfile);
     },
   },
   computed: {

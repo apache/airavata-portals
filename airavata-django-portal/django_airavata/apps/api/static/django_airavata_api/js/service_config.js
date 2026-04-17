@@ -14,7 +14,6 @@ import ExtendedUserProfileField from "./models/ExtendedUserProfileField";
 import ExtendedUserProfileValue from "./models/ExtendedUserProfileValue";
 import FullExperiment from "./models/FullExperiment";
 import GatewayResourceProfile from "./models/GatewayResourceProfile";
-import Group from "./models/Group";
 import GroupResourceProfile from "./models/GroupResourceProfile";
 import IAMUserProfile from "./models/IAMUserProfile";
 import LogRecord from "./models/LogRecord";
@@ -320,13 +319,6 @@ export default {
     url: "/api/group-resource-profiles/",
     viewSet: true,
     modelClass: GroupResourceProfile,
-  },
-  Groups: {
-    url: "/api/groups",
-    viewSet: true,
-    pagination: true,
-    queryParams: ["limit", "offset"],
-    modelClass: Group,
   },
   IAMUserProfiles: {
     url: "/api/iam-user-profiles",

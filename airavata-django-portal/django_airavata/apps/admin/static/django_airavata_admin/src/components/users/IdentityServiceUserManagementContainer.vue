@@ -29,9 +29,6 @@
               <template slot="cell(creation_time)" slot-scope="data">
                 <human-date :date="data.value" />
               </template>
-              <template slot="cell(groups)" slot-scope="data">
-                <group-membership-display :groups="data.item.groups" />
-              </template>
               <template slot="cell(action)" slot-scope="data">
                 <button class="btn"
                   v-if="data.item.user_has_write_access"
@@ -43,8 +40,6 @@
               <template slot="row-details" slot-scope="data">
                 <user-details-container
                   :iam-user-profile="data.item"
-                  :editable-groups="editableGroups"
-                  @groups-updated="groupsUpdated"
                   @enable-user="enableUser"
                   @delete-user="deleteUser"
                   @update-username="updateUsername(data.item, ...$event)"
@@ -67,14 +62,12 @@
 import { services } from "django-airavata-api";
 import { components } from "django-airavata-common-ui";
 import UserDetailsContainer from "./UserDetailsContainer.vue";
-import GroupMembershipDisplay from "./GroupMembershipDisplay";
 
 export default {
   name: "user-management-container",
   data() {
     return {
       usersPaginator: null,
-      allGroups: null,
       showingDetails: {},
       search: null,
     };
@@ -83,14 +76,10 @@ export default {
     pager: components.Pager,
     "human-date": components.HumanDate,
     UserDetailsContainer,
-    GroupMembershipDisplay,
   },
   created() {
     services.IAMUserProfileService.list({ limit: 10 }).then(
       (users) => (this.usersPaginator = users)
-    );
-    services.GroupService.list({ limit: -1 }).then(
-      (groups) => (this.allGroups = groups)
     );
   },
   computed: {
@@ -121,10 +110,6 @@ export default {
           key: "emailVerified",
         },
         {
-          label: "Groups",
-          key: "groups",
-        },
-        {
           label: "Created",
           key: "creation_time",
         },
@@ -144,11 +129,6 @@ export default {
           })
         : [];
     },
-    editableGroups() {
-      return this.allGroups
-        ? this.allGroups.filter((g) => g.is_admin || g.is_owner)
-        : [];
-    },
     currentOffset() {
       return this.usersPaginator ? this.usersPaginator.offset : 0;
     },
@@ -159,14 +139,6 @@ export default {
     },
     previous() {
       this.usersPaginator.previous();
-    },
-    groupsUpdated(user) {
-      services.IAMUserProfileService.update({
-        lookup: user.user_id,
-        data: user,
-      }).finally(() => {
-        this.reloadUserProfiles();
-      });
     },
     reloadUserProfiles() {
       const params = {

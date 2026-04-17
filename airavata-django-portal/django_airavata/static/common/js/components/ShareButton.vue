@@ -205,25 +205,9 @@ export default {
           )
         );
       }
-      if (
-        !this.entityId &&
-        (!this.sharedEntity || !this.sharedEntity.entity_id) &&
-        (!this.defaultGatewayUsersGroup ||
-          !this.adminsGroup ||
-          !this.readOnlyAdminsGroup)
-      ) {
-        promises.push(
-          services.GroupService.list({ limit: -1 }).then((groups) => {
-            this.groups = groups;
-            this.defaultGatewayUsersGroup = groups.find(
-              (g) => g.is_default_gateway_users_group
-            );
-            this.adminsGroup = groups.find((g) => g.is_gateway_admins_group);
-            this.readOnlyAdminsGroup = groups.find(
-              (g) => g.is_read_only_gateway_admins_group
-            );
-          })
-        );
+      // Group-based sharing has been deprecated; sharing is now user-level only.
+      if (!this.groups) {
+        this.groups = [];
       }
       if (this.parentEntityId) {
         promises.push(
@@ -348,9 +332,8 @@ export default {
           .then((users) => (this.users = users));
       }
       if (!this.groups) {
-        services.GroupService.list({ limit: -1 }).then((groups) => {
-          this.groups = groups;
-        });
+        // Group-based sharing is deprecated; user-level sharing only.
+        this.groups = [];
       }
       if (!this.bsModal) {
         this.bsModal = new Modal(this.$refs.sharingSettingsModal);

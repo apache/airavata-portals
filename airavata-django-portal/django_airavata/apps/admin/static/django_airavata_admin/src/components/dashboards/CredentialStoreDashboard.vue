@@ -9,9 +9,6 @@
         <button class="btn btn-primary btn-sm me-1" @click="showNewSSHCredentialModal">
           <i class="fa fa-plus me-1"></i>Create New
         </button>
-        <button class="btn btn-outline-secondary btn-sm" v-if="userIsAdmin" @click="showNewSharedSSHCredentialModel">
-          <i class="fa fa-plus me-1"></i>Gateway Credential
-        </button>
       </div>
     </div>
 
@@ -61,12 +58,11 @@
     </div>
 
     <new-ssh-credential-modal ref="newSSHCredentialModal" @new="createNewSSHCredential" />
-    <new-shared-ssh-credential-modal ref="newSharedSSHCredentialModal" @new="createNewSharedSSHCredential" />
   </div>
 </template>
 
 <script>
-import { models, services, session } from "django-airavata-api";
+import { services, session } from "django-airavata-api";
 import { components } from "django-airavata-common-ui";
 import NewSSHCredentialModal from "../credentials/NewSSHCredentialModal.vue";
 
@@ -76,7 +72,6 @@ export default {
     "human-date": components.HumanDate,
     "clipboard-copy-link": components.ClipboardCopyLink,
     "new-ssh-credential-modal": NewSSHCredentialModal,
-    "new-shared-ssh-credential-modal": NewSSHCredentialModal,
     "share-button": components.ShareButton,
   },
   created() {
@@ -85,9 +80,7 @@ export default {
   data() {
     return {
       sshKeys: [],
-      userIsAdmin: session.Session.is_gateway_admin,
       currentUsername: session.Session.username,
-      adminsGroup: null,
     };
   },
   methods: {
@@ -107,30 +100,6 @@ export default {
     },
     deleteSSHCredential(cred) {
       services.CredentialSummaryService.delete({ lookup: cred.token }).then(() => this.fetchSSHKeys());
-    },
-    showNewSharedSSHCredentialModel() {
-      if (!this.adminsGroup) {
-        services.GroupService.list({ limit: -1 }).then((groups) => {
-          this.adminsGroup = groups.filter((g) => g.is_gateway_admins_group)[0];
-          this.$refs.newSharedSSHCredentialModal.show();
-        });
-      } else {
-        this.$refs.newSharedSSHCredentialModal.show();
-      }
-    },
-    createNewSharedSSHCredential(data) {
-      services.CredentialSummaryService.createSSH({ data }).then((cred) => {
-        const sharedEntity = new models.SharedEntity();
-        services.UserProfileService.retrieve({ lookup: session.Session.username }).then((userProfile) => {
-          sharedEntity.owner = userProfile;
-          sharedEntity.is_owner = session.Session.username == sharedEntity.owner.user_id;
-          sharedEntity.addGroup({
-            group: this.adminsGroup,
-            permissionType: models.ResourcePermissionType.MANAGE_SHARING,
-          });
-          services.SharedEntityService.merge({ data: sharedEntity, lookup: cred.token }).then(() => this.fetchSSHKeys());
-        });
-      });
     },
   },
 };

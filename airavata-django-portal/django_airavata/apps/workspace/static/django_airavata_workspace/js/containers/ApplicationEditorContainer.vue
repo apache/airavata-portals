@@ -554,16 +554,9 @@ export default {
       );
     },
     loadGroups() {
-      return services.GroupService.list()
-        .then((response) => {
-          const groups = response && response.results ? response.results : response;
-          if (Array.isArray(groups)) {
-            this.defaultGatewayUsersGroup = groups.find(
-              (g) => g.is_default_gateway_users_group
-            );
-          }
-        })
-        .catch(() => {});
+      // Group-based gateway sharing has been deprecated.
+      this.defaultGatewayUsersGroup = null;
+      return Promise.resolve();
     },
     loadModuleSharedEntity() {
       if (!this.appModuleId) return Promise.resolve(null);
