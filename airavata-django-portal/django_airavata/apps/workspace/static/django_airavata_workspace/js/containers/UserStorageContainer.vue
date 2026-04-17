@@ -20,11 +20,17 @@
         </div>
         <table v-else class="table table-hover table-sm mb-0">
           <thead>
-            <tr><th>Name</th><th class="text-nowrap" style="width:1%">Actions</th></tr>
+            <tr>
+              <th>Name</th>
+              <th class="text-nowrap">Type</th>
+              <th class="text-nowrap">Owner</th>
+              <th class="text-nowrap">Status</th>
+              <th class="text-nowrap" style="width:1%">Actions</th>
+            </tr>
           </thead>
           <tbody class="align-middle">
             <tr v-if="storageList.length === 0">
-              <td colspan="2">
+              <td colspan="5">
                 <div class="text-center text-muted py-4">
                   <i class="fa fa-hdd mb-2" style="font-size:2rem;"></i>
                   <div><strong>No storage resources configured</strong></div>
@@ -32,17 +38,22 @@
                 </div>
               </td>
             </tr>
-            <tr v-for="storage in storageList" :key="storage.id">
+            <tr v-for="storage in storageList" :key="storage.id" @click="navigateToStorage(storage)" style="cursor: pointer">
               <td>
-                <a :href="'/resources/storage/' + storage.id + '/'" class="text-decoration-none">
-                  <strong>{{ storage.name }}</strong>
-                </a>
+                <i class="fa fa-hdd me-2 text-muted"></i>
+                <strong>{{ storage.name }}</strong>
               </td>
-              <td class="text-nowrap">
+              <td><span class="badge bg-secondary">SFTP</span></td>
+              <td>
+                <span class="fw-medium text-muted">gateway</span>
+                <span class="badge bg-primary ms-1">Gateway</span>
+              </td>
+              <td>
+                <span class="badge bg-success" v-if="storage.enabled">Enabled</span>
+                <span class="badge bg-secondary" v-else>Disabled</span>
+              </td>
+              <td class="text-nowrap" style="width:1%" @click.stop>
                 <div class="d-flex gap-2 justify-content-end flex-nowrap">
-                  <a :href="'/resources/storage/' + storage.id + '/'" class="btn btn-outline-primary btn-pill">
-                    <i class="fa fa-cog me-1"></i>Details
-                  </a>
                   <a :href="'/resources/storage/' + storage.id + '/tree'" class="btn btn-outline-secondary btn-pill">
                     <i class="fa fa-folder-open me-1"></i>Files
                   </a>
@@ -98,6 +109,9 @@ export default {
     };
   },
   methods: {
+    navigateToStorage(storage) {
+      window.location.href = '/resources/storage/' + storage.id + '/';
+    },
     showRegisterModal() {
       this.newHostName = "";
       new Modal(this.$refs.registerModal).show();
@@ -125,8 +139,12 @@ export default {
     async loadStorageResources() {
       this.loading = true;
       try {
-        const names = await services.StorageResourceService.names();
-        this.storageList = Object.entries(names).map(([id, name]) => ({ id, name }));
+        const resources = await services.StorageResourceService.list();
+        this.storageList = (resources || []).map((r) => ({
+          id: r.storage_resource_id,
+          name: r.host_name,
+          enabled: !!r.enabled,
+        }));
       } catch {
         this.storageList = [];
       }

@@ -430,7 +430,7 @@ export default {
   },
   StorageResources: {
     url: "/api/storage-resources",
-    viewSet: ["retrieve", "create", "update", "delete"],
+    viewSet: ["list", "retrieve", "create", "update", "delete"],
     methods: {
       names: {
         url: "/api/storage-resources/all_names/",
