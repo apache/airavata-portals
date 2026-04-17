@@ -36,11 +36,14 @@ def email_user_added_to_group(sender, user, groups, request, **kwargs):
 
 @receiver(user_logged_in, dispatch_uid="auth_initialize_user_profile")
 def initialize_user_profile(sender, request, user, **kwargs):
-    """Initialize user profile in Airavata in case this is a new user."""
-    # NOTE: if the user verified their email address then they should already
-    # have an Airavata user profile (See IAMAdminServices.enableUser). The
-    # following is necessary for users coming from federated login who don't
-    # need to verify their email.
+    """Register a UserProfile in the Airavata IAM registry on first login.
+
+    Portal user identity comes from Keycloak; the Airavata server maintains a
+    separate UserProfile row for API-level authorization. This handler is
+    idempotent: it checks `does_user_exist` and returns early if the profile
+    already exists. Must run before `provision_user_projects` so that
+    downstream SearchProjects calls (which validate user-exists) succeed.
+    """
     if request.authz_token is None:
         log.warning(f"Logged in user {user.username} has no access token")
         return
@@ -51,12 +54,25 @@ def initialize_user_profile(sender, request, user, **kwargs):
         if not user.user_profile.is_complete:
             log.info(f"user profile not complete for {user.username}, skipping initializing Airavata user profile")
             return
-        iam_client.initialize_user_profile()
+        from airavata_sdk.generated.org.apache.airavata.model.user.user_profile_pb2 import (
+            Status,
+            UserProfile,
+        )
+        profile = UserProfile(
+            user_model_version="1.0.0",
+            user_id=user.username,
+            gateway_id=settings.GATEWAY_ID,
+            emails=[user.email] if user.email else [],
+            first_name=user.first_name or "",
+            last_name=user.last_name or "",
+            state=Status.ACTIVE,
+        )
+        iam_client.add_user_profile(profile)
         log.info(f"initialized user profile for {user.username}")
         utils.send_new_user_email(request, user.username, user.email, user.first_name, user.last_name)
         log.info(f"sent new user email for user {user.username}")
-    except (AttributeError, Exception) as e:
-        log.warning(f"initialize_user_profile failed (IAM RPC may be unimplemented); skipping: {e}")
+    except Exception as e:
+        log.warning(f"initialize_user_profile failed for {user.username}: {e}")
 
 
 @receiver(user_logged_in, dispatch_uid="auth_project_auto_provisioning")
@@ -134,14 +150,43 @@ def _airavata_rest_base_url():
 
 
 def _ensure_gateway_membership(access_token, username):
-    """Find the system Gateway project and add `username` as a member. Idempotent."""
+    """Self-enrol the caller into all system projects of their gateway.
+
+    Calls the server's ``JoinSystemProjects`` RPC (exposed at
+    ``POST /api/v1/projects/join-system``). The server looks up all projects
+    flagged ``is_system=true`` in the caller's gateway and inserts
+    PROJECT_MEMBER rows idempotently. Self-service — no admin permission
+    required — because the caller can only enrol themselves.
+    """
+    import json as _json
+    base = _airavata_rest_base_url()
+    # Armeria's HTTP/JSON transcoding path strips to gRPC, so the GrpcAuthInterceptor
+    # looks for identity in the x-claims header (not the JWT). Pass userName +
+    # gatewayID there so the server-side RequestContext is populated.
+    claims = _json.dumps({"userName": username, "gatewayID": settings.GATEWAY_ID})
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "x-claims": claims,
+    }
+    join_url = f"{base}/api/v1/projects/join-system"
+    try:
+        resp = requests.post(join_url, json={}, headers=headers, timeout=10)
+    except requests.RequestException as e:
+        log.warning(f"join_system_projects HTTP error for {username}: {e}")
+        return
+    if resp.status_code in (200, 204):
+        log.info(f"Enrolled {username} into system projects for gateway {settings.GATEWAY_ID}")
+    else:
+        log.warning(
+            f"join_system_projects returned {resp.status_code} for {username}: {resp.text[:200]}"
+        )
+    return
+
+
+def _ensure_gateway_membership_legacy_unused(access_token, username):  # noqa: F401 - kept for reference
+    """Legacy — replaced by the server-side JoinSystemProjects RPC. Not called."""
     base = _airavata_rest_base_url()
     headers = {"Authorization": f"Bearer {access_token}"}
-
-    # Look up the Gateway project via SearchProjects filtered by PROJECT_NAME.
-    # The server returns all projects accessible to the caller that match; we then
-    # pick the one flagged is_system + named "Gateway" to avoid collision with a
-    # user who happens to own a project called "Gateway".
     search_url = f"{base}/api/v1/projects"
     try:
         resp = requests.get(
