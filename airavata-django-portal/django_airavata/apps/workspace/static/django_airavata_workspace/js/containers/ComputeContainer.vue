@@ -40,10 +40,10 @@
                 </div>
               </td>
             </tr>
-            <tr v-for="resource in computeResources" :key="resource.id">
+            <tr v-for="resource in computeResources" :key="resource.id" @click="navigateToResource(resource)" style="cursor: pointer">
               <td>
                 <i class="fa fa-server me-2 text-muted"></i>
-                <a :href="'/resources/compute/' + resource.id" class="text-decoration-none"><strong>{{ resource.name }}</strong></a>
+                <strong>{{ resource.name }}</strong>
               </td>
               <td><span class="badge bg-secondary">HPC</span></td>
               <td>
@@ -54,11 +54,8 @@
                 <span class="badge bg-success" v-if="resource.enabled">Enabled</span>
                 <span class="badge bg-secondary" v-else>Disabled</span>
               </td>
-              <td class="text-nowrap" style="width: 1%">
+              <td class="text-nowrap" style="width: 1%" @click.stop>
                 <div class="d-flex gap-2 justify-content-end flex-nowrap">
-                  <a :href="'/resources/compute/' + resource.id" class="btn btn-outline-primary btn-pill">
-                    <i class="fa fa-eye me-1"></i>View
-                  </a>
                   <button type="button" class="btn btn-outline-danger btn-pill" @click="confirmDelete(resource)">
                     <i class="fa fa-trash me-1"></i>Delete
                   </button>
@@ -180,6 +177,9 @@ export default {
         this.registerError = e?.message || "Failed to register compute resource. Please try again.";
       }
       this.registering = false;
+    },
+    navigateToResource(resource) {
+      window.location.href = '/resources/compute/' + resource.id;
     },
     async confirmDelete(resource) {
       if (!window.confirm(`Delete compute resource "${resource.name}"? This action cannot be undone.`)) {

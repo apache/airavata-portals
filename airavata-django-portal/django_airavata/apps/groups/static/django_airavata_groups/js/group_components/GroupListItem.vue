@@ -1,5 +1,5 @@
 <template>
-  <tr>
+  <tr @click="navigate" :style="navigable ? 'cursor: pointer' : ''">
     <td>
       {{ group.name }}
       <gateway-groups-badge
@@ -17,19 +17,12 @@
       <span class="badge bg-primary ms-1" v-else-if="isAdmin">Admin</span>
     </td>
     <td>{{ group.description }}</td>
-    <td class="text-nowrap" style="width: 1%">
-      <a
-        v-if="group.is_owner || group.is_admin"
-        class="action-link"
-        :href="'/resources/sharing/edit/' + encodeURIComponent(group.id) + '/'"
-      >
-        Edit <i class="fa fa-edit"></i>
-      </a>
+    <td class="text-nowrap" style="width: 1%" @click.stop>
       <a
         href="#"
         v-if="deleteable"
         class="action-link"
-        @click="show = true"
+        @click.prevent="show = true"
         :variant="deleteButtonVariant"
       >
         Delete <i class="fa fa-trash"></i>
@@ -80,6 +73,9 @@ export default {
     "gateway-groups-badge": components.GatewayGroupsBadge,
   },
   computed: {
+    navigable() {
+      return this.group.is_owner || this.group.is_admin;
+    },
     deleteable: function () {
       return (
         this.group.is_owner &&
@@ -106,6 +102,10 @@ export default {
     },
   },
   methods: {
+    navigate() {
+      if (!this.navigable) return;
+      window.location.href = '/resources/sharing/edit/' + encodeURIComponent(this.group.id) + '/';
+    },
     deleteGroup(id) {
       this.deleting = true;
       services.GroupService.delete({ lookup: id })

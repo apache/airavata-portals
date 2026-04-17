@@ -1,8 +1,8 @@
 <template>
-  <tr>
+  <tr @click="navigate" style="cursor: pointer">
     <td>
       <i class="fa fa-folder me-2 text-muted"></i>
-      <a :href="overviewLink" class="text-decoration-none"><strong>{{ project.name }}</strong></a>
+      <strong>{{ project.name }}</strong>
     </td>
     <td>
       <span class="fw-medium">{{ ownerUsername }}</span>
@@ -10,7 +10,7 @@
       <span class="badge bg-primary ms-1" v-else-if="isAdmin">Admin</span>
     </td>
     <td class="text-nowrap" v-bind:title="project.creation_time">{{ creationTime }}</td>
-    <td class="text-nowrap" style="width: 1%">
+    <td class="text-nowrap" style="width: 1%" @click.stop>
       <div class="d-flex gap-2 justify-content-end flex-nowrap">
         <button type="button" class="btn btn-outline-danger btn-pill" @click="$emit('delete', project)">
           <i class="fa fa-trash me-1" aria-hidden="true"></i>Delete
@@ -29,6 +29,11 @@ export default {
   name: "project-list-item",
   props: ["project"],
   emits: ["delete"],
+  methods: {
+    navigate() {
+      window.location.href = this.overviewLink;
+    },
+  },
   computed: {
     creationTime: function () {
       var dt = new Date(this.project.creation_time);

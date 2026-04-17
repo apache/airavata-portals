@@ -42,17 +42,15 @@
                 </div>
               </td>
             </tr>
-            <tr v-for="item in allApplicationData" :key="item.appModule.app_module_id">
-              <td>
+            <tr v-for="item in allApplicationData" :key="item.appModule.app_module_id" @click="navigateToApp(item.appModule)" style="cursor: pointer">
+              <td @click.stop>
                 <a href="#" @click.prevent="toggleFavorite(item.appModule)" :title="isFavorite(item.appModule) ? 'Remove from favorites' : 'Add to favorites'">
                   <i :class="isFavorite(item.appModule) ? 'fa fa-star text-warning' : 'far fa-star text-muted'"></i>
                 </a>
               </td>
               <td>
                 <i class="fa fa-cube me-2 text-muted"></i>
-                <a :href="editUrl(item.appModule)" class="text-decoration-none" :class="{ 'text-muted': item.disabled }">
-                  <strong>{{ item.appModule.app_module_name }}</strong>
-                </a>
+                <strong :class="{ 'text-muted': item.disabled }">{{ item.appModule.app_module_name }}</strong>
               </td>
               <td>
                 <span v-if="item.appModule.app_module_version" class="badge bg-secondary">{{ item.appModule.app_module_version }}</span>
@@ -63,7 +61,7 @@
                 <span class="badge bg-primary ms-1">Admin</span>
               </td>
               <td class="text-muted">{{ truncate(item.appModule.app_module_description, 60) }}</td>
-              <td class="text-nowrap" style="width: 1%">
+              <td class="text-nowrap" style="width: 1%" @click.stop>
                 <div class="d-flex gap-2 justify-content-end flex-nowrap">
                   <a :href="runExperimentUrl(item.appModule)" class="btn btn-outline-primary btn-pill" v-if="!item.disabled" title="Run experiment">
                     <i class="fa fa-play me-1"></i>Run Experiment
@@ -133,6 +131,9 @@ export default {
     },
     editUrl(appModule) {
       return "/workspace/applications/" + appModule.app_module_id + "/";
+    },
+    navigateToApp(appModule) {
+      window.location.href = this.editUrl(appModule);
     },
     runExperimentUrl(appModule) {
       return "/workspace/applications/" + appModule.app_module_id + "/create_experiment";
