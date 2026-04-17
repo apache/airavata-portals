@@ -4,8 +4,6 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from django.conf import settings
-from google.protobuf.json_format import MessageToDict
 from django.contrib.auth import logout
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
@@ -38,23 +36,47 @@ def authz_token_middleware(
     return middleware
 
 
-def set_admin_group_attributes(request: Any, gateway_groups: Any = None) -> None:
-    """Set is_gateway_admin and is_read_only_gateway_admin request attrs."""
-    if gateway_groups is None:
-        gateway_groups = request.airavata_client.compute.get_gateway_groups()
-    admins_group_id = (
-        gateway_groups.get("adminsGroupId") if isinstance(gateway_groups, dict) else gateway_groups.admins_group_id
-    )
-    read_only_admins_group_id = (
-        gateway_groups.get("readOnlyAdminsGroupId")
-        if isinstance(gateway_groups, dict)
-        else gateway_groups.read_only_admins_group_id
-    )
-    airavata_internal_user_id = request.user.username + "@" + settings.GATEWAY_ID
-    group_memberships = request.airavata_client.sharing.gm_get_all_groups_user_belongs(airavata_internal_user_id)
-    group_ids = [group.id for group in group_memberships]
-    request.is_gateway_admin = admins_group_id in group_ids
-    request.is_read_only_gateway_admin = read_only_admins_group_id in group_ids
+def set_admin_group_attributes(request, gateway_groups=None):
+    """Set request.is_gateway_admin / request.is_read_only_gateway_admin from JWT realm roles.
+
+    The legacy implementation called the sharing service to look up groups; that
+    path raised AttributeError on unauthenticated requests. Now we read realm
+    roles directly from the Keycloak JWT (claim: realm_access.roles).
+    """
+    realm_roles = _extract_realm_roles(request)
+    request.is_gateway_admin = "gateway-admin" in realm_roles
+    request.is_read_only_gateway_admin = "gateway-readonly-admin" in realm_roles
+
+
+def _extract_realm_roles(request):
+    """Return a set of realm roles from the user's JWT (or empty if unavailable)."""
+    import base64
+    import json
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        token = None
+        authz = getattr(request, "authz_token", None)
+        if authz:
+            if isinstance(authz, dict):
+                token = authz.get("accessToken")
+            else:
+                token = getattr(authz, "accessToken", None) or getattr(authz, "access_token", None)
+        if not token and hasattr(request, "session"):
+            token = request.session.get("ACCESS_TOKEN")
+        if not token:
+            return set()
+        parts = token.split(".")
+        if len(parts) != 3:
+            return set()
+        pad = "=" * (-len(parts[1]) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(parts[1] + pad))
+        realm_access = payload.get("realm_access") or {}
+        roles = realm_access.get("roles") or []
+        return set(roles)
+    except Exception as e:
+        logger.debug("Could not extract realm roles: %s", e)
+        return set()
 
 
 def gateway_groups_middleware(
@@ -75,15 +97,9 @@ def gateway_groups_middleware(
             return get_response(request)
 
         try:
-            # Load the GatewayGroups and check if user is in the Admins and/or
-            # Read Only Admins groups
-            if not request.session.get("GATEWAY_GROUPS"):
-                gateway_groups = request.airavata_client.compute.get_gateway_groups()
-                gateway_groups_dict = MessageToDict(
-                    gateway_groups, preserving_proto_field_name=False
-                )
-                request.session["GATEWAY_GROUPS"] = gateway_groups_dict
-            set_admin_group_attributes(request, gateway_groups=request.session.get("GATEWAY_GROUPS"))
+            # Admin flags are now derived from Keycloak JWT realm roles;
+            # no call to the sharing/compute services is needed.
+            set_admin_group_attributes(request)
             # Gateway Admins are made 'superuser' in Django so they can edit
             # pages in the CMS
             if request.is_gateway_admin and (not request.user.is_superuser or not request.user.is_staff):
