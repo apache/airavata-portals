@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_airavata.apps.auth.apps.AuthConfig",
     "django_airavata.apps.workspace.apps.WorkspaceConfig",
+    "django_airavata.apps.resources.apps.ResourcesConfig",
     "rest_framework",
     "django_airavata.apps.api.apps.ApiConfig",
     "django_airavata.apps.dataparsers.apps.DataParsersConfig",
