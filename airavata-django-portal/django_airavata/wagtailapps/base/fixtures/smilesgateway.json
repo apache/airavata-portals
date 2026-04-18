@@ -4382,7 +4382,6 @@
     "pk": "admin",
     "fields": {
         "most_recent_project_id": "Default_Project_6dfb2fc3-bcac-4b33-95eb-b99d027ac22b",
-        "most_recent_group_resource_profile_id": null,
         "most_recent_compute_resource_id": null
     }
 },
@@ -4391,7 +4390,6 @@
     "pk": "aflood@indiana.edu",
     "fields": {
         "most_recent_project_id": "Default_Project_f111e9b1-caab-4985-8b7a-22ea13395de9",
-        "most_recent_group_resource_profile_id": "75b18870-782b-40ad-ae5d-0f2b419ecf2a",
         "most_recent_compute_resource_id": "Bridges2_2f297e9d-fe9e-4edb-af0d-ec3ad43241e9"
     }
 },
@@ -4400,7 +4398,6 @@
     "pk": "asanabhavesh@gmail.com",
     "fields": {
         "most_recent_project_id": "Default_Project_7b197333-cd4b-425e-af98-6b9437f31231",
-        "most_recent_group_resource_profile_id": "75b18870-782b-40ad-ae5d-0f2b419ecf2a",
         "most_recent_compute_resource_id": null
     }
 },
@@ -4409,7 +4406,6 @@
     "pk": "codexpotech1990",
     "fields": {
         "most_recent_project_id": "Default_Project_f3836755-eb77-4274-8c30-08840a15c1a9",
-        "most_recent_group_resource_profile_id": null,
         "most_recent_compute_resource_id": null
     }
 },
@@ -4418,7 +4414,6 @@
     "pk": "eabeysin@iu.edu",
     "fields": {
         "most_recent_project_id": "Default_Project_0ce6a451-5e7f-4dad-874c-7801e2f6a1a9",
-        "most_recent_group_resource_profile_id": null,
         "most_recent_compute_resource_id": null
     }
 },
@@ -4427,7 +4422,6 @@
     "pk": "jch12@iu.edu",
     "fields": {
         "most_recent_project_id": "Default_Project_ae05763f-ac27-46ff-bc23-9e0469a7f1bd",
-        "most_recent_group_resource_profile_id": null,
         "most_recent_compute_resource_id": null
     }
 },
@@ -4436,7 +4430,6 @@
     "pk": "jojesu@iu.edu",
     "fields": {
         "most_recent_project_id": "Default_Project_4b3b06b2-114f-42f9-a084-4546e5fdf8ca",
-        "most_recent_group_resource_profile_id": "75b18870-782b-40ad-ae5d-0f2b419ecf2a",
         "most_recent_compute_resource_id": null
     }
 },
@@ -4445,7 +4438,6 @@
     "pk": "lahiruj.jayathilake@gmail.com",
     "fields": {
         "most_recent_project_id": "Default_Project_876df7fe-4d75-4687-97ed-33210ab9925b",
-        "most_recent_group_resource_profile_id": "75b18870-782b-40ad-ae5d-0f2b419ecf2a",
         "most_recent_compute_resource_id": "Bridges2_2f297e9d-fe9e-4edb-af0d-ec3ad43241e9"
     }
 },
@@ -4454,7 +4446,6 @@
     "pk": "lahirujayathilake@gmail.com",
     "fields": {
         "most_recent_project_id": "Default_Project_26a180b2-810b-4684-9f56-70cd4d1c3fdb",
-        "most_recent_group_resource_profile_id": "75b18870-782b-40ad-ae5d-0f2b419ecf2a",
         "most_recent_compute_resource_id": null
     }
 },
@@ -4463,7 +4454,6 @@
     "pk": "lovelesm@iu.edu",
     "fields": {
         "most_recent_project_id": "Default_Project_3609be0b-fa3c-4fe7-ace2-5f82364f739c",
-        "most_recent_group_resource_profile_id": "75b18870-782b-40ad-ae5d-0f2b419ecf2a",
         "most_recent_compute_resource_id": "Bridges2_2f297e9d-fe9e-4edb-af0d-ec3ad43241e9"
     }
 },
@@ -4472,7 +4462,6 @@
     "pk": "machrist@iu.edu",
     "fields": {
         "most_recent_project_id": "Default_Project_fb7ad731-8c7c-468f-8ecf-716a896f4100",
-        "most_recent_group_resource_profile_id": null,
         "most_recent_compute_resource_id": null
     }
 },
@@ -4481,7 +4470,6 @@
     "pk": "mche@iu.edu",
     "fields": {
         "most_recent_project_id": "Default_Project_094a9713-83c2-4f3a-bdac-6a06a2633f82",
-        "most_recent_group_resource_profile_id": "75b18870-782b-40ad-ae5d-0f2b419ecf2a",
         "most_recent_compute_resource_id": "Bridges2_2f297e9d-fe9e-4edb-af0d-ec3ad43241e9"
     }
 },
@@ -4490,7 +4478,6 @@
     "pk": "pamidigs@iu.edu",
     "fields": {
         "most_recent_project_id": "Default_Project_e20ca53b-37ac-4108-ac5a-b560684a1cfa",
-        "most_recent_group_resource_profile_id": "75b18870-782b-40ad-ae5d-0f2b419ecf2a",
         "most_recent_compute_resource_id": "expanse_34f71d6b-765d-4bff-be2e-30a74f5c8c32"
     }
 },
@@ -4499,7 +4486,6 @@
     "pk": "scamicha@iu.edu",
     "fields": {
         "most_recent_project_id": "Default_Project_accaebe6-9a91-478e-81b3-5b4040c1370a",
-        "most_recent_group_resource_profile_id": null,
         "most_recent_compute_resource_id": null
     }
 },
@@ -4508,7 +4494,6 @@
     "pk": "slevy39@gatech.edu",
     "fields": {
         "most_recent_project_id": "Default_Project_fb8db1c9-7f03-4b79-8c1b-6d2fd92c454c",
-        "most_recent_group_resource_profile_id": "75b18870-782b-40ad-ae5d-0f2b419ecf2a",
         "most_recent_compute_resource_id": null
     }
 },
@@ -4517,7 +4502,6 @@
     "pk": "smarru@iu.edu",
     "fields": {
         "most_recent_project_id": "Default_Project_bbceebc8-d8db-4cbe-804b-4423ee6e686c",
-        "most_recent_group_resource_profile_id": null,
         "most_recent_compute_resource_id": null
     }
 },
@@ -4526,7 +4510,6 @@
     "pk": "spamidig",
     "fields": {
         "most_recent_project_id": "Default_Project_f7c52380-9537-4eac-89d7-53d058df60b5",
-        "most_recent_group_resource_profile_id": "75b18870-782b-40ad-ae5d-0f2b419ecf2a",
         "most_recent_compute_resource_id": "Bridges2_2f297e9d-fe9e-4edb-af0d-ec3ad43241e9"
     }
 },
@@ -4535,7 +4518,6 @@
     "pk": "xz106@iu.edu",
     "fields": {
         "most_recent_project_id": "Default_Project_664d3ca9-43e5-47d7-a832-9828dbf0312e",
-        "most_recent_group_resource_profile_id": null,
         "most_recent_compute_resource_id": null
     }
 },

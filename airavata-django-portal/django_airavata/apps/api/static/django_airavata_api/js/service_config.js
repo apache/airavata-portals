@@ -313,8 +313,8 @@ export default {
     },
     modelClass: GatewayResourceProfile,
   },
-  GroupResourceProfiles: {
-    url: "/api/group-resource-profiles/",
+  ProjectResourceProfiles: {
+    url: "/api/project-resource-profiles/",
     viewSet: true,
   },
   IAMUserProfiles: {

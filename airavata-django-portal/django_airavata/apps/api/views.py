@@ -1154,20 +1154,21 @@ class UserProfileViewSet(viewsets.ViewSet):
         return Response(proto_to_dict(profile))
 
 
-class GroupResourceProfileViewSet(viewsets.ViewSet):
+class ProjectResourceProfileViewSet(viewsets.ViewSet):
     """Stub endpoint kept for legacy Vue callers (experiment editor, etc.).
 
-    The server-side GroupResourceProfile API was removed in favour of
-    Project.resource_profile. ``list`` returns an empty collection so that
-    callers degrade gracefully; detail operations 404.
+    The flat GroupResourceProfile API was replaced by the per-project
+    resource profile on ``ProjectViewSet.resource_profile``. This viewset
+    returns an empty list so legacy JS clients degrade gracefully; detail
+    operations 404.
     """
 
-    lookup_field = "group_resource_profile_id"
+    lookup_field = "project_resource_profile_id"
 
     def list(self, request: Request) -> Response:
         return Response([])
 
-    def retrieve(self, request: Request, group_resource_profile_id: str | None = None) -> Response:
+    def retrieve(self, request: Request, project_resource_profile_id: str | None = None) -> Response:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 
@@ -1848,7 +1849,6 @@ class WorkspacePreferencesView(APIView):
         wp = helper.get(request)
         data = {
             "most_recent_project_id": wp.most_recent_project_id,
-            "most_recent_group_resource_profile_id": wp.most_recent_group_resource_profile_id,
             "most_recent_compute_resource_id": wp.most_recent_compute_resource_id,
             "default_project_created": wp.default_project_created,
             "application_preferences": [

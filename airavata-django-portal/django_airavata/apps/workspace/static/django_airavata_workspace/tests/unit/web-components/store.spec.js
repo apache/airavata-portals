@@ -213,12 +213,12 @@ test("initializeGroupResourceProfileId: set to most recent group resource profil
   const state = {};
   state.experiment = new models.Experiment();
   state.workspacePreferences = new models.WorkspacePreferences();
-  state.workspacePreferences.most_recent_group_resource_profile_id =
+  state.workspacePreferences.most_recent_project_resource_profile_id =
     "ec50a69d-54ea-4b7c-a578-9a2a8da09ba0";
   state.groupResourceProfiles = [
     new models.GroupResourceProfile({
       groupResourceProfileId:
-        state.workspacePreferences.most_recent_group_resource_profile_id,
+        state.workspacePreferences.most_recent_project_resource_profile_id,
     }),
   ];
   const expectedActions = [
@@ -240,7 +240,7 @@ test("initializeGroupResourceProfileId: set to most recent group resource profil
       type: "updateExperimentGroupResourceProfileId",
       payload: {
         groupResourceProfileId:
-          state.workspacePreferences.most_recent_group_resource_profile_id,
+          state.workspacePreferences.most_recent_project_resource_profile_id,
       },
     },
   ];
@@ -259,12 +259,12 @@ test("initializeGroupResourceProfileId: set to most recent group resource profil
   state.experiment.userConfigurationData.groupResourceProfileId =
     "2580d4e6-7a8d-444e-b259-a8e6ae886d66";
   state.workspacePreferences = new models.WorkspacePreferences();
-  state.workspacePreferences.most_recent_group_resource_profile_id =
+  state.workspacePreferences.most_recent_project_resource_profile_id =
     "ec50a69d-54ea-4b7c-a578-9a2a8da09ba0";
   state.groupResourceProfiles = [
     new models.GroupResourceProfile({
       groupResourceProfileId:
-        state.workspacePreferences.most_recent_group_resource_profile_id,
+        state.workspacePreferences.most_recent_project_resource_profile_id,
     }),
   ];
   const expectedActions = [
@@ -293,7 +293,7 @@ test("initializeGroupResourceProfileId: set to most recent group resource profil
       type: "updateExperimentGroupResourceProfileId",
       payload: {
         groupResourceProfileId:
-          state.workspacePreferences.most_recent_group_resource_profile_id,
+          state.workspacePreferences.most_recent_project_resource_profile_id,
       },
     },
   ];
@@ -312,7 +312,7 @@ test("initializeGroupResourceProfileId: set to first group resource profile when
   state.experiment.userConfigurationData.groupResourceProfileId =
     "2580d4e6-7a8d-444e-b259-a8e6ae886d66";
   state.workspacePreferences = new models.WorkspacePreferences();
-  state.workspacePreferences.most_recent_group_resource_profile_id = null;
+  state.workspacePreferences.most_recent_project_resource_profile_id = null;
   state.groupResourceProfiles = [
     new models.GroupResourceProfile({
       groupResourceProfileId: "c84da77b-8ce6-457f-b5c7-c72a663d7f77",
@@ -354,7 +354,7 @@ test("initializeGroupResourceProfileId: set to null when no longer has access", 
   state.experiment.userConfigurationData.groupResourceProfileId =
     "2580d4e6-7a8d-444e-b259-a8e6ae886d66";
   state.workspacePreferences = new models.WorkspacePreferences();
-  state.workspacePreferences.most_recent_group_resource_profile_id = null;
+  state.workspacePreferences.most_recent_project_resource_profile_id = null;
   state.groupResourceProfiles = [];
   const expectedActions = [
     {

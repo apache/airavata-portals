@@ -127,7 +127,7 @@ const loadComputeResourceIdByName = async function (computeResourceName) {
 };
 
 const loadGroupResourceProfile = async function (computeResourceId) {
-  const groupResourceProfiles = await services.GroupResourceProfileService.list();
+  const groupResourceProfiles = await services.ProjectResourceProfileService.list();
   const groupResourceProfile = groupResourceProfiles.find((grp) => {
     for (let computePref of grp.compute_preferences) {
       if (computePref.compute_resource_id === computeResourceId) {

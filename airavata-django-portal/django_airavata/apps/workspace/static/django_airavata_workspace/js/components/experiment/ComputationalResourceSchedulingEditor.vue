@@ -194,7 +194,7 @@ export default {
         .catch(apiUtils.FetchUtils.reportError);
     },
     loadGroupResourceProfile: function () {
-      services.GroupResourceProfileService.retrieve(
+      services.ProjectResourceProfileService.retrieve(
         { lookup: this.groupResourceProfileId },
         { ignoreErrors: true }
       )

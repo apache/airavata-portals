@@ -69,7 +69,7 @@ export default {
   },
   methods: {
     loadGroupResourceProfiles: function () {
-      return services.GroupResourceProfileService.list().then(
+      return services.ProjectResourceProfileService.list().then(
         (groupResourceProfiles) => {
           this.groupResourceProfiles = groupResourceProfiles;
           if (
@@ -81,7 +81,7 @@ export default {
             this.groupResourceProfiles.length > 0
           ) {
             // automatically select the last one user selected
-            this.groupResourceProfileId = this.workspacePreferences.most_recent_group_resource_profile_id;
+            this.groupResourceProfileId = this.workspacePreferences.most_recent_project_resource_profile_id;
             this.emitValueChanged();
           }
         }

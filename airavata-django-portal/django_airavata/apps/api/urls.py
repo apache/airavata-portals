@@ -19,7 +19,9 @@ router.register(r"application-interfaces", views.ApplicationInterfaceViewSet, ba
 router.register(r"applications", views.ApplicationModuleViewSet, basename="application")
 router.register(r"application-deployments", views.ApplicationDeploymentViewSet, basename="application-deployment")
 router.register(r"user-profiles", views.UserProfileViewSet, basename="user-profile")
-router.register(r"group-resource-profiles", views.GroupResourceProfileViewSet, basename="group-resource-profile")
+router.register(
+    r"project-resource-profiles", views.ProjectResourceProfileViewSet, basename="project-resource-profile"
+)
 router.register(r"shared-entities", views.SharedEntityViewSet, basename="shared-entity")
 router.register(r"compute-resources", views.ComputeResourceViewSet, basename="compute-resource")
 router.register(r"storage-resources", views.StorageResourceViewSet, basename="storage-resource")

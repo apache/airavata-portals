@@ -207,11 +207,11 @@ export const actions = {
       // Figure out a default value for groupResourceProfileId
       if (
         getters.findGroupResourceProfile(
-          state.workspacePreferences.most_recent_group_resource_profile_id
+          state.workspacePreferences.most_recent_project_resource_profile_id
         )
       ) {
         result =
-          state.workspacePreferences.most_recent_group_resource_profile_id;
+          state.workspacePreferences.most_recent_project_resource_profile_id;
       } else if (state.groupResourceProfiles.length > 0) {
         result = state.groupResourceProfiles[0].group_resource_profile_id;
       } else {
@@ -595,7 +595,7 @@ export const actions = {
   },
   async loadGroupResourceProfiles({ commit }) {
     if (!PROMISES.groupResourceProfiles) {
-      PROMISES.groupResourceProfiles = services.GroupResourceProfileService.list();
+      PROMISES.groupResourceProfiles = services.ProjectResourceProfileService.list();
     }
     const groupResourceProfiles = await PROMISES.groupResourceProfiles;
     commit("setGroupResourceProfiles", { groupResourceProfiles });
@@ -625,7 +625,7 @@ export const getters = {
       : null,
   defaultGroupResourceProfileId: (state) =>
     state.workspacePreferences
-      ? state.workspacePreferences.most_recent_group_resource_profile_id
+      ? state.workspacePreferences.most_recent_project_resource_profile_id
       : null,
   defaultComputeResourceId: (state) =>
     state.workspacePreferences

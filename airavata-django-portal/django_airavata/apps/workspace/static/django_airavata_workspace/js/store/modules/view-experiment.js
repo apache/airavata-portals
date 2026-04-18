@@ -150,7 +150,7 @@ export const actions = {
     }
   },
   async loadGroupResourceProfile({ getters, commit }) {
-    const groupResourceProfile = await services.GroupResourceProfileService.retrieve(
+    const groupResourceProfile = await services.ProjectResourceProfileService.retrieve(
       { lookup: getters.groupResourceProfileId }
     );
     commit("setGroupResourceProfile", { groupResourceProfile });

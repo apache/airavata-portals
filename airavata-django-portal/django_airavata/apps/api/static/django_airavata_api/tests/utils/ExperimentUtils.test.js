@@ -160,7 +160,7 @@ test("error thrown when no GRP found for compute resource", async () => {
     "compute2.resource.org_id2": "compute2.resource.org",
   });
   // Have mock GRP response be an empty list
-  services.GroupResourceProfileService.list.mockResolvedValue([]);
+  services.ProjectResourceProfileService.list.mockResolvedValue([]);
   try {
     expect.assertions(2);
     await createExperiment({
@@ -190,7 +190,7 @@ test("error thrown when no deployment found for compute resource", async () => {
     "compute1.resource.org_id1": "compute1.resource.org",
     "compute2.resource.org_id2": "compute2.resource.org",
   });
-  services.GroupResourceProfileService.list.mockResolvedValue([
+  services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [
@@ -235,7 +235,7 @@ test("verify that default queue values are used in computationalResourceScheduli
     "compute1.resource.org_id1": "compute1.resource.org",
     "compute2.resource.org_id2": "compute2.resource.org",
   });
-  services.GroupResourceProfileService.list.mockResolvedValue([
+  services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [
@@ -304,7 +304,7 @@ test("verify that experiment name is the given name", async () => {
   services.ComputeResourceService.names.mockResolvedValue({
     "compute1.resource.org_id1": "compute1.resource.org",
   });
-  services.GroupResourceProfileService.list.mockResolvedValue([
+  services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [
@@ -350,7 +350,7 @@ test("verify that if no experiment name is given, name is based on experiment na
   services.ComputeResourceService.names.mockResolvedValue({
     "compute1.resource.org_id1": "compute1.resource.org",
   });
-  services.GroupResourceProfileService.list.mockResolvedValue([
+  services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [
@@ -416,7 +416,7 @@ test("verify that application inputs and outputs are cloned on experiment", asyn
   services.ComputeResourceService.names.mockResolvedValue({
     "compute1.resource.org_id1": "compute1.resource.org",
   });
-  services.GroupResourceProfileService.list.mockResolvedValue([
+  services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [
@@ -474,7 +474,7 @@ test("verify that projectId is copied from preferences", async () => {
   services.ComputeResourceService.names.mockResolvedValue({
     "compute1.resource.org_id1": "compute1.resource.org",
   });
-  services.GroupResourceProfileService.list.mockResolvedValue([
+  services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [
@@ -528,7 +528,7 @@ test("verify that given input values are copied to experiment", async () => {
   services.ComputeResourceService.names.mockResolvedValue({
     "compute1.resource.org_id1": "compute1.resource.org",
   });
-  services.GroupResourceProfileService.list.mockResolvedValue([
+  services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
       computePreferences: [

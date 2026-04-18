@@ -148,13 +148,13 @@ const services = {
   ),
   GlobusJobSubmissionService,
   GridFTPDataMovementService,
-  GroupResourceProfileService: ServiceFactory.service("GroupResourceProfiles"),
   LocaJobSubmissionService,
   LoggingService: ServiceFactory.service("LogRecords"),
   IAMUserProfileService: ServiceFactory.service("IAMUserProfiles"),
   ManageNotificationService: ServiceFactory.service("ManageNotifications"),
 
   ParserService: ServiceFactory.service("Parsers"),
+  ProjectResourceProfileService: ServiceFactory.service("ProjectResourceProfiles"),
   ProjectService: ServiceFactory.service("Projects"),
   QueueSettingsCalculatorService: ServiceFactory.service(
     "QueueSettingsCalculators"

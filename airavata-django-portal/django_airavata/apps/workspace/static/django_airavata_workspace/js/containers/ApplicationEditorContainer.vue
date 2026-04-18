@@ -518,7 +518,7 @@ export default {
       );
     },
     loadGroupResourceProfiles() {
-      return services.GroupResourceProfileService.list().then(
+      return services.ProjectResourceProfileService.list().then(
         (profiles) => (this.groupResourceProfiles = profiles)
       );
     },
