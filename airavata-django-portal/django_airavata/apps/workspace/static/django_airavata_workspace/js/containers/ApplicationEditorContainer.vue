@@ -12,25 +12,6 @@
       </div>
     </div>
 
-    <!-- Scope selector for admins on new applications -->
-    <div class="card mb-3" v-if="showScopeSelector">
-      <div class="card-body py-2">
-        <div class="d-flex align-items-center">
-          <label class="form-label mb-0 me-3 text-nowrap"><strong>Visibility</strong></label>
-          <div class="form-check form-check-inline mb-0">
-            <input class="form-check-input" type="radio" id="scope-personal" value="personal" v-model="scope">
-            <label class="form-check-label" for="scope-personal">Personal</label>
-          </div>
-          <div class="form-check form-check-inline mb-0" v-if="isGatewayAdmin">
-            <input class="form-check-input" type="radio" id="scope-gateway" value="gateway" v-model="scope">
-            <label class="form-check-label" for="scope-gateway">Gateway</label>
-          </div>
-          <span class="text-muted ms-3" style="font-size:0.8125rem;" v-if="scope === 'personal'">Only you can see this application.</span>
-          <span class="text-muted ms-3" style="font-size:0.8125rem;" v-else>All gateway users can see this application.</span>
-        </div>
-      </div>
-    </div>
-
     <!-- Loading -->
     <div v-if="loading" class="text-center py-5 text-muted">
       <i class="fa fa-spinner fa-spin me-1"></i> Loading application...
@@ -417,18 +398,11 @@ export default {
       saveMessage: null,
       saveMessageClass: "alert-success",
       saveError: null,
-      scope: "personal",
-      defaultGatewayUsersGroup: null,
-      moduleSharedEntity: null,
     };
   },
   computed: {
     isGatewayAdmin() {
       return session.Session.is_gateway_admin;
-    },
-    showScopeSelector() {
-      // Show scope selector for new apps or for admins on existing apps
-      return this.isGatewayAdmin;
     },
     title() {
       if (this.appModuleId && this.appModule.app_module_name) {
@@ -492,18 +466,13 @@ export default {
         this.loadDeployments(),
         this.loadComputeResourceNames(),
         this.loadGroupResourceProfiles(),
-        this.loadGroups(),
-        this.loadModuleSharedEntity(),
       ]).finally(() => {
         this.loading = false;
-        this.resolveCurrentScope();
       });
     } else {
-      // New application - load compute resources and groups for later
       Promise.all([
         this.loadComputeResourceNames(),
         this.loadGroupResourceProfiles(),
-        this.loadGroups(),
       ]);
       // Create a default interface with stdout/stderr
       const iface = new models.ApplicationInterfaceDefinition({
@@ -552,72 +521,6 @@ export default {
       return services.GroupResourceProfileService.list().then(
         (profiles) => (this.groupResourceProfiles = profiles)
       );
-    },
-    loadGroups() {
-      // Group-based gateway sharing has been deprecated.
-      this.defaultGatewayUsersGroup = null;
-      return Promise.resolve();
-    },
-    loadModuleSharedEntity() {
-      if (!this.appModuleId) return Promise.resolve(null);
-      return services.SharedEntityService.retrieve(
-        { lookup: this.appModuleId },
-        { ignoreErrors: true }
-      )
-        .then((entity) => {
-          this.moduleSharedEntity = entity;
-          return entity;
-        })
-        .catch(() => {
-          this.moduleSharedEntity = null;
-          return null;
-        });
-    },
-    resolveCurrentScope() {
-      // Determine current scope based on whether the module is shared
-      // with the default gateway users group
-      if (
-        this.moduleSharedEntity &&
-        this.defaultGatewayUsersGroup &&
-        this.moduleSharedEntity.group_permissions
-      ) {
-        const isShared = this.moduleSharedEntity.group_permissions.some(
-          (gp) => gp.group && gp.group.id === this.defaultGatewayUsersGroup.id
-        );
-        this.scope = isShared ? "gateway" : "personal";
-      } else {
-        this.scope = "personal";
-      }
-    },
-    async saveModuleScope(moduleId) {
-      // Only apply scope changes when admin has selected a scope and we
-      // have the default gateway users group loaded.
-      if (!this.isGatewayAdmin || !this.defaultGatewayUsersGroup) {
-        return;
-      }
-      // Fetch current shared entity (may have been created on module save)
-      let sharedEntity = null;
-      try {
-        sharedEntity = await services.SharedEntityService.retrieve(
-          { lookup: moduleId },
-          { ignoreErrors: true }
-        );
-      } catch (e) {
-        sharedEntity = new models.SharedEntity();
-      }
-      if (!sharedEntity) {
-        sharedEntity = new models.SharedEntity();
-      }
-      if (this.scope === "gateway") {
-        sharedEntity.addGroup({ group: this.defaultGatewayUsersGroup });
-      } else {
-        sharedEntity.removeGroup(this.defaultGatewayUsersGroup);
-      }
-      await services.SharedEntityService.merge({
-        lookup: moduleId,
-        data: sharedEntity,
-      });
-      this.moduleSharedEntity = sharedEntity;
     },
     getComputeResourceName(hostId) {
       if (this.computeResourceNames && hostId in this.computeResourceNames) {
@@ -789,15 +692,6 @@ export default {
             // Update in place
             Object.assign(dep, created);
           }
-        }
-
-        // 4. Apply scope (gateway vs personal) via sharing
-        try {
-          await this.saveModuleScope(moduleId);
-        } catch (scopeError) {
-          // Non-fatal: surface a warning but let the rest of the save succeed
-          // eslint-disable-next-line no-console
-          console.warn("Failed to apply scope to application module", scopeError);
         }
 
         this.saveMessage = "Application saved successfully.";

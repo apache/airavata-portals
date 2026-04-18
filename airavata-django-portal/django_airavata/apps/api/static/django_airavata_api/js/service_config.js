@@ -14,7 +14,6 @@ import ExtendedUserProfileField from "./models/ExtendedUserProfileField";
 import ExtendedUserProfileValue from "./models/ExtendedUserProfileValue";
 import FullExperiment from "./models/FullExperiment";
 import GatewayResourceProfile from "./models/GatewayResourceProfile";
-import GroupResourceProfile from "./models/GroupResourceProfile";
 import IAMUserProfile from "./models/IAMUserProfile";
 import LogRecord from "./models/LogRecord";
 import Notification from "./models/Notification";
@@ -74,7 +73,6 @@ export default {
         modelClass: BatchQueue,
       },
     },
-    queryParams: ["app_module_id", "group_resource_profile_id"],
     modelClass: ApplicationDeploymentDescription,
   },
   ApplicationInterfaces: {
@@ -318,7 +316,6 @@ export default {
   GroupResourceProfiles: {
     url: "/api/group-resource-profiles/",
     viewSet: true,
-    modelClass: GroupResourceProfile,
   },
   IAMUserProfiles: {
     url: "/api/iam-user-profiles",

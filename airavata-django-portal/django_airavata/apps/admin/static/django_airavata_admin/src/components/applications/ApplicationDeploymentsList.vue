@@ -115,7 +115,6 @@ export default {
   data() {
     return {
       computeResourceNames: null,
-      groupResourceProfiles: null,
     };
   },
   computed: {
@@ -138,44 +137,22 @@ export default {
       ];
     },
     selectableComputeResourceNames() {
-      // Only allow selecting a compute resource for a new deployment if that
-      // compute resource exists in a GroupResourceProfile
-      if (this.computeResourceNames && this.groupResourceProfiles) {
-        // Create a set of all computeResourceIds in GroupResourceProfiles
-        const groupResourceProfileCompResources = {};
-        for (const groupResourceProfile of this.groupResourceProfiles) {
-          for (const computePreference of groupResourceProfile.computePreferences) {
-            groupResourceProfileCompResources[
-              computePreference.computeResourceId
-            ] = null;
-          }
+      if (!this.computeResourceNames) return [];
+      const result = [];
+      for (const computeResourceId in this.computeResourceNames) {
+        if (
+          Object.prototype.hasOwnProperty.call(
+            this.computeResourceNames,
+            computeResourceId
+          )
+        ) {
+          result.push({
+            host_id: computeResourceId,
+            host: this.computeResourceNames[computeResourceId],
+          });
         }
-        const result = [];
-        // Filter compute resources based on existence in groupResourceProfileCompResources
-        for (const computeResourceId in this.computeResourceNames) {
-          if (
-            Object.prototype.hasOwnProperty.call(
-              this.computeResourceNames,
-              computeResourceId
-            ) &&
-            Object.prototype.hasOwnProperty.call(
-              groupResourceProfileCompResources,
-              computeResourceId
-            )
-          ) {
-            const computeResourceName = this.computeResourceNames[
-              computeResourceId
-            ];
-            result.push({
-              host_id: computeResourceId,
-              host: computeResourceName,
-            });
-          }
-        }
-        return result;
-      } else {
-        return [];
       }
+      return result;
     },
     excludedComputeResourceIds() {
       return this.deployments.map((dep) => dep.computeHostId);
@@ -184,10 +161,6 @@ export default {
   mounted() {
     services.ComputeResourceService.names().then(
       (names) => (this.computeResourceNames = names)
-    );
-    services.GroupResourceProfileService.list().then(
-      (groupResourceProfiles) =>
-        (this.groupResourceProfiles = groupResourceProfiles)
     );
   },
   methods: {

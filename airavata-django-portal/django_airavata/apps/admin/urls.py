@@ -8,7 +8,6 @@ urlpatterns = [
     re_path(r"^applications/", views.app_catalog, name="app_catalog"),
     re_path(r"^credentials/", views.credential_store, name="credential_store"),
     re_path(r"^experiment-statistics/", views.experiment_statistics, name="experiment-statistics"),
-    re_path(r"^group-resource-profiles/", views.group_resource_profile, name="group_resource_profile"),
     re_path(r"^gateway-resource-profile/", views.gateway_resource_profile, name="gateway_resource_profile"),
     re_path(r"^notices/", views.notices, name="notices"),
     re_path(r"^users/", views.users, name="users"),

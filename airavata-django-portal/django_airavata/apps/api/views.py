@@ -408,12 +408,7 @@ class ExperimentViewSet(viewsets.ViewSet):
         experiment.gateway_id = settings.GATEWAY_ID
         experiment.user_name = request.user.username
         experiment_id = request.airavata_client.research.create_experiment(settings.GATEWAY_ID, experiment)
-        self._update_workspace_preferences(
-            request,
-            project_id=experiment.project_id,
-            group_resource_profile_id=experiment.user_configuration_data.group_resource_profile_id,
-            compute_resource_id=experiment.user_configuration_data.computational_resource_scheduling.resource_host_id,
-        )
+        self._update_workspace_preferences(request, project_id=experiment.project_id)
         experiment.experiment_id = experiment_id
         return Response(proto_to_dict(experiment), status=201)
 
@@ -425,12 +420,7 @@ class ExperimentViewSet(viewsets.ViewSet):
         experiment.gateway_id = settings.GATEWAY_ID
         experiment.user_name = request.user.username
         request.airavata_client.research.update_experiment(experiment_id, experiment)
-        self._update_workspace_preferences(
-            request,
-            project_id=experiment.project_id,
-            group_resource_profile_id=experiment.user_configuration_data.group_resource_profile_id,
-            compute_resource_id=experiment.user_configuration_data.computational_resource_scheduling.resource_host_id,
-        )
+        self._update_workspace_preferences(request, project_id=experiment.project_id)
         return Response(proto_to_dict(experiment))
 
     @action(methods=["post"], detail=True)
@@ -479,13 +469,9 @@ class ExperimentViewSet(viewsets.ViewSet):
             raise e
 
     @staticmethod
-    def _update_workspace_preferences(
-        request: Request, project_id: str, group_resource_profile_id: str, compute_resource_id: str
-    ) -> None:
+    def _update_workspace_preferences(request: Request, project_id: str) -> None:
         prefs = helpers.WorkspacePreferencesHelper().get(request)
         prefs.most_recent_project_id = project_id
-        prefs.most_recent_group_resource_profile_id = group_resource_profile_id
-        prefs.most_recent_compute_resource_id = compute_resource_id
         prefs.save()
 
 
@@ -841,18 +827,9 @@ class ApplicationDeploymentViewSet(viewsets.ViewSet):
     lookup_field = "app_deployment_id"
 
     def list(self, request: Request) -> Response:
-        app_module_id = request.query_params.get("appModuleId", None)
-        group_resource_profile_id = request.query_params.get("groupResourceProfileId", None)
-        if (app_module_id and not group_resource_profile_id) or (not app_module_id and group_resource_profile_id):
-            raise ParseError("Query params appModuleId and groupResourceProfileId are required together.")
-        if app_module_id and group_resource_profile_id:
-            deployments = request.airavata_client.research.get_application_deployments_for_app_module_and_group_resource_profile(
-                app_module_id, group_resource_profile_id
-            )
-        else:
-            deployments = request.airavata_client.research.get_accessible_application_deployments(
-                settings.GATEWAY_ID
-            )
+        deployments = request.airavata_client.research.get_accessible_application_deployments(
+            settings.GATEWAY_ID
+        )
         return Response(proto_list_to_dicts(deployments))
 
     def retrieve(self, request: Request, app_deployment_id: str | None = None) -> Response:
@@ -1178,102 +1155,20 @@ class UserProfileViewSet(viewsets.ViewSet):
 
 
 class GroupResourceProfileViewSet(viewsets.ViewSet):
+    """Stub endpoint kept for legacy Vue callers (experiment editor, etc.).
+
+    The server-side GroupResourceProfile API was removed in favour of
+    Project.resource_profile. ``list`` returns an empty collection so that
+    callers degrade gracefully; detail operations 404.
+    """
+
     lookup_field = "group_resource_profile_id"
 
     def list(self, request: Request) -> Response:
-        results = request.airavata_client.compute.get_group_resource_list()
-        return Response(proto_list_to_dicts(results))
+        return Response([])
 
     def retrieve(self, request: Request, group_resource_profile_id: str | None = None) -> Response:
-        result = request.airavata_client.compute.get_group_resource_profile(group_resource_profile_id)
-        return Response(proto_to_dict(result))
-
-    def create(self, request: Request) -> Response:
-        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.groupresourceprofile.group_resource_profile_pb2 import (
-            GroupResourceProfile as GroupResourceProfileProto,
-        )
-
-        proto = dict_to_proto(request.data, GroupResourceProfileProto)
-        proto.gateway_id = settings.GATEWAY_ID
-        response = request.airavata_client.compute.create_group_resource_profile(
-            group_resource_profile=proto
-        )
-        profile_id = response.group_resource_profile_id
-        created = request.airavata_client.compute.get_group_resource_profile(profile_id)
-        return Response(proto_to_dict(created), status=status.HTTP_201_CREATED)
-
-    def update(self, request: Request, group_resource_profile_id: str | None = None) -> Response:
-        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.groupresourceprofile.group_resource_profile_pb2 import (
-            GroupResourceProfile as GroupResourceProfileProto,
-        )
-
-        # Fetch existing profile to handle removals
-        existing = request.airavata_client.compute.get_group_resource_profile(group_resource_profile_id)
-        existing_dict = proto_to_dict(existing)
-
-        incoming_data = request.data
-
-        # Detect removed compute preferences and remove them
-        existing_pref_ids = {
-            p.get("compute_resource_id") for p in existing_dict.get("compute_preferences", [])
-        }
-        incoming_pref_ids = {
-            p.get("compute_resource_id") or p.get("computeResourceId")
-            for p in incoming_data.get("compute_preferences", [])
-        }
-        for removed_id in existing_pref_ids - incoming_pref_ids:
-            if removed_id:
-                try:
-                    request.airavata_client.compute.remove_group_compute_prefs(
-                        removed_id, group_resource_profile_id
-                    )
-                except Exception:
-                    log.warning("Failed to remove compute pref %s", removed_id, exc_info=True)
-
-        # Detect removed compute resource policies and remove them
-        existing_policy_ids = {
-            p.get("resource_policy_id") for p in existing_dict.get("compute_resource_policies", [])
-            if p.get("resource_policy_id")
-        }
-        incoming_policy_ids = {
-            p.get("resource_policy_id") or p.get("resourcePolicyId")
-            for p in incoming_data.get("compute_resource_policies", [])
-            if p.get("resource_policy_id") or p.get("resourcePolicyId")
-        }
-        for removed_policy_id in existing_policy_ids - incoming_policy_ids:
-            if removed_policy_id:
-                try:
-                    request.airavata_client.compute.remove_group_compute_resource_policy(removed_policy_id)
-                except Exception:
-                    log.warning("Failed to remove compute resource policy %s", removed_policy_id, exc_info=True)
-
-        # Detect removed batch queue resource policies and remove them
-        existing_bq_policy_ids = {
-            p.get("resource_policy_id") for p in existing_dict.get("batch_queue_resource_policies", [])
-            if p.get("resource_policy_id")
-        }
-        incoming_bq_policy_ids = {
-            p.get("resource_policy_id") or p.get("resourcePolicyId")
-            for p in incoming_data.get("batch_queue_resource_policies", [])
-            if p.get("resource_policy_id") or p.get("resourcePolicyId")
-        }
-        for removed_bq_policy_id in existing_bq_policy_ids - incoming_bq_policy_ids:
-            if removed_bq_policy_id:
-                try:
-                    request.airavata_client.compute.remove_group_batch_queue_resource_policy(removed_bq_policy_id)
-                except Exception:
-                    log.warning("Failed to remove batch queue resource policy %s", removed_bq_policy_id, exc_info=True)
-
-        proto = dict_to_proto(incoming_data, GroupResourceProfileProto)
-        proto.group_resource_profile_id = group_resource_profile_id
-        proto.gateway_id = settings.GATEWAY_ID
-        request.airavata_client.compute.update_group_resource_profile(proto)
-        updated = request.airavata_client.compute.get_group_resource_profile(group_resource_profile_id)
-        return Response(proto_to_dict(updated))
-
-    def destroy(self, request: Request, group_resource_profile_id: str | None = None) -> Response:
-        request.airavata_client.compute.remove_group_resource_profile(group_resource_profile_id)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 class SharedEntityViewSet(viewsets.ViewSet):

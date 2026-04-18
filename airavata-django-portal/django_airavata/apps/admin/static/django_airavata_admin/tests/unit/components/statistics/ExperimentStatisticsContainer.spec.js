@@ -32,9 +32,6 @@ jest.mock("django-airavata-api", () => {
       FullExperimentService: {
         retrieve: jest.fn(),
       },
-      GroupResourceProfileService: {
-        list: jest.fn(),
-      },
       ExperimentArchiveService: {
         get: jest.fn(),
       },
@@ -195,29 +192,6 @@ test("Hostname filter only shows compute resources that are configured in a GRP"
     { host_id: "compute1-abcd", host: "a-compute1" },
   ]);
 
-  services.GroupResourceProfileService.list.mockResolvedValue([
-    new models.GroupResourceProfile({
-      compute_preferences: [
-        new models.GroupComputeResourcePreference({
-          compute_resource_id: "compute1-abcd",
-        }),
-        new models.GroupComputeResourcePreference({
-          compute_resource_id: "compute3-abcd",
-        }),
-      ],
-    }),
-    new models.GroupResourceProfile({
-      compute_preferences: [
-        new models.GroupComputeResourcePreference({
-          compute_resource_id: "compute1-abcd",
-        }),
-        new models.GroupComputeResourcePreference({
-          compute_resource_id: "compute4-abcd",
-        }),
-      ],
-    }),
-  ]);
-
   // The render method returns a collection of utilities to query your component.
   const { findByText } = render(ExperimentStatisticsContainer);
 
@@ -235,11 +209,12 @@ test("Hostname filter only shows compute resources that are configured in a GRP"
 
   const options = computeResourcesSelect.parentElement.options;
 
-  expect(options.length).toBe(4);
+  expect(options.length).toBe(6);
   // option 0 is the null one ("Select compute resource to filter on")
-  // verify that options 1-3 are compute resources 1, 3, 4. That is, verify that
-  // filtering worked and that they were sorted.
+  // options 1-5 are all compute resources sorted alphabetically by host name.
   expect(options[1].value).toBe("compute1-abcd");
-  expect(options[2].value).toBe("compute3-abcd");
-  expect(options[3].value).toBe("compute4-abcd");
+  expect(options[2].value).toBe("compute2-abcd");
+  expect(options[3].value).toBe("compute3-abcd");
+  expect(options[4].value).toBe("compute4-abcd");
+  expect(options[5].value).toBe("compute5-abcd");
 });
