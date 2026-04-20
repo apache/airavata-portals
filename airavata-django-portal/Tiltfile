@@ -18,14 +18,11 @@ local_resource(
     serve_cmd=' && '.join([
         'uv sync',
         'uv run manage.py migrate --run-syncdb',
-        # First-run bootstrap of Wagtail CMS pages. load_cms_data replaces the default
-        # "localhost" Site with the Airavata-branded one, so we check for that to decide
-        # whether bootstrap has already happened. The outer `|| true` makes the CMS
-        # load non-fatal — the shipped fixture references a stale wagtailcore.pagerevision
-        # model name and won't deserialize against current Wagtail, but the portal is
-        # otherwise functional with Wagtail's default Site. Remove `|| true` after
-        # regenerating the fixture (see docs/dev/wagtail_export.md).
-        '(uv run manage.py shell -c "from wagtail.models import Site; import sys; sys.exit(0 if Site.objects.exclude(hostname=\\\"localhost\\\").exists() else 1)" || uv run manage.py load_cms_data new_default_theme || echo "warning: CMS fixture load failed; portal will use Wagtail default site")',
+        # First-run bootstrap of Wagtail CMS pages. load_cms_data calls set_wagtail_site
+        # which replaces the fixture's Site with one named PORTAL_TITLE ("Airavata Portal"),
+        # so we use that as the idempotency signal: skip the load if an Airavata-branded
+        # Site already exists.
+        '(uv run manage.py shell -c "from wagtail.models import Site; import sys; sys.exit(0 if Site.objects.filter(site_name=\\"Airavata Portal\\").exists() else 1)" || uv run manage.py load_cms_data new_default_theme)',
         'uv run manage.py runserver 0.0.0.0:8000',
     ]),
     deps=['django_airavata/'],
