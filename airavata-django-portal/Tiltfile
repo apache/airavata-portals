@@ -1,9 +1,20 @@
 # Tiltfile for Airavata Django Portal
 
+# --- Bootstrap settings_local.py on fresh clone ---
+# Fetches the Keycloak `pga` client secret and renders django_airavata/settings_local.py
+# if missing. Idempotent — skips if the file is already present. Uses stdlib only so
+# it runs without `uv sync` first.
+local_resource(
+    'settings-bootstrap',
+    cmd='python3 scripts/bootstrap_settings_local.py',
+    deps=['scripts/bootstrap_settings_local.py'],
+)
+
 # --- Django backend dev server ---
 local_resource(
     'django-server',
     serve_env={'DJANGO_SETTINGS_MODULE': 'django_airavata.settings'},
+    resource_deps=['settings-bootstrap'],
     serve_cmd=' && '.join([
         'uv sync',
         'uv run manage.py migrate --run-syncdb',
