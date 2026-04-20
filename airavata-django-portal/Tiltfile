@@ -7,6 +7,11 @@ local_resource(
     serve_cmd=' && '.join([
         'uv sync',
         'uv run manage.py migrate --run-syncdb',
+        # First-run bootstrap of Wagtail CMS pages. load_cms_data replaces the default
+        # "localhost" Site with the Airavata-branded one, so we check for that to decide
+        # whether bootstrap has already happened and skip re-loading (which would fail
+        # on duplicate PKs from the fixture).
+        'uv run manage.py shell -c "from wagtail.models import Site; import sys; sys.exit(0 if Site.objects.exclude(hostname=\\\"localhost\\\").exists() else 1)" || uv run manage.py load_cms_data new_default_theme',
         'uv run manage.py runserver 0.0.0.0:8000',
     ]),
     deps=['django_airavata/'],
