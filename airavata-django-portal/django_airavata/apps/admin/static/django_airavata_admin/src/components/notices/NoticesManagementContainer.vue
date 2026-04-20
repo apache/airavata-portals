@@ -56,6 +56,12 @@
                         </template>
                       </td>
                     </tr>
+                    <tr v-if="items && items.length === 0">
+                      <td colspan="3" class="text-center text-muted py-4">
+                        <i class="fa fa-bell fa-2x d-block mb-2 text-muted"></i>
+                        No notices yet. Click "New Notice" to publish one.
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </template>

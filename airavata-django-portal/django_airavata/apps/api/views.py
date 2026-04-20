@@ -2007,24 +2007,32 @@ class IAMUserViewSet(viewsets.ViewSet):
         iam_client = request.airavata_client.iam
         sharing_client = request.airavata_client.sharing
         gateway_id = settings.GATEWAY_ID
-        airavata_user_profile_exists = iam_client.does_user_exist(user_profile.userId, gateway_id)
+        airavata_user_profile_exists = iam_client.does_user_exist(user_profile.user_id, gateway_id)
         groups = []
         if airavata_user_profile_exists:
-            compat_groups = sharing_client.get_all_groups_user_belongs(user_profile.airavataInternalUserId)
-            for g in compat_groups:
-                groups.append({
-                    "id": g.id,
-                    "name": g.name,
-                    "owner_id": g.ownerId,
-                    "description": g.description,
-                })
+            # Server-side get_all_member_groups_for_user may return UNIMPLEMENTED (501)
+            # during the M21 sharing migration — degrade to empty groups rather than
+            # failing the whole user list.
+            try:
+                compat_groups = sharing_client.get_all_member_groups_for_user(
+                    gateway_id, user_profile.airavata_internal_user_id
+                )
+                for g in compat_groups:
+                    groups.append({
+                        "id": g.group_id,
+                        "name": g.name,
+                        "owner_id": g.owner_id,
+                        "description": g.description,
+                    })
+            except Exception as e:
+                log.warning(f"Failed to load groups for {user_profile.user_id}: {e}")
 
         # Compute externalIDPUserInfo
         external_idp_user_info = {}
         try:
             User = get_user_model()
-            if User.objects.filter(username=user_profile.userId).exists():
-                django_user = User.objects.get(username=user_profile.userId)
+            if User.objects.filter(username=user_profile.user_id).exists():
+                django_user = User.objects.get(username=user_profile.user_id)
                 claims = django_user.user_profile.idp_userinfo.all()
                 if claims.exists():
                     external_idp_user_info["idp_alias"] = claims.first().idp_alias
@@ -2032,28 +2040,28 @@ class IAMUserViewSet(viewsets.ViewSet):
                 for claim in claims:
                     external_idp_user_info.setdefault("userinfo", {})[claim.claim] = claim.value
         except Exception as e:
-            log.warning(f"Failed to load idp_userinfo for {user_profile.userId}", exc_info=e)
+            log.warning(f"Failed to load idp_userinfo for {user_profile.user_id}", exc_info=e)
 
         # Compute userProfileInvalidFields
         user_profile_invalid_fields = []
         try:
             User = get_user_model()
-            if User.objects.filter(username=user_profile.userId).exists():
-                django_user = User.objects.get(username=user_profile.userId)
+            if User.objects.filter(username=user_profile.user_id).exists():
+                django_user = User.objects.get(username=user_profile.user_id)
                 if hasattr(django_user, "user_profile"):
                     user_profile_invalid_fields = django_user.user_profile.invalid_fields
         except Exception as e:
-            log.warning(f"Failed to get invalid_fields for {user_profile.userId}", exc_info=e)
+            log.warning(f"Failed to get invalid_fields for {user_profile.user_id}", exc_info=e)
 
         return {
-            "airavata_internal_user_id": user_profile.airavataInternalUserId,
-            "user_id": user_profile.userId,
+            "airavata_internal_user_id": user_profile.airavata_internal_user_id,
+            "user_id": user_profile.user_id,
             "gateway_id": user_profile.gateway_id,
             "email": user_profile.emails[0] if user_profile.emails else None,
-            "first_name": user_profile.firstName,
-            "last_name": user_profile.lastName,
-            "enabled": user_profile.State == Status.ACTIVE,
-            "email_verified": (user_profile.State == Status.CONFIRMED or user_profile.State == Status.ACTIVE),
+            "first_name": user_profile.first_name,
+            "last_name": user_profile.last_name,
+            "enabled": user_profile.state == Status.ACTIVE,
+            "email_verified": (user_profile.state == Status.CONFIRMED or user_profile.state == Status.ACTIVE),
             "airavata_user_profile_exists": airavata_user_profile_exists,
             "creation_time": user_profile.creation_time,
             "groups": groups,

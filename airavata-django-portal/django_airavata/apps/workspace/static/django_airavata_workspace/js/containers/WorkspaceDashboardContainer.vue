@@ -50,10 +50,11 @@
         <h5 class="mb-0">Recent Experiments</h5>
         <div class="ms-auto d-flex gap-2">
           <a
-            href="/workspace/applications"
+            href="/workspace/applications?action=launch"
             class="btn btn-primary btn-sm"
+            title="Choose an application to run an experiment from"
           >
-            <i class="fa fa-plus me-1"></i>New Experiment
+            <i class="fa fa-rocket me-1"></i>Launch Experiment
           </a>
           <a
             href="/workspace/projects"
@@ -71,7 +72,7 @@
           v-else-if="pagedExperiments.length === 0"
           class="p-4 text-center text-muted fst-italic"
         >
-          No experiments yet. Click "New Experiment" to get started.
+          No experiments yet. Click "Launch Experiment" to get started.
         </div>
         <table v-else class="table table-hover table-sm mb-0">
           <thead>

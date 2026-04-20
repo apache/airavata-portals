@@ -16,6 +16,17 @@ def landing(request):
 
 
 def home(request):
+    # If the Wagtail CMS has been bootstrapped with the Airavata fixture (site_name
+    # "Airavata Portal", created by set_wagtail_site after load_cms_data), serve the
+    # CMS homepage from /pages/ instead of the plain Django Welcome card. Fall back
+    # to the static template when no branded CMS site exists.
+    try:
+        from wagtail.models import Site
+
+        if Site.objects.filter(site_name="Airavata Portal").exists():
+            return redirect("/pages/")
+    except Exception:
+        pass
     return render(request, "django_airavata/home.html", {})
 
 

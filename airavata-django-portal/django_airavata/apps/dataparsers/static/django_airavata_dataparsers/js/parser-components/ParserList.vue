@@ -20,6 +20,12 @@
           v-bind:key="parser.id"
         >
         </parser-list-item>
+        <tr v-if="parsers && parsers.length === 0">
+          <td colspan="4" class="text-center text-muted py-4">
+            <i class="fa fa-cogs fa-2x d-block mb-2 text-muted"></i>
+            No parsers yet. Click "Create New Parser" to define one.
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>

@@ -14,6 +14,14 @@
     </div>
     <workspace-notices-management-container/>
 
+    <div v-if="launchMode" class="alert alert-info d-flex align-items-center">
+      <i class="fa fa-info-circle me-2"></i>
+      <div>
+        <strong>Choose an application to run.</strong>
+        Click <em>Run Experiment</em> on any enabled application below. Applications without a deployment show no Run button &mdash; open them and add a compute resource under <em>Execution</em> first.
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-body">
         <!-- Loading state -->
@@ -211,6 +219,13 @@ export default {
           .map((p) => p.application_id);
       }
       return [];
+    },
+    launchMode() {
+      try {
+        return new URLSearchParams(window.location.search).get("action") === "launch";
+      } catch {
+        return false;
+      }
     },
   },
   beforeMount() {

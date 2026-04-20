@@ -39,7 +39,7 @@ def enable_user(username):
 
 
 def delete_user(username):
-    return _get_iam_client().delete_user(username)
+    return _get_iam_client().delete_iam_user(username)
 
 
 def is_user_exist(username):
@@ -47,11 +47,11 @@ def is_user_exist(username):
 
 
 def get_user(username):
-    return _get_iam_client().get_user(username)
+    return _get_iam_client().get_iam_user(username)
 
 
 def get_users(offset, limit, search=None):
-    return _get_iam_client().get_users(offset, limit, search)
+    return _get_iam_client().get_iam_users(offset, limit, search or "")
 
 
 def reset_user_password(username, new_password):
@@ -67,7 +67,7 @@ def update_username(username, new_username):
     headers = {"Authorization": f"Bearer {authz_token['accessToken']}"}
     parsed = urlparse(settings.KEYCLOAK_AUTHORIZE_URL)
     r = requests.get(
-        f"{parsed.scheme}://{parsed.netloc}/auth/admin/realms/{settings.GATEWAY_ID}/users",
+        f"{parsed.scheme}://{parsed.netloc}/admin/realms/{settings.GATEWAY_ID}/users",
         params={"username": username},
         headers=headers,
     )
@@ -85,7 +85,7 @@ def update_username(username, new_username):
     # update username
     user["username"] = new_username
     r = requests.put(
-        f"{parsed.scheme}://{parsed.netloc}/auth/admin/realms/{settings.GATEWAY_ID}/users/{user['id']}",
+        f"{parsed.scheme}://{parsed.netloc}/admin/realms/{settings.GATEWAY_ID}/users/{user['id']}",
         json=user,
         headers=headers,
     )
@@ -98,7 +98,7 @@ def update_user(username, first_name=None, last_name=None, email=None):
     headers = {"Authorization": f"Bearer {authz_token['accessToken']}"}
     parsed = urlparse(settings.KEYCLOAK_AUTHORIZE_URL)
     r = requests.get(
-        f"{parsed.scheme}://{parsed.netloc}/auth/admin/realms/{settings.GATEWAY_ID}/users",
+        f"{parsed.scheme}://{parsed.netloc}/admin/realms/{settings.GATEWAY_ID}/users",
         params={"username": username},
         headers=headers,
     )
@@ -121,7 +121,7 @@ def update_user(username, first_name=None, last_name=None, email=None):
     if email is not None:
         user["email"] = email
     r = requests.put(
-        f"{parsed.scheme}://{parsed.netloc}/auth/admin/realms/{settings.GATEWAY_ID}/users/{user['id']}",
+        f"{parsed.scheme}://{parsed.netloc}/admin/realms/{settings.GATEWAY_ID}/users/{user['id']}",
         json=user,
         headers=headers,
     )
