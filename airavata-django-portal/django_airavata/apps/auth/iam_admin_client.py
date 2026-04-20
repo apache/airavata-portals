@@ -92,6 +92,46 @@ def update_username(username, new_username):
     r.raise_for_status()
 
 
+def list_user_project_groups(username):
+    """
+    Return the list of `/projects/<projectId>` groups the user belongs to.
+
+    Under the Keycloak-authoritative identity model, project membership is
+    expressed as Keycloak groups under `/projects/`. This helper queries
+    Keycloak admin API with the pga client's service-account token and filters
+    the user's group memberships down to the project groups. Admins sub-group
+    memberships (`/projects/<id>/admins`) are skipped — callers that need
+    admin-ness can look at the realm `gateway-admin` role or the `/admins`
+    sub-group membership separately.
+
+    Returns a list of dicts: [{"id", "name", "path"}]. Empty list on any error.
+    """
+    try:
+        authz_token = utils.get_service_account_authz_token()
+        headers = {"Authorization": f"Bearer {authz_token['accessToken']}"}
+        parsed = urlparse(settings.KEYCLOAK_AUTHORIZE_URL)
+        base = f"{parsed.scheme}://{parsed.netloc}/admin/realms/{settings.GATEWAY_ID}"
+        r = requests.get(f"{base}/users", params={"username": username}, headers=headers, timeout=10)
+        r.raise_for_status()
+        matches = [u for u in r.json() if u.get("username") == username]
+        if not matches:
+            return []
+        user_id = matches[0]["id"]
+
+        r = requests.get(f"{base}/users/{user_id}/groups", headers=headers, timeout=10)
+        r.raise_for_status()
+        groups = []
+        for g in r.json():
+            path = g.get("path", "")
+            # Keep only direct project groups (/projects/<id>), skip /admins sub-groups.
+            if path.startswith("/projects/") and not path.endswith("/admins"):
+                groups.append({"id": g["id"], "name": g["name"], "path": path})
+        return groups
+    except Exception as e:
+        logger.warning(f"Failed to list project groups for {username}: {e}")
+        return []
+
+
 def update_user(username, first_name=None, last_name=None, email=None):
     # fetch user representation
     authz_token = utils.get_service_account_authz_token()

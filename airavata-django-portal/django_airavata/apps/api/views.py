@@ -2008,24 +2008,19 @@ class IAMUserViewSet(viewsets.ViewSet):
         sharing_client = request.airavata_client.sharing
         gateway_id = settings.GATEWAY_ID
         airavata_user_profile_exists = iam_client.does_user_exist(user_profile.user_id, gateway_id)
+        # Under the Keycloak-authoritative identity model, project membership is the
+        # user's set of `/projects/<id>` groups in Keycloak. Read those directly via
+        # the pga service account — the legacy sharing-registry RPC
+        # (get_all_member_groups_for_user) isn't implemented server-side.
         groups = []
         if airavata_user_profile_exists:
-            # Server-side get_all_member_groups_for_user may return UNIMPLEMENTED (501)
-            # during the M21 sharing migration — degrade to empty groups rather than
-            # failing the whole user list.
-            try:
-                compat_groups = sharing_client.get_all_member_groups_for_user(
-                    gateway_id, user_profile.airavata_internal_user_id
-                )
-                for g in compat_groups:
-                    groups.append({
-                        "id": g.group_id,
-                        "name": g.name,
-                        "owner_id": g.owner_id,
-                        "description": g.description,
-                    })
-            except Exception as e:
-                log.warning(f"Failed to load groups for {user_profile.user_id}: {e}")
+            for g in iam_admin_client.list_user_project_groups(user_profile.user_id):
+                groups.append({
+                    "id": g["id"],
+                    "name": g["name"],
+                    "owner_id": "",
+                    "description": g["path"],
+                })
 
         # Compute externalIDPUserInfo
         external_idp_user_info = {}
