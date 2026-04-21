@@ -1,5 +1,12 @@
 [
   {
+    "model": "wagtailcore.locale",
+    "pk": 1,
+    "fields": {
+      "language_code": "en"
+    }
+  },
+  {
     "model": "auth.user",
     "fields": {
       "password": "pbkdf2_sha256$36000$9WEqnZsoPTSP$LPD3/zSUWHMoLa5ILSBUdOfWEaF+XO0C1fC0aukbLCw=",
@@ -965,7 +972,8 @@
       "first_published_at": null,
       "last_published_at": null,
       "latest_revision_created_at": null,
-      "live_revision": null
+      "live_revision": null,
+      "locale_id": 1
     }
   },
   {
@@ -996,7 +1004,8 @@
       "first_published_at": null,
       "last_published_at": null,
       "latest_revision_created_at": null,
-      "live_revision": null
+      "live_revision": null,
+      "locale_id": 1
     }
   },
   {
@@ -1029,7 +1038,8 @@
       "first_published_at": "2018-04-17T22:33:31.457Z",
       "last_published_at": "2018-04-27T17:56:25.465Z",
       "latest_revision_created_at": "2018-04-27T17:56:25.414Z",
-      "live_revision": null
+      "live_revision": null,
+      "locale_id": 1
     }
   },
   {
@@ -1062,7 +1072,8 @@
       "first_published_at": "2018-04-18T21:07:30.881Z",
       "last_published_at": "2018-04-18T21:08:15.126Z",
       "latest_revision_created_at": "2018-04-18T21:08:15.107Z",
-      "live_revision": null
+      "live_revision": null,
+      "locale_id": 1
     }
   },
   {

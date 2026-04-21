@@ -1,4 +1,3 @@
-import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from django_airavata.apps.api.ssh_manager import SSHSessionManager

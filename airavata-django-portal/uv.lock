@@ -132,10 +132,8 @@ dependencies = [
     { name = "nbconvert" },
     { name = "nbformat" },
     { name = "papermill" },
-    { name = "pytz" },
     { name = "requests" },
     { name = "requests-oauthlib" },
-    { name = "setuptools" },
     { name = "uvicorn", extra = ["standard"] },
     { name = "wagtail" },
     { name = "wagtail-draftail-anchors" },
@@ -155,8 +153,10 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-django" },
+    { name = "pytest-json-report" },
     { name = "ruff" },
     { name = "ty" },
+    { name = "vulture" },
 ]
 
 [package.metadata]
@@ -165,21 +165,19 @@ requires-dist = [
     { name = "asyncssh", specifier = ">=2.17" },
     { name = "django", specifier = ">=5.1,<5.2" },
     { name = "django-vite", specifier = ">=3.0" },
-    { name = "djangorestframework", specifier = ">=3.15,<4" },
+    { name = "djangorestframework", specifier = ">=3.15" },
     { name = "grpcio", specifier = ">=1.70" },
     { name = "logging-formatter-anticrlf", specifier = ">=1.2" },
     { name = "mysqlclient", marker = "extra == 'mysql'" },
     { name = "nbconvert", specifier = ">=7.16" },
     { name = "nbformat", specifier = ">=5.10" },
     { name = "papermill", specifier = ">=2.6" },
-    { name = "pytz" },
     { name = "requests", specifier = ">=2.32" },
     { name = "requests-oauthlib", specifier = ">=1.4" },
-    { name = "setuptools", specifier = "<81" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32" },
-    { name = "wagtail", specifier = ">=6.3,<7" },
+    { name = "wagtail", specifier = ">=7.3,<8" },
     { name = "wagtail-draftail-anchors", specifier = ">=0.5" },
-    { name = "wagtailcodeblock", specifier = ">=1.28,<1.29" },
+    { name = "wagtailcodeblock", specifier = ">=1.29,<1.30" },
 ]
 provides-extras = ["mysql"]
 
@@ -191,8 +189,10 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=1.3.0" },
     { name = "pytest-cov", specifier = ">=5.0" },
     { name = "pytest-django", specifier = ">=4.8" },
+    { name = "pytest-json-report", specifier = ">=1.5.0" },
     { name = "ruff", specifier = ">=0.8" },
     { name = "ty" },
+    { name = "vulture", specifier = ">=2.16" },
 ]
 
 [[package]]
@@ -824,16 +824,16 @@ wheels = [
 
 [[package]]
 name = "django-tasks"
-version = "0.6.1"
+version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "django-stubs-ext" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/76/63/46f3c2deb2a9df48d46c2f7a067f1286adc674a2a16e99c0344e327a2d4b/django_tasks-0.6.1.tar.gz", hash = "sha256:4086e7eb9e965f79c4ac76f5c3690ec3bf41c461585237b71b4bde729ced9826", size = 26575, upload-time = "2024-12-27T22:03:36.877Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6a/17/c7478fcae7c277a0f648f6e6334d318ad28f48372c3e0f84d1fdc79ec7f3/django_tasks-0.11.0.tar.gz", hash = "sha256:923bf4ac444daee5d879393daf09c7cdf4575c8b0e12726c9d9fceafdea5187f", size = 32971, upload-time = "2026-01-09T17:38:45.824Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bf/a3/f9c6634f67c5bcd309b17fe756ee4a321779806ab515e7ccc6333a439275/django_tasks-0.6.1-py3-none-any.whl", hash = "sha256:b3648e28bdcda809cb7831f3aff98aa46c327025447c462b8943cce9dfbb0281", size = 36330, upload-time = "2024-12-27T22:03:34.416Z" },
+    { url = "https://files.pythonhosted.org/packages/64/c4/1cb34c94078ee02fcf14eb9198d1816f3cd24fe0086d2ce8ecf8aab25628/django_tasks-0.11.0-py3-none-any.whl", hash = "sha256:28f00fcda4e2cc8fe09ca685fbe54d52602ab42077543f9164890781c7e58599", size = 45015, upload-time = "2026-01-09T17:38:44.704Z" },
 ]
 
 [[package]]
@@ -1331,6 +1331,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/9d/55/d01f0c4b45ade6536c51170b9043db8b2ec6ddf4a35c7ea3f5f559ac935b/mistune-3.2.0.tar.gz", hash = "sha256:708487c8a8cdd99c9d90eb3ed4c3ed961246ff78ac82f03418f5183ab70e398a", size = 95467, upload-time = "2025-12-23T11:36:34.994Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9b/f7/4a5e785ec9fbd65146a27b6b70b6cdc161a66f2024e4b04ac06a67f5578b/mistune-3.2.0-py3-none-any.whl", hash = "sha256:febdc629a3c78616b94393c6580551e0e34cc289987ec6c35ed3f4be42d0eee1", size = 53598, upload-time = "2025-12-23T11:36:33.211Z" },
+]
+
+[[package]]
+name = "modelsearch"
+version = "1.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "django-tasks" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/de/ff/ab9bea5ee016a2b78a1e4e9aafdaafaef1677a3887aee1f0a51013c6b9fd/modelsearch-1.2.1.tar.gz", hash = "sha256:8732cb84f424a592ea9fa44763650285af5ecf6475aa742125e7e368083d6505", size = 91262, upload-time = "2026-04-16T10:44:49.421Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c4/db/23e8b874e1b68d2f76e127733a325468a0739cb204d0c9d7bad471ef8c57/modelsearch-1.2.1-py3-none-any.whl", hash = "sha256:6576cb66162b8b1f80806116c2530b4b6409c50a55727735e3175556409c0355", size = 111492, upload-time = "2026-04-16T10:44:47.911Z" },
 ]
 
 [[package]]
@@ -2146,6 +2159,31 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-json-report"
+version = "1.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+    { name = "pytest-metadata" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4f/d3/765dae9712fcd68d820338908c1337e077d5fdadccd5cacf95b9b0bea278/pytest-json-report-1.5.0.tar.gz", hash = "sha256:2dde3c647851a19b5f3700729e8310a6e66efb2077d674f27ddea3d34dc615de", size = 21241, upload-time = "2022-03-15T21:03:10.2Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/81/35/d07400c715bf8a88aa0c1ee9c9eb6050ca7fe5b39981f0eea773feeb0681/pytest_json_report-1.5.0-py3-none-any.whl", hash = "sha256:9897b68c910b12a2e48dd849f9a284b2c79a732a8a9cb398452ddd23d3c8c325", size = 13222, upload-time = "2022-03-15T21:03:08.65Z" },
+]
+
+[[package]]
+name = "pytest-metadata"
+version = "3.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a6/85/8c969f8bec4e559f8f2b958a15229a35495f5b4ce499f6b865eac54b878d/pytest_metadata-3.1.1.tar.gz", hash = "sha256:d2a29b0355fbc03f168aa96d41ff88b1a3b44a3b02acbe491801c98a048017c8", size = 9952, upload-time = "2024-02-12T19:38:44.887Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3e/43/7e7b2ec865caa92f67b8f0e9231a798d102724ca4c0e1f414316be1c1ef2/pytest_metadata-3.1.1-py3-none-any.whl", hash = "sha256:c8e0844db684ee1c798cfa38908d20d67d0463ecb6137c72e91f418558dd5f4b", size = 11428, upload-time = "2024-02-12T19:38:42.531Z" },
+]
+
+[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 source = { registry = "https://pypi.org/simple" }
@@ -2177,15 +2215,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/82/ed/0301aeeac3e5353ef3d94b6ec08bbcabd04a72018415dcb29e588514bba8/python_dotenv-1.2.2.tar.gz", hash = "sha256:2c371a91fbd7ba082c2c1dc1f8bf89ca22564a087c2c287cd9b662adde799cf3", size = 50135, upload-time = "2026-03-01T16:00:26.196Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0b/d7/1959b9648791274998a9c3526f6d0ec8fd2233e4d4acce81bbae76b44b2a/python_dotenv-1.2.2-py3-none-any.whl", hash = "sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a", size = 22101, upload-time = "2026-03-01T16:00:25.09Z" },
-]
-
-[[package]]
-name = "pytz"
-version = "2026.1.post1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/56/db/b8721d71d945e6a8ac63c0fc900b2067181dbb50805958d4d4661cf7d277/pytz-2026.1.post1.tar.gz", hash = "sha256:3378dde6a0c3d26719182142c56e60c7f9af7e968076f31aae569d72a0358ee1", size = 321088, upload-time = "2026-03-03T07:47:50.683Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/10/99/781fe0c827be2742bcc775efefccb3b048a3a9c6ce9aec0cbf4a101677e5/pytz-2026.1.post1-py2.py3-none-any.whl", hash = "sha256:f2fd16142fda348286a75e1a524be810bb05d444e5a081f37f7affc635035f7a", size = 510489, upload-time = "2026-03-03T07:47:49.167Z" },
 ]
 
 [[package]]
@@ -2451,15 +2480,6 @@ wheels = [
 ]
 
 [[package]]
-name = "setuptools"
-version = "80.10.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/76/95/faf61eb8363f26aa7e1d762267a8d602a1b26d4f3a1e758e92cb3cb8b054/setuptools-80.10.2.tar.gz", hash = "sha256:8b0e9d10c784bf7d262c4e5ec5d4ec94127ce206e8738f29a437945fbc219b70", size = 1200343, upload-time = "2026-01-25T22:38:17.252Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/94/b8/f1f62a5e3c0ad2ff1d189590bfa4c46b4f3b6e49cef6f26c6ee4e575394d/setuptools-80.10.2-py3-none-any.whl", hash = "sha256:95b30ddfb717250edb492926c92b5221f7ef3fbcc2b07579bcd4a27da21d0173", size = 1064234, upload-time = "2026-01-25T22:38:15.216Z" },
-]
-
-[[package]]
 name = "six"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2698,8 +2718,17 @@ wheels = [
 ]
 
 [[package]]
+name = "vulture"
+version = "2.16"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/66/3e/4d08c5903b2c0c70cad583c170cc4a663fc6a61e2ad00b711fcda61358cd/vulture-2.16.tar.gz", hash = "sha256:f8d9f6e2af03011664a3c6c240c9765b3f392917d3135fddca6d6a68d359f717", size = 52680, upload-time = "2026-03-25T14:41:27.141Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f5/be/f935130312330614811dae2ea9df3f395f6d63889eb6c2e68c14507152ee/vulture-2.16-py3-none-any.whl", hash = "sha256:6e0f1c312cef1c87856957e5c2ca9608834a7c794c2180477f30bf0e4cc58eee", size = 26993, upload-time = "2026-03-25T14:41:26.21Z" },
+]
+
+[[package]]
 name = "wagtail"
-version = "6.4.2"
+version = "7.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyascii" },
@@ -2714,15 +2743,16 @@ dependencies = [
     { name = "djangorestframework" },
     { name = "draftjs-exporter" },
     { name = "laces" },
+    { name = "modelsearch" },
     { name = "openpyxl" },
     { name = "pillow" },
     { name = "requests" },
     { name = "telepath" },
     { name = "willow", extra = ["heif"] },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dd/00/f8ef0f9f52bef7fce16171de28ef025422295b15e6e19b3f4e4d8d589170/wagtail-6.4.2.tar.gz", hash = "sha256:fcf39430e5fb856674c0cfa3cda67591b44214cc5a99c9308019140eb26ddb42", size = 6637640, upload-time = "2025-06-12T14:58:28.159Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/f9/e28a1b87ea61c68b74990c9f5c8cb11da9a689e07c8b769acc89121f8523/wagtail-7.3.1.tar.gz", hash = "sha256:2ce131d9a4e7d55fdb5b592d320a758a189174b2cc3966b70a34a1b3dc56f449", size = 6855119, upload-time = "2026-03-03T15:54:48.523Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1f/d0/c5f64128613d767f0765c76546f1ba7492201ce32a56c1548a736d856b49/wagtail-6.4.2-py3-none-any.whl", hash = "sha256:1ceff33a6edae02668d8cd08ea77fc7c1d9835986cb1b75a8fa1b353535ddd90", size = 9111602, upload-time = "2025-06-12T14:58:22.163Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/0e/5efc903966b966df2261a66cce8cb88909e4ade86f1173a156aadbbd1a06/wagtail-7.3.1-py3-none-any.whl", hash = "sha256:eab131e15ab9edc7ed24143d44271e92af79239e105bc3e173d26c95d2b489b3", size = 9479191, upload-time = "2026-03-03T15:54:42.644Z" },
 ]
 
 [[package]]
@@ -2739,14 +2769,14 @@ wheels = [
 
 [[package]]
 name = "wagtailcodeblock"
-version = "1.28.0.1"
+version = "1.29.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "wagtail" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6f/98/3edd7b9fe10c3296af19d659dadde5f175981d9f3b7541ef0fd777c45b07/wagtailcodeblock-1.28.0.1.tar.gz", hash = "sha256:0e84c31d270a362b625bcef12cd729b7bc77f14ff363ec91a1a0f39e03da5448", size = 98183, upload-time = "2023-03-04T16:27:36.978Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/18/3d/8966a61fce51095dce11f46f80f8041a026e31f12dd550727ed38ec6be3f/wagtailcodeblock-1.29.0.2.tar.gz", hash = "sha256:4e20a30ff007f1558259b1e16a757aa8a89f72fbbae5dc62f264bc84af467954", size = 99293, upload-time = "2024-02-14T13:41:26.696Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ff/49/41114cc8cad9e32c899910b35c4c7c3180fb6e5455fee0141e5861c51c97/wagtailcodeblock-1.28.0.1-py3-none-any.whl", hash = "sha256:6d5175614f77d9426c94c29fb3e99e2b0b74008f54dddf6f4c4e1116da2b21e1", size = 13908, upload-time = "2023-03-04T16:27:35.108Z" },
+    { url = "https://files.pythonhosted.org/packages/87/49/2a8451de415ce1ae356f42cbf0f295abc5f851ed3cef8578b7c9422e49e5/wagtailcodeblock-1.29.0.2-py3-none-any.whl", hash = "sha256:c6bfe8be08f5e5968d7f25747f0a90f6e717159c62936a6732307382e8b2a8f5", size = 14127, upload-time = "2024-02-14T13:41:24.91Z" },
 ]
 
 [[package]]
