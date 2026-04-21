@@ -19,6 +19,16 @@ class _SSEClient {
 
   connect() {
     if (this._source) return;
+    // Lazy connect: skip opening an EventSource on pages where nothing
+    // listens for real-time events. Every open EventSource counts against
+    // the browser's 6-concurrent-connections-per-origin HTTP/1 limit, and
+    // under rapid navbar clicking the accumulating stale connections (the
+    // previous page's EventSource doesn't always tear down in time) push
+    // later navigations past the limit — the next request queues until one
+    // frees up, which looks like the portal being "stuck".
+    if (!this._hasListeners()) {
+      return;
+    }
 
     this._source = new EventSource("/api/events/");
     this._retryDelay = 1000;
@@ -41,10 +51,18 @@ class _SSEClient {
       this._connected = false;
       this._source.close();
       this._source = null;
-      // Reconnect with exponential backoff
-      setTimeout(() => this.connect(), this._retryDelay);
+      // Reconnect with exponential backoff, but only if someone's still
+      // listening — avoids silent retry storms on pages that no longer need
+      // the stream.
+      setTimeout(() => {
+        if (this._hasListeners()) this.connect();
+      }, this._retryDelay);
       this._retryDelay = Math.min(this._retryDelay * 2, this._maxRetryDelay);
     };
+  }
+
+  _hasListeners() {
+    return Object.values(this._listeners).some((arr) => arr && arr.length > 0);
   }
 
   disconnect() {
@@ -60,6 +78,11 @@ class _SSEClient {
       this._listeners[type] = [];
     }
     this._listeners[type].push(callback);
+    // A late listener registration after connect() was already a no-op
+    // should still open the stream now that someone's interested.
+    if (!this._source) {
+      this.connect();
+    }
   }
 
   off(type, callback) {

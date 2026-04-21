@@ -131,6 +131,20 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+        # WAL mode: readers no longer block while a writer is active. In DELETE
+        # journal mode (the default), every session write takes an EXCLUSIVE
+        # lock and blocks every concurrent read — which under rapid navbar
+        # clicking (each click issues several in-flight session-touching
+        # requests) causes the UI to hang waiting for the lock to clear.
+        # busy_timeout lets us wait for the lock instead of failing fast.
+        "OPTIONS": {
+            "init_command": "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;",
+            # Enforces sensible transaction isolation across concurrent threads
+            # without giving up the WAL win.
+            "transaction_mode": "IMMEDIATE",
+        },
+        "CONN_MAX_AGE": 60,
+        "CONN_HEALTH_CHECKS": True,
     }
 }
 
