@@ -10,7 +10,6 @@ from wagtail.documents import urls as wagtaildocs_urls
 
 from . import views
 from .apps.workspace import views as workspace_views
-from .apps.admin import views as admin_views
 
 urlpatterns = [
     path("health/", views.health, name="health"),

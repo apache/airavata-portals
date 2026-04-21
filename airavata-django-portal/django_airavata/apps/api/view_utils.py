@@ -2,11 +2,10 @@ import logging
 import os
 from collections.__init__ import OrderedDict
 from collections.abc import Iterator
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import pytz  # ty: ignore[unresolved-import]
 from django.conf import settings
 from django.http import Http404
 from django.http.request import QueryDict
@@ -217,7 +216,7 @@ def convert_utc_iso8601_to_date(iso8601_utc_string: str) -> datetime:
     # This is meant to convert a JavaScript `new Date().toJSON()` into a
     # datetime instance
     timestamp = datetime.strptime(iso8601_utc_string, "%Y-%m-%dT%H:%M:%S.%fZ")
-    timestamp = timestamp.replace(tzinfo=pytz.UTC)
+    timestamp = timestamp.replace(tzinfo=timezone.utc)
     logger.debug(f"convert_utc_iso8601_to_date({iso8601_utc_string})={timestamp}")
     return timestamp
 
