@@ -41,7 +41,7 @@ These decisions are locked here so per-track brainstorms don't relitigate them.
 
 **Python floor.** Stay on 3.12. Bumping to 3.13 is a separate decision outside this umbrella.
 
-**Package manager.** Keep Yarn 1 classic. Corepack pin gives reproducible installs. A pnpm or Yarn 4 switch is its own future track if desired.
+**Package manager.** _Original guardrail was "keep Yarn 1 classic"._ Track C deviated: switched to **npm workspaces** (pinned via `packageManager: npm@<host>`). Rationale: npm ships with Node (no corepack dependency), aligns with Node-ecosystem default, simpler onboarding. See `docs/superpowers/specs/2026-04-21-track-c-monorepo-tooling-design.md`.
 
 **Rollback.** Every track lands on its own feature branch → PR → merge to a long-lived `modernization` branch, which merges to main only at the end. Any track can be reverted independently.
 
