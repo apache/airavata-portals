@@ -2,26 +2,17 @@
   <div class="mb-3">
     <label class="form-label">
       {{ extendedUserProfileField.name }}
-      <small
-        v-if="!extendedUserProfileField.required"
-        class="text-muted text-small"
+      <small v-if="!extendedUserProfileField.required" class="text-muted text-small"
         >(Optional)</small
       >
     </label>
-    <div class="card ms-3 mb-3"
-      v-for="link in extendedUserProfileField.links"
-      :key="link.id"
-    >
+    <div v-for="link in extendedUserProfileField.links" :key="link.id" class="card ms-3 mb-3">
       <div class="card-header">{{ link.label }}</div>
       <div class="card-body">
         <div v-if="link.display_inline">
           <iframe :src="link.url" />
         </div>
-        <a
-          v-if="link.display_link"
-          :href="link.url"
-          target="_blank"
-          class="card-link"
+        <a v-if="link.display_link" :href="link.url" target="_blank" class="card-link"
           >Open '{{ link.label }}' in separate tab.</a
         >
       </div>

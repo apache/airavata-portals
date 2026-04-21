@@ -20,6 +20,9 @@ import RangeSliderInputEditor from "../../components/experiment/input-editors/Ra
 import WebComponentInputEditorMixin from "./WebComponentInputEditorMixin.js";
 
 export default {
+  components: {
+    RangeSliderInputEditor,
+  },
   mixins: [WebComponentInputEditorMixin],
   props: {
     // Explicit copy props from mixin, workaround for bug, see
@@ -48,9 +51,6 @@ export default {
       },
     },
     delimiter: String,
-  },
-  components: {
-    RangeSliderInputEditor,
   },
 };
 </script>

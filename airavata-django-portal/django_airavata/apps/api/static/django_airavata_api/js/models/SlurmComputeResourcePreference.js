@@ -31,13 +31,13 @@ export default class SlurmComputeResourcePreference extends BaseModel {
   toJSON() {
     const json = { ...this };
     if (json.group_ssh_account_provisioner_configs) {
-      json.group_ssh_account_provisioner_configs = json.group_ssh_account_provisioner_configs.map((cfg) =>
-        typeof cfg.toJSON === "function" ? cfg.toJSON() : cfg
+      json.group_ssh_account_provisioner_configs = json.group_ssh_account_provisioner_configs.map(
+        (cfg) => (typeof cfg.toJSON === "function" ? cfg.toJSON() : cfg),
       );
     }
     if (json.reservations) {
       json.reservations = json.reservations.map((res) =>
-        typeof res.toJSON === "function" ? res.toJSON() : res
+        typeof res.toJSON === "function" ? res.toJSON() : res,
       );
     }
     return json;

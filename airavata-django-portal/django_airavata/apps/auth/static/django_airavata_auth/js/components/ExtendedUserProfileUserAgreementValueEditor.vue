@@ -1,17 +1,22 @@
 <template>
   <extended-user-profile-value-editor v-bind="$props">
     <div class="form-check">
-      <input :class="['form-check-input', validateStateErrorOnly(v$.value) === false ? 'is-invalid' : '']" type="checkbox"
+      <input
         v-model="value"
+        :class="[
+          'form-check-input',
+          validateStateErrorOnly(v$.value) === false ? 'is-invalid' : '',
+        ]"
+        type="checkbox"
         :value="true"
       />
       <label class="form-check-label">
         {{ extendedUserProfileField.checkbox_label }}
       </label>
     </div>
-    <div class="invalid-feedback d-block" v-if="v$.value.$dirty && v$.value.$error"
-      >This field is required.</div
-    >
+    <div v-if="v$.value.$dirty && v$.value.$error" class="invalid-feedback d-block">
+      This field is required.
+    </div>
   </extended-user-profile-value-editor>
 </template>
 

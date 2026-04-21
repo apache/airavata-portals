@@ -1,16 +1,9 @@
 <template>
   <div class="confirmation-button">
-    <button :class="['btn', 'btn-' + variant]"
-      @click="$refs.modal.show()"
-      :disabled="disabled"
-    >
+    <button :class="['btn', 'btn-' + variant]" :disabled="disabled" @click="$refs.modal.show()">
       {{ label }}
     </button>
-    <confirmation-dialog
-      ref="modal"
-      :title="dialogTitle"
-      @ok="$emit('confirmed')"
-    >
+    <confirmation-dialog ref="modal" :title="dialogTitle" @ok="$emit('confirmed')">
       <slot></slot>
     </confirmation-dialog>
   </div>
@@ -19,7 +12,10 @@
 import ConfirmationDialog from "./ConfirmationDialog.vue";
 
 export default {
-  name: "confirmation-button",
+  name: "ConfirmationButton",
+  components: {
+    ConfirmationDialog,
+  },
   props: {
     dialogTitle: {
       type: String,
@@ -37,9 +33,6 @@ export default {
       type: String,
       default: "danger",
     },
-  },
-  components: {
-    ConfirmationDialog,
   },
 };
 </script>

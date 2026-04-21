@@ -76,8 +76,8 @@ test("load experiment by job id when job id matches unique experiment", async ()
         limit: 50,
         offset: 0,
       },
-      models.ExperimentStatistics
-    )
+      models.ExperimentStatistics,
+    ),
   );
   services.ComputeResourceService.namesList.mockResolvedValue([]);
   services.ExperimentSearchService.list.mockResolvedValue(
@@ -88,8 +88,8 @@ test("load experiment by job id when job id matches unique experiment", async ()
         previous: null,
         results: [{ experiment_id: "test-experiment-id" }],
       },
-      models.ExperimentSummary
-    )
+      models.ExperimentSummary,
+    ),
   );
   // Mock just enough of Experiment and FullExperiment to get ExperimentDetailsView to render
   const experiment = new models.Experiment({
@@ -108,7 +108,7 @@ test("load experiment by job id when job id matches unique experiment", async ()
     new models.FullExperiment({
       experiment_id: "test-experiment-id",
       experiment,
-    })
+    }),
   );
   services.ExperimentArchiveService.get.mockResolvedValue({
     archived: false,
@@ -118,9 +118,7 @@ test("load experiment by job id when job id matches unique experiment", async ()
   });
 
   // The render method returns a collection of utilities to query your component.
-  const { findByText, findByPlaceholderText } = render(
-    ExperimentStatisticsContainer
-  );
+  const { findByText, findByPlaceholderText } = render(ExperimentStatisticsContainer);
 
   const byJobIDTab = await findByText("By Job ID");
 
@@ -130,9 +128,7 @@ test("load experiment by job id when job id matches unique experiment", async ()
 
   await fireEvent.update(jobIDInputField, "12345");
 
-  const loadButton = await within(jobIDInputField.parentElement).findByText(
-    "Load"
-  );
+  const loadButton = await within(jobIDInputField.parentElement).findByText("Load");
 
   await fireEvent.click(loadButton);
 
@@ -148,7 +144,7 @@ test("load experiment by job id when job id matches unique experiment", async ()
     },
     {
       ignoreErrors: true,
-    }
+    },
   );
   expect(services.FullExperimentService.retrieve).toHaveBeenCalledWith({
     lookup: experiment.experiment_id,
@@ -181,8 +177,8 @@ test("Hostname filter only shows compute resources that are configured in a GRP"
         limit: 50,
         offset: 0,
       },
-      models.ExperimentStatistics
-    )
+      models.ExperimentStatistics,
+    ),
   );
   services.ComputeResourceService.namesList.mockResolvedValue([
     { host_id: "compute4-abcd", host: "d-compute4" },
@@ -203,9 +199,7 @@ test("Hostname filter only shows compute resources that are configured in a GRP"
 
   await fireEvent.click(hostnameMenuItem);
 
-  const computeResourcesSelect = await findByText(
-    "Select compute resource to filter on"
-  );
+  const computeResourcesSelect = await findByText("Select compute resource to filter on");
 
   const options = computeResourcesSelect.parentElement.options;
 

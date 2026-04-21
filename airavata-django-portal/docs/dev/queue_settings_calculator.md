@@ -4,10 +4,10 @@ A _Queue Settings Calculator_ is a Python function that computes the queue
 settings for an experiment. The function takes an instance of an experiment and
 returns:
 
--   queue name
--   core count
--   node count
--   walltime limit
+- queue name
+- core count
+- node count
+- walltime limit
 
 The Airavata Django Portal then uses these values to populate the Queue Settings
 fields when users are creating/editing experiments. This can greatly simplify
@@ -101,4 +101,4 @@ Settings UI in the Create/Edit Experiment views is disabled and made read only.
 
 ## Examples
 
--   <https://github.com/bio-miga/miga-autocomplete>
+- <https://github.com/bio-miga/miga-autocomplete>

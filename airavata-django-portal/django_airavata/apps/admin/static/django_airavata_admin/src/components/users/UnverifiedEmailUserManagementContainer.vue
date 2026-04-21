@@ -4,13 +4,15 @@
       <div class="col">
         <div class="card">
           <div class="card-body">
-            <!-- TODO: Replace b-table with native table --><table class="table" hover :fields="fields" :items="items" :fixed="true">
+            <!-- TODO: Replace b-table with native table -->
+            <table class="table" hover :fields="fields" :items="items" :fixed="true">
               <template slot="cell(creation_time)" slot-scope="data">
                 <human-date :date="data.value" />
               </template>
               <template slot="cell(action)" slot-scope="data">
-                <button class="btn"
+                <button
                   v-if="data.item.user_has_write_access"
+                  class="btn"
                   @click="toggleDetails(data)"
                 >
                   Edit
@@ -30,11 +32,7 @@
                 />
               </template>
             </table>
-            <pager
-              v-bind:paginator="usersPaginator"
-              v-on:next="next"
-              v-on:previous="previous"
-            ></pager>
+            <pager :paginator="usersPaginator" @next="next" @previous="previous"></pager>
           </div>
         </div>
       </div>
@@ -48,23 +46,18 @@ import EnableUserPanel from "./EnableUserPanel";
 import DeleteUserPanel from "./DeleteUserPanel";
 
 export default {
-  name: "unverified-email-user-management-container",
-  data() {
-    return {
-      usersPaginator: null,
-      showingDetails: {},
-    };
-  },
+  name: "UnverifiedEmailUserManagementContainer",
   components: {
     pager: components.Pager,
     "human-date": components.HumanDate,
     EnableUserPanel,
     DeleteUserPanel,
   },
-  created() {
-    services.UnverifiedEmailUserProfileService.list({ limit: 10 }).then(
-      (users) => (this.usersPaginator = users)
-    );
+  data() {
+    return {
+      usersPaginator: null,
+      showingDetails: {},
+    };
   },
   computed: {
     fields() {
@@ -103,6 +96,11 @@ export default {
       return this.usersPaginator ? this.usersPaginator.results : [];
     },
   },
+  created() {
+    services.UnverifiedEmailUserProfileService.list({ limit: 10 }).then(
+      (users) => (this.usersPaginator = users),
+    );
+  },
   methods: {
     next() {
       this.usersPaginator.next();
@@ -112,12 +110,12 @@ export default {
     },
     enableUser(username) {
       services.IAMUserProfileService.enable({ lookup: username }).finally(() =>
-        this.loadUnverifiedEmailUsers()
+        this.loadUnverifiedEmailUsers(),
       );
     },
     deleteUser(username) {
       services.IAMUserProfileService.delete({ lookup: username }).finally(() =>
-        this.loadUnverifiedEmailUsers()
+        this.loadUnverifiedEmailUsers(),
       );
     },
     loadUnverifiedEmailUsers() {
@@ -127,9 +125,7 @@ export default {
     },
     toggleDetails(row) {
       row.toggleDetails();
-      this.showingDetails[row.item.user_id] = !this.showingDetails[
-        row.item.user_id
-      ];
+      this.showingDetails[row.item.user_id] = !this.showingDetails[row.item.user_id];
     },
   },
 };

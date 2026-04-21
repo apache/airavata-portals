@@ -4,7 +4,7 @@
 <script>
 import { errors, services, utils } from "django-airavata-api";
 export default {
-  name: "application-name",
+  name: "ApplicationName",
   props: {
     applicationInterfaceId: {
       type: String,
@@ -17,6 +17,20 @@ export default {
       notAvailable: false,
     };
   },
+  computed: {
+    applicationName() {
+      if (this.notAvailable) {
+        return "N/A";
+      } else {
+        return this.applicationInterface ? this.applicationInterface.application_name : "";
+      }
+    },
+  },
+  watch: {
+    applicationInterfaceId() {
+      this.loadApplicationInterface();
+    },
+  },
   created() {
     this.loadApplicationInterface();
   },
@@ -24,7 +38,7 @@ export default {
     loadApplicationInterface() {
       services.ApplicationInterfaceService.retrieve(
         { lookup: this.applicationInterfaceId },
-        { ignoreErrors: true, cache: true }
+        { ignoreErrors: true, cache: true },
       )
         .then((appInterface) => (this.applicationInterface = appInterface))
         .catch((error) => {
@@ -35,22 +49,6 @@ export default {
           }
         })
         .catch(utils.FetchUtils.reportError);
-    },
-  },
-  computed: {
-    applicationName() {
-      if (this.notAvailable) {
-        return "N/A";
-      } else {
-        return this.applicationInterface
-          ? this.applicationInterface.application_name
-          : "";
-      }
-    },
-  },
-  watch: {
-    applicationInterfaceId() {
-      this.loadApplicationInterface();
     },
   },
 };

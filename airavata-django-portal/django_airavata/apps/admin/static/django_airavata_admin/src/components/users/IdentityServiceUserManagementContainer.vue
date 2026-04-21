@@ -5,16 +5,15 @@
         <div class="card">
           <div class="card-body">
             <div class="input-group">
-              <input class="form-control"
+              <input
                 v-model="search"
+                class="form-control"
                 placeholder="Search by name, email or username"
                 @keydown.enter="searchUsers"
               />
               <span class="input-group-text">
                 <button class="btn" @click="resetSearch">Reset</button>
-                <button class="btn btn-primary btn-sm" @click="searchUsers"
-                  >Search</button
-                >
+                <button class="btn btn-primary btn-sm" @click="searchUsers">Search</button>
               </span>
             </div>
           </div>
@@ -25,13 +24,15 @@
       <div class="col">
         <div class="card">
           <div class="card-body">
-            <!-- TODO: Replace b-table with native table --><table class="table" hover :fields="fields" :items="items" :fixed="true">
+            <!-- TODO: Replace b-table with native table -->
+            <table class="table" hover :fields="fields" :items="items" :fixed="true">
               <template slot="cell(creation_time)" slot-scope="data">
                 <human-date :date="data.value" />
               </template>
               <template slot="cell(action)" slot-scope="data">
-                <button class="btn"
+                <button
                   v-if="data.item.user_has_write_access"
+                  class="btn"
                   @click="toggleDetails(data)"
                 >
                   Edit
@@ -46,11 +47,7 @@
                 />
               </template>
             </table>
-            <pager
-              v-bind:paginator="usersPaginator"
-              v-on:next="next"
-              v-on:previous="previous"
-            ></pager>
+            <pager :paginator="usersPaginator" @next="next" @previous="previous"></pager>
           </div>
         </div>
       </div>
@@ -64,23 +61,18 @@ import { components } from "django-airavata-common-ui";
 import UserDetailsContainer from "./UserDetailsContainer.vue";
 
 export default {
-  name: "user-management-container",
+  name: "UserManagementContainer",
+  components: {
+    pager: components.Pager,
+    "human-date": components.HumanDate,
+    UserDetailsContainer,
+  },
   data() {
     return {
       usersPaginator: null,
       showingDetails: {},
       search: null,
     };
-  },
-  components: {
-    pager: components.Pager,
-    "human-date": components.HumanDate,
-    UserDetailsContainer,
-  },
-  created() {
-    services.IAMUserProfileService.list({ limit: 10 }).then(
-      (users) => (this.usersPaginator = users)
-    );
   },
   computed: {
     fields() {
@@ -123,8 +115,7 @@ export default {
       return this.usersPaginator
         ? this.usersPaginator.results.map((u) => {
             const user = u.clone();
-            user._showDetails =
-              this.showingDetails[u.airavata_internal_user_id] || false;
+            user._showDetails = this.showingDetails[u.airavata_internal_user_id] || false;
             return user;
           })
         : [];
@@ -132,6 +123,11 @@ export default {
     currentOffset() {
       return this.usersPaginator ? this.usersPaginator.offset : 0;
     },
+  },
+  created() {
+    services.IAMUserProfileService.list({ limit: 10 }).then(
+      (users) => (this.usersPaginator = users),
+    );
   },
   methods: {
     next() {
@@ -148,14 +144,12 @@ export default {
       if (this.search) {
         params["search"] = this.search;
       }
-      services.IAMUserProfileService.list(params).then(
-        (users) => (this.usersPaginator = users)
-      );
+      services.IAMUserProfileService.list(params).then((users) => (this.usersPaginator = users));
     },
     toggleDetails(row) {
       row.toggleDetails();
-      this.showingDetails[row.item.airavata_internal_user_id] = !this
-        .showingDetails[row.item.airavata_internal_user_id];
+      this.showingDetails[row.item.airavata_internal_user_id] =
+        !this.showingDetails[row.item.airavata_internal_user_id];
     },
     searchUsers() {
       // Reset paginator when starting a search
@@ -169,12 +163,12 @@ export default {
     },
     enableUser(username) {
       services.IAMUserProfileService.enable({ lookup: username }).finally(() =>
-        this.reloadUserProfiles()
+        this.reloadUserProfiles(),
       );
     },
     deleteUser(username) {
       services.IAMUserProfileService.delete({ lookup: username }).finally(() =>
-        this.reloadUserProfiles()
+        this.reloadUserProfiles(),
       );
     },
     updateUsername(userProfile, username, newUsername) {

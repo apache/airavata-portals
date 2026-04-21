@@ -3,7 +3,9 @@
     <div class="row align-items-center mb-3">
       <div class="col">
         <h1 class="h4 mb-0">Projects</h1>
-        <p class="text-muted mb-0">Organize your experiments into projects for easier management.</p>
+        <p class="text-muted mb-0">
+          Organize your experiments into projects for easier management.
+        </p>
       </div>
       <div class="col-auto">
         <project-button-new @new-project="onNewProject" />
@@ -28,22 +30,25 @@
                     <div class="table-empty">
                       <i class="fa fa-folder-open table-empty__icon"></i>
                       <div class="table-empty__title">No projects yet</div>
-                      <div class="table-empty__text">Create your first project to start organizing experiments.</div>
+                      <div class="table-empty__text">
+                        Create your first project to start organizing experiments.
+                      </div>
                     </div>
                   </td>
                 </tr>
                 <project-list-item
-                  v-for="project in (projects || [])"
-                  :project="project"
+                  v-for="project in projects || []"
                   :key="project.project_id"
+                  :project="project"
                   @delete="onDeleteProject"
                 />
               </tbody>
             </table>
-            <pager v-if="projects && projects.length > 0"
-              v-bind:paginator="projectsPaginator"
-              v-on:next="nextProjects"
-              v-on:previous="previousProjects"
+            <pager
+              v-if="projects && projects.length > 0"
+              :paginator="projectsPaginator"
+              @next="nextProjects"
+              @previous="previousProjects"
             ></pager>
           </div>
         </div>
@@ -52,8 +57,8 @@
     <project-delete-modal
       v-if="deleteTarget"
       ref="deleteModal"
-      :projectId="deleteTarget.project_id"
-      :projectName="deleteTarget.name"
+      :project-id="deleteTarget.project_id"
+      :project-name="deleteTarget.name"
       @delete="confirmDelete"
     />
   </div>
@@ -68,19 +73,29 @@ import { services } from "django-airavata-api";
 import { components as comps } from "django-airavata-common-ui";
 
 export default {
+  name: "ProjectListContainer",
+  components: {
+    "project-list-item": ProjectListItem,
+    "project-button-new": ProjectButtonNew,
+    "project-delete-modal": ProjectDeleteModal,
+    pager: comps.Pager,
+  },
   props: ["initialProjectsData"],
-  name: "project-list-container",
   data() {
     return {
       projectsPaginator: null,
       deleteTarget: null,
     };
   },
-  components: {
-    "project-list-item": ProjectListItem,
-    "project-button-new": ProjectButtonNew,
-    "project-delete-modal": ProjectDeleteModal,
-    pager: comps.Pager,
+  computed: {
+    projects: function () {
+      return this.projectsPaginator ? this.projectsPaginator.results : null;
+    },
+  },
+  beforeMount: function () {
+    services.ProjectService.list({
+      initialData: this.initialProjectsData,
+    }).then((result) => (this.projectsPaginator = result));
   },
   methods: {
     nextProjects: function () {
@@ -90,9 +105,7 @@ export default {
       this.projectsPaginator.previous();
     },
     onNewProject: function () {
-      services.ProjectService.list().then(
-        (result) => (this.projectsPaginator = result)
-      );
+      services.ProjectService.list().then((result) => (this.projectsPaginator = result));
     },
     onDeleteProject(project) {
       this.deleteTarget = project;
@@ -109,16 +122,6 @@ export default {
         console.error("Failed to delete project:", err);
       }
     },
-  },
-  computed: {
-    projects: function () {
-      return this.projectsPaginator ? this.projectsPaginator.results : null;
-    },
-  },
-  beforeMount: function () {
-    services.ProjectService.list({
-      initialData: this.initialProjectsData,
-    }).then((result) => (this.projectsPaginator = result));
   },
 };
 </script>

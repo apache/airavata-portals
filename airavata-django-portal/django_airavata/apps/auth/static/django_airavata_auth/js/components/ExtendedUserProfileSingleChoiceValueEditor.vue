@@ -1,27 +1,29 @@
 <template>
   <extended-user-profile-value-editor v-bind="$props">
-    <select :class="['form-select', validateStateErrorOnly(v$.value) === false ? 'is-invalid' : '']"
+    <select
       v-model="value"
+      :class="['form-select', validateStateErrorOnly(v$.value) === false ? 'is-invalid' : '']"
       @change="onChange"
     >
       <option :value="null" disabled>-- Please select an option --</option>
       <option v-for="opt in options" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
-      <option v-if="extendedUserProfileField.other" :value="otherOptionValue"
-        >Other (please specify)</option
-      >
+      <option v-if="extendedUserProfileField.other" :value="otherOptionValue">
+        Other (please specify)
+      </option>
     </select>
-    <div class="invalid-feedback" v-if="v$.value.$dirty && v$.value.$error"
-      >This field is required.</div
-    >
+    <div v-if="v$.value.$dirty && v$.value.$error" class="invalid-feedback">
+      This field is required.
+    </div>
     <template v-if="showOther">
-      <input :class="['form-control mt-2', validateState(v$.other) === false ? 'is-invalid' : '']"
+      <input
         v-model="other"
+        :class="['form-control mt-2', validateState(v$.other) === false ? 'is-invalid' : '']"
         placeholder="Please specify"
         @input="onInput"
       />
-      <div class="invalid-feedback" v-if="v$.other.$dirty && v$.other.$error"
-        >Please specify a value for 'Other'.</div
-      >
+      <div v-if="v$.other.$dirty && v$.other.$error" class="invalid-feedback">
+        Please specify a value for 'Other'.
+      </div>
     </template>
   </extended-user-profile-value-editor>
 </template>
@@ -46,10 +48,7 @@ export default {
     };
   },
   computed: {
-    ...mapGetters("extendedUserProfile", [
-      "getSingleChoiceValue",
-      "getSingleChoiceOther",
-    ]),
+    ...mapGetters("extendedUserProfile", ["getSingleChoiceValue", "getSingleChoiceOther"]),
     value: {
       get() {
         if (this.showOther) {
@@ -85,8 +84,7 @@ export default {
       return (value === null && this.other) || this.otherOptionSelected;
     },
     options() {
-      return this.extendedUserProfileField &&
-        this.extendedUserProfileField.choices
+      return this.extendedUserProfileField && this.extendedUserProfileField.choices
         ? this.extendedUserProfileField.choices.map((choice) => {
             return {
               value: choice.id,
@@ -118,10 +116,7 @@ export default {
     return validations;
   },
   methods: {
-    ...mapMutations("extendedUserProfile", [
-      "setSingleChoiceValue",
-      "setSingleChoiceOther",
-    ]),
+    ...mapMutations("extendedUserProfile", ["setSingleChoiceValue", "setSingleChoiceOther"]),
     onChange(event) {
       this.otherOptionSelected = event.target.value === String(this.otherOptionValue);
     },

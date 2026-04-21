@@ -56,17 +56,17 @@ reproduced on the current `wagtailcodeblock` release — not speculatively.
 Every `<` pin in `pyproject.toml` must either be widened or carry an inline
 `# rationale` comment after this track.
 
-| Pin | Action | Resulting line |
-|---|---|---|
-| `Django>=5.1,<5.2` | Keep, add rationale | `"Django>=5.1,<5.2",  # LTS series (5.1 is LTS through 2026-12)` |
-| `djangorestframework>=3.15,<4` | Widen (drop speculative major cap) | `"djangorestframework>=3.15",` |
-| `wagtail>=6.3,<7` | Keep, add rationale | `"wagtail>=6.3,<7",  # avoid major 7.x until migration assessed` |
-| `wagtailcodeblock>=1.28,<1.29` | Widen (handled by item 2) | `"wagtailcodeblock>=1.30",` |
-| `setuptools<81` | Remove (handled by item 2) | *deleted* |
+| Pin                            | Action                             | Resulting line                                                   |
+| ------------------------------ | ---------------------------------- | ---------------------------------------------------------------- |
+| `Django>=5.1,<5.2`             | Keep, add rationale                | `"Django>=5.1,<5.2",  # LTS series (5.1 is LTS through 2026-12)` |
+| `djangorestframework>=3.15,<4` | Widen (drop speculative major cap) | `"djangorestframework>=3.15",`                                   |
+| `wagtail>=6.3,<7`              | Keep, add rationale                | `"wagtail>=6.3,<7",  # avoid major 7.x until migration assessed` |
+| `wagtailcodeblock>=1.28,<1.29` | Widen (handled by item 2)          | `"wagtailcodeblock>=1.30",`                                      |
+| `setuptools<81`                | Remove (handled by item 2)         | _deleted_                                                        |
 
 Rule of thumb encoded in the audit script (see Testing):
-*"every line containing `<` in a dependency string must have an inline `#`
-comment on the same line or a `#` comment on the line immediately above it."*
+_"every line containing `<` in a dependency string must have an inline `#`
+comment on the same line or a `#` comment on the line immediately above it."_
 
 ### 4. Dead-code sweep
 
@@ -106,13 +106,13 @@ the output, and delete confirmed dead code in the same commit.
 
 ## Design Decisions
 
-| # | Decision | Alternatives considered |
-|---|---|---|
-| Q1 | Upgrade `wagtailcodeblock` to 1.30 to drop the `setuptools<81` pin | Keep pin + rationale comment; replace wagtailcodeblock with a lighter custom block |
-| Q2 | Rationalize pins that have a reason (`Django<5.2`, `wagtail<7`); widen speculative ones (`djangorestframework<4`, `wagtailcodeblock<1.29`) | Pure documentation (rationalize all); pure widening (drop all major caps) |
-| Q3 | Full dead-code audit using vulture + ruff + manual review | Surgical removal of known-dead `groups/` only; targeted sweep |
-| Q4 | Full smoke suite: pytest + booted-portal curl diffs on 8 key endpoints | Existing pytest only; targeted regression tests around the pytz call site |
-| Q5 | One commit for all four scopes | One commit per scope; low-risk vs high-risk split |
+| #   | Decision                                                                                                                                   | Alternatives considered                                                            |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| Q1  | Upgrade `wagtailcodeblock` to 1.30 to drop the `setuptools<81` pin                                                                         | Keep pin + rationale comment; replace wagtailcodeblock with a lighter custom block |
+| Q2  | Rationalize pins that have a reason (`Django<5.2`, `wagtail<7`); widen speculative ones (`djangorestframework<4`, `wagtailcodeblock<1.29`) | Pure documentation (rationalize all); pure widening (drop all major caps)          |
+| Q3  | Full dead-code audit using vulture + ruff + manual review                                                                                  | Surgical removal of known-dead `groups/` only; targeted sweep                      |
+| Q4  | Full smoke suite: pytest + booted-portal curl diffs on 8 key endpoints                                                                     | Existing pytest only; targeted regression tests around the pytz call site          |
+| Q5  | One commit for all four scopes                                                                                                             | One commit per scope; low-risk vs high-risk split                                  |
 
 ## Testing protocol (functional-parity enforcement)
 
@@ -258,13 +258,13 @@ diff -r /tmp/td-pre /tmp/td-post
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| wagtailcodeblock 1.30 still imports `pkg_resources` | Fallback: keep `setuptools<81` pin + inline rationale comment; abandon the bump |
-| wagtailcodeblock 1.30 changes CMS block template output | Smoke Layer 3 endpoint #7 (`/pages/home/`) catches byte diffs |
-| vulture false positives delete Django dynamic-dispatch code | Manual triage required before any deletion; protection list documented above |
-| pyproject pin widening breaks resolution | `uv sync` in Layer 1 catches |
-| Test suite is flaky enough that "identical summary" is too strict | Re-run up to 3× on any parity failure before declaring drift real |
+| Risk                                                              | Mitigation                                                                      |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| wagtailcodeblock 1.30 still imports `pkg_resources`               | Fallback: keep `setuptools<81` pin + inline rationale comment; abandon the bump |
+| wagtailcodeblock 1.30 changes CMS block template output           | Smoke Layer 3 endpoint #7 (`/pages/home/`) catches byte diffs                   |
+| vulture false positives delete Django dynamic-dispatch code       | Manual triage required before any deletion; protection list documented above    |
+| pyproject pin widening breaks resolution                          | `uv sync` in Layer 1 catches                                                    |
+| Test suite is flaky enough that "identical summary" is too strict | Re-run up to 3× on any parity failure before declaring drift real               |
 
 ## Not in scope
 

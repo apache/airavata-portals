@@ -6,7 +6,7 @@
 import { models } from "django-airavata-api";
 
 export default {
-  name: "experiment-status-badge",
+  name: "ExperimentStatusBadge",
   props: {
     statusName: {
       type: String,

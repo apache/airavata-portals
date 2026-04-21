@@ -39,24 +39,31 @@ export default class GroupComputeResourcePreference extends BaseModel {
 
     super(FIELDS, data);
 
-    const specificPrefsToUse = rawSpecificPreferences !== undefined && rawSpecificPreferences !== null
-      ? rawSpecificPreferences
-      : (data.specific_preferences !== undefined && data.specific_preferences !== null ? data.specific_preferences : null);
+    const specificPrefsToUse =
+      rawSpecificPreferences !== undefined && rawSpecificPreferences !== null
+        ? rawSpecificPreferences
+        : data.specific_preferences !== undefined && data.specific_preferences !== null
+          ? data.specific_preferences
+          : null;
 
     if (specificPrefsToUse !== null) {
       this.specific_preferences = specificPrefsToUse;
     }
 
-    if (this.resource_type && typeof this.resource_type === 'number') {
-      this.resource_type = ResourceType.values.find(rt => rt.value === this.resource_type) || this.resource_type;
+    if (this.resource_type && typeof this.resource_type === "number") {
+      this.resource_type =
+        ResourceType.values.find((rt) => rt.value === this.resource_type) || this.resource_type;
     }
 
     if (topLevelAllocationProjectNumber) {
-      if (this.resource_type && this.resource_type.name === 'SLURM') {
+      if (this.resource_type && this.resource_type.name === "SLURM") {
         if (!this.specific_preferences) {
           this.specific_preferences = {};
         }
-        if (typeof this.specific_preferences === 'object' && !(this.specific_preferences instanceof BaseModel)) {
+        if (
+          typeof this.specific_preferences === "object" &&
+          !(this.specific_preferences instanceof BaseModel)
+        ) {
           if (!this.specific_preferences.allocation_project_number) {
             this.specific_preferences.allocation_project_number = topLevelAllocationProjectNumber;
           }
@@ -66,7 +73,10 @@ export default class GroupComputeResourcePreference extends BaseModel {
         if (!this.specific_preferences) {
           this.specific_preferences = {};
         }
-        if (typeof this.specific_preferences === 'object' && !(this.specific_preferences instanceof BaseModel)) {
+        if (
+          typeof this.specific_preferences === "object" &&
+          !(this.specific_preferences instanceof BaseModel)
+        ) {
           if (!this.specific_preferences.allocation_project_number) {
             this.specific_preferences.allocation_project_number = topLevelAllocationProjectNumber;
           }
@@ -78,7 +88,7 @@ export default class GroupComputeResourcePreference extends BaseModel {
   }
 
   toJSON() {
-    const json = {...this};
+    const json = { ...this };
     if (this.resource_type && this.resource_type.value !== undefined) {
       json.resource_type = this.resource_type.value;
     } else if (this.resource_type && this.resource_type.name) {
@@ -86,17 +96,14 @@ export default class GroupComputeResourcePreference extends BaseModel {
     }
 
     let specificPrefsPayload = this.specific_preferences;
-    if (
-      this.specific_preferences &&
-      typeof this.specific_preferences.toJSON === "function"
-    ) {
+    if (this.specific_preferences && typeof this.specific_preferences.toJSON === "function") {
       specificPrefsPayload = this.specific_preferences.toJSON();
     }
 
     if (specificPrefsPayload && this.isResourceType("SLURM")) {
-      json.specific_preferences = {slurm: specificPrefsPayload};
+      json.specific_preferences = { slurm: specificPrefsPayload };
     } else if (specificPrefsPayload && this.isResourceType("AWS")) {
-      json.specific_preferences = {aws: specificPrefsPayload};
+      json.specific_preferences = { aws: specificPrefsPayload };
     } else if (specificPrefsPayload) {
       json.specific_preferences = specificPrefsPayload;
     } else {
@@ -108,8 +115,11 @@ export default class GroupComputeResourcePreference extends BaseModel {
 
   _coerceSpecificPreferences() {
     // Ensure resource_type is properly set
-    if (this.resource_type && typeof this.resource_type === 'number') {
-      this.resource_type = ResourceType.byValue(this.resource_type) || ResourceType.values.find(rt => rt.value === this.resource_type) || this.resource_type;
+    if (this.resource_type && typeof this.resource_type === "number") {
+      this.resource_type =
+        ResourceType.byValue(this.resource_type) ||
+        ResourceType.values.find((rt) => rt.value === this.resource_type) ||
+        this.resource_type;
     }
 
     if (!this.resource_type) {
@@ -121,10 +131,7 @@ export default class GroupComputeResourcePreference extends BaseModel {
       return;
     }
 
-    if (
-      this.specific_preferences &&
-      this.specific_preferences instanceof BaseModel
-    ) {
+    if (this.specific_preferences && this.specific_preferences instanceof BaseModel) {
       return;
     }
     let rawData =
@@ -133,10 +140,10 @@ export default class GroupComputeResourcePreference extends BaseModel {
         : null;
 
     if (rawData && !(rawData instanceof BaseModel)) {
-      if (this.resource_type.name === 'SLURM' && 'slurm' in rawData) {
+      if (this.resource_type.name === "SLURM" && "slurm" in rawData) {
         rawData = rawData.slurm;
-      } else if (this.resource_type.name === 'AWS') {
-        if ('aws' in rawData) {
+      } else if (this.resource_type.name === "AWS") {
+        if ("aws" in rawData) {
           rawData = rawData.aws;
         }
       }
@@ -144,9 +151,7 @@ export default class GroupComputeResourcePreference extends BaseModel {
 
     const PreferenceModel = PREFERENCE_MODEL_MAP[this.resource_type.name];
     if (PreferenceModel) {
-      const newPref = rawData
-        ? new PreferenceModel(rawData)
-        : new PreferenceModel();
+      const newPref = rawData ? new PreferenceModel(rawData) : new PreferenceModel();
       this.specific_preferences = newPref;
     } else {
       this.specific_preferences = rawData;
@@ -167,9 +172,7 @@ export default class GroupComputeResourcePreference extends BaseModel {
   }
 
   isResourceType(resourceTypeName) {
-    return (
-      !!this.resource_type && this.resource_type.name === resourceTypeName
-    );
+    return !!this.resource_type && this.resource_type.name === resourceTypeName;
   }
 
   _ensureSpecificPreferences() {
@@ -241,8 +244,7 @@ export default class GroupComputeResourcePreference extends BaseModel {
       validationResults["login_user_name"] = "Please provide a login username.";
     }
     if (this.isEmpty(this.scratch_location)) {
-      validationResults["scratch_location"] =
-        "Please provide a scratch location.";
+      validationResults["scratch_location"] = "Please provide a scratch location.";
     }
     if (!this.resource_type) {
       validationResults["resource_type"] = "Please select a resource type.";

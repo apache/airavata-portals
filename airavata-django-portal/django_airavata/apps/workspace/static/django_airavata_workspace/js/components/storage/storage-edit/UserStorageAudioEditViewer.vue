@@ -3,11 +3,11 @@
     <div class="user-storage-file-edit-viewer-status">
       <div class="user-storage-file-edit-viewer-status-message"></div>
       <div class="user-storage-file-edit-viewer-status-actions">
-        <user-storage-download-button :data-product-uri="dataProductUri" :file-name="fileName"/>
+        <user-storage-download-button :data-product-uri="dataProductUri" :file-name="fileName" />
       </div>
     </div>
     <audio controls style="width: 100%">
-      <source :src="downloadUrl"/>
+      <source :src="downloadUrl" />
     </audio>
   </div>
 </template>
@@ -16,7 +16,10 @@
 import UserStorageDownloadButton from "./UserStorageDownloadButton";
 
 export default {
-  name: "user-storage-audio-file-edit-viewer",
+  name: "UserStorageAudioFileEditViewer",
+  components: {
+    UserStorageDownloadButton: UserStorageDownloadButton,
+  },
   props: {
     fileName: {
       required: true,
@@ -29,10 +32,7 @@ export default {
     },
     downloadUrl: {
       required: true,
-    }
-  },
-  components: {
-    UserStorageDownloadButton: UserStorageDownloadButton,
+    },
   },
 };
 </script>

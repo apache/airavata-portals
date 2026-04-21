@@ -9,33 +9,30 @@
           :invalid-feedback="validationFeedback.appModuleName.invalidFeedback"
           :state="validationFeedback.appModuleName.state"
         >
-          <input class="form-control"
+          <input
             id="application-name"
-            type="text"
             v-model="data.appModuleName"
+            class="form-control"
+            type="text"
             required
             :disabled="readonly"
             :state="validationFeedback.appModuleName.state"
           />
         </form-group>
-        <form-group
-          label="Application Version"
-          label-for="application-version"
-        >
-          <input class="form-control"
+        <form-group label="Application Version" label-for="application-version">
+          <input
             id="application-version"
-            type="text"
             v-model="data.appModuleVersion"
+            class="form-control"
+            type="text"
             :disabled="readonly"
           />
         </form-group>
-        <form-group
-          label="Application Description"
-          label-for="application-description"
-        >
-          <textarea class="form-control"
+        <form-group label="Application Description" label-for="application-description">
+          <textarea
             id="application-description"
             v-model="data.appModuleDescription"
+            class="form-control"
             :rows="3"
             :disabled="readonly"
           ></textarea>
@@ -50,7 +47,7 @@ import { models } from "django-airavata-api";
 import { errors, mixins } from "django-airavata-common-ui";
 
 export default {
-  name: "application-module-editor",
+  name: "ApplicationModuleEditor",
   mixins: [mixins.VModelMixin],
   props: {
     value: {
@@ -66,10 +63,7 @@ export default {
   },
   computed: {
     validationFeedback() {
-      return errors.ValidationErrors.createValidationFeedback(
-        this.data,
-        this.validationErrors
-      );
+      return errors.ValidationErrors.createValidationFeedback(this.data, this.validationErrors);
     },
   },
   methods: {

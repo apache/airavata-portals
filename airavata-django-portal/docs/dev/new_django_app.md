@@ -52,33 +52,33 @@ class MyAppConfig(AiravataAppConfig):
 Some of these are self explanatory, but here are some details on each of these
 properties:
 
--   _name_ - this is the python package of the app
--   _label_ - this needs to be unique across all installed Django apps. I just
-    make this match the _app_name_ in `urls.py`.
--   _verbose_name_ - display name of app
--   _app_order_ - order of app in the menu listing. Range is 0 - 100. See the
-    other Django apps for their values to figure out how to order this app
-    relative to them.
--   _url_home_ - namespaced url of the "home" page of this app. This will be the
-    url used when a user selects this app in a navigational menu.
--   _fa_icon_class_ - a FontAwesome icon class. See
-    [the list of available icons for v. 4.7](https://fontawesome.com/v4.7.0/icons/).
--   _app_description_ - description of this app
--   _nav_ - **optional** provide navigation into sections of the app. The _nav_
-    is optional but is necessary to provide users with a link from the left hand
-    side navigation bar to a url in your app.
-    -   _label_ - textual label, displayed on hover in the side navigation bar
-    -   _icon_ - FontAwesome icon, see _fa_icon_class_ above
-    -   _url_ - named or namespaced url
-    -   _active_prefixes_ - list of strings that come after this app's base url
-        for all urls that are considered "active" for this nav item. This is
-        used to highlight the currently active nav item in the left side
-        navigation bar. For example, let's say the app's base url is "/myapp"
-        and urls belonging to the "projects" nav item are of the form
-        "/myapp/projects/`<project_id>`" and "/myapp/new-project". Then you
-        would set _active_prefixes_ to `["projects", "new-project"]`. These
-        strings can also be
-        [regular expressions](https://docs.python.org/3/library/re.html#regular-expression-syntax).
+- _name_ - this is the python package of the app
+- _label_ - this needs to be unique across all installed Django apps. I just
+  make this match the _app_name_ in `urls.py`.
+- _verbose_name_ - display name of app
+- _app_order_ - order of app in the menu listing. Range is 0 - 100. See the
+  other Django apps for their values to figure out how to order this app
+  relative to them.
+- _url_home_ - namespaced url of the "home" page of this app. This will be the
+  url used when a user selects this app in a navigational menu.
+- _fa_icon_class_ - a FontAwesome icon class. See
+  [the list of available icons for v. 4.7](https://fontawesome.com/v4.7.0/icons/).
+- _app_description_ - description of this app
+- _nav_ - **optional** provide navigation into sections of the app. The _nav_
+  is optional but is necessary to provide users with a link from the left hand
+  side navigation bar to a url in your app.
+    - _label_ - textual label, displayed on hover in the side navigation bar
+    - _icon_ - FontAwesome icon, see _fa_icon_class_ above
+    - _url_ - named or namespaced url
+    - _active_prefixes_ - list of strings that come after this app's base url
+      for all urls that are considered "active" for this nav item. This is
+      used to highlight the currently active nav item in the left side
+      navigation bar. For example, let's say the app's base url is "/myapp"
+      and urls belonging to the "projects" nav item are of the form
+      "/myapp/projects/`<project_id>`" and "/myapp/new-project". Then you
+      would set _active_prefixes_ to `["projects", "new-project"]`. These
+      strings can also be
+      [regular expressions](https://docs.python.org/3/library/re.html#regular-expression-syntax).
 
 ### Add AppConfig to INSTALLED_APPS
 

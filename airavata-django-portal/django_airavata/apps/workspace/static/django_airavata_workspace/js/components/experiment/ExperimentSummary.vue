@@ -16,28 +16,26 @@
           Launch
           <i class="fa fa-running" aria-hidden="true"></i>
         </a>
-        <button class="btn btn-primary" v-if="isClonable" @click="onClone">
+        <button v-if="isClonable" class="btn btn-primary" @click="onClone">
           Clone
           <i class="fa fa-copy" aria-hidden="true"></i>
         </button>
-        <button class="btn btn-primary" v-if="isCancelable" @click="onCancel">
+        <button v-if="isCancelable" class="btn btn-primary" @click="onCancel">
           Cancel
           <i class="fa fa-window-close" aria-hidden="true"></i>
         </button>
       </div>
     </div>
     <template v-for="output in experiment.experiment_outputs" :key="output.name">
-      <div class="row" v-if="finishedOrExecuting">
+      <div v-if="finishedOrExecuting" class="row">
         <div class="col">
           <output-display-container :experiment-output="output" />
         </div>
       </div>
     </template>
-    <div class="row" v-if="finishedOrExecuting">
+    <div v-if="finishedOrExecuting" class="row">
       <div class="col">
-        <experiment-storage-view-container
-          :experimentId="experiment.experiment_id"
-        />
+        <experiment-storage-view-container :experiment-id="experiment.experiment_id" />
       </div>
     </div>
     <div class="row">
@@ -58,10 +56,12 @@
                         :link-classes="['text-reset']"
                       >
                         copy
-                        <span slot="icon"></span>
-                        <span slot="tooltip"
-                          >Copied ID!</span
-                        > </clipboard-copy-link
+                        <template #icon>
+                          <span></span>
+                        </template>
+                        <template #tooltip>
+                          <span>Copied ID!</span>
+                        </template> </clipboard-copy-link
                       >)
                     </small>
                   </td>
@@ -106,9 +106,7 @@
                 <tr>
                   <th scope="row">Experiment Status</th>
                   <td>
-                    <template
-                      v-if="localFullExperiment.experiment.isProgressing"
-                    >
+                    <template v-if="localFullExperiment.experiment.isProgressing">
                       <i class="fa fa-sync-alt fa-spin"></i>
                       <span class="visually-hidden">Progressing...</span>
                     </template>
@@ -117,8 +115,7 @@
                 </tr>
                 <tr
                   v-if="
-                    localFullExperiment.job_details &&
-                    localFullExperiment.job_details.length > 0
+                    localFullExperiment.job_details && localFullExperiment.job_details.length > 0
                   "
                 >
                   <th scope="row">Job</th>
@@ -131,8 +128,7 @@
                         <th>Creation Time</th>
                       </thead>
                       <tr
-                        v-for="(jobDetail,
-                        index) in localFullExperiment.job_details"
+                        v-for="(jobDetail, index) in localFullExperiment.job_details"
                         :key="jobDetail.job_id"
                       >
                         <td>{{ jobDetail.job_name }}</td>
@@ -157,18 +153,14 @@
                 <tr>
                   <th scope="row">Creation Time</th>
                   <td>
-                    <span :title="experiment.creation_time.toString()">{{
-                      creationTime
-                    }}</span>
+                    <span :title="experiment.creation_time.toString()">{{ creationTime }}</span>
                   </td>
                 </tr>
                 <tr>
                   <th scope="row">Last Modified Time</th>
                   <td>
                     <span
-                      :title="
-                        localFullExperiment.experimentStatus.time_of_state_change.toString()
-                      "
+                      :title="localFullExperiment.experimentStatus.time_of_state_change.toString()"
                       >{{ lastModifiedTime }}</span
                     >
                   </td>
@@ -185,8 +177,8 @@
                   <th scope="row">Wall Time Limit</th>
                   <td>
                     {{
-                      experiment.user_configuration_data
-                        .computational_resource_scheduling.wall_time_limit
+                      experiment.user_configuration_data.computational_resource_scheduling
+                        .wall_time_limit
                     }}
                     minutes
                   </td>
@@ -195,8 +187,8 @@
                   <th scope="row">CPU Count</th>
                   <td>
                     {{
-                      experiment.user_configuration_data
-                        .computational_resource_scheduling.total_cpu_count
+                      experiment.user_configuration_data.computational_resource_scheduling
+                        .total_cpu_count
                     }}
                   </td>
                 </tr>
@@ -204,16 +196,16 @@
                   <th scope="row">Node Count</th>
                   <td>
                     {{
-                      experiment.user_configuration_data
-                        .computational_resource_scheduling.node_count
+                      experiment.user_configuration_data.computational_resource_scheduling
+                        .node_count
                     }}
                   </td>
                 </tr>
                 <tr
                   v-if="
                     showQueueSettings &&
-                    experiment.user_configuration_data
-                      .computational_resource_scheduling.total_physical_memory
+                    experiment.user_configuration_data.computational_resource_scheduling
+                      .total_physical_memory
                   "
                 >
                   <th scope="row">Total Physical Memory</th>
@@ -228,8 +220,8 @@
                   <th scope="row">Queue</th>
                   <td>
                     {{
-                      experiment.user_configuration_data
-                        .computational_resource_scheduling.queue_name
+                      experiment.user_configuration_data.computational_resource_scheduling
+                        .queue_name
                     }}
                   </td>
                 </tr>
@@ -237,10 +229,7 @@
                   <th scope="row">Inputs</th>
                   <td>
                     <ul>
-                      <li
-                        v-for="input in experiment.experiment_inputs"
-                        :key="input.name"
-                      >
+                      <li v-for="input in experiment.experiment_inputs" :key="input.name">
                         {{ input.name }}:
                         <template v-if="input.type.isSimpleValueType">
                           <span class="text-break">{{ input.value }}</span>
@@ -248,9 +237,9 @@
                         <data-product-viewer
                           v-for="dp in inputDataProducts[input.name]"
                           v-else-if="input.type.isFileValueType"
+                          :key="dp.product_uri"
                           :data-product="dp"
                           :input-file="true"
-                          :key="dp.product_uri"
                         />
                       </li>
                     </ul>
@@ -259,9 +248,10 @@
                 <tr>
                   <th scope="row">Errors</th>
                   <td>
-                    <div class="card"
+                    <div
                       v-for="error in experiment.errors"
                       :key="error.errorId"
+                      class="card"
                       header="Error"
                     >
                       <p>{{ error.userFriendlyMessage }}</p>
@@ -272,16 +262,10 @@
                   <tr v-for="job in failedJobs" :key="job.job_id">
                     <th scope="row">Job Submission Response</th>
                     <td>
-                      <div class="card"
-                        v-if="job.std_out"
-                        :header="job.job_name + ' STDOUT'"
-                      >
+                      <div v-if="job.std_out" class="card" :header="job.job_name + ' STDOUT'">
                         <pre class="pre-scrollable">{{ job.std_out }}</pre>
                       </div>
-                      <div class="card"
-                        v-if="job.std_err"
-                        :header="job.job_name + ' STDERR'"
-                      >
+                      <div v-if="job.std_err" class="card" :header="job.job_name + ' STDERR'">
                         <pre class="pre-scrollable">{{ job.std_err }}</pre>
                       </div>
                     </td>
@@ -308,7 +292,7 @@ import DataProductViewer from "django-airavata-common-ui/js/components/DataProdu
 import { mapActions, mapGetters, mapState } from "vuex";
 
 export default {
-  name: "experiment-summary",
+  name: "ExperimentSummary",
   components: {
     "clipboard-copy-link": components.ClipboardCopyLink,
     "share-button": components.ShareButton,
@@ -323,44 +307,31 @@ export default {
       "clonedExperiment",
       "groupResourceProfile",
     ]),
-    ...mapGetters("viewExperiment", [
-      "finishedOrExecuting",
-      "showQueueSettings",
-    ]),
+    ...mapGetters("viewExperiment", ["finishedOrExecuting", "showQueueSettings"]),
     localFullExperiment() {
       return this.fullExperiment;
     },
     inputDataProducts() {
       const result = {};
-      if (
-        this.localFullExperiment &&
-        this.localFullExperiment.input_data_products
-      ) {
-        this.localFullExperiment.experiment.experiment_inputs.forEach(
-          (input) => {
-            result[input.name] = this.getDataProducts(
-              input,
-              this.localFullExperiment.input_data_products
-            );
-          }
-        );
+      if (this.localFullExperiment && this.localFullExperiment.input_data_products) {
+        this.localFullExperiment.experiment.experiment_inputs.forEach((input) => {
+          result[input.name] = this.getDataProducts(
+            input,
+            this.localFullExperiment.input_data_products,
+          );
+        });
       }
       return result;
     },
     outputDataProducts() {
       const result = {};
-      if (
-        this.localFullExperiment &&
-        this.localFullExperiment.output_data_products
-      ) {
-        this.localFullExperiment.experiment.experiment_outputs.forEach(
-          (output) => {
-            result[output.name] = this.getDataProducts(
-              output,
-              this.localFullExperiment.output_data_products
-            );
-          }
-        );
+      if (this.localFullExperiment && this.localFullExperiment.output_data_products) {
+        this.localFullExperiment.experiment.experiment_outputs.forEach((output) => {
+          result[output.name] = this.getDataProducts(
+            output,
+            this.localFullExperiment.output_data_products,
+          );
+        });
       }
       return result;
     },
@@ -368,16 +339,14 @@ export default {
       return moment(this.localFullExperiment.experiment.creation_time).fromNow();
     },
     lastModifiedTime: function () {
-      return moment(
-        this.localFullExperiment.experimentStatus.time_of_state_change
-      ).fromNow();
+      return moment(this.localFullExperiment.experimentStatus.time_of_state_change).fromNow();
     },
     experiment: function () {
       return this.localFullExperiment.experiment;
     },
     jobCreationTimes: function () {
       return this.localFullExperiment.job_details.map((jobDetail) =>
-        moment(jobDetail.creation_time).fromNow()
+        moment(jobDetail.creation_time).fromNow(),
       );
     },
     editLink() {
@@ -385,9 +354,7 @@ export default {
     },
     isEditable() {
       return (
-        this.experiment.isEditable &&
-        this.localFullExperiment.applicationName &&
-        !this.launching
+        this.experiment.isEditable && this.localFullExperiment.applicationName && !this.launching
       );
     },
     isLaunchable() {
@@ -403,10 +370,8 @@ export default {
       if (this.fullExperiment && this.fullExperiment.job_details) {
         return this.fullExperiment.job_details.filter(
           (job) =>
-            this.experiment.latestStatus.state ===
-              models.ExperimentState.FAILED ||
-            (job.latestJobStatus &&
-              job.latestJobStatus.jobState === models.JobState.FAILED)
+            this.experiment.latestStatus.state === models.ExperimentState.FAILED ||
+            (job.latestJobStatus && job.latestJobStatus.jobState === models.JobState.FAILED),
         );
       } else {
         return [];
@@ -434,7 +399,7 @@ export default {
           type: "SUCCESS",
           message: "Cancel-experiment requested",
           duration: 5,
-        })
+        }),
       );
     },
     getDataProducts(io, collection) {
@@ -445,17 +410,13 @@ export default {
       if (io.type === models.DataType.URI_COLLECTION) {
         const dataProductURIs = io.value.split(",");
         dataProducts = dataProductURIs.map((uri) =>
-          collection.find((dp) => dp.product_uri === uri)
+          collection.find((dp) => dp.product_uri === uri),
         );
       } else {
         const dataProductURI = io.value;
-        dataProducts = collection.filter(
-          (dp) => dp.product_uri === dataProductURI
-        );
+        dataProducts = collection.filter((dp) => dp.product_uri === dataProductURI);
       }
-      return dataProducts
-        ? dataProducts.filter((dp) => (dp ? true : false))
-        : [];
+      return dataProducts ? dataProducts.filter((dp) => (dp ? true : false)) : [];
     },
   },
 };

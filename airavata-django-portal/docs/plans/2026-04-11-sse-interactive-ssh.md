@@ -13,6 +13,7 @@
 ### Task 1: Add Dependencies and ASGI Configuration
 
 **Files:**
+
 - Modify: `pyproject.toml` (add asyncssh, uvicorn)
 - Create: `django_airavata/asgi.py`
 - Modify: `django_airavata/settings.py` (add ASGI_APPLICATION)
@@ -54,10 +55,13 @@ ASGI_APPLICATION = "django_airavata.asgi.application"
 - [ ] **Step 4: Update Tiltfile to use uvicorn**
 
 In `Tiltfile`, replace line 13:
+
 ```python
         'uv run manage.py runserver 0.0.0.0:8000',
 ```
+
 with:
+
 ```python
         'uv run uvicorn django_airavata.asgi:application --host 0.0.0.0 --port 8000 --reload --reload-dir django_airavata',
 ```
@@ -65,6 +69,7 @@ with:
 - [ ] **Step 5: Install dependencies and verify server starts**
 
 Run:
+
 ```bash
 cd /Users/yasith/code/artisan/airavata-portals/main/airavata-django-portal
 uv sync
@@ -85,6 +90,7 @@ git commit -m "feat: add ASGI support with uvicorn and asyncssh dependencies"
 ### Task 2: SSE Event Bus
 
 **Files:**
+
 - Create: `django_airavata/apps/api/sse.py`
 - Create: `django_airavata/apps/api/tests/test_sse.py`
 
@@ -233,6 +239,7 @@ git commit -m "feat: add SSE event bus with per-user async queues"
 ### Task 3: SSH Session Manager
 
 **Files:**
+
 - Create: `django_airavata/apps/api/ssh_manager.py`
 - Create: `django_airavata/apps/api/tests/test_ssh_manager.py`
 
@@ -581,6 +588,7 @@ git commit -m "feat: add SSH session manager with interactive auth support"
 ### Task 4: SSE and SSH API Endpoints
 
 **Files:**
+
 - Create: `django_airavata/apps/api/views_ssh.py`
 - Modify: `django_airavata/apps/api/urls.py` (add routes)
 - Create: `django_airavata/apps/api/scripts/info.sh` (copy from CS-Bridge)
@@ -806,9 +814,11 @@ Then add to the `urlpatterns` list (before line 80 `urlpatterns = router.urls + 
 - [ ] **Step 4: Verify endpoints are accessible**
 
 Run the server and test:
+
 ```bash
 curl -v http://localhost:8000/api/events/ 2>&1 | head -5
 ```
+
 Expected: 302 redirect to login (since not authenticated) or 200 with `text/event-stream` content type if already logged in.
 
 - [ ] **Step 5: Commit**
@@ -823,6 +833,7 @@ git commit -m "feat: add SSE streaming and SSH proxy API endpoints"
 ### Task 5: Frontend SSE Client
 
 **Files:**
+
 - Create: `django_airavata/apps/api/static/django_airavata_api/js/utils/SSEClient.js`
 
 - [ ] **Step 1: Create the SSE client singleton**
@@ -841,80 +852,85 @@ Create `django_airavata/apps/api/static/django_airavata_api/js/utils/SSEClient.j
  */
 
 class _SSEClient {
-  constructor() {
-    this._listeners = {};
-    this._source = null;
-    this._retryDelay = 1000;
-    this._maxRetryDelay = 30000;
-    this._connected = false;
-  }
-
-  connect() {
-    if (this._source) return;
-
-    this._source = new EventSource("/api/events/");
-    this._retryDelay = 1000;
-
-    this._source.onopen = () => {
-      this._connected = true;
-      this._retryDelay = 1000;
-    };
-
-    this._source.onmessage = (e) => {
-      try {
-        const event = JSON.parse(e.data);
-        this._dispatch(event.type, event);
-      } catch (err) {
-        // Ignore parse errors (e.g. heartbeat comments)
-      }
-    };
-
-    this._source.onerror = () => {
-      this._connected = false;
-      this._source.close();
-      this._source = null;
-      // Reconnect with exponential backoff
-      setTimeout(() => this.connect(), this._retryDelay);
-      this._retryDelay = Math.min(this._retryDelay * 2, this._maxRetryDelay);
-    };
-  }
-
-  disconnect() {
-    if (this._source) {
-      this._source.close();
-      this._source = null;
-      this._connected = false;
+    constructor() {
+        this._listeners = {};
+        this._source = null;
+        this._retryDelay = 1000;
+        this._maxRetryDelay = 30000;
+        this._connected = false;
     }
-  }
 
-  on(type, callback) {
-    if (!this._listeners[type]) {
-      this._listeners[type] = [];
+    connect() {
+        if (this._source) return;
+
+        this._source = new EventSource("/api/events/");
+        this._retryDelay = 1000;
+
+        this._source.onopen = () => {
+            this._connected = true;
+            this._retryDelay = 1000;
+        };
+
+        this._source.onmessage = (e) => {
+            try {
+                const event = JSON.parse(e.data);
+                this._dispatch(event.type, event);
+            } catch (err) {
+                // Ignore parse errors (e.g. heartbeat comments)
+            }
+        };
+
+        this._source.onerror = () => {
+            this._connected = false;
+            this._source.close();
+            this._source = null;
+            // Reconnect with exponential backoff
+            setTimeout(() => this.connect(), this._retryDelay);
+            this._retryDelay = Math.min(
+                this._retryDelay * 2,
+                this._maxRetryDelay,
+            );
+        };
     }
-    this._listeners[type].push(callback);
-  }
 
-  off(type, callback) {
-    if (!this._listeners[type]) return;
-    this._listeners[type] = this._listeners[type].filter((cb) => cb !== callback);
-  }
-
-  _dispatch(type, event) {
-    const handlers = this._listeners[type];
-    if (handlers) {
-      handlers.forEach((cb) => {
-        try {
-          cb(event);
-        } catch (err) {
-          console.error(`SSE handler error for ${type}:`, err);
+    disconnect() {
+        if (this._source) {
+            this._source.close();
+            this._source = null;
+            this._connected = false;
         }
-      });
     }
-  }
 
-  get connected() {
-    return this._connected;
-  }
+    on(type, callback) {
+        if (!this._listeners[type]) {
+            this._listeners[type] = [];
+        }
+        this._listeners[type].push(callback);
+    }
+
+    off(type, callback) {
+        if (!this._listeners[type]) return;
+        this._listeners[type] = this._listeners[type].filter(
+            (cb) => cb !== callback,
+        );
+    }
+
+    _dispatch(type, event) {
+        const handlers = this._listeners[type];
+        if (handlers) {
+            handlers.forEach((cb) => {
+                try {
+                    cb(event);
+                } catch (err) {
+                    console.error(`SSE handler error for ${type}:`, err);
+                }
+            });
+        }
+    }
+
+    get connected() {
+        return this._connected;
+    }
 }
 
 const SSEClient = new _SSEClient();
@@ -944,6 +960,7 @@ git commit -m "feat: add SSE client singleton with typed event dispatch"
 ### Task 6: SSH Prompt Notification Component
 
 **Files:**
+
 - Create: `django_airavata/static/common/js/components/SshPromptNotification.vue`
 - Modify: `django_airavata/static/common/js/components/MainLayout.vue`
 
@@ -953,39 +970,65 @@ Create `django_airavata/static/common/js/components/SshPromptNotification.vue`:
 
 ```vue
 <template>
-  <div class="ssh-prompts">
-    <div v-for="prompt in activePrompts" :key="prompt.session_id" class="ssh-prompt-toast">
-      <div class="ssh-prompt-toast__header">
-        <i class="fa fa-terminal me-1"></i>
-        <strong>SSH Authentication</strong>
-      </div>
-      <div class="ssh-prompt-toast__body">
-        <div class="mb-2 text-muted" style="font-size: 0.8125rem;">{{ prompt.hostname }}</div>
-        <div class="mb-2">{{ prompt.prompt }}</div>
-        <div v-if="prompt.waiting" class="text-muted">
-          <i class="fa fa-spinner fa-spin me-1"></i>Authenticating...
+    <div class="ssh-prompts">
+        <div
+            v-for="prompt in activePrompts"
+            :key="prompt.session_id"
+            class="ssh-prompt-toast"
+        >
+            <div class="ssh-prompt-toast__header">
+                <i class="fa fa-terminal me-1"></i>
+                <strong>SSH Authentication</strong>
+            </div>
+            <div class="ssh-prompt-toast__body">
+                <div class="mb-2 text-muted" style="font-size: 0.8125rem;">
+                    {{ prompt.hostname }}
+                </div>
+                <div class="mb-2">{{ prompt.prompt }}</div>
+                <div v-if="prompt.waiting" class="text-muted">
+                    <i class="fa fa-spinner fa-spin me-1"></i>Authenticating...
+                </div>
+                <div v-else class="d-flex gap-2">
+                    <input
+                        class="form-control form-control-sm"
+                        :type="prompt.echo === false ? 'password' : 'text'"
+                        v-model="prompt.response"
+                        @keydown.enter="submitResponse(prompt)"
+                        placeholder="Enter response..."
+                        ref="promptInput"
+                    />
+                    <button
+                        class="btn btn-primary btn-sm"
+                        @click="submitResponse(prompt)"
+                    >
+                        Send
+                    </button>
+                </div>
+            </div>
         </div>
-        <div v-else class="d-flex gap-2">
-          <input
-            class="form-control form-control-sm"
-            :type="prompt.echo === false ? 'password' : 'text'"
-            v-model="prompt.response"
-            @keydown.enter="submitResponse(prompt)"
-            placeholder="Enter response..."
-            ref="promptInput"
-          />
-          <button class="btn btn-primary btn-sm" @click="submitResponse(prompt)">Send</button>
+        <div
+            v-for="result in results"
+            :key="result.session_id"
+            class="ssh-prompt-toast"
+            :class="
+                result.success
+                    ? 'ssh-prompt-toast--success'
+                    : 'ssh-prompt-toast--error'
+            "
+        >
+            <div class="ssh-prompt-toast__body">
+                <i
+                    :class="
+                        result.success
+                            ? 'fa fa-check-circle text-success'
+                            : 'fa fa-times-circle text-danger'
+                    "
+                    class="me-1"
+                ></i>
+                {{ result.message }}
+            </div>
         </div>
-      </div>
     </div>
-    <div v-for="result in results" :key="result.session_id" class="ssh-prompt-toast"
-      :class="result.success ? 'ssh-prompt-toast--success' : 'ssh-prompt-toast--error'">
-      <div class="ssh-prompt-toast__body">
-        <i :class="result.success ? 'fa fa-check-circle text-success' : 'fa fa-times-circle text-danger'" class="me-1"></i>
-        {{ result.message }}
-      </div>
-    </div>
-  </div>
 </template>
 
 <script>
@@ -995,108 +1038,116 @@ const SSEClient = utils.SSEClient;
 const FetchUtils = utils.FetchUtils;
 
 export default {
-  name: "ssh-prompt-notification",
-  data() {
-    return {
-      activePrompts: [],
-      results: [],
-    };
-  },
-  methods: {
-    onSshPrompt(event) {
-      // Add or update prompt for this session
-      const existing = this.activePrompts.find((p) => p.session_id === event.session_id);
-      if (existing) {
-        existing.prompt = event.prompt;
-        existing.echo = event.echo;
-        existing.waiting = false;
-        existing.response = "";
-      } else {
-        this.activePrompts.push({
-          session_id: event.session_id,
-          hostname: event.hostname || "",
-          prompt: event.prompt,
-          echo: event.echo,
-          response: "",
-          waiting: false,
-        });
-      }
+    name: "ssh-prompt-notification",
+    data() {
+        return {
+            activePrompts: [],
+            results: [],
+        };
     },
-    onSshResult(event) {
-      // Remove any active prompt for this session
-      this.activePrompts = this.activePrompts.filter((p) => p.session_id !== event.session_id);
-      // Show result toast
-      this.results.push({
-        session_id: event.session_id,
-        success: event.success,
-        message: event.message,
-      });
-      // Auto-dismiss success after 3s
-      if (event.success) {
-        setTimeout(() => {
-          this.results = this.results.filter((r) => r.session_id !== event.session_id);
-        }, 3000);
-      }
+    methods: {
+        onSshPrompt(event) {
+            // Add or update prompt for this session
+            const existing = this.activePrompts.find(
+                (p) => p.session_id === event.session_id,
+            );
+            if (existing) {
+                existing.prompt = event.prompt;
+                existing.echo = event.echo;
+                existing.waiting = false;
+                existing.response = "";
+            } else {
+                this.activePrompts.push({
+                    session_id: event.session_id,
+                    hostname: event.hostname || "",
+                    prompt: event.prompt,
+                    echo: event.echo,
+                    response: "",
+                    waiting: false,
+                });
+            }
+        },
+        onSshResult(event) {
+            // Remove any active prompt for this session
+            this.activePrompts = this.activePrompts.filter(
+                (p) => p.session_id !== event.session_id,
+            );
+            // Show result toast
+            this.results.push({
+                session_id: event.session_id,
+                success: event.success,
+                message: event.message,
+            });
+            // Auto-dismiss success after 3s
+            if (event.success) {
+                setTimeout(() => {
+                    this.results = this.results.filter(
+                        (r) => r.session_id !== event.session_id,
+                    );
+                }, 3000);
+            }
+        },
+        async submitResponse(prompt) {
+            prompt.waiting = true;
+            try {
+                await FetchUtils.post("/api/ssh/respond/", {
+                    session_id: prompt.session_id,
+                    response: prompt.response,
+                });
+            } catch (e) {
+                prompt.waiting = false;
+            }
+        },
+        dismissResult(session_id) {
+            this.results = this.results.filter(
+                (r) => r.session_id !== session_id,
+            );
+        },
     },
-    async submitResponse(prompt) {
-      prompt.waiting = true;
-      try {
-        await FetchUtils.post("/api/ssh/respond/", {
-          session_id: prompt.session_id,
-          response: prompt.response,
-        });
-      } catch (e) {
-        prompt.waiting = false;
-      }
+    mounted() {
+        SSEClient.on("ssh_prompt", this.onSshPrompt);
+        SSEClient.on("ssh_result", this.onSshResult);
     },
-    dismissResult(session_id) {
-      this.results = this.results.filter((r) => r.session_id !== session_id);
+    beforeUnmount() {
+        SSEClient.off("ssh_prompt", this.onSshPrompt);
+        SSEClient.off("ssh_result", this.onSshResult);
     },
-  },
-  mounted() {
-    SSEClient.on("ssh_prompt", this.onSshPrompt);
-    SSEClient.on("ssh_result", this.onSshResult);
-  },
-  beforeUnmount() {
-    SSEClient.off("ssh_prompt", this.onSshPrompt);
-    SSEClient.off("ssh_result", this.onSshResult);
-  },
 };
 </script>
 
 <style scoped>
 .ssh-prompts {
-  position: fixed;
-  top: 60px;
-  right: 20px;
-  z-index: 10001;
-  width: 360px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    z-index: 10001;
+    width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 .ssh-prompt-toast {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
 }
 .ssh-prompt-toast__header {
-  padding: 8px 12px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 0.8125rem;
+    padding: 8px 12px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.8125rem;
 }
 .ssh-prompt-toast__body {
-  padding: 10px 12px;
-  font-size: 0.875rem;
+    padding: 10px 12px;
+    font-size: 0.875rem;
 }
 .ssh-prompt-toast--success {
-  border-left: 3px solid #10b981;
+    border-left: 3px solid #10b981;
 }
 .ssh-prompt-toast--error {
-  border-left: 3px solid #ef4444;
+    border-left: 3px solid #ef4444;
 }
 </style>
 ```
@@ -1117,20 +1168,20 @@ Add to the components object (add `SshPromptNotification` alongside existing com
 In the `<template>`, add just before `<notifications-display />` (line 7):
 
 ```html
-      <ssh-prompt-notification />
+<ssh-prompt-notification />
 ```
 
 In `created()`, add SSE client initialization after the existing event listeners (after line 79):
 
 ```javascript
-    // Connect the SSE client for real-time events
-    utils.SSEClient.connect();
+// Connect the SSE client for real-time events
+utils.SSEClient.connect();
 ```
 
 In `beforeUnmount()`, add cleanup after the existing removeEventListener calls:
 
 ```javascript
-    utils.SSEClient.disconnect();
+utils.SSEClient.disconnect();
 ```
 
 - [ ] **Step 3: Build common JS bundle to verify compilation**
@@ -1183,13 +1234,23 @@ In the Network tab, filter by "EventStream" — verify `/api/events/` connection
 - [ ] **Step 4: Test SSH connection to local SFTP container**
 
 Open browser console and run:
+
 ```javascript
-fetch('/api/ssh/test/', {
-  method: 'POST',
-  headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)[1]},
-  body: JSON.stringify({hostname: 'localhost', port: 2222, credential_token: '<dev-sftp-token>'}),
-  credentials: 'same-origin'
-}).then(r => r.json()).then(d => console.log('SESSION:', d));
+fetch("/api/ssh/test/", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": document.cookie.match(/csrftoken=([^;]+)/)[1],
+    },
+    body: JSON.stringify({
+        hostname: "localhost",
+        port: 2222,
+        credential_token: "<dev-sftp-token>",
+    }),
+    credentials: "same-origin",
+})
+    .then((r) => r.json())
+    .then((d) => console.log("SESSION:", d));
 ```
 
 Expected: Either a success notification toast appears (key auth works), or a prompt notification appears requesting password.

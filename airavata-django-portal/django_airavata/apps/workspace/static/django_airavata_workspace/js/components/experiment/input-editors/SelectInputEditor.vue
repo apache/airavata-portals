@@ -1,17 +1,14 @@
 <template>
-  <select class="form-select"
+  <select
     :id="id"
     v-model="data"
+    class="form-select"
     :disabled="readOnly"
     :state="componentValidState"
     @change="valueChanged"
   >
     <option :value="null" disabled>Select...</option>
-    <option
-      v-for="opt in selectOptions"
-      :key="opt.value"
-      :value="opt.value"
-    >
+    <option v-for="opt in selectOptions" :key="opt.value" :value="opt.value">
       {{ opt.text }}
     </option>
   </select>
@@ -24,7 +21,7 @@ const CONFIG_OPTION_TEXT_KEY = "text";
 const CONFIG_OPTION_VALUE_KEY = "value";
 
 export default {
-  name: "select-input-editor",
+  name: "SelectInputEditor",
   mixins: [InputEditorMixin],
   props: {
     value: {

@@ -16,5 +16,5 @@ mkdocs:
 
 # Install only what's needed for docs
 python:
-   install:
-   - requirements: docs/requirements.txt
+  install:
+    - requirements: docs/requirements.txt

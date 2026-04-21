@@ -3,7 +3,13 @@
 import * as linkify from "linkifyjs";
 
 export default {
-  name: "linkify",
+  name: "Linkify",
+  methods: {
+    clickHandler(e) {
+      // stop click event from bubbling up
+      e.stopPropagation();
+    },
+  },
 
   render: function (createElement) {
     // Find top level text nodes and run linkify on the text, converting them
@@ -22,7 +28,7 @@ export default {
                     click: this.clickHandler,
                   },
                 },
-                t.toString()
+                t.toString(),
               );
             } else {
               return t.toString();
@@ -35,12 +41,6 @@ export default {
       // Flatten array since text nodes are mapped to arrays
       .flat();
     return createElement("span", null, children);
-  },
-  methods: {
-    clickHandler(e) {
-      // stop click event from bubbling up
-      e.stopPropagation();
-    },
   },
 };
 </script>

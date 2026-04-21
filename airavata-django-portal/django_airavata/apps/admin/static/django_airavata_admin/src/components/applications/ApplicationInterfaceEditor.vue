@@ -7,10 +7,7 @@
     </div>
     <div class="row">
       <div class="col">
-        <form-group
-          label="Enable Archiving Working Directory"
-          label-for="archive-directory"
-        >
+        <form-group label="Enable Archiving Working Directory" label-for="archive-directory">
           <form-radio-group
             id="archive-directory"
             v-model="data.archiveWorkingDirectory"
@@ -36,32 +33,38 @@
           label="Queue Settings Calculator"
           description="Select function to automatically compute queue settings."
         >
-          <select class="form-select"
+          <select
             v-model="data.queueSettingsCalculatorId"
+            class="form-select"
             :disabled="queueSettingsCalculatorOptions.length === 0"
           >
             <option :value="null">If applicable, select a queue settings calculator</option>
-            <option v-for="opt in queueSettingsCalculatorOptions" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
+            <option
+              v-for="opt in queueSettingsCalculatorOptions"
+              :key="opt.value"
+              :value="opt.value"
+            >
+              {{ opt.text }}
+            </option>
           </select>
         </form-group>
       </div>
     </div>
     <div class="w-100">
-      <form-group
-        label="Application Instructions"
-        label-for="application-description"
-      >
-        <textarea class="form-control"
+      <form-group label="Application Instructions" label-for="application-description">
+        <textarea
           id="application-description"
-          :rows="5"
           v-model="data.applicationDescription"
+          class="form-control"
+          :rows="5"
         >
         </textarea>
-        <small class="form-text text-muted" v-if="!!data.applicationDescription">
+        <small v-if="!!data.applicationDescription" class="form-text text-muted">
           {{ data.applicationDescription.length }} / 500
         </small>
-        <div class="invalid-feedback"
+        <div
           v-if="data.applicationDescription && data.applicationDescription.length >= 500"
+          class="invalid-feedback"
         >
           Application instructions text is limited to 500 characters maximum.
         </div>
@@ -78,23 +81,20 @@
         >
           <application-input-field-editor
             v-for="input in data.applicationInputs"
-            :value="input"
             :key="input.key"
+            :value="input"
             :focus="input.key === focusApplicationInputKey"
             :collapse="collapseApplicationInputs"
+            :readonly="readonly"
             @input="updatedInput"
             @delete="deleteInput(input)"
-            :readonly="readonly"
           />
         </draggable>
       </div>
     </div>
     <div class="row mb-4">
       <div class="col">
-        <button class="btn btn-secondary btn-sm"
-          @click="addApplicationInput"
-          :disabled="readonly"
-        >
+        <button class="btn btn-secondary btn-sm" :disabled="readonly" @click="addApplicationInput">
           Add application input
         </button>
       </div>
@@ -104,21 +104,18 @@
         <h1 class="h5 mb-4">Output Fields</h1>
         <application-output-field-editor
           v-for="output in data.applicationOutputs"
-          :value="output"
           :key="output.key"
+          :value="output"
           :focus="output.key === focusApplicationOutputKey"
+          :readonly="readonly"
           @input="updatedOutput"
           @delete="deleteOutput(output)"
-          :readonly="readonly"
         />
       </div>
     </div>
     <div class="row mb-4">
       <div class="col">
-        <button class="btn btn-secondary btn-sm"
-          @click="addApplicationOutput"
-          :disabled="readonly"
-        >
+        <button class="btn btn-secondary btn-sm" :disabled="readonly" @click="addApplicationOutput">
           Add application output
         </button>
       </div>
@@ -135,7 +132,12 @@ import ApplicationOutputFieldEditor from "./ApplicationOutputFieldEditor.vue";
 import draggable from "vuedraggable";
 
 export default {
-  name: "application-interface-editor",
+  name: "ApplicationInterfaceEditor",
+  components: {
+    ApplicationInputFieldEditor,
+    ApplicationOutputFieldEditor,
+    draggable,
+  },
   mixins: [mixins.VModelMixin],
   props: {
     value: {
@@ -146,13 +148,16 @@ export default {
       default: false,
     },
   },
-  components: {
-    ApplicationInputFieldEditor,
-    ApplicationOutputFieldEditor,
-    draggable,
-  },
-  created() {
-    this.loadQueueSettingsCalculators();
+  data() {
+    return {
+      focusApplicationInputKey: null,
+      focusApplicationOutputKey: null,
+      dragOptions: {
+        handle: ".drag-handle",
+      },
+      collapseApplicationInputs: false,
+      queueSettingsCalculators: null,
+    };
   },
   computed: {
     trueFalseOptions() {
@@ -174,16 +179,8 @@ export default {
       }
     },
   },
-  data() {
-    return {
-      focusApplicationInputKey: null,
-      focusApplicationOutputKey: null,
-      dragOptions: {
-        handle: ".drag-handle",
-      },
-      collapseApplicationInputs: false,
-      queueSettingsCalculators: null,
-    };
+  created() {
+    this.loadQueueSettingsCalculators();
   },
   methods: {
     save() {
@@ -193,9 +190,7 @@ export default {
       this.$emit("cancel");
     },
     updatedInput(newValue) {
-      const input = this.data.applicationInputs.find(
-        (input) => input.key === newValue.key
-      );
+      const input = this.data.applicationInputs.find((input) => input.key === newValue.key);
       Object.assign(input, newValue);
     },
     addApplicationInput() {
@@ -204,15 +199,11 @@ export default {
       this.focusApplicationInputKey = appInput.key;
     },
     deleteInput(input) {
-      const inputIndex = this.data.applicationInputs.findIndex(
-        (inp) => inp.key === input.key
-      );
+      const inputIndex = this.data.applicationInputs.findIndex((inp) => inp.key === input.key);
       this.data.applicationInputs.splice(inputIndex, 1);
     },
     updatedOutput(newValue) {
-      const output = this.data.applicationOutputs.find(
-        (o) => o.key === newValue.key
-      );
+      const output = this.data.applicationOutputs.find((o) => o.key === newValue.key);
       Object.assign(output, newValue);
     },
     addApplicationOutput() {
@@ -221,9 +212,7 @@ export default {
       this.focusApplicationOutputKey = newOutput.key;
     },
     deleteOutput(output) {
-      const outputIndex = this.data.applicationOutputs.findIndex(
-        (o) => o.key === output.key
-      );
+      const outputIndex = this.data.applicationOutputs.findIndex((o) => o.key === output.key);
       this.data.applicationOutputs.splice(outputIndex, 1);
     },
     onDragStart() {

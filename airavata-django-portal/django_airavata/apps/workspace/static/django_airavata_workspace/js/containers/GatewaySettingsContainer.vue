@@ -31,9 +31,11 @@
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label">Storage Resource</label>
-            <select class="form-select form-select-sm" v-model="storageResourceId">
+            <select v-model="storageResourceId" class="form-select form-select-sm">
               <option :value="null">None</option>
-              <option v-for="(name, id) in storageResources" :key="id" :value="id">{{ name }}</option>
+              <option v-for="(name, id) in storageResources" :key="id" :value="id">
+                {{ name }}
+              </option>
             </select>
           </div>
           <div class="col-md-6">
@@ -42,11 +44,19 @@
           </div>
           <div class="col-md-6">
             <label class="form-label">Login Username</label>
-            <input class="form-control form-control-sm" v-model="loginUserName" placeholder="username" />
+            <input
+              v-model="loginUserName"
+              class="form-control form-control-sm"
+              placeholder="username"
+            />
           </div>
           <div class="col-md-6">
             <label class="form-label">File System Root Location</label>
-            <input class="form-control form-control-sm" v-model="fileSystemRootLocation" placeholder="/home/user/storage" />
+            <input
+              v-model="fileSystemRootLocation"
+              class="form-control form-control-sm"
+              placeholder="/home/user/storage"
+            />
           </div>
         </div>
       </div>
@@ -58,16 +68,19 @@
           <h2 class="h6 mb-0 flex-grow-1">Advanced Settings</h2>
           <button
             class="btn btn-primary btn-sm"
-            @click="saveLocalSettings"
             :disabled="localSettingsSaving || localSettingsLoading"
+            @click="saveLocalSettings"
           >
-            <span v-if="localSettingsSaving"><i class="fa fa-spinner fa-spin me-1"></i>Saving...</span>
+            <span v-if="localSettingsSaving"
+              ><i class="fa fa-spinner fa-spin me-1"></i>Saving...</span
+            >
             <span v-else>Save</span>
           </button>
         </div>
         <p class="text-muted small mb-2">
-          Edit <code>django_airavata/settings_local.py</code> directly. Changes take effect after the portal restarts.
-          <strong class="text-danger">Warning:</strong> this file executes as Python on startup &mdash; mistakes can break the portal.
+          Edit <code>django_airavata/settings_local.py</code> directly. Changes take effect after
+          the portal restarts. <strong class="text-danger">Warning:</strong> this file executes as
+          Python on startup &mdash; mistakes can break the portal.
         </p>
         <div v-if="localSettingsLoading" class="text-muted small">
           <i class="fa fa-spinner fa-spin me-1"></i>Loading settings_local.py...
@@ -78,16 +91,24 @@
           rows="20"
           class="form-control"
           spellcheck="false"
-          style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; white-space: pre; tab-size: 4;"
+          style="
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12px;
+            white-space: pre;
+            tab-size: 4;
+          "
         ></textarea>
-        <div v-if="localSettingsMessage" :class="['small', 'mt-2', localSettingsError ? 'text-danger' : 'text-success']">
+        <div
+          v-if="localSettingsMessage"
+          :class="['small', 'mt-2', localSettingsError ? 'text-danger' : 'text-success']"
+        >
           {{ localSettingsMessage }}
         </div>
       </div>
     </div>
 
     <div class="d-flex justify-content-end">
-      <button class="btn btn-primary btn-sm" @click="saveSettings" :disabled="saving">
+      <button class="btn btn-primary btn-sm" :disabled="saving" @click="saveSettings">
         <span v-if="saving"><i class="fa fa-spinner fa-spin me-1"></i>Saving...</span>
         <span v-else>Save Settings</span>
       </button>
@@ -100,7 +121,7 @@ import { services, utils } from "django-airavata-api";
 import SSHCredentialSelector from "../../../../../admin/static/django_airavata_admin/src/components/credentials/SSHCredentialSelector.vue";
 
 export default {
-  name: "gateway-settings-container",
+  name: "GatewaySettingsContainer",
   components: {
     "ssh-credential-selector": SSHCredentialSelector,
   },
@@ -124,6 +145,9 @@ export default {
       localSettingsMessage: "",
       localSettingsError: false,
     };
+  },
+  created() {
+    this.loadSettings();
   },
   methods: {
     async loadSettings() {
@@ -171,12 +195,10 @@ export default {
           storage_resource_id: this.storageResourceId,
           file_system_root_location: this.fileSystemRootLocation,
           login_user_name: this.loginUserName,
-          resource_specific_credential_store_token:
-            this.resourceSpecificCredentialStoreToken,
+          resource_specific_credential_store_token: this.resourceSpecificCredentialStoreToken,
         };
         const existingPrefs =
-          this.gatewayResourceProfile &&
-          this.gatewayResourceProfile.storage_preferences
+          this.gatewayResourceProfile && this.gatewayResourceProfile.storage_preferences
             ? this.gatewayResourceProfile.storage_preferences.slice(1)
             : [];
         const updatedProfile = Object.assign({}, this.gatewayResourceProfile, {
@@ -211,8 +233,7 @@ export default {
         await utils.FetchUtils.post("/api/settings/local/", {
           content: this.localSettingsContent,
         });
-        this.localSettingsMessage =
-          "Saved! Restart the portal for changes to take effect.";
+        this.localSettingsMessage = "Saved! Restart the portal for changes to take effect.";
       } catch (e) {
         this.localSettingsError = true;
         this.localSettingsMessage =
@@ -221,9 +242,6 @@ export default {
         this.localSettingsSaving = false;
       }
     },
-  },
-  created() {
-    this.loadSettings();
   },
 };
 </script>

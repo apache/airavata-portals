@@ -73,11 +73,7 @@ export default class InputDataObjectType extends BaseModel {
    */
   get editorUIComponentId() {
     const metadata = this._getMetaData();
-    if (
-      metadata &&
-      "editor" in metadata &&
-      "ui-component-id" in metadata["editor"]
-    ) {
+    if (metadata && "editor" in metadata && "ui-component-id" in metadata["editor"]) {
       return metadata["editor"]["ui-component-id"];
     } else {
       return null;
@@ -132,11 +128,7 @@ export default class InputDataObjectType extends BaseModel {
    */
   get editorValidations() {
     const metadata = this._getMetaData();
-    if (
-      metadata &&
-      "editor" in metadata &&
-      "validations" in metadata["editor"]
-    ) {
+    if (metadata && "editor" in metadata && "validations" in metadata["editor"]) {
       return metadata["editor"]["validations"];
     } else {
       return [];
@@ -181,11 +173,7 @@ export default class InputDataObjectType extends BaseModel {
    */
   get editorDependencies() {
     const metadata = this._getMetaData();
-    if (
-      metadata &&
-      "editor" in metadata &&
-      "dependencies" in metadata["editor"]
-    ) {
+    if (metadata && "editor" in metadata && "dependencies" in metadata["editor"]) {
       return metadata["editor"]["dependencies"];
     } else {
       return {};
@@ -203,7 +191,7 @@ export default class InputDataObjectType extends BaseModel {
   }
 
   validate(value = undefined) {
-    let inputValue = typeof value != "undefined" ? value : this.value;
+    let inputValue = typeof value !== "undefined" ? value : this.value;
     let results = {};
     // Skip running validations when the input isn't shown
     if (!this.show) {
@@ -221,7 +209,7 @@ export default class InputDataObjectType extends BaseModel {
     if (this.editorValidations.length > 0) {
       const validatorFactory = new ValidatorFactory();
       valueErrorMessages = valueErrorMessages.concat(
-        validatorFactory.validate(this.editorValidations, inputValue)
+        validatorFactory.validate(this.editorValidations, inputValue),
       );
     }
     if (valueErrorMessages.length > 0) {
@@ -235,13 +223,9 @@ export default class InputDataObjectType extends BaseModel {
    */
   evaluateDependencies(inputValues) {
     if (Object.keys(this.editorDependencies).length > 0) {
-      const booleanExpressionEvaluator = new BooleanExpressionEvaluator(
-        inputValues
-      );
+      const booleanExpressionEvaluator = new BooleanExpressionEvaluator(inputValues);
       if ("show" in this.editorDependencies) {
-        this.show = booleanExpressionEvaluator.evaluate(
-          this.editorDependencies.show
-        );
+        this.show = booleanExpressionEvaluator.evaluate(this.editorDependencies.show);
         if ("showOptions" in this.editorDependencies) {
           if (
             "is_required" in this.editorDependencies.showOptions &&

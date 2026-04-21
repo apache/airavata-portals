@@ -7,7 +7,7 @@
 
 <script>
 export default {
-  name: "sidebar-header",
+  name: "SidebarHeader",
   props: {
     title: {
       type: String,

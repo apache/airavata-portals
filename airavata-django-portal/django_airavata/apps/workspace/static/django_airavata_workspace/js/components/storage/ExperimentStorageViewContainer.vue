@@ -5,9 +5,7 @@
         <h6 class="mb-0">Experiment Data Directory</h6>
         <a
           v-if="canDownloadDataDirectory"
-          :href="`/sdk/download-experiment-dir/${encodeURIComponent(
-            experimentId
-          )}/`"
+          :href="`/sdk/download-experiment-dir/${encodeURIComponent(experimentId)}/`"
         >
           Download Zip
           <i class="fa fa-file-archive" aria-hidden="true"></i>
@@ -15,26 +13,27 @@
       </div>
     </div>
     <div class="card-body">
-    <experiment-storage-path-viewer
-      v-if="experimentStoragePath"
-      :experiment-storage-path="experimentStoragePath"
-      :experiment-id="experimentId"
-      @directory-selected="directorySelected"
-      :download-in-new-window="true"
-    ></experiment-storage-path-viewer>
+      <experiment-storage-path-viewer
+        v-if="experimentStoragePath"
+        :experiment-storage-path="experimentStoragePath"
+        :experiment-id="experimentId"
+        :download-in-new-window="true"
+        @directory-selected="directorySelected"
+      ></experiment-storage-path-viewer>
 
-    <div class="alert alert-warning" v-else-if="archived">
-      This experiment was archived on {{ experimentArchive.created_date }}.
-    </div>
-    <div class="alert alert-warning" v-else-if="experimentDataDirNotFound">
-      Experiment Data Directory does not exist in storage.
-    </div>
+      <div v-else-if="archived" class="alert alert-warning">
+        This experiment was archived on {{ experimentArchive.created_date }}.
+      </div>
+      <div v-else-if="experimentDataDirNotFound" class="alert alert-warning">
+        Experiment Data Directory does not exist in storage.
+      </div>
 
-    <!-- <small class="text-muted" v-if="archiveMaxAge > 0">
+      <!-- <small class="text-muted" v-if="archiveMaxAge > 0">
       Data is retained for {{ archiveMaxAge }} days before it is removed and
       archived.
     </small> -->
-  </div></div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -42,7 +41,10 @@ import { errors, services, utils } from "django-airavata-api";
 import ExperimentStoragePathViewer from "./ExperimentStoragePathViewer.vue";
 
 export default {
-  name: "experiment-storage-view-container",
+  name: "ExperimentStorageViewContainer",
+  components: {
+    ExperimentStoragePathViewer,
+  },
   props: {
     experimentId: {
       type: String,
@@ -56,13 +58,6 @@ export default {
       experimentArchive: null,
     };
   },
-  components: {
-    ExperimentStoragePathViewer,
-  },
-  created() {
-    this.loadExperimentArchive();
-    return this.loadExperimentStoragePath("");
-  },
   computed: {
     canDownloadDataDirectory() {
       return this.experimentStoragePath && !this.experimentDataDirNotFound;
@@ -74,6 +69,10 @@ export default {
       return this.experimentArchive?.max_age;
     },
   },
+  created() {
+    this.loadExperimentArchive();
+    return this.loadExperimentStoragePath("");
+  },
   methods: {
     loadExperimentStoragePath(path) {
       return services.ExperimentStoragePathService.get(
@@ -83,14 +82,11 @@ export default {
           experimentId: encodeURIComponent(this.experimentId),
           path,
         },
-        { ignoreErrors: true }
+        { ignoreErrors: true },
       )
         .then((result) => (this.experimentStoragePath = result))
         .catch((error) => {
-          if (
-            errors.ErrorUtils.isAPIException(error) &&
-            error.details.status === 404
-          ) {
+          if (errors.ErrorUtils.isAPIException(error) && error.details.status === 404) {
             this.experimentDataDirNotFound = true;
           } else {
             throw error;

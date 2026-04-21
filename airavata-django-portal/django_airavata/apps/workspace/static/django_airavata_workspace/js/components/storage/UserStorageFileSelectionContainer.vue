@@ -6,14 +6,14 @@
         v-if="userStoragePath"
         :user-storage-path="userStoragePath"
         :storage-path="storagePath"
-        @directory-selected="directorySelected"
-        @file-selected="fileSelected"
         :include-delete-action="false"
         :include-select-file-action="true"
         :include-create-file-action="false"
         :include-download-action="false"
         :download-in-new-window="true"
         :selected-data-product-uris="selectedDataProductUris"
+        @directory-selected="directorySelected"
+        @file-selected="fileSelected"
       />
     </div>
     <div class="card-footer d-flex justify-content-end">
@@ -31,11 +31,9 @@ import UserStoragePathViewer from "./UserStoragePathViewer";
 let mostRecentPath = "~";
 
 export default {
-  name: "user-storage-file-selection-container",
-  computed: {
-    storagePath() {
-      return ["~"].concat(this.userStoragePath.parts).join("/") + "/";
-    },
+  name: "UserStorageFileSelectionContainer",
+  components: {
+    UserStoragePathViewer,
   },
   props: {
     selectedDataProductUris: {
@@ -48,8 +46,10 @@ export default {
       userStoragePath: null,
     };
   },
-  components: {
-    UserStoragePathViewer,
+  computed: {
+    storagePath() {
+      return ["~"].concat(this.userStoragePath.parts).join("/") + "/";
+    },
   },
   created() {
     return this.loadUserStoragePath(mostRecentPath);

@@ -1,0 +1,22 @@
+# Build artifacts
+**/dist/
+**/node_modules/
+**/static/**/dist/
+**/static/**/manifest.json
+
+# Lockfiles
+package-lock.json
+yarn.lock
+
+# Django template files — prettier's HTML parser chokes on {% %} / {{ }} syntax.
+**/templates/**/*.html
+
+# Cookiecutter template skeletons — Jinja + templated directory names.
+templates/cookiecutters/
+
+# Python files (handled by ruff)
+**/*.py
+
+# Generated
+**/*.min.js
+**/migrations/

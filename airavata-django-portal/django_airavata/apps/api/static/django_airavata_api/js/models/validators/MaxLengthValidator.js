@@ -23,11 +23,7 @@ export default class MaxLengthValidator {
     if (this.customErrorMessage) {
       return this.customErrorMessage;
     } else {
-      return (
-        "The value must be less than or equal to " +
-        this.maxLength +
-        " characters in length."
-      );
+      return "The value must be less than or equal to " + this.maxLength + " characters in length.";
     }
   }
 }

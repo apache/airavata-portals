@@ -126,6 +126,6 @@ export const routes = [
     path: "/developers",
     component: DevelopersContainer,
     name: "developers",
-  }
+  },
 ];
 export default routes;

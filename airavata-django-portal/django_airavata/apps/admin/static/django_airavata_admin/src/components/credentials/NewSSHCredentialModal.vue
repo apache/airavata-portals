@@ -1,5 +1,5 @@
 <template>
-  <div class="modal fade" ref="modal" tabindex="-1">
+  <div ref="modal" class="modal fade" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -9,13 +9,22 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Description <span class="text-danger">*</span></label>
-            <input class="form-control" type="text" placeholder="Description" required
-              v-model="description" @keydown.enter="okClicked" ref="descInput" />
+            <input
+              ref="descInput"
+              v-model="description"
+              class="form-control"
+              type="text"
+              placeholder="Description"
+              required
+              @keydown.enter="okClicked"
+            />
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-primary btn-sm" @click="okClicked" :disabled="!valid">Create</button>
+          <button class="btn btn-primary btn-sm" :disabled="!valid" @click="okClicked">
+            Create
+          </button>
         </div>
       </div>
     </div>
@@ -26,7 +35,7 @@
 import { Modal } from "bootstrap";
 
 export default {
-  name: "new-ssh-credential-modal",
+  name: "NewSshCredentialModal",
   data() {
     return {
       description: null,
@@ -34,6 +43,7 @@ export default {
   },
   computed: {
     valid() {
+      // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
       return this.description != null && this.description.trim() !== "";
     },
   },

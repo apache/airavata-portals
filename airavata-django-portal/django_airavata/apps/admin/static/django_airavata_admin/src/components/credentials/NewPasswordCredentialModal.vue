@@ -1,5 +1,5 @@
 <template>
-  <div class="modal fade" ref="modal" tabindex="-1">
+  <div ref="modal" class="modal fade" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -9,20 +9,41 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Username <span class="text-danger">*</span></label>
-            <input class="form-control" type="text" placeholder="Username" required v-model="username" ref="usernameInput" />
+            <input
+              ref="usernameInput"
+              v-model="username"
+              class="form-control"
+              type="text"
+              placeholder="Username"
+              required
+            />
           </div>
           <div class="mb-3">
             <label class="form-label">Password <span class="text-danger">*</span></label>
-            <input class="form-control" type="password" placeholder="Password" required v-model="password" />
+            <input
+              v-model="password"
+              class="form-control"
+              type="password"
+              placeholder="Password"
+              required
+            />
           </div>
           <div class="mb-3">
             <label class="form-label">Description <span class="text-danger">*</span></label>
-            <input class="form-control" type="text" placeholder="Description" required v-model="description" />
+            <input
+              v-model="description"
+              class="form-control"
+              type="text"
+              placeholder="Description"
+              required
+            />
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-primary btn-sm" @click="okClicked" :disabled="!valid">Create</button>
+          <button class="btn btn-primary btn-sm" :disabled="!valid" @click="okClicked">
+            Create
+          </button>
         </div>
       </div>
     </div>
@@ -33,7 +54,7 @@
 import { Modal } from "bootstrap";
 
 export default {
-  name: "new-password-credential-modal",
+  name: "NewPasswordCredentialModal",
   data() {
     return {
       username: null,

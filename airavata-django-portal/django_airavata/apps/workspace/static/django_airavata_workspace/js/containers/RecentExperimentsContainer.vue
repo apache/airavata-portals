@@ -1,16 +1,10 @@
 <template>
   <sidebar>
-    <sidebar-header
-      title="My Recent Experiments"
-      :view-all-url="viewAllExperiments"
-    />
+    <sidebar-header title="My Recent Experiments" :view-all-url="viewAllExperiments" />
     <sidebar-feed :feed-items="feedItems">
-      <template slot="description" slot-scope="slotProps">
+      <template #description="slotProps">
         <experiment-status-badge :status-name="slotProps.feedItem.statusName" />
-        <i
-          v-if="slotProps.feedItem.isProgressing"
-          class="fa fa-sync-alt fa-spin ms-1"
-        ></i>
+        <i v-if="slotProps.feedItem.isProgressing" class="fa fa-sync-alt fa-spin ms-1"></i>
       </template>
     </sidebar-feed>
   </sidebar>
@@ -21,16 +15,23 @@ import urls from "../utils/urls";
 import { errors, models, services, utils } from "django-airavata-api";
 import { components } from "django-airavata-common-ui";
 export default {
-  name: "recent-experiments-container",
-  props: {
-    viewAllExperiments: String,
-    username: String,
-  },
+  name: "RecentExperimentsContainer",
   components: {
     sidebar: components.Sidebar,
     "sidebar-header": components.SidebarHeader,
     "sidebar-feed": components.SidebarFeed,
     "experiment-status-badge": components.ExperimentStatusBadge,
+  },
+  props: {
+    viewAllExperiments: String,
+    username: String,
+  },
+  data() {
+    return {
+      feedItems: null,
+      applicationInterfaces: {},
+      refreshDelay: 10000,
+    };
   },
   created() {
     this.pollExperiments();
@@ -43,7 +44,7 @@ export default {
             function () {
               this.pollExperiments();
             }.bind(this),
-            this.refreshDelay
+            this.refreshDelay,
           );
         })
         .catch(() => {
@@ -61,7 +62,7 @@ export default {
         {
           showSpinner: false,
           ignoreErrors: true,
-        }
+        },
       ).then((experiments) => {
         this.feedItems = experiments.results.map((e) => {
           return {
@@ -84,7 +85,7 @@ export default {
         Promise.all(
           Object.keys(unloadedInterfaceIds).map((interfaceId) => {
             return this.loadApplicationInterface(interfaceId);
-          })
+          }),
         ).then(() => {
           this.populateApplicationNames();
         });
@@ -98,7 +99,7 @@ export default {
         {
           showSpinner: false,
           ignoreErrors: true,
-        }
+        },
       )
         .then((applicationInterface) => {
           this.applicationInterfaces[interfaceId] = applicationInterface;
@@ -121,19 +122,10 @@ export default {
             feedItem.interfaceId in this.applicationInterfaces &&
             this.applicationInterfaces[feedItem.interfaceId]
           ) {
-            feedItem.type = this.applicationInterfaces[
-              feedItem.interfaceId
-            ].application_name;
+            feedItem.type = this.applicationInterfaces[feedItem.interfaceId].application_name;
           }
         });
     },
-  },
-  data() {
-    return {
-      feedItems: null,
-      applicationInterfaces: {},
-      refreshDelay: 10000,
-    };
   },
 };
 </script>

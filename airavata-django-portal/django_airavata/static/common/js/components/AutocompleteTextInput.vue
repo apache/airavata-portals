@@ -15,13 +15,13 @@
         @keydown.up="up"
       />
     </div>
-    <ul class="list-group autocomplete-suggestion-list" v-if="open">
+    <ul v-if="open" class="list-group autocomplete-suggestion-list">
       <li
-        class="list-group-item"
         v-for="(suggestion, index) in filtered"
-        v-bind:class="{ active: isActive(index) }"
+        :key="suggestion.id"
+        class="list-group-item"
+        :class="{ active: isActive(index) }"
         @click="suggestionClick(index)"
-        v-bind:key="suggestion.id"
       >
         <slot name="suggestion" :suggestion="suggestion">
           {{ suggestion.name }}
@@ -33,7 +33,7 @@
 
 <script>
 export default {
-  name: "autocomplete-text-input",
+  name: "AutocompleteTextInput",
   props: {
     suggestions: {
       type: Array,
@@ -61,9 +61,7 @@ export default {
       return this.suggestions
         .filter((data) => {
           // Case insensitive search
-          return (
-            data.name.toLowerCase().indexOf(this.searchValue.toLowerCase()) >= 0
-          );
+          return data.name.toLowerCase().indexOf(this.searchValue.toLowerCase()) >= 0;
         })
         .slice(0, this.maxMatches);
     },

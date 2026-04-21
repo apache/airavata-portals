@@ -40,7 +40,12 @@
                 </div>
               </td>
             </tr>
-            <tr v-for="resource in computeResources" :key="resource.id" @click="navigateToResource(resource)" style="cursor: pointer">
+            <tr
+              v-for="resource in computeResources"
+              :key="resource.id"
+              style="cursor: pointer"
+              @click="navigateToResource(resource)"
+            >
               <td>
                 <i class="fa fa-server me-2 text-muted"></i>
                 <strong>{{ resource.name }}</strong>
@@ -51,12 +56,16 @@
                 <span class="badge bg-primary ms-1">Gateway</span>
               </td>
               <td>
-                <span class="badge bg-success" v-if="resource.enabled">Enabled</span>
-                <span class="badge bg-secondary" v-else>Disabled</span>
+                <span v-if="resource.enabled" class="badge bg-success">Enabled</span>
+                <span v-else class="badge bg-secondary">Disabled</span>
               </td>
               <td class="text-nowrap" style="width: 1%" @click.stop>
                 <div class="d-flex gap-2 justify-content-end flex-nowrap">
-                  <button type="button" class="btn btn-outline-danger btn-pill" @click="confirmDelete(resource)">
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger btn-pill"
+                    @click="confirmDelete(resource)"
+                  >
                     <i class="fa fa-trash me-1"></i>Delete
                   </button>
                 </div>
@@ -64,20 +73,38 @@
             </tr>
           </tbody>
         </table>
-        <div v-if="computeResources.length > 0" class="text-end text-muted" style="font-size:0.75rem; padding: 6px 8px;">Showing {{ computeResources.length }}</div>
+        <div
+          v-if="computeResources.length > 0"
+          class="text-end text-muted"
+          style="font-size: 0.75rem; padding: 6px 8px"
+        >
+          Showing {{ computeResources.length }}
+        </div>
       </div>
     </div>
 
     <!-- Register modal -->
-    <div class="modal fade" id="registerComputeModal" tabindex="-1" aria-labelledby="registerComputeModalLabel" aria-hidden="true" ref="registerModal">
+    <div
+      id="registerComputeModal"
+      ref="registerModal"
+      class="modal fade"
+      tabindex="-1"
+      aria-labelledby="registerComputeModalLabel"
+      aria-hidden="true"
+    >
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="registerComputeModalLabel">Register Compute Resource</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h5 id="registerComputeModalLabel" class="modal-title">Register Compute Resource</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
           </div>
           <div class="modal-body">
-            <div v-if="registerError" class="alert alert-danger" style="font-size:0.8125rem;">
+            <div v-if="registerError" class="alert alert-danger" style="font-size: 0.8125rem">
               {{ registerError }}
             </div>
             <div class="mb-3">
@@ -86,20 +113,22 @@
               </label>
               <input
                 id="newHostName"
+                v-model="newHostName"
                 type="text"
                 class="form-control"
-                v-model="newHostName"
                 placeholder="e.g. cluster.example.edu"
                 :disabled="registering"
               />
-              <div class="form-text" style="font-size:0.8125rem;">The fully qualified domain name of the compute resource.</div>
+              <div class="form-text" style="font-size: 0.8125rem">
+                The fully qualified domain name of the compute resource.
+              </div>
             </div>
             <div class="mb-3">
               <label for="newDescription" class="form-label">Description</label>
               <textarea
                 id="newDescription"
-                class="form-control"
                 v-model="newDescription"
+                class="form-control"
                 rows="3"
                 placeholder="Optional description"
                 :disabled="registering"
@@ -107,9 +136,23 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" :disabled="registering">Cancel</button>
-            <button type="button" class="btn btn-primary btn-sm" @click="registerResource" :disabled="registering || !newHostName.trim()">
-              <span v-if="registering"><i class="fa fa-spinner fa-spin me-1"></i> Registering...</span>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              data-bs-dismiss="modal"
+              :disabled="registering"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary btn-sm"
+              :disabled="registering || !newHostName.trim()"
+              @click="registerResource"
+            >
+              <span v-if="registering"
+                ><i class="fa fa-spinner fa-spin me-1"></i> Registering...</span
+              >
               <span v-else>Register</span>
             </button>
           </div>
@@ -124,7 +167,7 @@ import { services } from "django-airavata-api";
 import { Modal } from "bootstrap";
 
 export default {
-  name: "compute-container",
+  name: "ComputeContainer",
   data() {
     return {
       loading: true,
@@ -134,6 +177,9 @@ export default {
       registering: false,
       registerError: null,
     };
+  },
+  created() {
+    this.loadComputeResources();
   },
   methods: {
     async loadComputeResources() {
@@ -179,10 +225,12 @@ export default {
       this.registering = false;
     },
     navigateToResource(resource) {
-      window.location.href = '/resources/compute/' + resource.id;
+      window.location.href = "/resources/compute/" + resource.id;
     },
     async confirmDelete(resource) {
-      if (!window.confirm(`Delete compute resource "${resource.name}"? This action cannot be undone.`)) {
+      if (
+        !window.confirm(`Delete compute resource "${resource.name}"? This action cannot be undone.`)
+      ) {
         return;
       }
       try {
@@ -193,9 +241,5 @@ export default {
       }
     },
   },
-  created() {
-    this.loadComputeResources();
-  },
 };
 </script>
-

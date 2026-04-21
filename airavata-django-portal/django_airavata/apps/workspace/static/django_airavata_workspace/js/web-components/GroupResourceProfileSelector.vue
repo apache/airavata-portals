@@ -1,21 +1,18 @@
 <template>
   <div class="mb-3" :label="label" label-for="group-resource-profile">
-    <select class="form-select"
+    <select
       id="group-resource-profile"
+      class="form-select"
       :value="groupResourceProfileId"
       required
+      :disabled="disabled"
       @change="groupResourceProfileChanged($event.target.value)"
       @input.stop
-      :disabled="disabled"
     >
       <option :value="null" disabled>
         <slot name="null-option">Select an allocation</slot>
       </option>
-      <option
-        v-for="opt in groupResourceProfileOptions"
-        :key="opt.value"
-        :value="opt.value"
-      >
+      <option v-for="opt in groupResourceProfileOptions" :key="opt.value" :value="opt.value">
         {{ opt.text }}
       </option>
     </select>
@@ -23,12 +20,11 @@
 </template>
 
 <script>
-
 import store from "./store";
 import { mapGetters } from "vuex";
 
 export default {
-  name: "group-resource-profile-selector",
+  name: "GroupResourceProfileSelector",
   props: {
     value: {
       type: String,
@@ -41,7 +37,7 @@ export default {
     disabled: {
       type: Boolean,
       default: false,
-    }
+    },
   },
   store: store,
   created() {
@@ -60,11 +56,9 @@ export default {
               value: groupResourceProfile.groupResourceProfileId,
               text: groupResourceProfile.groupResourceProfileName,
             };
-          }
+          },
         );
-        groupResourceProfileOptions.sort((a, b) =>
-          a.text.localeCompare(b.text)
-        );
+        groupResourceProfileOptions.sort((a, b) => a.text.localeCompare(b.text));
         return groupResourceProfileOptions;
       } else {
         return [];

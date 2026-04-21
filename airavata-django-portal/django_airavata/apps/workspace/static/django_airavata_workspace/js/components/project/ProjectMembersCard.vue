@@ -3,7 +3,7 @@
     <div class="card-body">
       <div class="d-flex align-items-center mb-3">
         <h5 class="mb-0 me-auto">Members</h5>
-        <button class="btn btn-primary btn-sm" v-if="canManage" @click="showAdd = true">
+        <button v-if="canManage" class="btn btn-primary btn-sm" @click="showAdd = true">
           <i class="fa fa-plus me-1"></i>Add
         </button>
       </div>
@@ -18,11 +18,13 @@
               <i class="fa fa-user me-2 text-muted"></i>
               {{ user }}
               <span class="badge bg-primary ms-1">Admin</span>
-              <span class="badge bg-secondary ms-1" v-if="user === project.owner">Owner</span>
+              <span v-if="user === project.owner" class="badge bg-secondary ms-1">Owner</span>
             </td>
-            <td class="text-end" v-if="canManage && user !== project.owner">
+            <td v-if="canManage && user !== project.owner" class="text-end">
               <button class="btn btn-sm btn-outline-secondary" @click="demote(user)">Demote</button>
-              <button class="btn btn-sm btn-outline-danger ms-1" @click="remove(user)">Remove</button>
+              <button class="btn btn-sm btn-outline-danger ms-1" @click="remove(user)">
+                Remove
+              </button>
             </td>
             <td v-else></td>
           </tr>
@@ -31,18 +33,34 @@
               <i class="fa fa-user me-2 text-muted"></i>
               {{ user }}
             </td>
-            <td class="text-end" v-if="canManage">
-              <button class="btn btn-sm btn-outline-secondary" @click="promote(user)">Promote</button>
-              <button class="btn btn-sm btn-outline-danger ms-1" @click="remove(user)">Remove</button>
+            <td v-if="canManage" class="text-end">
+              <button class="btn btn-sm btn-outline-secondary" @click="promote(user)">
+                Promote
+              </button>
+              <button class="btn btn-sm btn-outline-danger ms-1" @click="remove(user)">
+                Remove
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
       <div v-if="showAdd" class="mt-3">
         <div class="input-group input-group-sm">
-          <input v-model="newUserName" class="form-control" placeholder="Username (e.g. alice@default)" />
+          <input
+            v-model="newUserName"
+            class="form-control"
+            placeholder="Username (e.g. alice@default)"
+          />
           <button class="btn btn-primary" :disabled="!newUserName" @click="add">Add</button>
-          <button class="btn btn-secondary" @click="showAdd = false; newUserName = ''">Cancel</button>
+          <button
+            class="btn btn-secondary"
+            @click="
+              showAdd = false;
+              newUserName = '';
+            "
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </div>
@@ -53,7 +71,7 @@
 import { services, session } from "django-airavata-api";
 
 export default {
-  name: "project-members-card",
+  name: "ProjectMembersCard",
   props: { project: { type: Object, required: true } },
   data() {
     return { loading: true, admins: [], members: [], showAdd: false, newUserName: "" };
@@ -70,7 +88,9 @@ export default {
       return this.members.filter((u) => !this.admins.includes(u));
     },
   },
-  created() { this.reload(); },
+  created() {
+    this.reload();
+  },
   methods: {
     async reload() {
       this.loading = true;

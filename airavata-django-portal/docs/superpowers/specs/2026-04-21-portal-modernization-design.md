@@ -148,16 +148,16 @@ returns **zero** matches. `vue-tsc --noEmit` passes with strict. `yarn test` and
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Vue Options → Composition rewrite regressing a screen nobody tests | Pre-A gate: Playwright covers top journeys, Vitest covers top components; Track A blocked until green |
-| CodeMirror 6 API rewrite breaking file editor / input editors | Wrap in one `<CodeEditor>` Vue component so the rewrite is confined; Pre-A has a Vitest spec pinning the component's public API |
-| ESLint 9 flat config churn breaking in-flight Track A PRs | Track C lands entirely before Track A starts (sequencing enforces) |
-| Track A becoming a permanently-open PR | File-by-file or app-by-app commits inside Track A's long-lived branch; integrate to `modernization` weekly; branch has full CI |
-| TypeScript strict catching pre-existing latent bugs | Convert file-by-file with per-file `@ts-expect-error` as tactical relief; follow-up cleanup pass removes them |
-| Bundled Bootstrap 4 fossil deletion turning out to be referenced | Track B's spec greps across the entire repo before `rm -rf`; Playwright covers anything user-facing |
-| Pinia migration clashing with existing Vuex store tests | Pre-A store tests target behaviour (actions/selectors), not Vuex API; Track A swaps impl with tests unchanged |
-| `setuptools<81` pin turning out to guard a real compat issue | Track D's spec starts by identifying what required the pin (git blame + reading the dep closer); if valid, document and keep |
+| Risk                                                               | Mitigation                                                                                                                      |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Vue Options → Composition rewrite regressing a screen nobody tests | Pre-A gate: Playwright covers top journeys, Vitest covers top components; Track A blocked until green                           |
+| CodeMirror 6 API rewrite breaking file editor / input editors      | Wrap in one `<CodeEditor>` Vue component so the rewrite is confined; Pre-A has a Vitest spec pinning the component's public API |
+| ESLint 9 flat config churn breaking in-flight Track A PRs          | Track C lands entirely before Track A starts (sequencing enforces)                                                              |
+| Track A becoming a permanently-open PR                             | File-by-file or app-by-app commits inside Track A's long-lived branch; integrate to `modernization` weekly; branch has full CI  |
+| TypeScript strict catching pre-existing latent bugs                | Convert file-by-file with per-file `@ts-expect-error` as tactical relief; follow-up cleanup pass removes them                   |
+| Bundled Bootstrap 4 fossil deletion turning out to be referenced   | Track B's spec greps across the entire repo before `rm -rf`; Playwright covers anything user-facing                             |
+| Pinia migration clashing with existing Vuex store tests            | Pre-A store tests target behaviour (actions/selectors), not Vuex API; Track A swaps impl with tests unchanged                   |
+| `setuptools<81` pin turning out to guard a real compat issue       | Track D's spec starts by identifying what required the pin (git blame + reading the dep closer); if valid, document and keep    |
 
 ## Per-track handoff notes (for future brainstorms)
 

@@ -1,19 +1,13 @@
 <template>
   <div>
     <div class="mb-3" label="Login username" label-for="login-username">
-      <input class="form-control"
-        id="login-username"
-        v-model="data.login_user_name"
-        type="text"
-      />
+      <input id="login-username" v-model="data.login_user_name" class="form-control" type="text" />
     </div>
-    <form-group
-      label="File System Root Location"
-      label-for="filesystem-root-location"
-    >
-      <input class="form-control"
+    <form-group label="File System Root Location" label-for="filesystem-root-location">
+      <input
         id="filesystem-root-location"
         v-model="data.file_system_root_location"
+        class="form-control"
         type="text"
       />
     </form-group>
@@ -28,7 +22,7 @@
         :null-option-default-credential-token="defaultCredentialStoreToken"
         :null-option-disabled="!defaultCredentialStoreToken"
       >
-        <template slot="null-option-label" slot-scope="nullOptionLabelScope">
+        <template #null-option-label="nullOptionLabelScope">
           <span v-if="nullOptionLabelScope.defaultCredentialSummary">
             Use the gateway's default SSH credential ({{
               nullOptionLabelScope.defaultCredentialSummary.username
@@ -47,11 +41,11 @@ import { mixins } from "django-airavata-common-ui";
 import SSHCredentialSelector from "../credentials/SSHCredentialSelector.vue";
 
 export default {
-  name: "storage-preference-editor",
-  mixins: [mixins.VModelMixin],
+  name: "StoragePreferenceEditor",
   components: {
     "ssh-credential-selector": SSHCredentialSelector,
   },
+  mixins: [mixins.VModelMixin],
   props: {
     defaultCredentialStoreToken: {
       type: String,

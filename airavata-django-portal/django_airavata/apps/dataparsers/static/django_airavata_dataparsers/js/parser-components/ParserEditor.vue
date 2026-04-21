@@ -9,8 +9,9 @@
       <div class="col">
         <div class="card">
           <div class="card-body">
-            <div :class="['alert', 'alert-' + showDismissibleAlert.variant]"
+            <div
               v-if="showDismissibleAlert.dismissable"
+              :class="['alert', 'alert-' + showDismissibleAlert.variant]"
             >
               {{ showDismissibleAlert.message }}
             </div>
@@ -22,52 +23,44 @@
                 label-for="parser_name"
                 description="Name should only contain Alpha Characters"
               >
-                <input class="form-control"
+                <input
                   id="parser_name"
-                  type="text"
                   v-model="localParser.id"
+                  class="form-control"
+                  type="text"
                   required
                   placeholder="Enter parser name"
                 />
               </form-group>
 
-              <form-group
-                id="group2"
-                label="Docker Image:"
-                label-for="docker-image"
-              >
-                <input class="form-control"
+              <form-group id="group2" label="Docker Image:" label-for="docker-image">
+                <input
                   id="docker-image"
-                  type="text"
                   v-model="localParser.imageName"
+                  class="form-control"
+                  type="text"
                   required
                   placeholder="Enter the Docker Image name"
                 />
               </form-group>
 
-              <form-group
-                id="group3"
-                label="Input Data Directory:"
-                label-for="input-path"
-              >
-                <input class="form-control"
+              <form-group id="group3" label="Input Data Directory:" label-for="input-path">
+                <input
                   id="input-path"
-                  type="text"
                   v-model="localParser.inputDirPath"
+                  class="form-control"
+                  type="text"
                   required
                   placeholder="Enter input directory of the container"
                 />
               </form-group>
 
-              <form-group
-                id="group4"
-                label="Output Data Directory:"
-                label-for="output-path"
-              >
-                <input class="form-control"
+              <form-group id="group4" label="Output Data Directory:" label-for="output-path">
+                <input
                   id="output-path"
-                  type="text"
                   v-model="localParser.outputDirPath"
+                  class="form-control"
+                  type="text"
                   required
                   placeholder="Enter output directory of the container"
                 />
@@ -88,13 +81,14 @@
               new-item-button-text="New Input"
               @add-new-item="createInput"
             >
-              <template slot="item-list" slot-scope="slotProps">
-                <!-- TODO: migrate to native HTML table --><table class="table"
+              <template #item-list="slotProps">
+                <!-- TODO: migrate to native HTML table -->
+                <table
+                  class="table"
                   hover
                   :fields="parserInputFields"
                   :items="slotProps.items"
-                >
-                </table>
+                ></table>
               </template>
             </list-layout>
           </div>
@@ -112,13 +106,14 @@
               new-item-button-text="New Output"
               @add-new-item="createOutput"
             >
-              <template slot="item-list" slot-scope="slotProps">
-                <!-- TODO: migrate to native HTML table --><table class="table"
+              <template #item-list="slotProps">
+                <!-- TODO: migrate to native HTML table -->
+                <table
+                  class="table"
                   hover
                   :fields="parserOutputFields"
                   :items="slotProps.items"
-                >
-                </table>
+                ></table>
               </template>
             </list-layout>
           </div>
@@ -128,14 +123,8 @@
     <div class="row">
       <div class="col d-flex justify-content-end">
         <button class="btn btn-primary" @click="saveParser">Save</button>
-        <button class="btn btn-danger ms-2"
-          v-if="parser"
-          @click="removeParser"
-          >Delete</button
-        >
-        <button class="btn btn-secondary ms-2" @click="cancel"
-          >Cancel</button
-        >
+        <button v-if="parser" class="btn btn-danger ms-2" @click="removeParser">Delete</button>
+        <button class="btn btn-secondary ms-2" @click="cancel">Cancel</button>
       </div>
     </div>
   </div>
@@ -146,6 +135,9 @@ import { models, services } from "django-airavata-api";
 import { layouts } from "django-airavata-common-ui";
 
 export default {
+  components: {
+    "list-layout": layouts.ListLayout,
+  },
   props: {
     parser: {
       type: models.Parser,
@@ -197,9 +189,6 @@ export default {
     title: function () {
       return this.parser ? this.parser.id : "New Parser";
     },
-  },
-  components: {
-    "list-layout": layouts.ListLayout,
   },
   methods: {
     submitForm() {},

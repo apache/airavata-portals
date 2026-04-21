@@ -25,9 +25,7 @@ export const mutations = {
     state.experiment.experiment_name = name;
   },
   updateExperimentInputValue(state, { inputName, value }) {
-    const experimentInput = state.experiment.experiment_inputs.find(
-      (i) => i.name === inputName
-    );
+    const experimentInput = state.experiment.experiment_inputs.find((i) => i.name === inputName);
     experimentInput.value = value;
   },
   updateProjectId(state, { projectId }) {
@@ -41,14 +39,16 @@ export const mutations = {
     groupResourceProfileIdIsSet = true;
   },
   updateExperimentResourceHostId(state, { resourceHostId }) {
-    state.experiment.user_configuration_data.computational_resource_scheduling.resource_host_id = resourceHostId;
+    state.experiment.user_configuration_data.computational_resource_scheduling.resource_host_id =
+      resourceHostId;
   },
   updateResourceHostId(state, { resourceHostId }) {
     state.resourceHostId = resourceHostId;
     resourceHostIdIsSet = true;
   },
   updateExperimentQueueName(state, { queueName }) {
-    state.experiment.user_configuration_data.computational_resource_scheduling.queue_name = queueName;
+    state.experiment.user_configuration_data.computational_resource_scheduling.queue_name =
+      queueName;
   },
   updateQueueName(state, { queueName }) {
     state.queueName = queueName;
@@ -56,16 +56,20 @@ export const mutations = {
     queueSettingsAreSet = true;
   },
   updateExperimentTotalCPUCount(state, { totalCPUCount }) {
-    state.experiment.user_configuration_data.computational_resource_scheduling.total_cpu_count = totalCPUCount;
+    state.experiment.user_configuration_data.computational_resource_scheduling.total_cpu_count =
+      totalCPUCount;
   },
   updateExperimentNodeCount(state, { nodeCount }) {
-    state.experiment.user_configuration_data.computational_resource_scheduling.node_count = nodeCount;
+    state.experiment.user_configuration_data.computational_resource_scheduling.node_count =
+      nodeCount;
   },
   updateExperimentWallTimeLimit(state, { wallTimeLimit }) {
-    state.experiment.user_configuration_data.computational_resource_scheduling.wall_time_limit = wallTimeLimit;
+    state.experiment.user_configuration_data.computational_resource_scheduling.wall_time_limit =
+      wallTimeLimit;
   },
   updateExperimentTotalPhysicalMemory(state, { totalPhysicalMemory }) {
-    state.experiment.user_configuration_data.computational_resource_scheduling.total_physical_memory = totalPhysicalMemory;
+    state.experiment.user_configuration_data.computational_resource_scheduling.total_physical_memory =
+      totalPhysicalMemory;
   },
   updateTotalCPUCount(state, { totalCPUCount }) {
     state.totalCPUCount = totalCPUCount;
@@ -110,10 +114,9 @@ export const actions = {
     const applicationModule = await services.ApplicationModuleService.retrieve({
       lookup: applicationId,
     });
-    const applicationInterface = await dispatch(
-      "initializeApplicationInterface",
-      { applicationModuleId: applicationId }
-    );
+    const applicationInterface = await dispatch("initializeApplicationInterface", {
+      applicationModuleId: applicationId,
+    });
     const experiment = applicationInterface.createExperiment();
     const currentDate = new Date().toLocaleString([], {
       dateStyle: "medium",
@@ -127,11 +130,9 @@ export const actions = {
     const experiment = await services.ExperimentService.retrieve({
       lookup: experimentId,
     });
-    const applicationInterface = await services.ApplicationInterfaceService.retrieve(
-      {
-        lookup: experiment.execution_id,
-      }
-    );
+    const applicationInterface = await services.ApplicationInterfaceService.retrieve({
+      lookup: experiment.execution_id,
+    });
     commit("setApplicationInterface", { applicationInterface });
     commit("setApplicationModuleId", {
       applicationModuleId: applicationInterface.application_module_id,
@@ -187,11 +188,9 @@ export const actions = {
     }
   },
   async initializeApplicationInterface({ commit }, { applicationModuleId }) {
-    const applicationInterface = await services.ApplicationModuleService.getApplicationInterface(
-      {
-        lookup: applicationModuleId,
-      }
-    );
+    const applicationInterface = await services.ApplicationModuleService.getApplicationInterface({
+      lookup: applicationModuleId,
+    });
     commit("setApplicationInterface", { applicationInterface });
     return applicationInterface;
   },
@@ -207,11 +206,10 @@ export const actions = {
       // Figure out a default value for groupResourceProfileId
       if (
         getters.findGroupResourceProfile(
-          state.workspacePreferences.most_recent_project_resource_profile_id
+          state.workspacePreferences.most_recent_project_resource_profile_id,
         )
       ) {
-        result =
-          state.workspacePreferences.most_recent_project_resource_profile_id;
+        result = state.workspacePreferences.most_recent_project_resource_profile_id;
       } else if (state.groupResourceProfiles.length > 0) {
         result = state.groupResourceProfiles[0].group_resource_profile_id;
       } else {
@@ -228,10 +226,7 @@ export const actions = {
       });
     }
   },
-  async initializeGroupResourceProfileId(
-    { commit, dispatch, state },
-    { groupResourceProfileId }
-  ) {
+  async initializeGroupResourceProfileId({ commit, dispatch, state }, { groupResourceProfileId }) {
     commit("updateGroupResourceProfileId", {
       groupResourceProfileId,
     });
@@ -251,7 +246,7 @@ export const actions = {
   },
   async updateGroupResourceProfileId(
     { commit, dispatch, getters, state },
-    { groupResourceProfileId }
+    { groupResourceProfileId },
   ) {
     const oldValue = getters.groupResourceProfileId;
     if (state.experiment) {
@@ -266,10 +261,7 @@ export const actions = {
       await dispatch("applyGroupResourceProfile");
     }
   },
-  async updateComputeResourceHostId(
-    { commit, dispatch, getters, state },
-    { resourceHostId }
-  ) {
+  async updateComputeResourceHostId({ commit, dispatch, getters, state }, { resourceHostId }) {
     if (getters.resourceHostId !== resourceHostId) {
       if (state.experiment) {
         commit("updateExperimentResourceHostId", { resourceHostId });
@@ -282,7 +274,7 @@ export const actions = {
   },
   async initializeQueueSettings(
     { commit, dispatch, state },
-    { queueName, nodeCount, totalCPUCount, wallTimeLimit, totalPhysicalMemory }
+    { queueName, nodeCount, totalCPUCount, wallTimeLimit, totalPhysicalMemory },
   ) {
     commit("updateQueueName", { queueName });
     commit("updateNodeCount", { nodeCount });
@@ -303,10 +295,7 @@ export const actions = {
     }
     dispatch("initializeQueue");
   },
-  updateTotalCPUCount(
-    { commit, getters, state },
-    { totalCPUCount, enableNodeCountToCpuCheck }
-  ) {
+  updateTotalCPUCount({ commit, getters, state }, { totalCPUCount, enableNodeCountToCpuCheck }) {
     if (state.experiment) {
       commit("updateExperimentTotalCPUCount", { totalCPUCount });
     } else {
@@ -316,7 +305,7 @@ export const actions = {
       const totalCPUCountInt = parseInt(totalCPUCount);
       const nodeCount = Math.min(
         Math.ceil(totalCPUCountInt / getters.queue.cpu_per_node),
-        getters.maxAllowedNodes
+        getters.maxAllowedNodes,
       );
       if (state.experiment) {
         commit("updateExperimentNodeCount", { nodeCount });
@@ -325,10 +314,7 @@ export const actions = {
       }
     }
   },
-  updateNodeCount(
-    { commit, getters, state },
-    { nodeCount, enableNodeCountToCpuCheck }
-  ) {
+  updateNodeCount({ commit, getters, state }, { nodeCount, enableNodeCountToCpuCheck }) {
     if (state.experiment) {
       commit("updateExperimentNodeCount", { nodeCount });
     } else {
@@ -338,7 +324,7 @@ export const actions = {
       const nodeCountInt = parseInt(nodeCount);
       const totalCPUCount = Math.min(
         nodeCountInt * getters.queue.cpu_per_node,
-        getters.maxAllowedCores
+        getters.maxAllowedCores,
       );
       if (state.experiment) {
         commit("updateExperimentTotalCPUCount", { totalCPUCount });
@@ -367,7 +353,7 @@ export const actions = {
         app_module_id: state.applicationModuleId,
         group_resource_profile_id: getters.groupResourceProfileId,
       },
-      { ignoreErrors: true }
+      { ignoreErrors: true },
     )
       .catch((error) => {
         // Ignore unauthorized errors, force user to pick another GroupResourceProfile
@@ -398,7 +384,7 @@ export const actions = {
   },
   async initializeComputeResources(
     { commit, dispatch, state },
-    { applicationModuleId, resourceHostId = null }
+    { applicationModuleId, resourceHostId = null },
   ) {
     commit("setApplicationModuleId", { applicationModuleId });
     commit("updateResourceHostId", {
@@ -435,9 +421,7 @@ export const actions = {
     await dispatch("loadDefaultComputeResourceId");
     if (
       getters.defaultComputeResourceId &&
-      getters.computeResources.find(
-        (crid) => crid === getters.defaultComputeResourceId
-      )
+      getters.computeResources.find((crid) => crid === getters.defaultComputeResourceId)
     ) {
       return getters.defaultComputeResourceId;
     } else if (getters.computeResources.length > 0) {
@@ -453,11 +437,9 @@ export const actions = {
   async loadAppDeploymentQueues({ commit, getters }) {
     const applicationDeployment = getters.applicationDeployment;
     if (applicationDeployment) {
-      const appDeploymentQueues = await services.ApplicationDeploymentService.getQueues(
-        {
-          lookup: applicationDeployment.app_deployment_id,
-        }
-      );
+      const appDeploymentQueues = await services.ApplicationDeploymentService.getQueues({
+        lookup: applicationDeployment.app_deployment_id,
+      });
       commit("setAppDeploymentQueues", { appDeploymentQueues });
     } else {
       commit("setAppDeploymentQueues", { appDeploymentQueues: [] });
@@ -518,22 +500,17 @@ export const actions = {
   },
   applyBatchQueueResourcePolicy({ commit, getters }) {
     if (getters.batchQueueResourcePolicy) {
-      const crs =
-        getters.experiment.user_configuration_data
-          .computational_resource_scheduling;
+      const crs = getters.experiment.user_configuration_data.computational_resource_scheduling;
       const totalCPUCount = Math.min(
         crs.total_cpu_count,
-        getters.batchQueueResourcePolicy.maxAllowedCores
+        getters.batchQueueResourcePolicy.maxAllowedCores,
       );
       if (totalCPUCount !== crs.total_cpu_count) {
         commit("updateTotalCPUCount", {
           totalCPUCount,
         });
       }
-      const nodeCount = Math.min(
-        crs.node_count,
-        getters.batchQueueResourcePolicy.maxAllowedNodes
-      );
+      const nodeCount = Math.min(crs.node_count, getters.batchQueueResourcePolicy.maxAllowedNodes);
       if (nodeCount !== crs.node_count) {
         commit("updateNodeCount", {
           nodeCount,
@@ -541,7 +518,7 @@ export const actions = {
       }
       const wallTimeLimit = Math.min(
         crs.wall_time_limit,
-        getters.batchQueueResourcePolicy.maxAllowedWalltime
+        getters.batchQueueResourcePolicy.maxAllowedWalltime,
       );
       if (wallTimeLimit !== crs.wall_time_limit) {
         commit("updateWallTimeLimit", {
@@ -620,17 +597,13 @@ export const getters = {
   experiment: (state) => state.experiment,
   projects: (state) => state.projects,
   defaultProjectId: (state) =>
-    state.workspacePreferences
-      ? state.workspacePreferences.most_recent_project_id
-      : null,
+    state.workspacePreferences ? state.workspacePreferences.most_recent_project_id : null,
   defaultGroupResourceProfileId: (state) =>
     state.workspacePreferences
       ? state.workspacePreferences.most_recent_project_resource_profile_id
       : null,
   defaultComputeResourceId: (state) =>
-    state.workspacePreferences
-      ? state.workspacePreferences.most_recent_compute_resource_id
-      : null,
+    state.workspacePreferences ? state.workspacePreferences.most_recent_compute_resource_id : null,
   computeResourceNames: (state) => state.computeResourceNames,
   groupResourceProfiles: (state) => state.groupResourceProfiles,
   groupResourceProfileId: (state) =>
@@ -640,7 +613,7 @@ export const getters = {
   findGroupResourceProfile: (state) => (groupResourceProfileId) =>
     state.groupResourceProfiles
       ? state.groupResourceProfiles.find(
-          (g) => g.group_resource_profile_id === groupResourceProfileId
+          (g) => g.group_resource_profile_id === groupResourceProfileId,
         )
       : null,
   groupResourceProfile: (state, getters) =>
@@ -649,15 +622,13 @@ export const getters = {
     state.experiment &&
     state.experiment.user_configuration_data &&
     state.experiment.user_configuration_data.computational_resource_scheduling
-      ? state.experiment.user_configuration_data.computational_resource_scheduling
-          .resource_host_id
+      ? state.experiment.user_configuration_data.computational_resource_scheduling.resource_host_id
       : state.resourceHostId,
-  computeResources: (state) =>
-    state.applicationDeployments.map((dep) => dep.compute_host_id),
+  computeResources: (state) => state.applicationDeployments.map((dep) => dep.compute_host_id),
   applicationDeployment: (state, getters) => {
     if (state.applicationDeployments && getters.resourceHostId) {
       return state.applicationDeployments.find(
-        (ad) => ad.compute_host_id === getters.resourceHostId
+        (ad) => ad.compute_host_id === getters.resourceHostId,
       );
     } else {
       return null;
@@ -672,7 +643,7 @@ export const getters = {
   queues: (state, getters) => {
     return state.appDeploymentQueues
       ? state.appDeploymentQueues.filter((q) =>
-          getters.isQueueInComputeResourcePolicy(q.queue_name)
+          getters.isQueueInComputeResourcePolicy(q.queue_name),
         )
       : [];
   },
@@ -690,32 +661,28 @@ export const getters = {
     return state.experiment &&
       state.experiment.user_configuration_data &&
       state.experiment.user_configuration_data.computational_resource_scheduling
-      ? state.experiment.user_configuration_data.computational_resource_scheduling
-          .queue_name
+      ? state.experiment.user_configuration_data.computational_resource_scheduling.queue_name
       : state.queueName;
   },
   totalCPUCount: (state) => {
     return state.experiment &&
       state.experiment.user_configuration_data &&
       state.experiment.user_configuration_data.computational_resource_scheduling
-      ? state.experiment.user_configuration_data.computational_resource_scheduling
-          .total_cpu_count
+      ? state.experiment.user_configuration_data.computational_resource_scheduling.total_cpu_count
       : state.totalCPUCount;
   },
   nodeCount: (state) => {
     return state.experiment &&
       state.experiment.user_configuration_data &&
       state.experiment.user_configuration_data.computational_resource_scheduling
-      ? state.experiment.user_configuration_data.computational_resource_scheduling
-          .node_count
+      ? state.experiment.user_configuration_data.computational_resource_scheduling.node_count
       : state.nodeCount;
   },
   wallTimeLimit: (state) => {
     return state.experiment &&
       state.experiment.user_configuration_data &&
       state.experiment.user_configuration_data.computational_resource_scheduling
-      ? state.experiment.user_configuration_data.computational_resource_scheduling
-          .wall_time_limit
+      ? state.experiment.user_configuration_data.computational_resource_scheduling.wall_time_limit
       : state.wallTimeLimit;
   },
   totalPhysicalMemory: (state) => {
@@ -734,30 +701,21 @@ export const getters = {
   getDefaultCPUCount: (state, getters) => (queue) => {
     const batchQueueResourcePolicy = getters.batchQueueResourcePolicy;
     if (batchQueueResourcePolicy) {
-      return Math.min(
-        batchQueueResourcePolicy.maxAllowedCores,
-        queue.default_cpu_count
-      );
+      return Math.min(batchQueueResourcePolicy.maxAllowedCores, queue.default_cpu_count);
     }
     return queue.default_cpu_count;
   },
   getDefaultNodeCount: (state, getters) => (queue) => {
     const batchQueueResourcePolicy = getters.batchQueueResourcePolicy;
     if (batchQueueResourcePolicy) {
-      return Math.min(
-        batchQueueResourcePolicy.maxAllowedNodes,
-        queue.default_node_count
-      );
+      return Math.min(batchQueueResourcePolicy.maxAllowedNodes, queue.default_node_count);
     }
     return queue.default_node_count;
   },
   getDefaultWalltime: (state, getters) => (queue) => {
     const batchQueueResourcePolicy = getters.batchQueueResourcePolicy;
     if (batchQueueResourcePolicy) {
-      return Math.min(
-        batchQueueResourcePolicy.maxAllowedWalltime,
-        queue.default_walltime
-      );
+      return Math.min(batchQueueResourcePolicy.maxAllowedWalltime, queue.default_walltime);
     }
     return queue.default_walltime;
   },
@@ -766,7 +724,7 @@ export const getters = {
       return null;
     }
     return getters.groupResourceProfile.compute_resource_policies.find(
-      (crp) => crp.compute_resource_id === getters.resourceHostId
+      (crp) => crp.compute_resource_id === getters.resourceHostId,
     );
   },
   batchQueueResourcePolicies: (state, getters) => {
@@ -774,16 +732,14 @@ export const getters = {
       return null;
     }
     return getters.groupResourceProfile.batch_queue_resource_policies.filter(
-      (bqrp) => bqrp.compute_resource_id === getters.resourceHostId
+      (bqrp) => bqrp.compute_resource_id === getters.resourceHostId,
     );
   },
   batchQueueResourcePolicy: (state, getters) => {
     if (!getters.batchQueueResourcePolicies || !getters.queueName) {
       return null;
     }
-    return getters.batchQueueResourcePolicies.find(
-      (bqrp) => bqrp.queuename === getters.queueName
-    );
+    return getters.batchQueueResourcePolicies.find((bqrp) => bqrp.queuename === getters.queueName);
   },
   maxAllowedCores: (state, getters) => {
     if (!getters.queue) {
@@ -791,10 +747,7 @@ export const getters = {
     }
     const batchQueueResourcePolicy = getters.batchQueueResourcePolicy;
     if (batchQueueResourcePolicy) {
-      return Math.min(
-        batchQueueResourcePolicy.maxAllowedCores,
-        getters.queue.max_processors
-      );
+      return Math.min(batchQueueResourcePolicy.maxAllowedCores, getters.queue.max_processors);
     }
     return getters.queue.max_processors;
   },
@@ -804,10 +757,7 @@ export const getters = {
     }
     const batchQueueResourcePolicy = getters.batchQueueResourcePolicy;
     if (batchQueueResourcePolicy) {
-      return Math.min(
-        batchQueueResourcePolicy.maxAllowedNodes,
-        getters.queue.max_nodes
-      );
+      return Math.min(batchQueueResourcePolicy.maxAllowedNodes, getters.queue.max_nodes);
     }
     return getters.queue.max_nodes;
   },
@@ -817,10 +767,7 @@ export const getters = {
     }
     const batchQueueResourcePolicy = getters.batchQueueResourcePolicy;
     if (batchQueueResourcePolicy) {
-      return Math.min(
-        batchQueueResourcePolicy.maxAllowedWalltime,
-        getters.queue.max_run_time
-      );
+      return Math.min(batchQueueResourcePolicy.maxAllowedWalltime, getters.queue.max_run_time);
     }
     return getters.queue.max_run_time;
   },
@@ -828,9 +775,7 @@ export const getters = {
     return getters.queue ? getters.queue.max_memory : 0;
   },
   showQueueSettings: (state) =>
-    state.applicationInterface
-      ? state.applicationInterface.show_queue_settings
-      : false,
+    state.applicationInterface ? state.applicationInterface.show_queue_settings : false,
 };
 
 export default createStore({

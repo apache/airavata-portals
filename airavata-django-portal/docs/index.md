@@ -1,4 +1,3 @@
-
 # Apache Airavata Django Portal
 
 The Airavata Django Portal is a web interface to the [Apache

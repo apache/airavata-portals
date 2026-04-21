@@ -6,17 +6,33 @@
       </slot>
       <slot name="buttons"> </slot>
     </div>
-    <form @submit.prevent="onSubmit" @input="onUserInput" novalidate>
+    <form novalidate @submit.prevent="onSubmit" @input="onUserInput">
       <div class="mb-3">
-        <label for="project-name" class="form-label">Project Name <span class="text-danger">*</span></label>
-        <input class="form-control" :class="{ 'is-invalid': userBeginsInput && nameState === false }"
-          id="project-name" type="text" v-model="data.name" required placeholder="Project name" />
-        <div v-if="userBeginsInput && nameFeedback" class="invalid-feedback">{{ nameFeedback }}</div>
+        <label for="project-name" class="form-label"
+          >Project Name <span class="text-danger">*</span></label
+        >
+        <input
+          id="project-name"
+          v-model="data.name"
+          class="form-control"
+          :class="{ 'is-invalid': userBeginsInput && nameState === false }"
+          type="text"
+          required
+          placeholder="Project name"
+        />
+        <div v-if="userBeginsInput && nameFeedback" class="invalid-feedback">
+          {{ nameFeedback }}
+        </div>
       </div>
       <div class="mb-3">
         <label for="project-description" class="form-label">Description</label>
-        <textarea class="form-control" id="project-description" v-model="data.description"
-          placeholder="Optional description" rows="3"></textarea>
+        <textarea
+          id="project-description"
+          v-model="data.description"
+          class="form-control"
+          placeholder="Optional description"
+          rows="3"
+        ></textarea>
       </div>
     </form>
   </div>
@@ -27,7 +43,7 @@ import { models } from "django-airavata-api";
 import { mixins } from "django-airavata-common-ui";
 
 export default {
-  name: "project-editor",
+  name: "ProjectEditor",
   mixins: [mixins.VModelMixin],
   props: {
     modelValue: {
@@ -58,6 +74,20 @@ export default {
       return v ? v : {};
     },
   },
+  watch: {
+    data: {
+      handler() {
+        this.validate();
+      },
+      deep: true,
+    },
+    modelValue() {
+      this.validate();
+    },
+  },
+  mounted() {
+    this.validate();
+  },
   methods: {
     validate() {
       if (Object.keys(this.validation).length > 0) {
@@ -75,20 +105,6 @@ export default {
     reset() {
       this.userBeginsInput = false;
     },
-  },
-  watch: {
-    data: {
-      handler() {
-        this.validate();
-      },
-      deep: true,
-    },
-    modelValue() {
-      this.validate();
-    },
-  },
-  mounted() {
-    this.validate();
   },
 };
 </script>

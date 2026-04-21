@@ -7,22 +7,20 @@ export default class PaginationIterator {
   }
 
   next() {
-    return FetchUtils.get(this._next).then((json) =>
-      this.processResponse(json)
-    );
+    return FetchUtils.get(this._next).then((json) => this.processResponse(json));
   }
 
   hasNext() {
+    // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
     return this._next != null;
   }
 
   previous() {
-    return FetchUtils.get(this._previous).then((json) =>
-      this.processResponse(json)
-    );
+    return FetchUtils.get(this._previous).then((json) => this.processResponse(json));
   }
 
   hasPrevious() {
+    // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
     return this._previous != null;
   }
 
@@ -31,9 +29,7 @@ export default class PaginationIterator {
     this._previous = pagedResponse.previous;
     if (this.resultType) {
       if (Array.isArray(pagedResponse.results)) {
-        this.results = pagedResponse.results.map(
-          (result) => new this.resultType(result)
-        );
+        this.results = pagedResponse.results.map((result) => new this.resultType(result));
       } else {
         this.results = new this.resultType(pagedResponse.results);
       }

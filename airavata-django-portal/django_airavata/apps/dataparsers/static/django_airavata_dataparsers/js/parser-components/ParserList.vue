@@ -1,9 +1,8 @@
 <template>
   <div>
-    <div :class="['alert', 'alert-' + alertVariant]"
-      v-if="showDismissibleAlert"
-      >{{ alertMsg }}</div
-    >
+    <div v-if="showDismissibleAlert" :class="['alert', 'alert-' + alertVariant]">
+      {{ alertMsg }}
+    </div>
     <table class="table table-hover">
       <thead>
         <tr>
@@ -14,11 +13,7 @@
         </tr>
       </thead>
       <tbody>
-        <parser-list-item
-          v-bind:parser="parser"
-          v-for="parser in parsers"
-          v-bind:key="parser.id"
-        >
+        <parser-list-item v-for="parser in parsers" :key="parser.id" :parser="parser">
         </parser-list-item>
         <tr v-if="parsers && parsers.length === 0">
           <td colspan="4" class="text-center text-muted py-4">
@@ -35,7 +30,10 @@
 import ParserListItem from "./ParserListItem.vue";
 
 export default {
-  name: "parser-list",
+  name: "ParserList",
+  components: {
+    ParserListItem,
+  },
   props: ["parsers"],
   data: function () {
     return {
@@ -44,9 +42,6 @@ export default {
       alertVariant: "primary",
       showDismissibleAlert: false,
     };
-  },
-  components: {
-    ParserListItem,
   },
   methods: {},
 };

@@ -4,9 +4,7 @@ import ProjectListContainer from "./containers/ProjectListContainer.vue";
 
 entry(({ createApp }) => {
   const el = document.getElementById("project-list");
-  const projectsData = el && el.dataset.projectsData
-    ? JSON.parse(el.dataset.projectsData)
-    : null;
+  const projectsData = el && el.dataset.projectsData ? JSON.parse(el.dataset.projectsData) : null;
   const app = createApp({
     data() {
       return {

@@ -1,18 +1,22 @@
 <template>
-  <tr @click="navigate" style="cursor: pointer">
+  <tr style="cursor: pointer" @click="navigate">
     <td>
       <i class="fa fa-folder me-2 text-muted"></i>
       <strong>{{ project.name }}</strong>
     </td>
     <td>
       <span class="fw-medium">{{ ownerUsername }}</span>
-      <span class="badge bg-secondary ms-1" v-if="isCurrentUser">You</span>
-      <span class="badge bg-primary ms-1" v-else-if="isAdmin">Admin</span>
+      <span v-if="isCurrentUser" class="badge bg-secondary ms-1">You</span>
+      <span v-else-if="isAdmin" class="badge bg-primary ms-1">Admin</span>
     </td>
-    <td class="text-nowrap" v-bind:title="project.creation_time">{{ creationTime }}</td>
+    <td class="text-nowrap" :title="project.creation_time">{{ creationTime }}</td>
     <td class="text-nowrap" style="width: 1%" @click.stop>
       <div class="d-flex gap-2 justify-content-end flex-nowrap">
-        <button type="button" class="btn btn-outline-danger btn-pill" @click="$emit('delete', project)">
+        <button
+          type="button"
+          class="btn btn-outline-danger btn-pill"
+          @click="$emit('delete', project)"
+        >
           <i class="fa fa-trash me-1" aria-hidden="true"></i>Delete
         </button>
       </div>
@@ -26,14 +30,9 @@ import moment from "moment";
 import { session } from "django-airavata-api";
 
 export default {
-  name: "project-list-item",
+  name: "ProjectListItem",
   props: ["project"],
   emits: ["delete"],
-  methods: {
-    navigate() {
-      window.location.href = this.overviewLink;
-    },
-  },
   computed: {
     creationTime: function () {
       var dt = new Date(this.project.creation_time);
@@ -55,6 +54,10 @@ export default {
       return name === "default-admin" || name === "admin";
     },
   },
+  methods: {
+    navigate() {
+      window.location.href = this.overviewLink;
+    },
+  },
 };
 </script>
-

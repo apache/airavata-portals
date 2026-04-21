@@ -6,12 +6,9 @@ import createStore from "./store";
 
 entry(({ createApp }) => {
   const el = document.getElementById("view-experiment");
-  const fullExperimentData = el && el.dataset.fullExperimentData
-    ? JSON.parse(el.dataset.fullExperimentData)
-    : null;
-  const launching = el && "launching" in el.dataset
-    ? JSON.parse(el.dataset.launching)
-    : null;
+  const fullExperimentData =
+    el && el.dataset.fullExperimentData ? JSON.parse(el.dataset.fullExperimentData) : null;
+  const launching = el && "launching" in el.dataset ? JSON.parse(el.dataset.launching) : null;
   const store = createStore();
   const app = createApp({
     beforeMount() {
@@ -23,10 +20,7 @@ entry(({ createApp }) => {
       }
     },
     methods: {
-      ...mapActions("viewExperiment", [
-        "setInitialFullExperimentData",
-        "setLaunching",
-      ]),
+      ...mapActions("viewExperiment", ["setInitialFullExperimentData", "setLaunching"]),
     },
     render() {
       return h(components.MainLayout, null, {

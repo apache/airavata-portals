@@ -1,7 +1,7 @@
 <template>
   <div v-if="value" class="d-flex ps-3">
     {{ text }}
-    <a @click="cancel" class="ms-auto text-danger"
+    <a class="ms-auto text-danger" @click="cancel"
       >Cancel
       <i class="fa fa-times" aria-hidden="true"></i>
     </a>
@@ -9,9 +9,9 @@
   <div v-else>
     <autocomplete-text-input
       :suggestions="suggestions"
+      :max-matches="10"
       @selected="selected"
       @search-changed="searchChanged"
-      :max-matches="10"
     />
   </div>
 </template>
@@ -23,11 +23,11 @@ import { components } from "django-airavata-common-ui";
 import _ from "lodash";
 
 export default {
-  name: "autocomplete-input-editor",
-  mixins: [InputEditorMixin],
+  name: "AutocompleteInputEditor",
   components: {
     "autocomplete-text-input": components.AutocompleteTextInput,
   },
+  mixins: [InputEditorMixin],
   props: {
     value: {
       type: String,
@@ -53,10 +53,7 @@ export default {
         : [];
     },
     autocompleteUrl() {
-      if (
-        this.experimentInput.editorConfig &&
-        "url" in this.experimentInput.editorConfig
-      ) {
+      if (this.experimentInput.editorConfig && "url" in this.experimentInput.editorConfig) {
         return this.experimentInput.editorConfig.url;
       } else {
         // eslint-disable-next-line no-console
@@ -74,8 +71,8 @@ export default {
                 },
               },
               null,
-              4
-            )
+              4,
+            ),
         );
         return null;
       }
@@ -91,7 +88,7 @@ export default {
           },
           {
             ignoreErrors: true, // don't automatically report errors to user - code will handle 404s
-          }
+          },
         )
           .then((resp) => {
             if (resp.results && resp.results.length > 0) {
@@ -131,7 +128,7 @@ export default {
           {
             search: this.searchString,
           },
-          { showSpinner: false }
+          { showSpinner: false },
         ).then((resp) => {
           // Prevent older responses from overwriting newer ones
           if (currentTime > this.lastUpdate) {

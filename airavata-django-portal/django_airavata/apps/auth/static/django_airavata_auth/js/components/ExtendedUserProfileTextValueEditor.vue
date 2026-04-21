@@ -1,9 +1,12 @@
 <template>
   <extended-user-profile-value-editor v-bind="$props">
-    <input :class="['form-control', validateState(v$.value) === false ? 'is-invalid' : '']" v-model="value" />
-    <div class="invalid-feedback" v-if="v$.value.$dirty && v$.value.$error"
-      >This field is required.</div
-    >
+    <input
+      v-model="value"
+      :class="['form-control', validateState(v$.value) === false ? 'is-invalid' : '']"
+    />
+    <div v-if="v$.value.$dirty && v$.value.$error" class="invalid-feedback">
+      This field is required.
+    </div>
   </extended-user-profile-value-editor>
 </template>
 

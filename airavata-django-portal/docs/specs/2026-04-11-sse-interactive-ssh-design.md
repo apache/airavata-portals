@@ -67,11 +67,11 @@ Per-user async queue for SSE events.
 Manages asyncssh sessions with interactive auth support.
 
 - `start_connection(user_id, session_id, hostname, port, credential_token, gateway_id)`:
-  1. Fetches SSH private key from credential store via `airavata_client.credential.get_SSH_credential()`
-  2. Attempts `asyncssh.connect()` with key auth
-  3. If interactive auth required: pushes `ssh_prompt` event, awaits response via `asyncio.Event`
-  4. On success: pushes `ssh_result` with `success: true`
-  5. On failure: pushes `ssh_result` with `success: false, message: error`
+    1. Fetches SSH private key from credential store via `airavata_client.credential.get_SSH_credential()`
+    2. Attempts `asyncssh.connect()` with key auth
+    3. If interactive auth required: pushes `ssh_prompt` event, awaits response via `asyncio.Event`
+    4. On success: pushes `ssh_result` with `success: true`
+    5. On failure: pushes `ssh_result` with `success: false, message: error`
 
 - `submit_response(session_id, response)`: Sets the response value and unblocks the waiting auth handler
 
@@ -86,21 +86,23 @@ Manages asyncssh sessions with interactive auth support.
 
 All endpoints require authentication (`@login_required`).
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/api/events/` | SSE stream (async `StreamingHttpResponse`) |
-| POST | `/api/ssh/test/` | Start test connection: `{hostname, port, credential_token}` |
-| POST | `/api/ssh/respond/` | Submit prompt response: `{session_id, response}` |
-| POST | `/api/ssh/run/` | Run command: `{session_id, command}` |
-| POST | `/api/ssh/close/` | Close session: `{session_id}` |
+| Method | Path                | Purpose                                                     |
+| ------ | ------------------- | ----------------------------------------------------------- |
+| GET    | `/api/events/`      | SSE stream (async `StreamingHttpResponse`)                  |
+| POST   | `/api/ssh/test/`    | Start test connection: `{hostname, port, credential_token}` |
+| POST   | `/api/ssh/respond/` | Submit prompt response: `{session_id, response}`            |
+| POST   | `/api/ssh/run/`     | Run command: `{session_id, command}`                        |
+| POST   | `/api/ssh/close/`   | Close session: `{session_id}`                               |
 
 The `/api/events/` endpoint:
+
 - Returns `Content-Type: text/event-stream`
 - Async view using `StreamingHttpResponse` with async generator
 - CSRF exempt (GET-only, session-authenticated)
 - One connection per browser tab (auto-reconnects via EventSource)
 
 The `/api/ssh/test/` endpoint:
+
 - Generates a `session_id` (UUID)
 - Kicks off `ssh_manager.start_connection()` as an async task
 - Returns immediately with `{session_id}` --- results come via SSE
@@ -112,11 +114,22 @@ The `/api/ssh/test/` endpoint:
 
 ```javascript
 class SSEClient {
-  constructor() { this.listeners = {}; this.source = null; }
-  connect() { /* EventSource to /api/events/, parse JSON, dispatch */ }
-  on(type, callback) { /* register listener */ }
-  off(type, callback) { /* unregister */ }
-  disconnect() { /* close EventSource */ }
+    constructor() {
+        this.listeners = {};
+        this.source = null;
+    }
+    connect() {
+        /* EventSource to /api/events/, parse JSON, dispatch */
+    }
+    on(type, callback) {
+        /* register listener */
+    }
+    off(type, callback) {
+        /* unregister */
+    }
+    disconnect() {
+        /* close EventSource */
+    }
 }
 export default new SSEClient();
 ```
@@ -140,10 +153,12 @@ export default new SSEClient();
 ### 3. Integration Points
 
 **MainLayout.vue:**
+
 - Import and mount `SshPromptNotification` component
 - Initialize `SSEClient.connect()` on mount, disconnect on unmount
 
 **Storage/Compute pages (usage pattern):**
+
 ```javascript
 async testConnection(hostname, credentialToken) {
   const { session_id } = await FetchUtils.post('/api/ssh/test/', {
@@ -157,17 +172,22 @@ async testConnection(hostname, credentialToken) {
 ## ASGI Migration
 
 ### New Dependencies (pyproject.toml)
+
 - `asyncssh>=2.17`
 - `uvicorn[standard]>=0.32`
 
 ### New File: `django_airavata/asgi.py`
+
 Standard Django ASGI application entry point.
 
 ### Settings Change
+
 - Add `ASGI_APPLICATION = "django_airavata.asgi.application"`
 
 ### Tiltfile Change
+
 Replace runserver with uvicorn:
+
 ```
 uv run uvicorn django_airavata.asgi:application --host 0.0.0.0 --port 8000 --reload
 ```
@@ -194,9 +214,9 @@ Once an SSH session is established to an HPC host:
 1. Server runs `info.sh` via `ssh_manager.run_command()`
 2. Output streamed as `ssh_output` events
 3. Frontend parses the pipe-delimited output:
-   ```
-   partition|nodes|max_cpus_per_node|max_mem_mb_per_node|max_gpus_per_node|gpu_types|accounts
-   ```
+    ```
+    partition|nodes|max_cpus_per_node|max_mem_mb_per_node|max_gpus_per_node|gpu_types|accounts
+    ```
 4. Auto-populates the compute resource's batch queues, GPU types, and account lists
 5. The `info.sh` script is embedded in the Django app (copied from CS-Bridge)
 

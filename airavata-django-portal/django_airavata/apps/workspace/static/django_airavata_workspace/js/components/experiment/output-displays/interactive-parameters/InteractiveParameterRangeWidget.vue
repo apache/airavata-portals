@@ -1,7 +1,8 @@
 <template>
   <div>
-    <input class="form-control"
+    <input
       ref="rangeInput"
+      class="form-control"
       type="range"
       :value="value"
       :min="parameter.min"
@@ -17,7 +18,7 @@
 
 <script>
 export default {
-  name: "interactive-parameter-range-widget",
+  name: "InteractiveParameterRangeWidget",
   props: {
     value: {
       type: Number,

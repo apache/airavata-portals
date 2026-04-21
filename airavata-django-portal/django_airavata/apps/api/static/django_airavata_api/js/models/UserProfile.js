@@ -45,8 +45,7 @@ export default class UserProfile extends BaseModel {
   }
 
   get email() {
-    return this.emails != null && this.emails.length > 0
-      ? this.emails[0]
-      : null;
+    // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
+    return this.emails != null && this.emails.length > 0 ? this.emails[0] : null;
   }
 }

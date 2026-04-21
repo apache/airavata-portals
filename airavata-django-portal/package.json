@@ -1,6 +1,8 @@
 {
   "private": true,
+  "packageManager": "npm@11.12.1",
   "workspaces": [
+    "tooling",
     "django_airavata/static/common",
     "django_airavata/apps/admin",
     "django_airavata/apps/api",
@@ -10,10 +12,13 @@
     "django_airavata/apps/workspace/django-airavata-workspace-plugin-api"
   ],
   "scripts": {
-    "build": "yarn workspaces run build",
+    "build": "npm run build --workspaces --if-present",
     "dev": "echo 'Use tilt up for dev servers'",
-    "lint": "yarn workspaces run lint",
-    "test": "yarn workspaces run test"
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "prettier --write \"**/*.{js,ts,vue,json,md,scss,css}\" --ignore-path=.gitignore",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e": "echo 'test:e2e placeholder — wired up in Track Pre-A'"
   },
   "engines": {
     "node": ">=22"

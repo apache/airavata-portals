@@ -54,7 +54,7 @@ export default class ExperimentSummary extends BaseModel {
             time_of_state_change: this.status_update_time,
           }),
         ],
-      })
+      }),
     );
   }
 }

@@ -5,7 +5,7 @@
 <script>
 import { models } from "django-airavata-api";
 export default {
-  name: "notebook-output-display",
+  name: "NotebookOutputDisplay",
   props: {
     experimentOutput: {
       type: models.OutputDataObjectType,

@@ -4,12 +4,9 @@ import Cache from "./Cache";
 
 var count = 0;
 const parseQueryParams = function (url, queryParams = "") {
-  if (queryParams && typeof queryParams != "string") {
+  if (queryParams && typeof queryParams !== "string") {
     queryParams = Object.keys(queryParams)
-      .map(
-        (key) =>
-          encodeURIComponent(key) + "=" + encodeURIComponent(queryParams[key])
-      )
+      .map((key) => encodeURIComponent(key) + "=" + encodeURIComponent(queryParams[key]))
       .join("&");
   }
   if (queryParams && queryParams !== "") {
@@ -28,14 +25,14 @@ const setSpinnerDisplay = function (display) {
 
 const incrementCount = function () {
   count++;
-  if (count == 1) {
+  if (count === 1) {
     setSpinnerDisplay("block");
   }
 };
 const decrementCount = function () {
   if (count > 0) {
     count--;
-    if (count == 0) {
+    if (count === 0) {
       setSpinnerDisplay("none");
     }
   }
@@ -63,15 +60,13 @@ export default {
     }
   },
   // For POST, PUT, DELETE
-  createHeaders: function (
-    contentType = "application/json",
-    accept = "application/json"
-  ) {
+  createHeaders: function (contentType = "application/json", accept = "application/json") {
     var csrfToken = this.getCSRFToken();
     var headers = new Headers({
       "Content-Type": contentType,
       Accept: accept,
     });
+    // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
     if (csrfToken != null) {
       headers.set("X-CSRFToken", csrfToken);
     }
@@ -86,7 +81,7 @@ export default {
       ignoreErrors = false,
       showSpinner = true,
       responseType = "json",
-    } = {}
+    } = {},
   ) {
     var headers = this.createHeaders(mediaType);
     // Browsers automatically handle content type for FormData request bodies
@@ -96,10 +91,7 @@ export default {
     url = parseQueryParams(url, queryParams);
     return this.processFetch(url, {
       method: "post",
-      body:
-        body instanceof FormData || typeof body === "string"
-          ? body
-          : JSON.stringify(body),
+      body: body instanceof FormData || typeof body === "string" ? body : JSON.stringify(body),
       headers: headers,
       credentials: "same-origin",
       ignoreErrors,
@@ -115,7 +107,7 @@ export default {
       ignoreErrors = false,
       showSpinner = true,
       responseType = "json",
-    } = {}
+    } = {},
   ) {
     var headers = this.createHeaders(mediaType);
     // Browsers automatically handle content type for FormData request bodies
@@ -124,10 +116,7 @@ export default {
     }
     return this.processFetch(url, {
       method: "put",
-      body:
-        body instanceof FormData || typeof body === "string"
-          ? body
-          : JSON.stringify(body),
+      body: body instanceof FormData || typeof body === "string" ? body : JSON.stringify(body),
       headers: headers,
       credentials: "same-origin",
       ignoreErrors,
@@ -144,14 +133,11 @@ export default {
       showSpinner = true,
       cache = false,
       responseType = "json",
-    } = {}
+    } = {},
   ) {
-    if (queryParams && typeof queryParams != "string") {
+    if (queryParams && typeof queryParams !== "string") {
       queryParams = Object.keys(queryParams)
-        .map(
-          (key) =>
-            encodeURIComponent(key) + "=" + encodeURIComponent(queryParams[key])
-        )
+        .map((key) => encodeURIComponent(key) + "=" + encodeURIComponent(queryParams[key]))
         .join("&");
     }
     if (queryParams) {
@@ -176,10 +162,7 @@ export default {
     }
     return fetchRequest;
   },
-  delete: function (
-    url,
-    { ignoreErrors = false, showSpinner = true, responseType = "json" } = {}
-  ) {
+  delete: function (url, { ignoreErrors = false, showSpinner = true, responseType = "json" } = {}) {
     var headers = this.createHeaders();
     return this.processFetch(url, {
       method: "delete",
@@ -200,7 +183,7 @@ export default {
       ignoreErrors = false,
       showSpinner = true,
       responseType = "json",
-    }
+    },
   ) {
     const fetchConfig = {
       method,
@@ -227,7 +210,7 @@ export default {
               return Promise.resolve(
                 response[responseType]().then((responseData) => {
                   return responseData;
-                })
+                }),
               );
             }
           } else {
@@ -256,14 +239,14 @@ export default {
                   status: response.status,
                 });
                 throw error;
-              }
+              },
             );
           }
         },
         (error) => {
           error.details = this.createErrorDetails({ url, body });
           throw error;
-        }
+        },
       )
       .catch((error) => {
         if (showSpinner) {
@@ -276,12 +259,7 @@ export default {
         throw error;
       });
   },
-  createErrorDetails: function ({
-    url,
-    body,
-    status = null,
-    responseBody = null,
-  } = {}) {
+  createErrorDetails: function ({ url, body, status = null, responseBody = null } = {}) {
     return {
       url,
       body,

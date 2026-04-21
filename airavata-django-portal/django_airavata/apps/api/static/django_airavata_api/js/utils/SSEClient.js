@@ -95,7 +95,11 @@ class _SSEClient {
 
     this._source.onerror = () => {
       this._connected = false;
-      try { this._source.close(); } catch {}
+      try {
+        this._source.close();
+      } catch {
+        /* intentionally empty */
+      }
       this._source = null;
       setTimeout(() => {
         if (this._hasListeners()) this._tryDirect();
@@ -106,8 +110,16 @@ class _SSEClient {
 
   _disconnectWorker() {
     if (this._workerPort) {
-      try { this._workerPort.postMessage({ type: "disconnect" }); } catch {}
-      try { this._workerPort.close(); } catch {}
+      try {
+        this._workerPort.postMessage({ type: "disconnect" });
+      } catch {
+        /* intentionally empty */
+      }
+      try {
+        this._workerPort.close();
+      } catch {
+        /* intentionally empty */
+      }
       this._workerPort = null;
     }
     this._worker = null;
@@ -118,7 +130,11 @@ class _SSEClient {
     this._connected = false;
     this._disconnectWorker();
     if (this._source) {
-      try { this._source.close(); } catch {}
+      try {
+        this._source.close();
+      } catch {
+        /* intentionally empty */
+      }
       this._source = null;
     }
   }

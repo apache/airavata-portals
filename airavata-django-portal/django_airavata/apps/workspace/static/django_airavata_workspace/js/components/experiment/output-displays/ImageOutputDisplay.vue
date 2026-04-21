@@ -4,7 +4,7 @@
 
 <script>
 export default {
-  name: "image-output-display",
+  name: "ImageOutputDisplay",
   props: {
     viewData: {
       type: Object,

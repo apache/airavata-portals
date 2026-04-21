@@ -9,10 +9,10 @@
     <component
       :is="inputEditorComponentName"
       :id="inputEditorComponentId"
+      v-model="data"
       :experiment-input="experimentInput"
       :experiment="experiment"
       :read-only="experimentInput.is_read_only"
-      v-model="data"
       @invalid="recordInvalidInputEditorValue"
       @valid="recordValidInputEditorValue"
       @input="valueChanged"
@@ -40,18 +40,7 @@ import { models } from "django-airavata-api";
 import { mixins, utils } from "django-airavata-common-ui";
 
 export default {
-  name: "input-editor-container",
-  mixins: [mixins.VModelMixin],
-  props: {
-    experimentInput: {
-      type: models.InputDataObjectType,
-      required: true,
-    },
-    experiment: {
-      type: models.Experiment,
-      required: true,
-    },
-  },
+  name: "InputEditorContainer",
   components: {
     AutocompleteInputEditor,
     CheckboxInputEditor,
@@ -66,10 +55,16 @@ export default {
     TextareaInputEditor,
     UserFileInputEditor,
   },
-  created() {
-    if (!this.show) {
-      this.handleHidingInput();
-    }
+  mixins: [mixins.VModelMixin],
+  props: {
+    experimentInput: {
+      type: models.InputDataObjectType,
+      required: true,
+    },
+    experiment: {
+      type: models.Experiment,
+      required: true,
+    },
   },
   data: function () {
     return {
@@ -111,6 +106,30 @@ export default {
       return this.inputHasBegun ? this.state : null;
     },
   },
+  watch: {
+    // This is a bit of a workaround for testing purposes. Watcher for
+    // "experimentInput.show" does not get triggered during unit test so sync it
+    // to "show" data variable and then in the unit test manipulate "show"
+    // directly.
+    "experimentInput.show": function (newValue) {
+      this.show = newValue;
+    },
+    show: function (newValue, oldValue) {
+      // Hiding
+      if (oldValue && !newValue) {
+        this.handleHidingInput();
+      }
+      // Showing
+      else if (newValue && !oldValue) {
+        this.handleShowingInput();
+      }
+    },
+  },
+  created() {
+    if (!this.show) {
+      this.handleHidingInput();
+    }
+  },
   methods: {
     recordValidInputEditorValue: function () {
       this.state = true;
@@ -138,25 +157,6 @@ export default {
     },
     uploadEnd() {
       this.$emit("uploadend");
-    },
-  },
-  watch: {
-    // This is a bit of a workaround for testing purposes. Watcher for
-    // "experimentInput.show" does not get triggered during unit test so sync it
-    // to "show" data variable and then in the unit test manipulate "show"
-    // directly.
-    "experimentInput.show": function (newValue) {
-      this.show = newValue;
-    },
-    show: function (newValue, oldValue) {
-      // Hiding
-      if (oldValue && !newValue) {
-        this.handleHidingInput();
-      }
-      // Showing
-      else if (newValue && !oldValue) {
-        this.handleShowingInput();
-      }
     },
   },
 };

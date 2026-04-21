@@ -5,7 +5,7 @@
       <pre v-if="finalOutputText">
         {{ finalOutputText }}
       </pre>
-      <div v-else v-for="dp in dataProducts" :key="dp.productUri">
+      <div v-for="dp in dataProducts" v-else :key="dp.productUri">
         <img
           v-if="dp.isImage && dp.download_url"
           class="image-preview rounded"
@@ -26,10 +26,7 @@
       />
     </template>
     <template v-else-if="intermediateOutputMultipleDataProducts">
-      <div
-        v-for="dp in intermediateOutputMultipleDataProducts"
-        :key="dp.productUri"
-      >
+      <div v-for="dp in intermediateOutputMultipleDataProducts" :key="dp.productUri">
         <data-product-viewer :data-product="dp" :mime-type="fileMimeType" />
       </div>
     </template>
@@ -44,12 +41,15 @@
 <script>
 import { models, utils } from "django-airavata-api";
 import DataProductViewer from "django-airavata-common-ui/js/components/DataProductViewer.vue";
-import { mapGetters } from 'vuex';
+import { mapGetters } from "vuex";
 
 const MAX_DISPLAY_TEXT_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 export default {
-  name: "default-output-viewer",
+  name: "DefaultOutputViewer",
+  components: {
+    DataProductViewer,
+  },
   props: {
     experimentOutput: {
       type: models.OutputDataObjectType,
@@ -59,9 +59,6 @@ export default {
       type: Array,
       required: true,
     },
-  },
-  components: {
-    DataProductViewer,
   },
   data() {
     return {
@@ -133,8 +130,7 @@ export default {
     isIntermediateOutputFileDisplayable() {
       return (
         this.intermediateOutputDataProduct &&
-        (this.intermediateOutputDataProduct.isText ||
-          this.fileMimeType === "text/plain") &&
+        (this.intermediateOutputDataProduct.isText || this.fileMimeType === "text/plain") &&
         this.intermediateOutputDataProduct.download_url &&
         this.intermediateOutputDataProduct.filesize < MAX_DISPLAY_TEXT_FILE_SIZE
       );
@@ -157,19 +153,15 @@ export default {
           "",
           {
             responseType: "text",
-          }
+          },
         );
       }
     },
     async loadFinalOutputText() {
       if (this.isFinalOutputFileDisplayable) {
-        this.finalOutputText = await utils.FetchUtils.get(
-          this.dataProducts[0].download_url,
-          "",
-          {
-            responseType: "text",
-          }
-        );
+        this.finalOutputText = await utils.FetchUtils.get(this.dataProducts[0].download_url, "", {
+          responseType: "text",
+        });
       }
     },
   },

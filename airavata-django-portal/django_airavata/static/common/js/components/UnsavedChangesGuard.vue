@@ -4,7 +4,7 @@
 
 <script>
 export default {
-  name: "unsaved-changes-guard",
+  name: "UnsavedChangesGuard",
   props: {
     dirty: {
       type: Boolean,
@@ -29,8 +29,7 @@ export default {
         // asking user if they want to leave the page. I don't think any browser
         // displays the message that we return here, but a returned message is
         // still required.
-        const msg =
-          "You have unsaved changes. Are you sure that you want to leave this page?";
+        const msg = "You have unsaved changes. Are you sure that you want to leave this page?";
         // For Chrome, set event.returnValue
         event.returnValue = msg;
         return msg;

@@ -120,9 +120,7 @@ const models = {
 
 const services = {
   APIServerStatusCheckService: ServiceFactory.service("APIServerStatusCheck"),
-  ApplicationDeploymentService: ServiceFactory.service(
-    "ApplicationDeployments"
-  ),
+  ApplicationDeploymentService: ServiceFactory.service("ApplicationDeployments"),
   ApplicationInterfaceService: ServiceFactory.service("ApplicationInterfaces"),
   ApplicationModuleService: ServiceFactory.service("ApplicationModules"),
   CloudJobSubmissionService,
@@ -133,19 +131,11 @@ const services = {
   ExperimentSearchService: ServiceFactory.service("ExperimentSearch"),
   ExperimentService: ServiceFactory.service("Experiments"),
   ExperimentStatisticsService: ServiceFactory.service("ExperimentStatistics"),
-  ExperimentStoragePathService: ServiceFactory.service(
-    "ExperimentStoragePaths"
-  ),
-  ExtendedUserProfileFieldService: ServiceFactory.service(
-    "ExtendedUserProfileFields"
-  ),
-  ExtendedUserProfileValueService: ServiceFactory.service(
-    "ExtendedUserProfileValues"
-  ),
+  ExperimentStoragePathService: ServiceFactory.service("ExperimentStoragePaths"),
+  ExtendedUserProfileFieldService: ServiceFactory.service("ExtendedUserProfileFields"),
+  ExtendedUserProfileValueService: ServiceFactory.service("ExtendedUserProfileValues"),
   FullExperimentService: ServiceFactory.service("FullExperiments"),
-  GatewayResourceProfileService: ServiceFactory.service(
-    "GatewayResourceProfile"
-  ),
+  GatewayResourceProfileService: ServiceFactory.service("GatewayResourceProfile"),
   GlobusJobSubmissionService,
   GridFTPDataMovementService,
   LocaJobSubmissionService,
@@ -156,9 +146,7 @@ const services = {
   ParserService: ServiceFactory.service("Parsers"),
   ProjectResourceProfileService: ServiceFactory.service("ProjectResourceProfiles"),
   ProjectService: ServiceFactory.service("Projects"),
-  QueueSettingsCalculatorService: ServiceFactory.service(
-    "QueueSettingsCalculators"
-  ),
+  QueueSettingsCalculatorService: ServiceFactory.service("QueueSettingsCalculators"),
   SCPDataMovementService,
   ServiceFactory,
   SettingsService: ServiceFactory.service("Settings"),
@@ -168,9 +156,7 @@ const services = {
   StorageResourceService: ServiceFactory.service("StorageResources"),
   UnicoreDataMovementService,
   UnicoreJobSubmissionService,
-  UnverifiedEmailUserProfileService: ServiceFactory.service(
-    "UnverifiedEmailUsers"
-  ),
+  UnverifiedEmailUserProfileService: ServiceFactory.service("UnverifiedEmailUsers"),
   UserProfileService: ServiceFactory.service("UserProfiles"),
   UserService: ServiceFactory.service("Users"),
   UserStoragePathService: ServiceFactory.service("UserStoragePaths"),

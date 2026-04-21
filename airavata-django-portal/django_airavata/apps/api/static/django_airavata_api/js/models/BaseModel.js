@@ -15,18 +15,13 @@ export default class BaseModel {
   constructor(fields, data = {}) {
     fields.forEach((fieldDefinition) => {
       if (typeof fieldDefinition === "string") {
-        this[fieldDefinition] = this.convertSimpleField(
-          data[fieldDefinition],
-          null
-        );
+        this[fieldDefinition] = this.convertSimpleField(data[fieldDefinition], null);
       } else {
         // fieldDefinition must be an object
         let fieldName = fieldDefinition.name;
         let fieldType = fieldDefinition.type;
         let fieldIsList =
-          typeof fieldDefinition.list !== "undefined"
-            ? fieldDefinition.list
-            : false;
+          typeof fieldDefinition.list !== "undefined" ? fieldDefinition.list : false;
         let fieldDefault =
           typeof fieldDefinition.default !== "undefined"
             ? this.getDefaultValue(fieldDefinition.default)
@@ -34,16 +29,10 @@ export default class BaseModel {
         let fieldValue = data[fieldName];
         if (fieldIsList) {
           this[fieldName] = fieldValue
-            ? fieldValue.map((item) =>
-                this.convertField(fieldType, item, fieldDefault)
-              )
+            ? fieldValue.map((item) => this.convertField(fieldType, item, fieldDefault))
             : fieldDefault;
         } else {
-          this[fieldName] = this.convertField(
-            fieldType,
-            fieldValue,
-            fieldDefault
-          );
+          this[fieldName] = this.convertField(fieldType, fieldValue, fieldDefault);
         }
       }
     });
@@ -52,11 +41,7 @@ export default class BaseModel {
   convertField(fieldType, fieldValue, fieldDefault) {
     if (fieldValue === null || typeof fieldValue === "undefined") {
       return fieldDefault;
-    } else if (
-      fieldType === "string" ||
-      fieldType === "boolean" ||
-      fieldType === "number"
-    ) {
+    } else if (fieldType === "string" || fieldType === "boolean" || fieldType === "number") {
       return this.convertSimpleField(fieldValue, fieldDefault);
     } else if (fieldType === "date") {
       return this.convertDateField(fieldValue, fieldDefault);

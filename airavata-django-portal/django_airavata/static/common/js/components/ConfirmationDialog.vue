@@ -1,5 +1,11 @@
 <template>
-  <div class="modal fade" ref="modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div
+    ref="modal"
+    class="modal fade"
+    tabindex="-1"
+    data-bs-backdrop="static"
+    data-bs-keyboard="false"
+  >
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -21,7 +27,7 @@
 import { Modal } from "bootstrap";
 
 export default {
-  name: "confirmation-dialog",
+  name: "ConfirmationDialog",
   props: {
     title: {
       type: String,

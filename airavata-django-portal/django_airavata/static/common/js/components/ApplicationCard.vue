@@ -1,24 +1,15 @@
 <template>
   <div class="col-md-6 col-xl-4">
     <div class="card application-card" :class="cardClasses">
-      <a
-        :disabled="disabled"
-        class="card-link text-dark"
-        @click.prevent="handleAppClick"
-      >
+      <a :disabled="disabled" class="card-link text-dark" @click.prevent="handleAppClick">
         <div class="card-body">
           <h2 class="card-title h5">{{ appModule.app_module_name }}</h2>
-          <span
-            class="badge badge-primary me-1"
-            v-for="tag in appModule.tags"
-            :key="tag"
-            >{{ tag }}</span
-          >
-          <span
-            class="badge badge-primary me-1"
-            v-if="appModule.app_module_version"
-            >{{ appModule.app_module_version }}</span
-          >
+          <span v-for="tag in appModule.tags" :key="tag" class="badge badge-primary me-1">{{
+            tag
+          }}</span>
+          <span v-if="appModule.app_module_version" class="badge badge-primary me-1">{{
+            appModule.app_module_version
+          }}</span>
           <p class="card-text card-text--small mt-3 text-secondary">
             <linkify>
               {{ appModule.app_module_description }}
@@ -36,20 +27,20 @@
 <script>
 import Linkify from "./Linkify.vue";
 export default {
+  name: "ApplicationCard",
   components: { Linkify },
-  name: "application-card",
   props: ["appModule", "disabled"],
   data: function () {
     return {};
   },
-  methods: {
-    handleAppClick: function () {
-      this.$emit("app-selected", this.appModule);
-    },
-  },
   computed: {
     cardClasses() {
       return this.disabled ? ["is-disabled"] : [];
+    },
+  },
+  methods: {
+    handleAppClick: function () {
+      this.$emit("app-selected", this.appModule);
     },
   },
 };

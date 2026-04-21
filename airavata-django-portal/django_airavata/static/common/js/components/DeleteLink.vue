@@ -18,7 +18,10 @@
 import ConfirmationDialog from "./ConfirmationDialog.vue";
 
 export default {
-  name: "delete-link",
+  name: "DeleteLink",
+  components: {
+    ConfirmationDialog,
+  },
   props: {
     dialogTitle: {
       type: String,
@@ -28,9 +31,6 @@ export default {
       type: Boolean,
       default: false,
     },
-  },
-  components: {
-    ConfirmationDialog,
   },
 };
 </script>

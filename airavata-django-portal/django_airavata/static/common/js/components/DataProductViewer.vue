@@ -10,7 +10,7 @@
 <script>
 import { models } from "django-airavata-api";
 export default {
-  name: "data-product-viewer",
+  name: "DataProductViewer",
   props: {
     dataProduct: {
       type: models.DataProduct,
@@ -43,9 +43,7 @@ export default {
       if (!this.dataProduct.download_url) {
         return null;
       } else if (this.mime_type) {
-        return `${this.dataProduct.download_url}&mime-type=${encodeURIComponent(
-          this.mime_type
-        )}`;
+        return `${this.dataProduct.download_url}&mime-type=${encodeURIComponent(this.mime_type)}`;
       } else {
         return this.dataProduct.download_url;
       }

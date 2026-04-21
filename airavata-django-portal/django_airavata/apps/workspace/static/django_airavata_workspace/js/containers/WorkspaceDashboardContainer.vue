@@ -3,9 +3,7 @@
     <div class="row align-items-center mb-3">
       <div class="col">
         <h1 class="h4 mb-0">Home</h1>
-        <p class="text-muted mb-0">
-          Overview of your experiments and recent activity.
-        </p>
+        <p class="text-muted mb-0">Overview of your experiments and recent activity.</p>
       </div>
     </div>
 
@@ -14,33 +12,22 @@
       <div class="card-header d-flex align-items-center">
         <h5 class="mb-0">Experiments Overview</h5>
         <small class="text-muted ms-2">({{ filteredTotal }} experiments)</small>
-        <div
-          class="btn-group btn-group-sm ms-auto"
-          role="group"
-        >
+        <div class="btn-group btn-group-sm ms-auto" role="group">
           <button
             v-for="r in ranges"
             :key="r.key"
             :class="['btn', range === r.key ? 'btn-primary' : 'btn-outline-primary']"
             @click="range = r.key"
-          >{{ r.label }}</button>
+          >
+            {{ r.label }}
+          </button>
         </div>
       </div>
-      <div
-        class="card-body"
-        style="height: 280px;"
-      >
-        <div
-          v-if="loading"
-          class="text-center text-muted py-5"
-        >
+      <div class="card-body" style="height: 280px">
+        <div v-if="loading" class="text-center text-muted py-5">
           <i class="fa fa-spinner fa-spin me-1"></i>Loading...
         </div>
-        <Bar
-          v-else
-          :data="chartData"
-          :options="chartOptions"
-        />
+        <Bar v-else :data="chartData" :options="chartOptions" />
       </div>
     </div>
 
@@ -56,10 +43,7 @@
           >
             <i class="fa fa-rocket me-1"></i>Launch Experiment
           </a>
-          <a
-            href="/workspace/projects"
-            class="btn btn-outline-secondary btn-sm"
-          >
+          <a href="/workspace/projects" class="btn btn-outline-secondary btn-sm">
             <i class="fa fa-folder-plus me-1"></i>New Project
           </a>
         </div>
@@ -85,15 +69,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr
-              v-for="exp in pagedExperiments"
-              :key="exp.experiment_id"
-            >
+            <tr v-for="exp in pagedExperiments" :key="exp.experiment_id">
               <td>
-                <a
-                  :href="viewExperimentUrl(exp)"
-                  class="text-decoration-none fw-semibold"
-                >{{ exp.name }}</a>
+                <a :href="viewExperimentUrl(exp)" class="text-decoration-none fw-semibold">{{
+                  exp.name
+                }}</a>
               </td>
               <td>{{ projectName(exp.project_id) }}</td>
               <td>{{ applicationName(exp.execution_id) }}</td>
@@ -101,13 +81,13 @@
                 <span
                   class="badge"
                   :class="statusBadgeClass(exp.experiment_status && exp.experiment_status.name)"
-                >{{ exp.experiment_status && exp.experiment_status.name }}</span>
+                  >{{ exp.experiment_status && exp.experiment_status.name }}</span
+                >
               </td>
               <td>
-                <span
-                  v-if="exp.creation_time"
-                  :title="exp.creation_time.toLocaleString()"
-                >{{ formatDate(exp.creation_time) }}</span>
+                <span v-if="exp.creation_time" :title="exp.creation_time.toLocaleString()">{{
+                  formatDate(exp.creation_time)
+                }}</span>
               </td>
             </tr>
           </tbody>
@@ -144,15 +124,7 @@
 <script>
 import { services } from "django-airavata-api";
 import { Bar } from "vue-chartjs";
-import {
-  Chart,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-} from "chart.js";
+import { Chart, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from "chart.js";
 
 Chart.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
@@ -226,8 +198,7 @@ function bucketsFor(range, now, experiments) {
     return {
       starts,
       sizes: starts.map(() => 86400e3),
-      format: (d) =>
-        d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      format: (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
     };
   }
   if (range === "1y") {
@@ -244,8 +215,7 @@ function bucketsFor(range, now, experiments) {
     return {
       starts,
       sizes,
-      format: (d) =>
-        d.toLocaleDateString(undefined, { month: "short", year: "numeric" }),
+      format: (d) => d.toLocaleDateString(undefined, { month: "short", year: "numeric" }),
     };
   }
   // 'all'
@@ -278,13 +248,12 @@ function bucketsFor(range, now, experiments) {
   return {
     starts,
     sizes,
-    format: (d) =>
-      d.toLocaleDateString(undefined, { month: "short", year: "numeric" }),
+    format: (d) => d.toLocaleDateString(undefined, { month: "short", year: "numeric" }),
   };
 }
 
 export default {
-  name: "workspace-dashboard-container",
+  name: "WorkspaceDashboardContainer",
   components: { Bar },
   data() {
     return {
@@ -306,19 +275,13 @@ export default {
   },
   computed: {
     runningCount() {
-      return this.experiments.filter((e) =>
-        RUNNING_STATES.includes(this.statusName(e))
-      ).length;
+      return this.experiments.filter((e) => RUNNING_STATES.includes(this.statusName(e))).length;
     },
     completedCount() {
-      return this.experiments.filter((e) =>
-        COMPLETED_STATES.includes(this.statusName(e))
-      ).length;
+      return this.experiments.filter((e) => COMPLETED_STATES.includes(this.statusName(e))).length;
     },
     failedCount() {
-      return this.experiments.filter((e) =>
-        FAILED_STATES.includes(this.statusName(e))
-      ).length;
+      return this.experiments.filter((e) => FAILED_STATES.includes(this.statusName(e))).length;
     },
     totalCount() {
       return this.experiments.length;
@@ -332,10 +295,7 @@ export default {
       });
     },
     totalPages() {
-      return Math.max(
-        1,
-        Math.ceil(this.recentExperiments.length / this.pageSize)
-      );
+      return Math.max(1, Math.ceil(this.recentExperiments.length / this.pageSize));
     },
     pagedExperiments() {
       const start = (this.currentPage - 1) * this.pageSize;
@@ -344,10 +304,7 @@ export default {
     otherCount() {
       return Math.max(
         0,
-        this.totalCount -
-          this.runningCount -
-          this.completedCount -
-          this.failedCount
+        this.totalCount - this.runningCount - this.completedCount - this.failedCount,
       );
     },
     bucketSpec() {
@@ -447,8 +404,7 @@ export default {
           legend: { display: true, position: "bottom" },
           tooltip: {
             callbacks: {
-              label: (ctx) =>
-                ` ${ctx.dataset.label}: ${ctx.parsed.y} experiment(s)`,
+              label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y} experiment(s)`,
             },
           },
         },
@@ -536,11 +492,10 @@ export default {
         {
           showSpinner: false,
           ignoreErrors: true,
-        }
+        },
       )
         .then((result) => {
-          this.experiments =
-            result && Array.isArray(result.results) ? result.results : [];
+          this.experiments = result && Array.isArray(result.results) ? result.results : [];
         })
         .catch(() => {
           this.experiments = [];
@@ -585,7 +540,7 @@ export default {
         }
         services.ApplicationInterfaceService.retrieve(
           { lookup: interfaceId },
-          { showSpinner: false, ignoreErrors: true }
+          { showSpinner: false, ignoreErrors: true },
         )
           .then((ai) => {
             this.$set(this.applicationInterfaces, interfaceId, ai);

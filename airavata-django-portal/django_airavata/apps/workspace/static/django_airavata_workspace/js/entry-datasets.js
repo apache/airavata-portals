@@ -5,9 +5,7 @@ import DatasetsContainer from "./containers/DatasetsContainer.vue";
 entry(({ createApp }) => {
   const el = document.getElementById("datasets");
   const projectId = el ? el.dataset.projectId : null;
-  const breadcrumbs = el && el.dataset.breadcrumbs
-    ? JSON.parse(el.dataset.breadcrumbs)
-    : [];
+  const breadcrumbs = el && el.dataset.breadcrumbs ? JSON.parse(el.dataset.breadcrumbs) : [];
 
   const app = createApp({
     render() {

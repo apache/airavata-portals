@@ -4,7 +4,7 @@
 
 <script>
 export default {
-  name: "link-output-display",
+  name: "LinkOutputDisplay",
   props: {
     viewData: {
       type: Object,

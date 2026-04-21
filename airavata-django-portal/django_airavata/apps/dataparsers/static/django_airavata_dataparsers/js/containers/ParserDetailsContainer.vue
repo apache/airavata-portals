@@ -7,14 +7,10 @@
         </h1>
       </div>
     </div>
-    <div class="row" v-if="parser">
+    <div v-if="parser" class="row">
       <div class="col">
         <div class="mb-3" label="Image Name" label-for="image-name">
-          <input class="form-control"
-            id="image-name"
-            type="text"
-            v-model="parser.imageName"
-          />
+          <input id="image-name" v-model="parser.imageName" class="form-control" type="text" />
         </div>
       </div>
     </div>
@@ -25,7 +21,7 @@
 import { services } from "django-airavata-api";
 
 export default {
-  name: "parser-details-container",
+  name: "ParserDetailsContainer",
   props: {
     parserId: {
       type: String,

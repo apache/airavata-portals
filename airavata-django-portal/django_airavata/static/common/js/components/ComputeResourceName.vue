@@ -4,7 +4,7 @@
 <script>
 import { services } from "django-airavata-api";
 export default {
-  name: "compute-resource-name",
+  name: "ComputeResourceName",
   props: {
     computeResourceId: {
       type: String,
@@ -16,19 +16,6 @@ export default {
       computeResource: null,
       notAvailable: false,
     };
-  },
-  created() {
-    this.loadComputeResource();
-  },
-  methods: {
-    loadComputeResource() {
-      services.ComputeResourceService.retrieve(
-        { lookup: this.computeResourceId },
-        { ignoreErrors: true, cache: true }
-      )
-        .then((computeResource) => (this.computeResource = computeResource))
-        .catch(() => (this.notAvailable = true));
-    },
   },
   computed: {
     name() {
@@ -42,6 +29,19 @@ export default {
   watch: {
     computeResourceId() {
       this.loadComputeResource();
+    },
+  },
+  created() {
+    this.loadComputeResource();
+  },
+  methods: {
+    loadComputeResource() {
+      services.ComputeResourceService.retrieve(
+        { lookup: this.computeResourceId },
+        { ignoreErrors: true, cache: true },
+      )
+        .then((computeResource) => (this.computeResource = computeResource))
+        .catch(() => (this.notAvailable = true));
     },
   },
 };

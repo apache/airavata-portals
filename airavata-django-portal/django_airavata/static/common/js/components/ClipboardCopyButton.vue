@@ -1,6 +1,7 @@
 <template>
-  <button :class="['btn', 'btn-' + variant]"
+  <button
     ref="copyButton"
+    :class="['btn', 'btn-' + variant]"
     :disabled="disabled"
     :data-clipboard-text="text"
   >
@@ -18,7 +19,7 @@
 import ClipboardJS from "clipboard";
 
 export default {
-  name: "clipboard-copy-button",
+  name: "ClipboardCopyButton",
   props: {
     text: {
       type: String,

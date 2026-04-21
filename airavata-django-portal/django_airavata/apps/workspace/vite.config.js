@@ -1,105 +1,29 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
+import { defineAppConfig } from "@airavata/tooling/vite.config.js";
 import { resolve } from "path";
 
-export default defineConfig({
-  plugins: [vue()],
-  base: "/static/django_airavata_workspace/dist/",
-  build: {
-    manifest: "manifest.json",
-    outDir: resolve(__dirname, "./static/django_airavata_workspace/dist"),
-    rollupOptions: {
-      input: {
-        dashboard: resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-dashboard.js"
-        ),
-        "project-list": resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-project-list.js"
-        ),
-        applications: resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-applications.js"
-        ),
-        "create-experiment": resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-create-experiment.js"
-        ),
-        "view-experiment": resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-view-experiment.js"
-        ),
-        "experiment-list": resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-experiment-list.js"
-        ),
-        "edit-experiment": resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-edit-experiment.js"
-        ),
-        "edit-project": resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-edit-project.js"
-        ),
-        "user-storage": resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-user-storage.js"
-        ),
-        compute: resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-compute.js"
-        ),
-        datasets: resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-datasets.js"
-        ),
-        "datasets-list": resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-datasets-list.js"
-        ),
-        credentials: resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-credentials.js"
-        ),
-        "gateway-settings": resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-gateway-settings.js"
-        ),
-        "storage-detail": resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-storage-detail.js"
-        ),
-        "compute-detail": resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-compute-detail.js"
-        ),
-        "project-overview": resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-project-overview.js"
-        ),
-        "application-editor": resolve(
-          __dirname,
-          "./static/django_airavata_workspace/js/entry-application-editor.js"
-        ),
-      },
-    },
-  },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        quietDeps: true,
-      },
-    },
-  },
-  resolve: {
-    extensions: [".vue", ".js", ".json"],
-    alias: {
-      "@": resolve(__dirname, "./static/django_airavata_workspace/js"),
-    },
-  },
-  server: {
-    port: 9000,
-    origin: "http://localhost:9000",
+const srcDir = resolve(import.meta.dirname, "./static/django_airavata_workspace/js");
+
+export default defineAppConfig({
+  appLabel: "django_airavata_workspace",
+  srcDir,
+  entries: {
+    dashboard: resolve(srcDir, "entry-dashboard.js"),
+    "project-list": resolve(srcDir, "entry-project-list.js"),
+    applications: resolve(srcDir, "entry-applications.js"),
+    "create-experiment": resolve(srcDir, "entry-create-experiment.js"),
+    "view-experiment": resolve(srcDir, "entry-view-experiment.js"),
+    "experiment-list": resolve(srcDir, "entry-experiment-list.js"),
+    "edit-experiment": resolve(srcDir, "entry-edit-experiment.js"),
+    "edit-project": resolve(srcDir, "entry-edit-project.js"),
+    "user-storage": resolve(srcDir, "entry-user-storage.js"),
+    compute: resolve(srcDir, "entry-compute.js"),
+    datasets: resolve(srcDir, "entry-datasets.js"),
+    "datasets-list": resolve(srcDir, "entry-datasets-list.js"),
+    credentials: resolve(srcDir, "entry-credentials.js"),
+    "gateway-settings": resolve(srcDir, "entry-gateway-settings.js"),
+    "storage-detail": resolve(srcDir, "entry-storage-detail.js"),
+    "compute-detail": resolve(srcDir, "entry-compute-detail.js"),
+    "project-overview": resolve(srcDir, "entry-project-overview.js"),
+    "application-editor": resolve(srcDir, "entry-application-editor.js"),
   },
 });

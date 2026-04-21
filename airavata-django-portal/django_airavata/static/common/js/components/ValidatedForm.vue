@@ -21,15 +21,15 @@
 import ValidatedFormGroup from "./ValidatedFormGroup";
 
 export default {
-  name: "validated-form",
+  name: "ValidatedForm",
+  components: {
+    ValidatedFormGroup,
+  },
   props: {
     items: {
       type: Array,
       required: true,
     },
-  },
-  components: {
-    ValidatedFormGroup,
   },
   data() {
     return {

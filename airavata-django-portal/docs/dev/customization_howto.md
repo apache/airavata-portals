@@ -18,5 +18,5 @@ more info.)
 For deployment, the LOGIN_REDIRECT_URL setting can be added to the Ansible
 scripts that generate your portal's settings_local.py file. Some examples:
 
--   [SimCCS vars.yml](https://github.com/apache/airavata/blob/master/dev-tools/ansible/inventories/scigap/production/host_vars/simccs/vars.yml#L44)
--   [GeoGateway vars.yml](https://github.com/apache/airavata/blob/master/dev-tools/ansible/inventories/scigap/production/host_vars/geo/vars.yml#L41)
+- [SimCCS vars.yml](https://github.com/apache/airavata/blob/master/dev-tools/ansible/inventories/scigap/production/host_vars/simccs/vars.yml#L44)
+- [GeoGateway vars.yml](https://github.com/apache/airavata/blob/master/dev-tools/ansible/inventories/scigap/production/host_vars/geo/vars.yml#L41)

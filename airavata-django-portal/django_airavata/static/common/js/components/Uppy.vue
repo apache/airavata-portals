@@ -2,9 +2,9 @@
   <div class="custom-Uppy">
     <div ref="dragDrop" />
     <div ref="statusBar" />
-    <div class="alert alert-danger mt-1" v-if="restrictionFailed">{{
-      restrictionFailedMessage
-    }}</div>
+    <div v-if="restrictionFailed" class="alert alert-danger mt-1">
+      {{ restrictionFailedMessage }}
+    </div>
   </div>
 </template>
 
@@ -23,7 +23,7 @@ import "@uppy/status-bar/dist/style.min.css";
 import "@uppy/drag-drop/dist/style.min.css";
 
 export default {
-  name: "uppy",
+  name: "Uppy",
   props: {
     xhrUploadEndpoint: {
       type: String,
@@ -40,17 +40,6 @@ export default {
       default: false,
     },
   },
-  mounted() {
-    services.SettingsService.get().then((s) => {
-      this.settings = s;
-      this.initUppy();
-    });
-  },
-  unmounted() {
-    if (this.uppy) {
-      this.uppy.close();
-    }
-  },
   data() {
     return {
       uppy: null,
@@ -61,24 +50,40 @@ export default {
   },
   computed: {
     maxFileUploadSizeMB() {
-      return this.settings
-        ? this.settings.fileUploadMaxFileSize / 1024 / 1024
-        : 0;
+      return this.settings ? this.settings.fileUploadMaxFileSize / 1024 / 1024 : 0;
     },
     maxFileUploadSizeMessage() {
       if (this.maxFileUploadSizeMB) {
-        return (
-          "Max file upload size is " +
-          Math.round(this.maxFileUploadSizeMB) +
-          " MB"
-        );
+        return "Max file upload size is " + Math.round(this.maxFileUploadSizeMB) + " MB";
       } else {
         return null;
       }
     },
     restrictionFailed() {
+      // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
       return this.restrictionFailedMessage != null;
     },
+  },
+  watch: {
+    xhrUploadEndpoint(val) {
+      // Update the xhrUploadEndpoint configuration on XHRUpload whenever it changes
+      if (this.uppy && this.settings && !this.settings.tusEndpoint) {
+        this.uppy.getPlugin("XHRUpload").setOptions({
+          endpoint: val,
+        });
+      }
+    },
+  },
+  mounted() {
+    services.SettingsService.get().then((s) => {
+      this.settings = s;
+      this.initUppy();
+    });
+  },
+  unmounted() {
+    if (this.uppy) {
+      this.uppy.close();
+    }
   },
   methods: {
     initUppy() {
@@ -147,16 +152,6 @@ export default {
     },
     reset() {
       this.uppy.reset();
-    },
-  },
-  watch: {
-    xhrUploadEndpoint(val) {
-      // Update the xhrUploadEndpoint configuration on XHRUpload whenever it changes
-      if (this.uppy && this.settings && !this.settings.tusEndpoint) {
-        this.uppy.getPlugin("XHRUpload").setOptions({
-          endpoint: val,
-        });
-      }
     },
   },
 };

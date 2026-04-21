@@ -1,29 +1,24 @@
 <template>
   <div class="card" :title="title" title-tag="h5">
-    <div class="input-group mb-1"
-      v-for="commandObject in data"
-      :key="commandObject.key"
-      
-    >
-      <input class="form-control"
-        type="text"
-        v-model="commandObject.command"
-        required
+    <div v-for="commandObject in data" :key="commandObject.key" class="input-group mb-1">
+      <input
         ref="commandObjectInputs"
+        v-model="commandObject.command"
+        class="form-control"
+        type="text"
+        required
         :disabled="readonly"
       />
       <span class="input-group-text">
-        <button class="btn btn-secondary btn-sm"
-          @click="deleteCommandObject(commandObject)"
-        >
+        <button class="btn btn-secondary btn-sm" @click="deleteCommandObject(commandObject)">
           <i class="fa fa-trash"></i>
           <span class="visually-hidden">Delete</span>
         </button>
       </span>
     </div>
-    <button class="btn btn-secondary btn-sm" v-if="!readonly" @click="addCommandObject">{{
-      addButtonLabel
-    }}</button>
+    <button v-if="!readonly" class="btn btn-secondary btn-sm" @click="addCommandObject">
+      {{ addButtonLabel }}
+    </button>
   </div>
 </template>
 
@@ -32,7 +27,7 @@ import { models } from "django-airavata-api";
 import { mixins } from "django-airavata-common-ui";
 
 export default {
-  name: "command-objects-editor",
+  name: "CommandObjectsEditor",
   mixins: [mixins.VModelMixin],
   props: {
     value: {
@@ -58,9 +53,7 @@ export default {
       }
       this.data.push(new models.CommandObject());
       this.$nextTick(() =>
-        this.$refs.commandObjectInputs[
-          this.$refs.commandObjectInputs.length - 1
-        ].focus()
+        this.$refs.commandObjectInputs[this.$refs.commandObjectInputs.length - 1].focus(),
       );
     },
     deleteCommandObject(commandObject) {

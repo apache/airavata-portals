@@ -57,7 +57,11 @@ function ensureSource() {
   };
   source.onerror = () => {
     broadcast({ kind: "status", connected: false });
-    try { source.close(); } catch {}
+    try {
+      source.close();
+    } catch {
+      /* intentionally empty */
+    }
     source = null;
     if (reconnectTimer) return;
     reconnectTimer = setTimeout(() => {
@@ -74,7 +78,11 @@ function ensureSource() {
   watchdog = setInterval(() => {
     if (!source) return;
     if (Date.now() - lastEventAt > HEARTBEAT_GRACE_MS) {
-      try { source.close(); } catch {}
+      try {
+        source.close();
+      } catch {
+        /* intentionally empty */
+      }
       source = null;
       if (ports.size > 0) ensureSource();
     }
@@ -84,11 +92,21 @@ function ensureSource() {
 function maybeClose() {
   if (ports.size > 0) return;
   if (source) {
-    try { source.close(); } catch {}
+    try {
+      source.close();
+    } catch {
+      /* intentionally empty */
+    }
     source = null;
   }
-  if (watchdog) { clearInterval(watchdog); watchdog = null; }
-  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  if (watchdog) {
+    clearInterval(watchdog);
+    watchdog = null;
+  }
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
 }
 
 // SharedWorker entrypoint.
@@ -104,7 +122,11 @@ self.onconnect = (e) => {
         break;
       case "disconnect":
         ports.delete(port);
-        try { port.close(); } catch {}
+        try {
+          port.close();
+        } catch {
+          /* intentionally empty */
+        }
         maybeClose();
         break;
     }

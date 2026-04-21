@@ -8,22 +8,17 @@
           :feedback="getValidationFeedback('resource_host_id')"
           :state="getValidationState('resource_host_id')"
         >
-          <select class="form-select"
+          <select
             id="compute-resource"
             v-model="resource_host_id"
+            class="form-select"
             required
-            @change="computeResourceChanged($event.target.value)"
             :state="getValidationState('resource_host_id')"
-            :disabled="
-              !computeResourceOptions || computeResourceOptions.length === 0
-            "
+            :disabled="!computeResourceOptions || computeResourceOptions.length === 0"
+            @change="computeResourceChanged($event.target.value)"
           >
             <option :value="null" disabled>Select a Compute Resource</option>
-            <option
-              v-for="opt in computeResourceOptions"
-              :key="opt.value"
-              :value="opt.value"
-            >
+            <option v-for="opt in computeResourceOptions" :key="opt.value" :value="opt.value">
               {{ opt.text }}
             </option>
           </select>
@@ -33,8 +28,8 @@
     <div class="row">
       <div class="col">
         <queue-settings-editor
-          v-model="data"
           v-if="appDeploymentId"
+          v-model="data"
           :app-module-id="appModuleId"
           :app-deployment-id="appDeploymentId"
           :compute-resource-policy="selectedComputeResourcePolicy"
@@ -51,16 +46,14 @@
 
 <script>
 import QueueSettingsEditor from "./QueueSettingsEditor.vue";
-import {
-  errors,
-  models,
-  services,
-  utils as apiUtils,
-} from "django-airavata-api";
+import { errors, models, services, utils as apiUtils } from "django-airavata-api";
 import { mixins, utils } from "django-airavata-common-ui";
 
 export default {
-  name: "computational-resource-scheduling-editor",
+  name: "ComputationalResourceSchedulingEditor",
+  components: {
+    QueueSettingsEditor,
+  },
   mixins: [mixins.VModelMixin],
   props: {
     value: {
@@ -85,21 +78,6 @@ export default {
       workspacePreferences: null,
     };
   },
-  components: {
-    QueueSettingsEditor,
-  },
-  mounted: function () {
-    this.loadWorkspacePreferences().then(() => {
-      this.loadApplicationDeployments(
-        this.appModuleId,
-        this.groupResourceProfileId
-      );
-    });
-    this.loadComputeResourceNames();
-    this.loadGroupResourceProfile();
-    this.validate();
-    this.$on("input", () => this.validate());
-  },
   computed: {
     localComputationalResourceScheduling() {
       return this.data;
@@ -121,27 +99,21 @@ export default {
       if (this.selectedGroupResourceProfileData === null) {
         return null;
       }
-      return this.selectedGroupResourceProfileData.compute_resource_policies.find(
-        (crp) => {
-          return (
-            crp.compute_resource_id ===
-            this.localComputationalResourceScheduling.resource_host_id
-          );
-        }
-      );
+      return this.selectedGroupResourceProfileData.compute_resource_policies.find((crp) => {
+        return (
+          crp.compute_resource_id === this.localComputationalResourceScheduling.resource_host_id
+        );
+      });
     },
     batchQueueResourcePolicies: function () {
       if (this.selectedGroupResourceProfileData === null) {
         return null;
       }
-      return this.selectedGroupResourceProfileData.batch_queue_resource_policies.filter(
-        (bqrp) => {
-          return (
-            bqrp.compute_resource_id ===
-            this.localComputationalResourceScheduling.resource_host_id
-          );
-        }
-      );
+      return this.selectedGroupResourceProfileData.batch_queue_resource_policies.filter((bqrp) => {
+        return (
+          bqrp.compute_resource_id === this.localComputationalResourceScheduling.resource_host_id
+        );
+      });
     },
     appDeploymentId: function () {
       // We'll only be able to figure out the appDeploymentId when a
@@ -152,7 +124,7 @@ export default {
       }
       // Find application deployment that corresponds to this compute resource
       let selectedApplicationDeployment = this.applicationDeployments.find(
-        (dep) => dep.compute_host_id === this.resource_host_id
+        (dep) => dep.compute_host_id === this.resource_host_id,
       );
       if (!selectedApplicationDeployment) {
         throw new Error("Failed to find application deployment!");
@@ -164,10 +136,54 @@ export default {
       return this.localComputationalResourceScheduling.validate(queueInfo);
     },
     valid() {
-      return (
-        !this.invalidQueueSettings && Object.keys(this.validation).length === 0
-      );
+      return !this.invalidQueueSettings && Object.keys(this.validation).length === 0;
     },
+  },
+  watch: {
+    computeResourceOptions: function (newOptions) {
+      // If the selected resource_host_id is not in the new list of
+      // computeResourceOptions, reset it to null
+      if (
+        this.resource_host_id !== null &&
+        !newOptions.find((opt) => opt.value === this.resource_host_id)
+      ) {
+        this.resource_host_id = null;
+      }
+      // Apply preferred (most recently used) compute resource
+      if (
+        this.resource_host_id === null &&
+        this.workspacePreferences.most_recent_compute_resource_id &&
+        newOptions.find(
+          (opt) => opt.value === this.workspacePreferences.most_recent_compute_resource_id,
+        )
+      ) {
+        this.resource_host_id = this.workspacePreferences.most_recent_compute_resource_id;
+      }
+      // If none selected, just pick the first one
+      if (this.resource_host_id === null && newOptions.length > 0) {
+        this.resource_host_id = newOptions[0].value;
+      }
+      this.computeResourceChanged(this.resource_host_id);
+    },
+    groupResourceProfileId: function (newGroupResourceProfileId) {
+      this.loadApplicationDeployments(this.appModuleId, newGroupResourceProfileId);
+      if (
+        this.selectedGroupResourceProfileData &&
+        this.selectedGroupResourceProfileData.group_resource_profile_id !==
+          newGroupResourceProfileId
+      ) {
+        this.loadGroupResourceProfile();
+      }
+    },
+  },
+  mounted: function () {
+    this.loadWorkspacePreferences().then(() => {
+      this.loadApplicationDeployments(this.appModuleId, this.groupResourceProfileId);
+    });
+    this.loadComputeResourceNames();
+    this.loadGroupResourceProfile();
+    this.validate();
+    this.$on("input", () => this.validate());
   },
   methods: {
     computeResourceChanged: function (selectedComputeResourceId) {
@@ -179,7 +195,7 @@ export default {
           app_module_id: appModuleId,
           group_resource_profile_id: groupResourceProfileId,
         },
-        { ignoreErrors: true }
+        { ignoreErrors: true },
       )
         .then((applicationDeployments) => {
           this.applicationDeployments = applicationDeployments;
@@ -196,7 +212,7 @@ export default {
     loadGroupResourceProfile: function () {
       services.ProjectResourceProfileService.retrieve(
         { lookup: this.groupResourceProfileId },
-        { ignoreErrors: true }
+        { ignoreErrors: true },
       )
         .then((groupResourceProfile) => {
           this.selectedGroupResourceProfileData = groupResourceProfile;
@@ -212,13 +228,12 @@ export default {
     },
     loadComputeResourceNames: function () {
       services.ComputeResourceService.names().then(
-        (computeResourceNames) => (this.computeResources = computeResourceNames)
+        (computeResourceNames) => (this.computeResources = computeResourceNames),
       );
     },
     loadWorkspacePreferences() {
       return services.WorkspacePreferencesService.get().then(
-        (workspacePreferences) =>
-          (this.workspacePreferences = workspacePreferences)
+        (workspacePreferences) => (this.workspacePreferences = workspacePreferences),
       );
     },
     queueSettingsChanged: function () {
@@ -249,48 +264,6 @@ export default {
     },
     getValidationState: function (properties) {
       return this.getValidationFeedback(properties) ? false : null;
-    },
-  },
-  watch: {
-    computeResourceOptions: function (newOptions) {
-      // If the selected resource_host_id is not in the new list of
-      // computeResourceOptions, reset it to null
-      if (
-        this.resource_host_id !== null &&
-        !newOptions.find((opt) => opt.value === this.resource_host_id)
-      ) {
-        this.resource_host_id = null;
-      }
-      // Apply preferred (most recently used) compute resource
-      if (
-        this.resource_host_id === null &&
-        this.workspacePreferences.most_recent_compute_resource_id &&
-        newOptions.find(
-          (opt) =>
-            opt.value ===
-            this.workspacePreferences.most_recent_compute_resource_id
-        )
-      ) {
-        this.resource_host_id = this.workspacePreferences.most_recent_compute_resource_id;
-      }
-      // If none selected, just pick the first one
-      if (this.resource_host_id === null && newOptions.length > 0) {
-        this.resource_host_id = newOptions[0].value;
-      }
-      this.computeResourceChanged(this.resource_host_id);
-    },
-    groupResourceProfileId: function (newGroupResourceProfileId) {
-      this.loadApplicationDeployments(
-        this.appModuleId,
-        newGroupResourceProfileId
-      );
-      if (
-        this.selectedGroupResourceProfileData &&
-        this.selectedGroupResourceProfileData.group_resource_profile_id !==
-          newGroupResourceProfileId
-      ) {
-        this.loadGroupResourceProfile();
-      }
     },
   },
 };

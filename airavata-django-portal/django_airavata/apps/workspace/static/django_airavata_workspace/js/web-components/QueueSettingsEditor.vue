@@ -1,14 +1,9 @@
 <template>
   <div v-if="showQueueSettings">
     <div class="card border-default">
-      <a
-        @click="showConfiguration = !showConfiguration"
-        class="card-link text-dark"
-      >
+      <a class="card-link text-dark" @click="showConfiguration = !showConfiguration">
         <div class="card-body">
-          <h5 class="card-title mb-4">
-            Settings for queue {{ selectedQueueName }}
-          </h5>
+          <h5 class="card-title mb-4">Settings for queue {{ selectedQueueName }}</h5>
           <div class="row">
             <div class="col">
               <h3 class="h5 mb-0">
@@ -26,7 +21,7 @@
               <h3 class="h5 mb-0">{{ getWallTimeLimit }} minutes</h3>
               <span class="text-muted text-uppercase">TIME LIMIT</span>
             </div>
-            <div class="col" v-if="maxMemory > 0">
+            <div v-if="maxMemory > 0" class="col">
               <h3 class="h5 mb-0">{{ getTotalPhysicalMemory }} MB</h3>
               <span class="text-muted text-uppercase">PHYSICAL MEMORY</span>
             </div>
@@ -36,18 +31,15 @@
     </div>
     <div v-if="showConfiguration">
       <div class="mb-3" label="Select a Queue" label-for="queue">
-        <select class="form-select"
+        <select
           id="queue"
+          class="form-select"
           :value="selectedQueueName"
           required
           @change="queueChanged($event.target.value)"
           @input.stop
         >
-          <option
-            v-for="opt in queueOptions"
-            :key="opt.value"
-            :value="opt.value"
-          >
+          <option v-for="opt in queueOptions" :key="opt.value" :value="opt.value">
             {{ opt.text }}
           </option>
         </select>
@@ -56,8 +48,9 @@
       <div class="d-flex flex-row">
         <div class="flex-fill">
           <div class="mb-3" label="Node Count" label-for="node-count">
-            <input class="form-control"
+            <input
               id="node-count"
+              class="form-control"
               type="number"
               min="1"
               :max="maxAllowedNodes"
@@ -71,40 +64,62 @@
             </div>
           </div>
           <div class="mb-3" label="Total Core Count" label-for="core-count">
-          <input class="form-control"
-            id="core-count"
-            type="number"
-            min="1"
-            :max="maxAllowedCores"
-            :value="getTotalCPUCount"
-            required
-            @input.stop="updateTotalCPUCount"
-          />
-          <div slot="description">
-            <i class="fa fa-info-circle" aria-hidden="true"></i>
-            Max Allowed Cores = {{ maxAllowedCores
-            }}<template v-if="queue && queue.cpuPerNode > 0"
-              >. There are {{ queue.cpuPerNode }} cores per node.
-            </template>
+            <input
+              id="core-count"
+              class="form-control"
+              type="number"
+              min="1"
+              :max="maxAllowedCores"
+              :value="getTotalCPUCount"
+              required
+              @input.stop="updateTotalCPUCount"
+            />
+            <div slot="description">
+              <i class="fa fa-info-circle" aria-hidden="true"></i>
+              Max Allowed Cores = {{ maxAllowedCores
+              }}<template v-if="queue && queue.cpuPerNode > 0"
+                >. There are {{ queue.cpuPerNode }} cores per node.
+              </template>
+            </div>
           </div>
         </div>
-        </div>
-        <div class="d-flex flex-column" v-if="queue && queue.cpuPerNode > 0">
-          <div class="flex-fill"
-               style="border: 1px solid #6c757d;border-top-right-radius: 10px;margin-top: 51px;border-left-width: 0px;border-bottom-width: 0px;margin-right: 15px;"></div>
-          <button class="btn btn-sm btn-outline-secondary rounded-pill"
-                    v-on:click="enableNodeCountToCpuCheck = !enableNodeCountToCpuCheck">
+        <div v-if="queue && queue.cpuPerNode > 0" class="d-flex flex-column">
+          <div
+            class="flex-fill"
+            style="
+              border: 1px solid #6c757d;
+              border-top-right-radius: 10px;
+              margin-top: 51px;
+              border-left-width: 0px;
+              border-bottom-width: 0px;
+              margin-right: 15px;
+            "
+          ></div>
+          <button
+            class="btn btn-sm btn-outline-secondary rounded-pill"
+            @click="enableNodeCountToCpuCheck = !enableNodeCountToCpuCheck"
+          >
             <i v-if="enableNodeCountToCpuCheck" class="fa fa-lock" aria-hidden="true"></i>
             <i v-else class="fa fa-unlock" aria-hidden="true"></i>
           </button>
-          <div class="flex-fill"
-               style="border: 1px solid #6c757d;border-bottom-right-radius: 10px;margin-bottom: 57px;border-left-width: 0px;border-top-width: 0px;margin-right: 15px;"></div>
+          <div
+            class="flex-fill"
+            style="
+              border: 1px solid #6c757d;
+              border-bottom-right-radius: 10px;
+              margin-bottom: 57px;
+              border-left-width: 0px;
+              border-top-width: 0px;
+              margin-right: 15px;
+            "
+          ></div>
         </div>
       </div>
       <div class="mb-3" label="Wall Time Limit" label-for="walltime-limit">
         <div class="input-group" append="minutes">
-          <input class="form-control"
+          <input
             id="walltime-limit"
+            class="form-control"
             type="number"
             min="1"
             :max="maxAllowedWalltime"
@@ -124,20 +139,21 @@
         label-for="total-physical-memory"
       >
         <div class="input-group" append="MB">
-          <input class="form-control"
+          <input
             id="total-physical-memory"
+            class="form-control"
             type="number"
             min="0"
             :max="maxMemory"
             :value="getTotalPhysicalMemory"
             @input.stop="updateTotalPhysicalMemory"
           />
-        </form-group>
+        </div>
         <div slot="description">
           <i class="fa fa-info-circle" aria-hidden="true"></i>
           Max Physical Memory = {{ maxMemory }} MB
         </div>
-      </div>
+      </form-group>
       <div>
         <a class="text-secondary" @click="showConfiguration = false">
           <i class="fa fa-times" aria-hidden="true"></i>
@@ -173,6 +189,12 @@ export default {
       type: String,
     },
   },
+  data() {
+    return {
+      showConfiguration: false,
+      enableNodeCountToCpuCheck: true,
+    };
+  },
   created() {
     this.$store.dispatch("initializeQueueSettings", {
       queueName: this.queueName,
@@ -181,12 +203,6 @@ export default {
       wallTimeLimit: this.wallTimeLimit,
       totalPhysicalMemory: this.totalPhysicalMemory,
     });
-  },
-  data() {
-    return {
-      showConfiguration: false,
-      enableNodeCountToCpuCheck: true
-    };
   },
   computed: {
     ...mapGetters({
@@ -239,13 +255,13 @@ export default {
     updateNodeCount(event) {
       this.$store.dispatch("updateNodeCount", {
         nodeCount: event.target.value,
-        enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck
+        enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck,
       });
     },
     updateTotalCPUCount(event) {
       this.$store.dispatch("updateTotalCPUCount", {
         totalCPUCount: event.target.value,
-        enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck
+        enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck,
       });
     },
     updateWallTimeLimit(event) {
@@ -272,7 +288,7 @@ export default {
       if (this.enableNodeCountToCpuCheck) {
         this.$store.dispatch("updateNodeCount", {
           nodeCount: this.getNodeCount,
-          enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck
+          enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck,
         });
       }
     },
@@ -285,7 +301,7 @@ export default {
       if (value && this.getNodeCount !== value) {
         this.$store.dispatch("updateNodeCount", {
           nodeCount: value,
-          enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck
+          enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck,
         });
       }
     },
@@ -293,7 +309,7 @@ export default {
       if (value && this.getTotalCPUCount !== value) {
         this.$store.dispatch("updateTotalCPUCount", {
           totalCPUCount: value,
-          enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck
+          enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck,
         });
       }
     },

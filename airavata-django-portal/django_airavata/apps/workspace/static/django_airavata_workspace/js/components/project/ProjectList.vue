@@ -9,11 +9,7 @@
       </tr>
     </thead>
     <tbody>
-      <project-list-item
-        v-bind:project="project"
-        v-for="project in projects"
-        v-bind:key="project.project_id"
-      >
+      <project-list-item v-for="project in projects" :key="project.project_id" :project="project">
       </project-list-item>
     </tbody>
   </table>
@@ -23,13 +19,13 @@
 import ProjectListItem from "./ProjectListItem.vue";
 
 export default {
-  name: "project-list",
+  name: "ProjectList",
+  components: {
+    ProjectListItem,
+  },
   props: ["projects"],
   data: function () {
     return {};
-  },
-  components: {
-    ProjectListItem,
   },
 };
 </script>

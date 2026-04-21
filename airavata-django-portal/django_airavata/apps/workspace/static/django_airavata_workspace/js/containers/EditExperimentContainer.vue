@@ -5,9 +5,11 @@
     :app-module="appModule"
     :app-interface="appInterface"
     @saved="handleSavedExperiment"
-    @savedAndLaunched="handleSavedAndLaunchedExperiment"
+    @saved-and-launched="handleSavedAndLaunchedExperiment"
   >
-    <span slot="title">Edit Experiment</span>
+    <template #title>
+      <span>Edit Experiment</span>
+    </template>
   </experiment-editor>
 </template>
 
@@ -18,7 +20,10 @@ import ExperimentEditor from "../components/experiment/ExperimentEditor.vue";
 import urls from "../utils/urls";
 
 export default {
-  name: "edit-experiment-container",
+  name: "EditExperimentContainer",
+  components: {
+    "experiment-editor": ExperimentEditor,
+  },
   props: {
     experimentId: {
       type: String,
@@ -29,21 +34,8 @@ export default {
     return {
       experiment: null,
       appModule: null,
-      appInterface: null
+      appInterface: null,
     };
-  },
-  components: {
-    "experiment-editor": ExperimentEditor,
-  },
-  methods: {
-    handleSavedExperiment: function () {
-      // Redirect to experiments list view
-      urls.navigateToExperimentsList();
-    },
-    handleSavedAndLaunchedExperiment: function (experiment) {
-      // Redirect to experiment view
-      urls.navigateToViewExperiment(experiment, { launching: true });
-    },
   },
   computed: {},
   mounted: function () {
@@ -57,7 +49,7 @@ export default {
           },
           {
             ignoreErrors: true,
-          }
+          },
         );
       })
       .then((appInterface) => {
@@ -79,9 +71,19 @@ export default {
           new notifications.Notification({
             type: "ERROR",
             message,
-          })
+          }),
         );
       });
+  },
+  methods: {
+    handleSavedExperiment: function () {
+      // Redirect to experiments list view
+      urls.navigateToExperimentsList();
+    },
+    handleSavedAndLaunchedExperiment: function (experiment) {
+      // Redirect to experiment view
+      urls.navigateToViewExperiment(experiment, { launching: true });
+    },
   },
 };
 </script>

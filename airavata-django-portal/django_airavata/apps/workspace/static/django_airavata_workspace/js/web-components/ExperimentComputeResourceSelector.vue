@@ -3,7 +3,7 @@
     <compute-resource-selector
       :value="resourceHostId"
       :disabled="disabled"
-      :includedComputeResources="computeResources"
+      :included-compute-resources="computeResources"
       @input.stop="computeResourceChanged"
     />
   </div>
@@ -15,7 +15,10 @@ import { mapGetters } from "vuex";
 import ComputeResourceSelector from "./ComputeResourceSelector.vue";
 
 export default {
-  name: "experiment-compute-resource-selector",
+  name: "ExperimentComputeResourceSelector",
+  components: {
+    ComputeResourceSelector,
+  },
   props: {
     value: {
       type: String,
@@ -37,9 +40,6 @@ export default {
     });
   },
   store: store,
-  components: {
-    ComputeResourceSelector,
-  },
   computed: {
     ...mapGetters([
       // compute resources for the current set of application deployments

@@ -58,9 +58,7 @@ export default {
       const results = this.experimentInput.validate(this.data);
       let value = [];
       if ("value" in results) {
-        value = await Promise.all(results["value"]).then((arr) =>
-          arr.filter((x) => x !== null)
-        );
+        value = await Promise.all(results["value"]).then((arr) => arr.filter((x) => x !== null));
       }
       this.validationResults = { value };
       this.validationMessages = value;

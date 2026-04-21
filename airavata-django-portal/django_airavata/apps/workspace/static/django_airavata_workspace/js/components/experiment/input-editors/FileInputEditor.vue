@@ -1,6 +1,6 @@
 <template>
   <div class="file-input-editor">
-    <div class="d-flex" v-if="isDataProductURI && dataProduct">
+    <div v-if="isDataProductURI && dataProduct" class="d-flex">
       <user-storage-link
         class="me-auto"
         :data-product-uri="dataProduct.productUri"
@@ -16,18 +16,14 @@
         <strong>{{ dataProduct.productName }}</strong
         >?
       </delete-link>
-      <a
-        v-else-if="!readOnly"
-        @click="unselect"
-        class="ms-2 text-secondary"
-      >
+      <a v-else-if="!readOnly" class="ms-2 text-secondary" @click="unselect">
         Unselect
         <i class="fa fa-times" aria-hidden="true"></i>
       </a>
     </div>
     <input-file-selector
       v-if="!readOnly && (!isDataProductURI || uploading)"
-      :selectedDataProductURIs="selectedDataProductURIs"
+      :selected-data-product-u-r-is="selectedDataProductURIs"
       @uploadstart="uploadStart"
       @uploadend="uploadEnd"
       @selected="fileSelected"
@@ -43,20 +39,25 @@ import InputFileSelector from "./InputFileSelector";
 import UserStorageLink from "../../storage/storage-edit/UserStorageLink";
 
 export default {
-  name: "file-input-editor",
-  mixins: [InputEditorMixin],
+  name: "FileInputEditor",
   components: {
     UserStorageLink,
     "delete-link": components.DeleteLink,
     InputFileSelector,
   },
+  mixins: [InputEditorMixin],
+  data() {
+    return {
+      dataProduct: null,
+      fileContent: null,
+      uploading: false,
+    };
+  },
   computed: {
     isDataProductURI() {
       // Just assume that if the value is a string then it's a data product URL
       return (
-        this.value &&
-        typeof this.value === "string" &&
-        this.value.startsWith("airavata-dp://")
+        this.value && typeof this.value === "string" && this.value.startsWith("airavata-dp://")
       );
     },
     // When used in the MultiFileInputEditor, don't allow selecting the same
@@ -76,12 +77,12 @@ export default {
       return this.dataProduct.isText;
     },
   },
-  data() {
-    return {
-      dataProduct: null,
-      fileContent: null,
-      uploading: false,
-    };
+  watch: {
+    value(value, oldValue) {
+      if (this.isDataProductURI && value !== oldValue) {
+        this.loadDataProduct(value);
+      }
+    },
   },
   created() {
     if (this.isDataProductURI) {
@@ -110,7 +111,7 @@ export default {
     deleteDataProduct() {
       utils.FetchUtils.delete(
         "/api/delete-file?data-product-uri=" + encodeURIComponent(this.value),
-        { ignoreErrors: true }
+        { ignoreErrors: true },
       )
         .then(() => {
           this.data = null;
@@ -148,13 +149,6 @@ export default {
     uploadEnd() {
       this.uploading = false;
       this.$emit("uploadend");
-    },
-  },
-  watch: {
-    value(value, oldValue) {
-      if (this.isDataProductURI && value !== oldValue) {
-        this.loadDataProduct(value);
-      }
     },
   },
 };

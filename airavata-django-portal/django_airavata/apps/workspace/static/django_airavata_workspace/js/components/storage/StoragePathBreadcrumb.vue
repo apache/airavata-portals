@@ -7,14 +7,16 @@
         class="breadcrumb-item"
         :class="{ active: item.active }"
         @click="directorySelected(item.path)"
-      >{{ item.text }}</li>
+      >
+        {{ item.text }}
+      </li>
     </ol>
   </nav>
 </template>
 
 <script>
 export default {
-  name: "storage-path-breadcrumb",
+  name: "StoragePathBreadcrumb",
   props: {
     parts: {
       type: Array,
@@ -36,9 +38,9 @@ export default {
           active: index === this.parts.length - 1,
         };
       });
-      return [
-        { text: this.rootName, path: "", active: this.parts.length === 0 },
-      ].concat(partsItems);
+      return [{ text: this.rootName, path: "", active: this.parts.length === 0 }].concat(
+        partsItems,
+      );
     },
   },
   methods: {

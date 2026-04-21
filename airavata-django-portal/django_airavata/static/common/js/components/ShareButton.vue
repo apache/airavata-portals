@@ -8,12 +8,12 @@
       @click="handleShareClick"
     >
       <i class="fa fa-share-alt me-1" aria-hidden="true"></i>Share
-      <span class="badge bg-secondary ms-1" v-if="totalCount > 0">{{ totalCount }}</span>
+      <span v-if="totalCount > 0" class="badge bg-secondary ms-1">{{ totalCount }}</span>
     </button>
     <!-- Bootstrap 5 modal -->
     <div
-      class="modal fade modal-share-settings"
       ref="sharingSettingsModal"
+      class="modal fade modal-share-settings"
       tabindex="-1"
       aria-labelledby="sharingSttingsModalLabel"
       aria-hidden="true"
@@ -23,7 +23,7 @@
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="sharingSettingsModalLabel">Sharing Settings</h5>
+            <h5 id="sharingSettingsModalLabel" class="modal-title">Sharing Settings</h5>
           </div>
           <div class="modal-body">
             <shared-entity-editor
@@ -50,7 +50,9 @@
             </template>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="cancelEditSharedEntity">Cancel</button>
+            <button type="button" class="btn btn-secondary" @click="cancelEditSharedEntity">
+              Cancel
+            </button>
             <button type="button" class="btn btn-primary" @click="saveSharedEntity">Save</button>
           </div>
         </div>
@@ -65,7 +67,10 @@ import { Modal } from "bootstrap";
 import SharedEntityEditor from "./SharedEntityEditor.vue";
 
 export default {
-  name: "share-button",
+  name: "ShareButton",
+  components: {
+    SharedEntityEditor,
+  },
   props: {
     entityId: String,
     parentEntityId: String,
@@ -86,9 +91,6 @@ export default {
       type: Boolean,
       default: true,
     },
-  },
-  components: {
-    SharedEntityEditor,
   },
   data: function () {
     return {
@@ -125,14 +127,10 @@ export default {
     combinedUsers() {
       const users = [];
       if (this.localSharedEntity && this.localSharedEntity.user_permissions) {
-        users.push(
-          ...this.localSharedEntity.user_permissions.map((up) => up.user)
-        );
+        users.push(...this.localSharedEntity.user_permissions.map((up) => up.user));
       }
       if (this.parentSharedEntity && this.parentSharedEntity.user_permissions) {
-        users.push(
-          ...this.parentSharedEntity.user_permissions.map((up) => up.user)
-        );
+        users.push(...this.parentSharedEntity.user_permissions.map((up) => up.user));
         if (this.parentEntityOwner) {
           users.push(this.parentEntityOwner);
         }
@@ -150,9 +148,7 @@ export default {
       const groups = [];
       groups.push(...this.filteredGroupPermissions.map((gp) => gp.group));
       if (this.parentSharedEntity && this.parentSharedEntity.group_permissions) {
-        groups.push(
-          ...this.parentSharedEntity.group_permissions.map((gp) => gp.group)
-        );
+        groups.push(...this.parentSharedEntity.group_permissions.map((gp) => gp.group));
       }
       return groups;
     },
@@ -190,6 +186,30 @@ export default {
       }
     },
   },
+  watch: {
+    sharedEntity(newSharedEntity) {
+      this.localSharedEntity = newSharedEntity
+        ? newSharedEntity.clone()
+        : new models.SharedEntity();
+    },
+    entityId(newEntityId, oldEntityId) {
+      if (newEntityId && newEntityId !== oldEntityId) {
+        this.loadSharedEntity(newEntityId).then(
+          (sharedEntity) => (this.localSharedEntity = sharedEntity),
+        );
+      }
+    },
+    parentEntityId(newParentEntityId) {
+      this.loadSharedEntity(newParentEntityId).then((sharedEntity) => {
+        this.parentSharedEntity = sharedEntity;
+      });
+    },
+  },
+  mounted: function () {
+    // Only run initialize when mounted since it may add the default gateways
+    // group automatically (autoAddDefaultGatewayUsersGroup)
+    this.initialize();
+  },
   methods: {
     initialize: function () {
       // First loaded needed data and then process it. This is to prevent one
@@ -201,8 +221,8 @@ export default {
       if (this.entityId) {
         promises.push(
           this.loadSharedEntity(this.entityId).then(
-            (sharedEntity) => (loadedSharedEntity = sharedEntity)
-          )
+            (sharedEntity) => (loadedSharedEntity = sharedEntity),
+          ),
         );
       }
       // Group-based sharing has been deprecated; sharing is now user-level only.
@@ -212,8 +232,8 @@ export default {
       if (this.parentEntityId) {
         promises.push(
           this.loadSharedEntity(this.parentEntityId).then(
-            (sharedEntity) => (this.parentSharedEntity = sharedEntity)
-          )
+            (sharedEntity) => (this.parentSharedEntity = sharedEntity),
+          ),
         );
       }
       Promise.all(promises).then(() => {
@@ -256,15 +276,13 @@ export default {
           // new default is MANAGE_SHARING so update if necessary
           // Since autoAddAdminGroups is true, there should already be an adminsGroupPermission
           const adminsGroupPermission = this.localSharedEntity.group_permissions.find(
-            (gp) => gp.group.is_gateway_admins_group
+            (gp) => gp.group.is_gateway_admins_group,
           );
           if (
             adminsGroupPermission &&
-            adminsGroupPermission.permission_type !==
-              models.ResourcePermissionType.MANAGE_SHARING
+            adminsGroupPermission.permission_type !== models.ResourcePermissionType.MANAGE_SHARING
           ) {
-            adminsGroupPermission.permission_type =
-              models.ResourcePermissionType.MANAGE_SHARING;
+            adminsGroupPermission.permission_type = models.ResourcePermissionType.MANAGE_SHARING;
             this.emitUnsavedEvent();
           }
         }
@@ -344,30 +362,6 @@ export default {
       if (this.bsModal) {
         this.bsModal.hide();
       }
-    },
-  },
-  mounted: function () {
-    // Only run initialize when mounted since it may add the default gateways
-    // group automatically (autoAddDefaultGatewayUsersGroup)
-    this.initialize();
-  },
-  watch: {
-    sharedEntity(newSharedEntity) {
-      this.localSharedEntity = newSharedEntity
-        ? newSharedEntity.clone()
-        : new models.SharedEntity();
-    },
-    entityId(newEntityId, oldEntityId) {
-      if (newEntityId && newEntityId !== oldEntityId) {
-        this.loadSharedEntity(newEntityId).then(
-          (sharedEntity) => (this.localSharedEntity = sharedEntity)
-        );
-      }
-    },
-    parentEntityId(newParentEntityId) {
-      this.loadSharedEntity(newParentEntityId).then((sharedEntity) => {
-        this.parentSharedEntity = sharedEntity;
-      });
     },
   },
 };

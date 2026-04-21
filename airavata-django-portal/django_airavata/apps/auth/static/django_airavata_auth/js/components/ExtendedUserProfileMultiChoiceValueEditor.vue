@@ -2,34 +2,42 @@
   <extended-user-profile-value-editor v-bind="$props">
     <div>
       <div v-for="option in options" :key="option.value" class="form-check">
-        <input :class="['form-check-input', validateStateErrorOnly(v$.value) === false ? 'is-invalid' : '']" type="checkbox"
-          :value="option.value"
+        <input
           v-model="value"
+          :class="[
+            'form-check-input',
+            validateStateErrorOnly(v$.value) === false ? 'is-invalid' : '',
+          ]"
+          type="checkbox"
+          :value="option.value"
           @change="onChange"
         />
         <label class="form-check-label">{{ option.text }}</label>
       </div>
       <div v-if="extendedUserProfileField.other" class="form-check">
-        <input class="form-check-input" type="checkbox"
-          :value="otherOptionValue"
+        <input
           v-model="value"
+          class="form-check-input"
+          type="checkbox"
+          :value="otherOptionValue"
           @change="onChange"
         />
         <label class="form-check-label">Other (please specify)</label>
       </div>
-      <div class="invalid-feedback d-block" v-if="v$.value.$dirty && v$.value.$error"
-        >This field is required.</div
-      >
+      <div v-if="v$.value.$dirty && v$.value.$error" class="invalid-feedback d-block">
+        This field is required.
+      </div>
     </div>
     <template v-if="showOther">
-      <input :class="['form-control mt-2', validateState(v$.other) === false ? 'is-invalid' : '']"
+      <input
         v-model="other"
+        :class="['form-control mt-2', validateState(v$.other) === false ? 'is-invalid' : '']"
         placeholder="Please specify"
         @input="onInput"
       />
-      <div class="invalid-feedback" v-if="v$.other.$dirty && v$.other.$error"
-        >Please specify a value for 'Other'.</div
-      >
+      <div v-if="v$.other.$dirty && v$.other.$error" class="invalid-feedback">
+        Please specify a value for 'Other'.
+      </div>
     </template>
   </extended-user-profile-value-editor>
 </template>
@@ -53,15 +61,10 @@ export default {
     };
   },
   computed: {
-    ...mapGetters("extendedUserProfile", [
-      "getMultiChoiceValue",
-      "getMultiChoiceOther",
-    ]),
+    ...mapGetters("extendedUserProfile", ["getMultiChoiceValue", "getMultiChoiceOther"]),
     value: {
       get() {
-        const copy = this.getMultiChoiceValue(
-          this.extendedUserProfileField.id
-        ).slice();
+        const copy = this.getMultiChoiceValue(this.extendedUserProfileField.id).slice();
         if (this.showOther) {
           copy.push(this.otherOptionValue);
         }
@@ -92,8 +95,7 @@ export default {
       return this.other || this.otherOptionSelected;
     },
     options() {
-      return this.extendedUserProfileField &&
-        this.extendedUserProfileField.choices
+      return this.extendedUserProfileField && this.extendedUserProfileField.choices
         ? this.extendedUserProfileField.choices.map((choice) => {
             return {
               value: choice.id,
@@ -125,10 +127,7 @@ export default {
     return validations;
   },
   methods: {
-    ...mapMutations("extendedUserProfile", [
-      "setMultiChoiceValue",
-      "setMultiChoiceOther",
-    ]),
+    ...mapMutations("extendedUserProfile", ["setMultiChoiceValue", "setMultiChoiceOther"]),
     onChange(event) {
       const checked = event.target.checked;
       const val = event.target.value;

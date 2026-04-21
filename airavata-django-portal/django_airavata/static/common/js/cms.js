@@ -5,10 +5,6 @@ import "@fortawesome/fontawesome-free/css/all.css";
 
 // Initialize Bootstrap tooltips
 document.addEventListener("DOMContentLoaded", () => {
-  const tooltipTriggerList = document.querySelectorAll(
-    '[data-bs-toggle="tooltip"]'
-  );
-  tooltipTriggerList.forEach(
-    (tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl)
-  );
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  tooltipTriggerList.forEach((tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl));
 });

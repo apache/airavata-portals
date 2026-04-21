@@ -99,14 +99,14 @@ The output view provider cookiecutter does two things:
 See the output view provider file for the `generate_data` function. This is
 where you'll add your code. There is some commented out sample code to show you
 
--   how to read the output file
--   how to do more advanced interactions with the user's storage using the
-    user_storage module of the Airavata Django Portal SDK
--   how to call the Airavata API using the Airavata Python SDK
--   how to create the returned dictionary with the expected values for the given
-    display type (for example, for 'image' display type, the returned dictionary
-    should contain a key called `image` with the bytes of the images and a key
-    called `mime-type` with the mime type of the image).
+- how to read the output file
+- how to do more advanced interactions with the user's storage using the
+  user_storage module of the Airavata Django Portal SDK
+- how to call the Airavata API using the Airavata Python SDK
+- how to create the returned dictionary with the expected values for the given
+  display type (for example, for 'image' display type, the returned dictionary
+  should contain a key called `image` with the bytes of the images and a key
+  called `mime-type` with the mime type of the image).
 
 The rest of the documentation provides additional reference and guidance on
 implementing the `generate_data` function.
@@ -132,17 +132,17 @@ GATEWAY_DATA_STORE_REMOTE_API = 'https://testdrive.airavata.org'
 Output view providers should be defined as a Python class. They should define
 the following attributes:
 
--   `display_type`: this should be one of _link_, _image_ or _html_.
--   `name`: this is the name of the output view provider displayed to the user.
+- `display_type`: this should be one of _link_, _image_ or _html_.
+- `name`: this is the name of the output view provider displayed to the user.
 
 Optional attributes that can be defined on the output view provider class
 include:
 
--   `test_output_file`: this is a file path to an file that will be substituted
-    for the actual file for testing the output view provider. This is only used
-    during development and will only work with the Django DEBUG setting is True.
-    For more information, see
-    [Using test_output_file in development](#using-test_output_file-in-development).
+- `test_output_file`: this is a file path to an file that will be substituted
+  for the actual file for testing the output view provider. This is only used
+  during development and will only work with the Django DEBUG setting is True.
+  For more information, see
+  [Using test_output_file in development](#using-test_output_file-in-development).
 
 The output view provider class should define the following method:
 
@@ -171,18 +171,18 @@ def generate_data(self, request, experiment_output, experiment, output_files=Non
 
 The arguments to the `generate_data` function are described below:
 
--   `request` -
-    [Django Request](https://docs.djangoproject.com/en/dev/ref/request-response/#django.http.HttpRequest)
-    object.
--   `experiment_output` - Airavata metadata about output file(s), see
-    [OutputDataObjectType doc](http://airavata.apache.org/api-docs/master/application_io_models.html#Struct_OutputDataObjectType).
--   `experiment` - Airavata metadata about the experiment, see
-    [ExperimentModel doc](http://airavata.apache.org/api-docs/master/experiment_model.html#Struct_ExperimentModel).
--   `output_file` - Python
-    [file-like object](https://docs.python.org/3/glossary.html#term-file-object).
-    Read from this file to process the contents of the output file.
--   `output_files` - If the output type is URI_COLLECTION, then the collection
-    of files is given as a list of file-like objects.
+- `request` -
+  [Django Request](https://docs.djangoproject.com/en/dev/ref/request-response/#django.http.HttpRequest)
+  object.
+- `experiment_output` - Airavata metadata about output file(s), see
+  [OutputDataObjectType doc](http://airavata.apache.org/api-docs/master/application_io_models.html#Struct_OutputDataObjectType).
+- `experiment` - Airavata metadata about the experiment, see
+  [ExperimentModel doc](http://airavata.apache.org/api-docs/master/experiment_model.html#Struct_ExperimentModel).
+- `output_file` - Python
+  [file-like object](https://docs.python.org/3/glossary.html#term-file-object).
+  Read from this file to process the contents of the output file.
+- `output_files` - If the output type is URI_COLLECTION, then the collection
+  of files is given as a list of file-like objects.
 
 The required contents of the dictionary varies based on the _display type_.
 
@@ -190,8 +190,8 @@ The required contents of the dictionary varies based on the _display type_.
 
 The returned dictionary should include the following entries:
 
--   url
--   label
+- url
+- label
 
 The _label_ is the text of the link. Generally speaking this will be rendered
 as:
@@ -202,31 +202,31 @@ as:
 
 **Examples**
 
--   [SimCCS Maptool - SolutionLinkProvider](https://github.com/SciGaP/simccs-maptool/blob/master/simccs_maptool/output_views.py#L5)
+- [SimCCS Maptool - SolutionLinkProvider](https://github.com/SciGaP/simccs-maptool/blob/master/simccs_maptool/output_views.py#L5)
 
 #### Display type image
 
 The returned dictionary should include the following entries:
 
--   image: a stream of bytes, i.e., either the result of `open(file, 'rb')` or
-    something equivalent like `io.BytesIO`.
--   mime-type: the mime-type of the image, for example, `image/png`.
+- image: a stream of bytes, i.e., either the result of `open(file, 'rb')` or
+  something equivalent like `io.BytesIO`.
+- mime-type: the mime-type of the image, for example, `image/png`.
 
 **Examples**
 
--   [AMP Gateway - TRexXPlotViewProvider](https://github.com/SciGaP/amp-gateway-django-app/blob/master/amp_gateway/plot.py#L115)
+- [AMP Gateway - TRexXPlotViewProvider](https://github.com/SciGaP/amp-gateway-django-app/blob/master/amp_gateway/plot.py#L115)
 
 #### Display type html
 
 The returned dictionary should include the following entries:
 
--   output: a raw HTML string
--   js: a static URL to a JavaScript file, for example,
-    `/static/earthquake_gateway/custom-leaflet-script.js`.
+- output: a raw HTML string
+- js: a static URL to a JavaScript file, for example,
+  `/static/earthquake_gateway/custom-leaflet-script.js`.
 
 **Examples**
 
--   [dREG - DregGenomeBrowserViewProvider](https://github.com/SciGaP/dreg-djangoapp/blob/gbrowser/dreg_djangoapp/output_views.py)
+- [dREG - DregGenomeBrowserViewProvider](https://github.com/SciGaP/dreg-djangoapp/blob/gbrowser/dreg_djangoapp/output_views.py)
 
 ### Entry Point registration
 
@@ -453,10 +453,10 @@ selected by the user.
 
 The following additional properties are supported:
 
--   **label** - by default the name of the interactive parameter is its label in
-    the interactive form. You can customize the label with the `label` property.
--   **help** - you can also display help text below the parameter in the
-    interactive form with the `help` property.
+- **label** - by default the name of the interactive parameter is its label in
+  the interactive form. You can customize the label with the `label` property.
+- **help** - you can also display help text below the parameter in the
+  interactive form with the `help` property.
 
 For example:
 

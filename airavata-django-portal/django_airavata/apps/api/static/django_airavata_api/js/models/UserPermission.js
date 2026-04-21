@@ -15,7 +15,7 @@ export default class UserPermission extends BaseModel {
           type: ResourcePermissionType,
         },
       ],
-      data
+      data,
     );
   }
 }

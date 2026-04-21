@@ -1,25 +1,25 @@
 <template>
   <div v-if="isSelectingFile">
     <user-storage-file-selection-container
+      :selected-data-product-uris="selectedDataProductURIs"
       @file-selected="fileSelected"
       @cancel="cancelFileSelection"
-      :selected-data-product-uris="selectedDataProductURIs"
     />
   </div>
-  <div class="d-flex align-items-center" v-else>
-    <button class="btn input-file-option" @click="isSelectingFile = true" 
-      >Select file from storage</button
-    >
+  <div v-else class="d-flex align-items-center">
+    <button class="btn input-file-option" @click="isSelectingFile = true">
+      Select file from storage
+    </button>
     <span class="text-muted mx-3">OR</span>
     <uppy
-      class="input-file-option"
       ref="uppy"
+      class="input-file-option"
       xhr-upload-endpoint="/api/upload"
       tus-upload-finish-endpoint="/api/tus-upload-finish"
+      :multiple="multiple"
       @upload-success="uploadSuccess"
       @upload-started="$emit('uploadstart')"
       @upload-finished="uploadFinished"
-      :multiple="multiple"
     />
   </div>
 </template>
@@ -30,7 +30,11 @@ import { components } from "django-airavata-common-ui";
 import UserStorageFileSelectionContainer from "../../storage/UserStorageFileSelectionContainer";
 
 export default {
-  name: "input-file-selector",
+  name: "InputFileSelector",
+  components: {
+    UserStorageFileSelectionContainer,
+    uppy: components.Uppy,
+  },
   props: {
     multiple: {
       type: Boolean,
@@ -41,16 +45,12 @@ export default {
       default: () => [],
     },
   },
-  components: {
-    UserStorageFileSelectionContainer,
-    uppy: components.Uppy,
-  },
-  computed: {},
   data() {
     return {
       isSelectingFile: false,
     };
   },
+  computed: {},
   created() {},
   methods: {
     unselect() {

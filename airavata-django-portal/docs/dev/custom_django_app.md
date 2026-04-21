@@ -106,24 +106,24 @@ are some things you may need to update as you develop your custom Django app:
 
 ### setup.cfg
 
--   **name**: you can update the name, but this really only affects the name of
-    the Python project when installing it from a repository like
-    <https://pypi.org>.
--   **description**: this is the Python package description. Like the name,
-    really only affects package repositories like <https://pypi.org>.
--   **version**: if you push your custom Django app to pypi.org, then you'll
-    want to increment the version number.
--   **install_requires**: this is where you list other Python packages on which
-    your custom Django app depends. As an example, see the
-    [Custom UI tutorial](../tutorial/custom_ui_tutorial.md#create-the-custom-output-viewer)
-    when cclib, numpy and matplotlib are added to setup.cfg for the
-    GaussianEigenvaluesViewProvider.
--   **options.entry_points**: this is metadata that describes where this custom
-    Django app's AppConfig class is located so that the Airavata Django Portal
-    can load it. In the Django framework, the AppConfig class is the entry point
-    to the app. Normally you won't need to update this, but if you decide to
-    change the Django app's Python module name or the name of the AppConfig
-    class, then you'll need to update these to remain consistent.
+- **name**: you can update the name, but this really only affects the name of
+  the Python project when installing it from a repository like
+  <https://pypi.org>.
+- **description**: this is the Python package description. Like the name,
+  really only affects package repositories like <https://pypi.org>.
+- **version**: if you push your custom Django app to pypi.org, then you'll
+  want to increment the version number.
+- **install_requires**: this is where you list other Python packages on which
+  your custom Django app depends. As an example, see the
+  [Custom UI tutorial](../tutorial/custom_ui_tutorial.md#create-the-custom-output-viewer)
+  when cclib, numpy and matplotlib are added to setup.cfg for the
+  GaussianEigenvaluesViewProvider.
+- **options.entry_points**: this is metadata that describes where this custom
+  Django app's AppConfig class is located so that the Airavata Django Portal
+  can load it. In the Django framework, the AppConfig class is the entry point
+  to the app. Normally you won't need to update this, but if you decide to
+  change the Django app's Python module name or the name of the AppConfig
+  class, then you'll need to update these to remain consistent.
 
 ### apps.py
 
@@ -138,10 +138,10 @@ custom Django apps. Only `name`, `label` and `verbose_name` are required. See
 for description of these properties. Additionally, custom Django apps can
 specify the following properties:
 
--   **url_prefix**: specify the URL prefix for all of the custom Django apps
-    URLs. By default, the app's `label` property is used as the URL prefix, but
-    by setting `url_prefix` you can override that. (Example:
-    [SimCCS](https://github.com/SciGaP/simccs-maptool/blob/dev/simccs_maptool/apps.py#L34))
+- **url_prefix**: specify the URL prefix for all of the custom Django apps
+  URLs. By default, the app's `label` property is used as the URL prefix, but
+  by setting `url_prefix` you can override that. (Example:
+  [SimCCS](https://github.com/SciGaP/simccs-maptool/blob/dev/simccs_maptool/apps.py#L34))
 
 ### views.py
 
@@ -154,8 +154,8 @@ In the generated views.py file there is simple view function called `home` that
 simply renders the `home.html` template. There is also some commented out code
 that shows how to, for example,
 
--   make Airavata API calls with the Airavata Python SDK
--   manage the user's data storage with the Airavata Django Portal SDK
+- make Airavata API calls with the Airavata Python SDK
+- manage the user's data storage with the Airavata Django Portal SDK
 
 Also note that if you want to require authentication for your view, just add the
 `@login_required` decorator.
@@ -240,16 +240,16 @@ in the `scripts` block:
 
 For more information on the AiravataAPI library:
 
--   see the
-    [Custom UI tutorial](../tutorial/custom_ui_tutorial.md#tutorial-exercise-create-a-custom-django-app)
--   see the
-    [index.js](https://github.com/apache/airavata-django-portal/blob/master/django_airavata/apps/api/static/django_airavata_api/js/index.js)
-    file in the AiravataAPI to see what models and services are provided by the
-    library
+- see the
+  [Custom UI tutorial](../tutorial/custom_ui_tutorial.md#tutorial-exercise-create-a-custom-django-app)
+- see the
+  [index.js](https://github.com/apache/airavata-django-portal/blob/master/django_airavata/apps/api/static/django_airavata_api/js/index.js)
+  file in the AiravataAPI to see what models and services are provided by the
+  library
 
 ### Custom Django apps
 
 There are now several examples of custom Django apps that can be learned from:
 
--   <https://github.com/SciGaP/simccs-maptool>
--   <https://github.com/InterACTWEL/interactactwel-django-app>
+- <https://github.com/SciGaP/simccs-maptool>
+- <https://github.com/InterACTWEL/interactactwel-django-app>

@@ -6,9 +6,7 @@ export default {
     }
     for (const fieldName in data) {
       if (Object.prototype.hasOwnProperty.call(data, fieldName)) {
-        const errorMessages = validationErrors
-          ? validationErrors[fieldName]
-          : null;
+        const errorMessages = validationErrors ? validationErrors[fieldName] : null;
         if (errorMessages) {
           validationFeedback[fieldName] = {
             invalidFeedback: errorMessages,

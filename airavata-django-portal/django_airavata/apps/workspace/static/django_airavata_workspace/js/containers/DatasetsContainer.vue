@@ -25,7 +25,9 @@
                 <div class="table-empty">
                   <i class="fa fa-database table-empty__icon"></i>
                   <div class="table-empty__title">No artifacts yet</div>
-                  <div class="table-empty__text">Experiment output artifacts will appear here once experiments complete.</div>
+                  <div class="table-empty__text">
+                    Experiment output artifacts will appear here once experiments complete.
+                  </div>
                 </div>
               </td>
             </tr>
@@ -40,13 +42,13 @@
 import { components as comps } from "django-airavata-common-ui";
 
 export default {
-  name: "datasets-container",
+  name: "DatasetsContainer",
+  components: {
+    "breadcrumb-nav": comps.BreadcrumbNav,
+  },
   props: {
     projectId: { type: String, default: null },
     breadcrumbs: { type: Array, default: () => [] },
-  },
-  components: {
-    "breadcrumb-nav": comps.BreadcrumbNav,
   },
 };
 </script>

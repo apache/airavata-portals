@@ -6,9 +6,8 @@ import "../../scss/styles.scss";
 entry(({ createApp }) => {
   const el = document.getElementById("create-experiment");
   const appModuleId = el ? el.dataset.appModuleId || null : null;
-  const userInputValues = el && el.dataset.userInputValues
-    ? JSON.parse(el.dataset.userInputValues)
-    : null;
+  const userInputValues =
+    el && el.dataset.userInputValues ? JSON.parse(el.dataset.userInputValues) : null;
   const experimentDataDir = el ? el.dataset.experimentDataDir || null : null;
   const app = createApp({
     data() {

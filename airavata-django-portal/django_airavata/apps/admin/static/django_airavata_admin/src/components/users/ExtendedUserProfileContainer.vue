@@ -4,21 +4,16 @@
       <div class="col-auto me-auto">
         <h1 class="h4">Extended User Profile Editor</h1>
         <p class="text-muted small">
-          Add and edit additional user profile fields for gateway users to
-          complete.
+          Add and edit additional user profile fields for gateway users to complete.
         </p>
       </div>
     </div>
     <transition-group name="fade">
-      <div
-        v-for="field in extendedUserProfileFields"
-        class="row"
-        :key="field.key"
-      >
+      <div v-for="field in extendedUserProfileFields" :key="field.key" class="row">
         <div class="col">
           <extended-user-profile-field-editor
             ref="extendedUserProfileFieldEditors"
-            :extendedUserProfileField="field"
+            :extended-user-profile-field="field"
             :disabled="!field.user_has_write_access"
             @valid="recordValidChildComponent(field)"
             @invalid="recordInvalidChildComponent(field)"
@@ -31,24 +26,16 @@
       <div class="d-flex">
         <div class="dropdown" text="Add Field" :disabled="!isGatewayAdmin">
           <a class="dropdown-item" @click="addField('text')">Text</a>
-          <a class="dropdown-item" @click="addField('single_choice')"
-            >Single Choice</a
-          >
-          <a class="dropdown-item" @click="addField('multi_choice')"
-            >Multi Choice</a
-          >
-          <a class="dropdown-item" @click="addField('user_agreement')"
-            >User Agreement</a
-          >
+          <a class="dropdown-item" @click="addField('single_choice')">Single Choice</a>
+          <a class="dropdown-item" @click="addField('multi_choice')">Multi Choice</a>
+          <a class="dropdown-item" @click="addField('user_agreement')">User Agreement</a>
         </div>
-        <button class="btn btn-primary btn-sm ms-2"
-          @click="save"
-          :disabled="!isGatewayAdmin"
-          >Save</button
-        >
-        <button class="btn btn-secondary btn-sm ms-auto" href="/admin/users"
-          >Return to Manage Users</button
-        >
+        <button class="btn btn-primary btn-sm ms-2" :disabled="!isGatewayAdmin" @click="save">
+          Save
+        </button>
+        <button class="btn btn-secondary btn-sm ms-auto" href="/admin/users">
+          Return to Manage Users
+        </button>
       </div>
     </div>
   </div>
@@ -60,8 +47,8 @@ import ExtendedUserProfileFieldEditor from "./field-editors/ExtendedUserProfileF
 import { mixins } from "django-airavata-common-ui";
 import { session } from "django-airavata-api";
 export default {
-  mixins: [mixins.ValidationParent],
   components: { ExtendedUserProfileFieldEditor },
+  mixins: [mixins.ValidationParent],
   data() {
     return {};
   },

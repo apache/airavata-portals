@@ -1,22 +1,14 @@
 <template>
   <div class="mb-3" label="Project">
-    <select class="form-select" v-model="projectId" required>
+    <select v-model="projectId" class="form-select" required>
       <option :value="null" disabled>Select a Project</option>
       <optgroup label="My Projects">
-        <option
-          v-for="project in myProjectOptions"
-          :value="project.value"
-          :key="project.value"
-        >
+        <option v-for="project in myProjectOptions" :key="project.value" :value="project.value">
           {{ project.text }}
         </option>
       </optgroup>
       <optgroup label="Projects Shared With Me">
-        <option
-          v-for="project in sharedProjectOptions"
-          :value="project.value"
-          :key="project.value"
-        >
+        <option v-for="project in sharedProjectOptions" :key="project.value" :value="project.value">
           {{ project.text }}
         </option>
       </optgroup>
@@ -25,7 +17,6 @@
 </template>
 
 <script>
-
 import store from "./store";
 import { mapGetters } from "vuex";
 
@@ -53,9 +44,7 @@ export default {
             .filter((p) => !p.is_owner)
             .map((project) => ({
               value: project.project_id,
-              text:
-                project.name +
-                (!project.is_owner ? " (owned by " + project.owner + ")" : ""),
+              text: project.name + (!project.is_owner ? " (owned by " + project.owner + ")" : ""),
             }))
         : [];
     },

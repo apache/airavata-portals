@@ -78,8 +78,8 @@ With this configuration, the **TUS_DATA_DIR** will be `/path/to/tus-temp-dir`
 Uncomment and set the following settings in settings_local.py, assuming you
 created the settings_local.py file by first copying settings_local.py.sample.
 
--   **TUS_ENDPOINT** - this should be the tus url. Keeping with the example
-    above this would be `https://tus.domainname.org/files/`
--   **TUS_DATA_DIR** - this is the directory where tus upload files and metadata
-    will be stored. This settings assumes that tusd the tus server used and so
-    it assumes that file naming conventions will follow the tusd implementation.
+- **TUS_ENDPOINT** - this should be the tus url. Keeping with the example
+  above this would be `https://tus.domainname.org/files/`
+- **TUS_DATA_DIR** - this is the directory where tus upload files and metadata
+  will be stored. This settings assumes that tusd the tus server used and so
+  it assumes that file naming conventions will follow the tusd implementation.

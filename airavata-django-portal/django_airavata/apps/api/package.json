@@ -21,9 +21,7 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "eslint": "^8.0.0",
-    "prettier": "^3.0.0",
-    "vite": "^6.0.0",
+    "@airavata/tooling": "*",
     "vitest": "^3.0.0"
   },
   "browserslist": [

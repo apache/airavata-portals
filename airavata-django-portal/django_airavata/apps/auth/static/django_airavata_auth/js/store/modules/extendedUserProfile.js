@@ -9,18 +9,13 @@ const getters = {
   extendedUserProfileFields: (state) => state.extendedUserProfileFields,
   extendedUserProfileValues: (state) => state.extendedUserProfileValues,
   hasExtendedUserProfileFields: (state) =>
-    state.extendedUserProfileFields &&
-    state.extendedUserProfileFields.length > 0,
+    state.extendedUserProfileFields && state.extendedUserProfileFields.length > 0,
   getTextValue: (state) => (id) => {
-    const value = state.extendedUserProfileValues.find(
-      (v) => v.ext_user_profile_field === id
-    );
+    const value = state.extendedUserProfileValues.find((v) => v.ext_user_profile_field === id);
     return value ? value.text_value : null;
   },
   getSingleChoiceValue: (state) => (id) => {
-    const value = state.extendedUserProfileValues.find(
-      (v) => v.ext_user_profile_field === id
-    );
+    const value = state.extendedUserProfileValues.find((v) => v.ext_user_profile_field === id);
     if (value && value.choices && value.choices.length === 1) {
       return value.choices[0];
     } else {
@@ -28,15 +23,11 @@ const getters = {
     }
   },
   getSingleChoiceOther: (state) => (id) => {
-    const value = state.extendedUserProfileValues.find(
-      (v) => v.ext_user_profile_field === id
-    );
+    const value = state.extendedUserProfileValues.find((v) => v.ext_user_profile_field === id);
     return value ? value.other_value : null;
   },
   getMultiChoiceValue: (state) => (id) => {
-    const value = state.extendedUserProfileValues.find(
-      (v) => v.ext_user_profile_field === id
-    );
+    const value = state.extendedUserProfileValues.find((v) => v.ext_user_profile_field === id);
     if (value && value.choices) {
       return value.choices;
     } else {
@@ -44,15 +35,11 @@ const getters = {
     }
   },
   getMultiChoiceOther: (state) => (id) => {
-    const value = state.extendedUserProfileValues.find(
-      (v) => v.ext_user_profile_field === id
-    );
+    const value = state.extendedUserProfileValues.find((v) => v.ext_user_profile_field === id);
     return value ? value.other_value : null;
   },
   getUserAgreementValue: (state) => (id) => {
-    const value = state.extendedUserProfileValues.find(
-      (v) => v.ext_user_profile_field === id
-    );
+    const value = state.extendedUserProfileValues.find((v) => v.ext_user_profile_field === id);
     return value ? value.agreement_value : false;
   },
 };
@@ -67,9 +54,9 @@ const actions = {
     commit("setExtendedUserProfileValues", { extendedUserProfileValues });
   },
   async saveExtendedUserProfileValues({ state, commit }) {
-    const extendedUserProfileValues = await services.ExtendedUserProfileValueService.saveAll(
-      { data: state.extendedUserProfileValues }
-    );
+    const extendedUserProfileValues = await services.ExtendedUserProfileValueService.saveAll({
+      data: state.extendedUserProfileValues,
+    });
     commit("updateExtendedUserProfileValues", { extendedUserProfileValues });
   },
 };
@@ -83,7 +70,7 @@ const mutations = {
   },
   setTextValue(state, { value, id }) {
     const profileValue = state.extendedUserProfileValues.find(
-      (v) => v.ext_user_profile_field === id
+      (v) => v.ext_user_profile_field === id,
     );
     if (profileValue) {
       profileValue.text_value = value;
@@ -97,7 +84,7 @@ const mutations = {
   },
   setSingleChoiceValue(state, { value, id }) {
     const profileValue = state.extendedUserProfileValues.find(
-      (v) => v.ext_user_profile_field === id
+      (v) => v.ext_user_profile_field === id,
     );
     if (profileValue) {
       profileValue.choices = [value];
@@ -112,7 +99,7 @@ const mutations = {
   },
   setSingleChoiceOther(state, { value, id }) {
     const profileValue = state.extendedUserProfileValues.find(
-      (v) => v.ext_user_profile_field === id
+      (v) => v.ext_user_profile_field === id,
     );
     if (profileValue) {
       profileValue.choices = [];
@@ -128,7 +115,7 @@ const mutations = {
   },
   setMultiChoiceValue(state, { value, id }) {
     const profileValue = state.extendedUserProfileValues.find(
-      (v) => v.ext_user_profile_field === id
+      (v) => v.ext_user_profile_field === id,
     );
     if (profileValue) {
       profileValue.choices = value;
@@ -142,7 +129,7 @@ const mutations = {
   },
   setMultiChoiceOther(state, { value, id }) {
     const profileValue = state.extendedUserProfileValues.find(
-      (v) => v.ext_user_profile_field === id
+      (v) => v.ext_user_profile_field === id,
     );
     if (profileValue) {
       profileValue.other_value = value;
@@ -157,7 +144,7 @@ const mutations = {
   },
   setUserAgreementValue(state, { value, id }) {
     const profileValue = state.extendedUserProfileValues.find(
-      (v) => v.ext_user_profile_field === id
+      (v) => v.ext_user_profile_field === id,
     );
     if (profileValue) {
       profileValue.agreement_value = value;
@@ -171,9 +158,7 @@ const mutations = {
   },
   updateExtendedUserProfileValue(state, { extendedUserProfileValue }) {
     const index = state.extendedUserProfileValues.findIndex(
-      (v) =>
-        v.ext_user_profile_field ===
-        extendedUserProfileValue.ext_user_profile_field
+      (v) => v.ext_user_profile_field === extendedUserProfileValue.ext_user_profile_field,
     );
     state.extendedUserProfileValues.splice(index, 1, extendedUserProfileValue);
   },

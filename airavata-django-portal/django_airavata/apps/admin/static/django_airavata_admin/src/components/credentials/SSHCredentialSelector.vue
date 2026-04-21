@@ -1,15 +1,8 @@
 <template>
   <div>
     <div class="input-group">
-      <select class="form-select"
-        v-model="data"
-        :disabled="readonly"
-      >
-        <option
-          v-if="nullOption"
-          :value="null"
-          :disabled="nullOptionDisabled"
-        >
+      <select v-model="data" class="form-select" :disabled="readonly">
+        <option v-if="nullOption" :value="null" :disabled="nullOptionDisabled">
           <template v-if="defaultCredentialSummary">
             Use the default SSH credential ({{
               createCredentialDescription(defaultCredentialSummary)
@@ -29,25 +22,22 @@
         type="button"
         class="btn btn-outline-secondary"
         :disabled="!copySSHPublicKeyText"
-        @click="copyPublicKey"
         title="Copy public key"
+        @click="copyPublicKey"
       >
         <i class="far fa-clipboard"></i>
       </button>
       <button
+        v-if="!readonly"
         type="button"
         class="btn btn-outline-secondary"
-        v-if="!readonly"
-        @click="showNewSSHCredentialModal"
         title="Create new SSH credential"
+        @click="showNewSSHCredentialModal"
       >
         <i class="fa fa-plus"></i>
       </button>
     </div>
-    <new-ssh-credential-modal
-      ref="newSSHCredentialModal"
-      @new="createSSHCredential"
-    />
+    <new-ssh-credential-modal ref="newSSHCredentialModal" @new="createSSHCredential" />
   </div>
 </template>
 
@@ -60,7 +50,11 @@ export default {
   // TODO: disable if the 'value' is not in the list of loaded credentials?
   // Because it would mean that the user doesn't have access to this credential.
   // Maybe display 'You don't have access to this credential'.
-  name: "ssh-credential-selector",
+  name: "SshCredentialSelector",
+  components: {
+    "new-ssh-credential-modal": NewSSHCredentialModal,
+  },
+  mixins: [mixins.VModelMixin],
   props: {
     nullOption: {
       type: Boolean,
@@ -79,10 +73,6 @@ export default {
       default: false,
     },
   },
-  mixins: [mixins.VModelMixin],
-  components: {
-    "new-ssh-credential-modal": NewSSHCredentialModal,
-  },
   data() {
     return {
       credentials: null,
@@ -98,30 +88,31 @@ export default {
             };
           })
         : [];
-      options.sort((a, b) =>
-        a.text.toLowerCase().localeCompare(b.text.toLowerCase())
-      );
+      options.sort((a, b) => a.text.toLowerCase().localeCompare(b.text.toLowerCase()));
       return options;
     },
     selectedCredential() {
-      return this.credentials
-        ? this.credentials.find((cred) => cred.token === this.data)
-        : null;
+      return this.credentials ? this.credentials.find((cred) => cred.token === this.data) : null;
     },
     defaultCredentialSummary() {
       return this.nullOptionDefaultCredentialToken && this.credentials
-        ? this.credentials.find(
-            (cred) => cred.token === this.nullOptionDefaultCredentialToken
-          )
+        ? this.credentials.find((cred) => cred.token === this.nullOptionDefaultCredentialToken)
         : null;
     },
     copySSHPublicKeyText() {
       return this.selectedCredential
         ? this.selectedCredential.public_key.trim()
         : this.defaultCredentialSummary
-        ? this.defaultCredentialSummary.public_key.trim()
-        : null;
+          ? this.defaultCredentialSummary.public_key.trim()
+          : null;
     },
+  },
+  created() {
+    if (!this.credentials) {
+      services.CredentialSummaryService.allSSHCredentials().then(
+        (creds) => (this.credentials = creds),
+      );
+    }
   },
   methods: {
     showNewSSHCredentialModal() {
@@ -142,29 +133,18 @@ export default {
       }
     },
     createSSHCredential(data) {
-      services.CredentialSummaryService.createSSH({ data: data }).then(
-        (cred) => {
-          this.credentials.push(cred);
-          this.data = cred.token;
-        }
-      );
+      services.CredentialSummaryService.createSSH({ data: data }).then((cred) => {
+        this.credentials.push(cred);
+        this.data = cred.token;
+      });
     },
     createCredentialDescription(summary) {
       return (
         summary.username +
         " - " +
-        (summary.description
-          ? summary.description
-          : `No description (${summary.token})`)
+        (summary.description ? summary.description : `No description (${summary.token})`)
       );
     },
-  },
-  created() {
-    if (!this.credentials) {
-      services.CredentialSummaryService.allSSHCredentials().then(
-        (creds) => (this.credentials = creds)
-      );
-    }
   },
 };
 </script>

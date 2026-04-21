@@ -1,10 +1,7 @@
 <template>
   <div class="has-fixed-footer">
     <unsaved-changes-guard :dirty="isDirty" />
-    <confirmation-dialog
-      ref="unsavedChangesDialog"
-      title="You have unsaved changes"
-    >
+    <confirmation-dialog ref="unsavedChangesDialog" title="You have unsaved changes">
       You have unsaved changes. Are you sure you want to leave this page?
     </confirmation-dialog>
     <div class="row">
@@ -16,49 +13,61 @@
     </div>
     <div class="row">
       <div class="col">
-        <ul class="nav mb-3" tabs >
-          <li class="nav-item"><a class="nav-link active"
-            :to="{
-              name: id ? 'application_module' : 'new_application_module',
-              params: { id: id },
-            }"
-            >Details</a></li>
-          <li class="nav-item"><a class="nav-link active"
-            :to="{ name: 'application_interface', params: { id: id } }"
-            :disabled="!id"
-            >Interface</a></li>
-          <li class="nav-item"><a class="nav-link active"
-            :to="{ name: 'application_deployments', params: { id: id } }"
-            :disabled="!id"
-            >Deployments</a></li>
+        <ul class="nav mb-3" tabs>
+          <li class="nav-item">
+            <a
+              class="nav-link active"
+              :to="{
+                name: id ? 'application_module' : 'new_application_module',
+                params: { id: id },
+              }"
+              >Details</a
+            >
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link active"
+              :to="{ name: 'application_interface', params: { id: id } }"
+              :disabled="!id"
+              >Interface</a
+            >
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link active"
+              :to="{ name: 'application_deployments', params: { id: id } }"
+              :disabled="!id"
+              >Deployments</a
+            >
+          </li>
         </ul>
         <router-view
-          name="module"
           v-if="appModule"
           v-model="appModule"
-          @input="appModuleIsDirty = true"
+          name="module"
           :readonly="!appModule.user_has_write_access"
           :validation-errors="appModuleValidationErrors"
+          @input="appModuleIsDirty = true"
         />
         <router-view
-          name="interface"
           v-if="appInterface"
           v-model="appInterface"
-          @input="appInterfaceIsDirty = true"
+          name="interface"
           :readonly="!appInterface.user_has_write_access"
+          @input="appInterfaceIsDirty = true"
         />
         <router-view
-          name="deployments"
           v-if="appModule && appDeployments"
+          name="deployments"
           :deployments="appDeployments"
+          :readonly="!appModule.user_has_write_access"
           @new="createNewDeployment"
           @delete="deleteApplicationDeployment"
-          :readonly="!appModule.user_has_write_access"
         />
         <router-view
-          name="deployment"
           v-if="currentDeployment && currentDeploymentSharedEntity"
           v-model="currentDeployment"
+          name="deployment"
           :shared-entity="currentDeploymentSharedEntity"
           @sharing-changed="deploymentSharingChanged"
           @input="currentDeploymentChanged"
@@ -66,15 +75,16 @@
       </div>
     </div>
     <div class="fixed-footer">
-      <button class="btn btn-primary btn-sm editor-button"
-        @click="saveAll"
+      <button
+        class="btn btn-primary btn-sm editor-button"
         :disabled="readonly || !isDirty"
+        @click="saveAll"
       >
         Save
       </button>
       <delete-button
-        class="editor-button"
         v-if="id"
+        class="editor-button"
         :disabled="readonly"
         @delete="deleteApplication"
       >
@@ -82,33 +92,34 @@
         <strong>{{ appModule ? appModule.app_module_name : "" }}</strong>
         application?
       </delete-button>
-      <button class="btn btn-secondary btn-sm editor-button" @click="cancel">
-        Cancel
-      </button>
+      <button class="btn btn-secondary btn-sm editor-button" @click="cancel">Cancel</button>
     </div>
   </div>
 </template>
 
 <script>
-import {
-  errors,
-  models,
-  services,
-  utils as apiUtils,
-} from "django-airavata-api";
+import { errors, models, services, utils as apiUtils } from "django-airavata-api";
 import { components, notifications } from "django-airavata-common-ui";
 
 export default {
-  name: "application-editor-container",
-  props: {
-    id: String,
-    deploymentId: String,
-    hostId: String,
-  },
+  name: "ApplicationEditorContainer",
   components: {
     "unsaved-changes-guard": components.UnsavedChangesGuard,
     "confirmation-dialog": components.ConfirmationDialog,
     "delete-button": components.DeleteButton,
+  },
+  beforeRouteLeave(to, from, next) {
+    if (this.isDirty) {
+      this.$refs.unsavedChangesDialog.show();
+      this.$refs.unsavedChangesDialog.$on("ok", next);
+    } else {
+      next();
+    }
+  },
+  props: {
+    id: String,
+    deploymentId: String,
+    hostId: String,
   },
   data: function () {
     return {
@@ -148,6 +159,14 @@ export default {
       return this.appModule && !this.appModule.user_has_write_access;
     },
   },
+  watch: {
+    $route: function (to, from) {
+      if (to.params.id !== from.params.id) {
+        this.initialize();
+      }
+      this.initializeDeploymentEditing();
+    },
+  },
   created() {
     this.initialize();
   },
@@ -173,17 +192,13 @@ export default {
       }
     },
     startEditingExistingDeployment(deploymentId) {
-      this.setCurrentDeploymentFromAppDeploymentId(
-        deploymentId
-      ).then((appDeployment) =>
-        this.setCurrentApplicationDeploymentSharedEntity(appDeployment)
+      this.setCurrentDeploymentFromAppDeploymentId(deploymentId).then((appDeployment) =>
+        this.setCurrentApplicationDeploymentSharedEntity(appDeployment),
       );
     },
     startEditingNewDeployment(computeHostId) {
-      this.setCurrentDeploymentFromComputeHostId(
-        computeHostId
-      ).then((appDeployment) =>
-        this.setCurrentApplicationDeploymentSharedEntity(appDeployment)
+      this.setCurrentDeploymentFromComputeHostId(computeHostId).then((appDeployment) =>
+        this.setCurrentApplicationDeploymentSharedEntity(appDeployment),
       );
     },
     loadApplicationModule(appModuleId) {
@@ -195,10 +210,7 @@ export default {
       });
     },
     createApplicationModule(appModule) {
-      return services.ApplicationModuleService.create(
-        { data: appModule },
-        { ignoreErrors: true }
-      );
+      return services.ApplicationModuleService.create({ data: appModule }, { ignoreErrors: true });
     },
     updateApplicationModule(appModule) {
       return services.ApplicationModuleService.update(
@@ -206,13 +218,12 @@ export default {
           lookup: appModule.app_module_id,
           data: appModule,
         },
-        { ignoreErrors: true }
+        { ignoreErrors: true },
       );
     },
     saveApplicationModule(appModule) {
-      return (this.id
-        ? this.updateApplicationModule(appModule)
-        : this.createApplicationModule(appModule)
+      return (
+        this.id ? this.updateApplicationModule(appModule) : this.createApplicationModule(appModule)
       )
         .then((appModule) => {
           this.appModuleValidationErrors = null;
@@ -244,7 +255,7 @@ export default {
     loadApplicationInterface(appModuleId) {
       return services.ApplicationModuleService.getApplicationInterface(
         { lookup: appModuleId },
-        { ignoreErrors: true }
+        { ignoreErrors: true },
       )
         .then((appInterface) => {
           this.appInterfaceIsDirty = false;
@@ -355,7 +366,7 @@ export default {
         });
       } else {
         const depIndex = this.appDeployments.findIndex(
-          (dep) => dep.compute_host_id === appDeployment.compute_host_id
+          (dep) => dep.compute_host_id === appDeployment.compute_host_id,
         );
         this.appDeployments.splice(depIndex, 1);
         this.removeDirtyAppDeploymentComputeHostId(appDeployment);
@@ -368,22 +379,18 @@ export default {
     },
     replaceAppDeployment(appDeployment) {
       const depIndex = this.appDeployments.findIndex(
-        (dep) => dep.compute_host_id === appDeployment.compute_host_id
+        (dep) => dep.compute_host_id === appDeployment.compute_host_id,
       );
       this.appDeployments.splice(depIndex, 1, appDeployment);
     },
     setApplicationDeploymentDirty(appDeployment) {
-      if (
-        !this.dirtyAppDeploymentComputeHostIds.includes(
-          appDeployment.compute_host_id
-        )
-      ) {
+      if (!this.dirtyAppDeploymentComputeHostIds.includes(appDeployment.compute_host_id)) {
         this.dirtyAppDeploymentComputeHostIds.push(appDeployment.compute_host_id);
       }
     },
     removeDirtyAppDeploymentComputeHostId(appDeployment) {
       const hostIdIndex = this.dirtyAppDeploymentComputeHostIds.indexOf(
-        appDeployment.compute_host_id
+        appDeployment.compute_host_id,
       );
       if (hostIdIndex >= 0) {
         this.dirtyAppDeploymentComputeHostIds.splice(hostIdIndex, 1);
@@ -399,45 +406,31 @@ export default {
       return services.SharedEntityService.retrieve({
         lookup: appDeployment.app_deployment_id,
       }).then((sharedEntity) => {
-        this.appDeploymentsSharedEntities[
-          appDeployment.compute_host_id
-        ] = sharedEntity;
+        this.appDeploymentsSharedEntities[appDeployment.compute_host_id] = sharedEntity;
         this.removeAppDeploymentSharedEntityDirty(sharedEntity, appDeployment);
         return sharedEntity;
       });
     },
     setCurrentApplicationDeploymentSharedEntity(appDeployment) {
       if (appDeployment.compute_host_id in this.appDeploymentsSharedEntities) {
-        this.currentDeploymentSharedEntity = this.appDeploymentsSharedEntities[
-          appDeployment.compute_host_id
-        ];
+        this.currentDeploymentSharedEntity =
+          this.appDeploymentsSharedEntities[appDeployment.compute_host_id];
         return Promise.resolve(this.currentDeploymentSharedEntity);
       } else if (appDeployment.app_deployment_id) {
         return this.loadApplicationDeploymentSharedEntity(appDeployment).then(
-          (sharedEntity) => (this.currentDeploymentSharedEntity = sharedEntity)
+          (sharedEntity) => (this.currentDeploymentSharedEntity = sharedEntity),
         );
       } else {
-        throw new Error(
-          "Could not find shared entity in local map and cannot fetch"
-        );
+        throw new Error("Could not find shared entity in local map and cannot fetch");
       }
     },
     deploymentSharingChanged(deploymentSharedEntity, appDeployment, dirty) {
       this.currentDeploymentSharedEntity = deploymentSharedEntity;
-      this.replaceAppDeploymentSharedEntity(
-        deploymentSharedEntity,
-        appDeployment
-      );
+      this.replaceAppDeploymentSharedEntity(deploymentSharedEntity, appDeployment);
       if (dirty) {
-        this.setApplicationDeploymentSharedEntityDirty(
-          deploymentSharedEntity,
-          appDeployment
-        );
+        this.setApplicationDeploymentSharedEntityDirty(deploymentSharedEntity, appDeployment);
       } else {
-        this.removeAppDeploymentSharedEntityDirty(
-          deploymentSharedEntity,
-          appDeployment
-        );
+        this.removeAppDeploymentSharedEntityDirty(deploymentSharedEntity, appDeployment);
       }
     },
     mergeSharedEntity(sharedEntity, appDeployment) {
@@ -467,45 +460,34 @@ export default {
     },
     setApplicationDeploymentSharedEntityDirty(sharedEntity, appDeployment) {
       if (
-        !this.dirtyAppDeploymentSharedEntityComputeHostIds.includes(
-          appDeployment.compute_host_id
-        )
+        !this.dirtyAppDeploymentSharedEntityComputeHostIds.includes(appDeployment.compute_host_id)
       ) {
-        this.dirtyAppDeploymentSharedEntityComputeHostIds.push(
-          appDeployment.compute_host_id
-        );
+        this.dirtyAppDeploymentSharedEntityComputeHostIds.push(appDeployment.compute_host_id);
       }
     },
     removeAppDeploymentSharedEntityDirty(sharedEntity, appDeployment) {
       const hostIdIndex = this.dirtyAppDeploymentSharedEntityComputeHostIds.indexOf(
-        appDeployment.compute_host_id
+        appDeployment.compute_host_id,
       );
       if (hostIdIndex >= 0) {
-        this.dirtyAppDeploymentSharedEntityComputeHostIds.splice(
-          hostIdIndex,
-          1
-        );
+        this.dirtyAppDeploymentSharedEntityComputeHostIds.splice(hostIdIndex, 1);
       }
     },
     replaceAppDeploymentSharedEntity(sharedEntity, appDeployment) {
-      this.appDeploymentsSharedEntities[
-        appDeployment.compute_host_id
-      ] = sharedEntity;
+      this.appDeploymentsSharedEntities[appDeployment.compute_host_id] = sharedEntity;
     },
     setCurrentDeploymentFromAppDeploymentId(appDeploymentId) {
       this.currentDeployment = this.appDeployments.find(
-        (dep) => dep.app_deployment_id === appDeploymentId
+        (dep) => dep.app_deployment_id === appDeploymentId,
       );
       if (!this.currentDeployment) {
-        throw new Error(
-          "Unable to find deployment from appDeploymentId=" + appDeploymentId
-        );
+        throw new Error("Unable to find deployment from appDeploymentId=" + appDeploymentId);
       }
       return Promise.resolve(this.currentDeployment);
     },
     setCurrentDeploymentFromComputeHostId(computeHostId) {
       this.currentDeployment = this.appDeployments.find(
-        (dep) => dep.compute_host_id === computeHostId
+        (dep) => dep.compute_host_id === computeHostId,
       );
       if (!this.currentDeployment) {
         // Create a new deployment
@@ -517,9 +499,7 @@ export default {
         this.currentDeployment = deployment;
         this.appDeployments.push(deployment);
         this.setApplicationDeploymentDirty(deployment);
-        this.appDeploymentsSharedEntities[
-          computeHostId
-        ] = new models.SharedEntity();
+        this.appDeploymentsSharedEntities[computeHostId] = new models.SharedEntity();
       }
       return Promise.resolve(this.currentDeployment);
     },
@@ -544,73 +524,65 @@ export default {
               // Cancel the chain of promises
               return Promise.reject(error);
             })
-          : Promise.resolve(this.appInterface)
+          : Promise.resolve(this.appInterface),
       );
       interfaceSave
         .then(() => {
           return Promise.all(
             this.dirtyAppDeploymentComputeHostIds.map((computeHostId) => {
               const deployment = this.appDeployments.find(
-                (dep) => dep.compute_host_id === computeHostId
+                (dep) => dep.compute_host_id === computeHostId,
               );
-              return this.saveApplicationDeployment(deployment).catch(
-                (error) => {
-                  // Navigate to the route that has the error
-                  if (deployment.app_deployment_id) {
-                    this.$router.push({
-                      name: "application_deployment",
-                      params: {
-                        id: this.id,
-                        deploymentId: deployment.app_deployment_id,
-                      },
-                    });
-                  } else {
-                    this.$router.push({
-                      name: "new_application_deployment",
-                      params: { id: this.id, hostId: deployment.compute_host_id },
-                    });
-                  }
-                  return Promise.reject(error);
+              return this.saveApplicationDeployment(deployment).catch((error) => {
+                // Navigate to the route that has the error
+                if (deployment.app_deployment_id) {
+                  this.$router.push({
+                    name: "application_deployment",
+                    params: {
+                      id: this.id,
+                      deploymentId: deployment.app_deployment_id,
+                    },
+                  });
+                } else {
+                  this.$router.push({
+                    name: "new_application_deployment",
+                    params: { id: this.id, hostId: deployment.compute_host_id },
+                  });
                 }
-              );
-            })
+                return Promise.reject(error);
+              });
+            }),
           );
         })
         .then(() => {
           return Promise.all(
-            this.dirtyAppDeploymentSharedEntityComputeHostIds.map(
-              (computeHostId) => {
-                const sharedEntity = this.appDeploymentsSharedEntities[
-                  computeHostId
-                ];
-                const deployment = this.appDeployments.find(
-                  (dep) => dep.compute_host_id === computeHostId
-                );
-                return this.saveSharedEntity(sharedEntity, deployment).catch(
-                  (error) => {
-                    // Navigate to the route that has the error
-                    if (deployment.app_deployment_id) {
-                      this.$router.push({
-                        name: "application_deployment",
-                        params: {
-                          id: this.id,
-                          deploymentId: deployment.app_deployment_id,
-                        },
-                      });
-                    } else {
-                      this.$router.push({
-                        name: "new_application_deployment",
-                        params: {
-                          id: this.id,
-                          hostId: deployment.compute_host_id,
-                        },
-                      });
-                    }
-                    return Promise.reject(error);
-                  }
-                );
-              }
-            )
+            this.dirtyAppDeploymentSharedEntityComputeHostIds.map((computeHostId) => {
+              const sharedEntity = this.appDeploymentsSharedEntities[computeHostId];
+              const deployment = this.appDeployments.find(
+                (dep) => dep.compute_host_id === computeHostId,
+              );
+              return this.saveSharedEntity(sharedEntity, deployment).catch((error) => {
+                // Navigate to the route that has the error
+                if (deployment.app_deployment_id) {
+                  this.$router.push({
+                    name: "application_deployment",
+                    params: {
+                      id: this.id,
+                      deploymentId: deployment.app_deployment_id,
+                    },
+                  });
+                } else {
+                  this.$router.push({
+                    name: "new_application_deployment",
+                    params: {
+                      id: this.id,
+                      hostId: deployment.compute_host_id,
+                    },
+                  });
+                }
+                return Promise.reject(error);
+              });
+            }),
           );
         })
         .then(() => {
@@ -619,7 +591,7 @@ export default {
               type: "SUCCESS",
               message: "Application saved successfully",
               duration: 5,
-            })
+            }),
           );
           if (!this.id && this.appModule.app_module_id) {
             // if we just create a new module, navigate to app module route now
@@ -647,7 +619,7 @@ export default {
     },
     deleteApplication() {
       const deleteAllDeployments = this.appDeployments.map((dep) =>
-        this.deleteApplicationDeployment(dep)
+        this.deleteApplicationDeployment(dep),
       );
       return Promise.all(deleteAllDeployments)
         .then(() => this.deleteApplicationInterface(this.appInterface))
@@ -656,22 +628,6 @@ export default {
           this.$router.push({ path: "/applications" });
         });
     },
-  },
-  watch: {
-    $route: function (to, from) {
-      if (to.params.id !== from.params.id) {
-        this.initialize();
-      }
-      this.initializeDeploymentEditing();
-    },
-  },
-  beforeRouteLeave(to, from, next) {
-    if (this.isDirty) {
-      this.$refs.unsavedChangesDialog.show();
-      this.$refs.unsavedChangesDialog.$on("ok", next);
-    } else {
-      next();
-    }
   },
 };
 </script>

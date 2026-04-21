@@ -37,14 +37,14 @@ export default class SharedEntity extends BaseModel {
     }
     if (
       !this.user_permissions.find(
-        (up) => up.user.airavata_internal_user_id === user.airavata_internal_user_id
+        (up) => up.user.airavata_internal_user_id === user.airavata_internal_user_id,
       )
     ) {
       this.user_permissions.push(
         new UserPermission({
           user: user,
           permission_type: ResourcePermissionType.READ,
-        })
+        }),
       );
     }
   }
@@ -52,8 +52,7 @@ export default class SharedEntity extends BaseModel {
   removeUser(user) {
     this.user_permissions = this.user_permissions.filter(
       (userPermission) =>
-        userPermission.user.airavata_internal_user_id !==
-        user.airavata_internal_user_id
+        userPermission.user.airavata_internal_user_id !== user.airavata_internal_user_id,
     );
   }
 
@@ -66,21 +65,21 @@ export default class SharedEntity extends BaseModel {
         new GroupPermission({
           group: group,
           permission_type: permissionType,
-        })
+        }),
       );
     }
   }
 
   removeGroup(group) {
     this.group_permissions = this.group_permissions.filter(
-      (groupPermission) => groupPermission.group.id !== group.id
+      (groupPermission) => groupPermission.group.id !== group.id,
     );
   }
 
   get nonAdminGroupPermissions() {
     if (this.group_permissions) {
       return this.group_permissions.filter(
-        (groupPermission) => !groupPermission.group.isAdminGroup
+        (groupPermission) => !groupPermission.group.isAdminGroup,
       );
     } else {
       return [];
