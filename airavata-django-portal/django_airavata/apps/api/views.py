@@ -5,6 +5,8 @@ import json
 import logging
 import os
 import warnings
+
+import requests
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -1155,21 +1157,112 @@ class UserProfileViewSet(viewsets.ViewSet):
 
 
 class ProjectResourceProfileViewSet(viewsets.ViewSet):
-    """Stub endpoint kept for legacy Vue callers (experiment editor, etc.).
+    """Legacy-shaped endpoint for the experiment editor's allocation dropdown.
 
-    The flat GroupResourceProfile API was replaced by the per-project
-    resource profile on ``ProjectViewSet.resource_profile``. This viewset
-    returns an empty list so legacy JS clients degrade gracefully; detail
-    operations 404.
+    Under the post-M21 layout there's no dedicated `PROJECT_RESOURCE_PROFILE`
+    entity — a "project resource profile" is a COMPUTE_RESOURCE_PROFILE row
+    bundle hanging off a project. The airavata server's
+    `GetGroupResourceList` RPC already returns this shape, exposed over REST
+    at `/api/v1/project-profiles`. The Python SDK doesn't wrap it yet, so we
+    call the HTTP transcoded endpoint directly.
     """
 
     lookup_field = "project_resource_profile_id"
 
+    def _api_base(self) -> str:
+        host = settings.AIRAVATA_API_HOST
+        port = settings.AIRAVATA_API_PORT
+        scheme = "https" if getattr(settings, "AIRAVATA_API_SECURE", False) else "http"
+        return f"{scheme}://{host}:{port}"
+
+    def _call_server(self, request: Request, path: str) -> Any:
+        import base64
+
+        access_token = request.session.get("ACCESS_TOKEN", "")
+        if not access_token:
+            return None
+        # Mirror AiravataClient's x-claims metadata: re-parse groups/realm_access
+        # out of the JWT payload without validating (server validates).
+        claims: dict[str, str] = {
+            "gatewayID": settings.GATEWAY_ID,
+            "userName": request.user.username,
+        }
+        try:
+            payload_b64 = access_token.split(".")[1]
+            payload_b64 += "=" * (-len(payload_b64) % 4)
+            decoded = json.loads(base64.urlsafe_b64decode(payload_b64).decode())
+            if "realm_access" in decoded:
+                claims["realm_access"] = json.dumps(decoded["realm_access"])
+            if "groups" in decoded:
+                claims["groups"] = json.dumps(decoded["groups"])
+        except Exception:
+            pass
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "x-claims": json.dumps(claims),
+            "Accept": "application/json",
+        }
+        try:
+            r = requests.get(f"{self._api_base()}{path}", headers=headers, timeout=10)
+            if r.status_code >= 300:
+                log.warning(f"PRP REST call to {path} returned {r.status_code}: {r.text[:200]}")
+                return None
+            return r.json()
+        except Exception as e:
+            log.warning(f"PRP REST call to {path} failed: {e}")
+            return None
+
     def list(self, request: Request) -> Response:
-        return Response([])
+        data = self._call_server(request, f"/api/v1/project-profiles?gateway_id={settings.GATEWAY_ID}")
+        if not data:
+            return Response([])
+        profiles = data.get("project_resource_profiles") or data.get("projectResourceProfiles") or []
+        # Armeria's HTTP/JSON transcoding emits camelCase by default; legacy Vue
+        # callers expect snake_case. Convert top-level fields the dropdowns care
+        # about.
+        out = []
+        for p in profiles:
+            prefs = p.get("compute_preferences") or p.get("computePreferences") or []
+            if not prefs:
+                continue
+            prp_id = p.get("project_resource_profile_id") or p.get("projectResourceProfileId")
+            prp_name = p.get("project_resource_profile_name") or p.get("projectResourceProfileName")
+            out.append({
+                "project_resource_profile_id": prp_id,
+                "project_resource_profile_name": prp_name,
+                # The legacy Vue selector reads `group_resource_profile_*` — keep
+                # both aliases so the legacy web component still works after the
+                # group→project rename.
+                "group_resource_profile_id": prp_id,
+                "group_resource_profile_name": prp_name,
+                "project_id": p.get("project_id") or p.get("projectId"),
+                "gateway_id": p.get("gateway_id") or p.get("gatewayId"),
+                "compute_preferences": [
+                    {
+                        "compute_resource_id":
+                            c.get("compute_resource_id") or c.get("computeResourceId"),
+                        "project_resource_profile_id":
+                            c.get("project_resource_profile_id") or c.get("projectResourceProfileId"),
+                        "login_user_name":
+                            c.get("login_user_name") or c.get("loginUserName"),
+                        "resource_specific_credential_store_token":
+                            c.get("resource_specific_credential_store_token")
+                            or c.get("resourceSpecificCredentialStoreToken"),
+                    }
+                    for c in prefs
+                ],
+            })
+        return Response(out)
 
     def retrieve(self, request: Request, project_resource_profile_id: str | None = None) -> Response:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        if not project_resource_profile_id:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        data = self._call_server(
+            request, f"/api/v1/project-profiles/{project_resource_profile_id}"
+        )
+        if not data:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(data)
 
 
 class SharedEntityViewSet(viewsets.ViewSet):
