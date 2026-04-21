@@ -23,7 +23,12 @@ local_resource(
         # so we use that as the idempotency signal: skip the load if an Airavata-branded
         # Site already exists.
         '(uv run manage.py shell -c "from wagtail.models import Site; import sys; sys.exit(0 if Site.objects.filter(site_name=\\"Airavata Portal\\").exists() else 1)" || uv run manage.py load_cms_data new_default_theme)',
-        'uv run manage.py runserver 0.0.0.0:8000',
+        # uvicorn on ASGI instead of Django's threaded WSGI runserver. Async
+        # views (SSE, SSH proxy) run natively instead of through async_to_sync,
+        # and the connection handling no longer bottlenecks on one thread per
+        # request. --reload watches .py files; static files still need a
+        # manual `manage.py collectstatic` or django-vite hot reload.
+        'uv run uvicorn django_airavata.asgi:application --host 0.0.0.0 --port 8000 --reload',
     ]),
     deps=['django_airavata/'],
     ignore=[
