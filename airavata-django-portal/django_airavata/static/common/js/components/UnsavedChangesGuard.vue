@@ -14,7 +14,11 @@ export default {
   mounted() {
     window.addEventListener("beforeunload", this.onBeforeUnload);
   },
-  destroyed() {
+  // Vue 3 lifecycle: the Vue 2 `destroyed()` hook was renamed to
+  // `unmounted()`. Without this rename the listener leaks and every past
+  // editor instance with dirty=true keeps blocking navigation after the
+  // user has moved on.
+  unmounted() {
     window.removeEventListener("beforeunload", this.onBeforeUnload);
   },
   methods: {

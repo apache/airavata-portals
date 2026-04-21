@@ -46,7 +46,7 @@ export default {
       this.initUppy();
     });
   },
-  destroyed() {
+  unmounted() {
     if (this.uppy) {
       this.uppy.close();
     }

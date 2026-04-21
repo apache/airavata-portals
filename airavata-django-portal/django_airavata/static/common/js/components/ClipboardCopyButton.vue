@@ -42,7 +42,7 @@ export default {
     let clipboard = new ClipboardJS(this.$refs.copyButton);
     clipboard.on("success", this.onCopySuccess);
   },
-  beforeDestroy() {
+  beforeUnmount() {
     let clipboard = new ClipboardJS(this.$refs.copyButton);
     clipboard.destroy();
   },

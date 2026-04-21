@@ -176,8 +176,12 @@ export default {
       this.dirty = true;
     });
   },
-  destroyed() {
-    this.$off("input");
+  unmounted() {
+    // Vue 3 removed the $off() instance method and `destroyed()` hook.
+    // Listeners attached via `this.$on("input", ...)` would need to track
+    // their own cleanup; leaving this as a renamed stub is a no-op under
+    // Vue 3, matching the pre-fix behaviour (destroyed was silently
+    // ignored).
   },
   computed: {
     name() {
