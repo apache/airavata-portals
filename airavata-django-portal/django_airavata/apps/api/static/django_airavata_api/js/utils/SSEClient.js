@@ -1,35 +1,81 @@
 /**
  * SSE Client — singleton EventSource wrapper with typed event dispatch.
  *
+ * Prefers a SharedWorker-backed EventSource so that every page in the tab
+ * group shares a single upstream connection, instead of each page opening
+ * its own. Falls back to a direct EventSource if SharedWorker is
+ * unavailable (very old browsers, some embedded contexts).
+ *
  * Usage:
  *   import SSEClient from "./utils/SSEClient";
- *   SSEClient.connect();
  *   SSEClient.on("ssh_prompt", (event) => { ... });
  *   SSEClient.off("ssh_prompt", handler);
+ *
+ * `SSEClient.connect()` is kept as a no-op-safe entry point for legacy
+ * callers; the stream is actually opened lazily the first time a
+ * listener is registered.
  */
+
+// Django AppDirectoriesFinder serves per-app static files at
+// `/static/<app_label>/…` — the worker source sits under
+// django_airavata/apps/api/static/django_airavata_api/js/utils/.
+const WORKER_URL = "/static/django_airavata_api/js/utils/sseSharedWorker.js";
 
 class _SSEClient {
   constructor() {
     this._listeners = {};
-    this._source = null;
+    this._connected = false;
+    this._worker = null;
+    this._workerPort = null;
+    this._source = null; // fallback direct EventSource
     this._retryDelay = 1000;
     this._maxRetryDelay = 30000;
-    this._connected = false;
+    this._opened = false;
+
+    // Best-effort cleanup so the SharedWorker can close the upstream
+    // connection when the last page unloads.
+    if (typeof window !== "undefined") {
+      window.addEventListener("pagehide", () => this._disconnectWorker());
+    }
   }
 
   connect() {
-    if (this._source) return;
-    // Lazy connect: skip opening an EventSource on pages where nothing
-    // listens for real-time events. Every open EventSource counts against
-    // the browser's 6-concurrent-connections-per-origin HTTP/1 limit, and
-    // under rapid navbar clicking the accumulating stale connections (the
-    // previous page's EventSource doesn't always tear down in time) push
-    // later navigations past the limit — the next request queues until one
-    // frees up, which looks like the portal being "stuck".
-    if (!this._hasListeners()) {
-      return;
-    }
+    // Lazy: only open upstream when someone's actually listening. Rapid
+    // navbar navigation otherwise piles up stale EventSources against the
+    // browser's 6-concurrent-per-origin HTTP/1 connection limit.
+    if (this._opened) return;
+    if (!this._hasListeners()) return;
+    this._opened = true;
 
+    if (this._tryWorker()) return;
+    this._tryDirect();
+  }
+
+  _tryWorker() {
+    if (typeof SharedWorker === "undefined") return false;
+    try {
+      this._worker = new SharedWorker(WORKER_URL, { name: "airavata-sse" });
+    } catch (e) {
+      // Some sandboxed contexts throw; fall back to a direct EventSource.
+      this._worker = null;
+      return false;
+    }
+    this._workerPort = this._worker.port;
+    this._workerPort.onmessage = (msg) => {
+      const data = msg.data || {};
+      if (data.kind === "event" && data.event) {
+        this._dispatch(data.event.type, data.event);
+      } else if (data.kind === "status") {
+        this._connected = !!data.connected;
+      }
+    };
+    this._workerPort.start();
+    this._workerPort.postMessage({ type: "ensure" });
+    this._connected = true;
+    return true;
+  }
+
+  _tryDirect() {
     this._source = new EventSource("/api/events/");
     this._retryDelay = 1000;
 
@@ -49,27 +95,31 @@ class _SSEClient {
 
     this._source.onerror = () => {
       this._connected = false;
-      this._source.close();
+      try { this._source.close(); } catch {}
       this._source = null;
-      // Reconnect with exponential backoff, but only if someone's still
-      // listening — avoids silent retry storms on pages that no longer need
-      // the stream.
       setTimeout(() => {
-        if (this._hasListeners()) this.connect();
+        if (this._hasListeners()) this._tryDirect();
       }, this._retryDelay);
       this._retryDelay = Math.min(this._retryDelay * 2, this._maxRetryDelay);
     };
   }
 
-  _hasListeners() {
-    return Object.values(this._listeners).some((arr) => arr && arr.length > 0);
+  _disconnectWorker() {
+    if (this._workerPort) {
+      try { this._workerPort.postMessage({ type: "disconnect" }); } catch {}
+      try { this._workerPort.close(); } catch {}
+      this._workerPort = null;
+    }
+    this._worker = null;
   }
 
   disconnect() {
+    this._opened = false;
+    this._connected = false;
+    this._disconnectWorker();
     if (this._source) {
-      this._source.close();
+      try { this._source.close(); } catch {}
       this._source = null;
-      this._connected = false;
     }
   }
 
@@ -78,16 +128,16 @@ class _SSEClient {
       this._listeners[type] = [];
     }
     this._listeners[type].push(callback);
-    // A late listener registration after connect() was already a no-op
-    // should still open the stream now that someone's interested.
-    if (!this._source) {
-      this.connect();
-    }
+    if (!this._opened) this.connect();
   }
 
   off(type, callback) {
     if (!this._listeners[type]) return;
     this._listeners[type] = this._listeners[type].filter((cb) => cb !== callback);
+  }
+
+  _hasListeners() {
+    return Object.values(this._listeners).some((arr) => arr && arr.length > 0);
   }
 
   _dispatch(type, event) {
