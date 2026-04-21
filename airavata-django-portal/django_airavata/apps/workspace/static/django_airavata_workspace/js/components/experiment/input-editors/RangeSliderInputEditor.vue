@@ -1,7 +1,6 @@
 <template>
   <vue-slider
     v-model="sliderValues"
-    @change="onChange"
     :state="componentValidState"
     :disabled="readOnly"
     :min="sliderMin"
@@ -10,6 +9,7 @@
     tooltip="always"
     :tooltip-formatter="tooltipFormatter"
     :enable-cross="false"
+    @change="onChange"
   />
 </template>
 
@@ -18,7 +18,10 @@ import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
 import VueSlider from "vue-slider-component";
 
 export default {
-  name: "range-slider-input-editor",
+  name: "RangeSliderInputEditor",
+  components: {
+    VueSlider,
+  },
   mixins: [InputEditorMixin],
   props: {
     value: {
@@ -41,46 +44,48 @@ export default {
     },
     delimiter: String,
   },
-  components: {
-    VueSlider,
-  },
   data() {
     return {
       sliderValues: null,
     };
-  },
-  created() {
-    this.initializeSliderValues();
   },
   computed: {
     sliderMin: function () {
       return typeof this.min !== "undefined"
         ? this.min
         : "min" in this.editorConfig
-        ? this.editorConfig.min
-        : 0;
+          ? this.editorConfig.min
+          : 0;
     },
     sliderMax: function () {
       return typeof this.max !== "undefined"
         ? this.max
         : "max" in this.editorConfig
-        ? this.editorConfig.max
-        : 100;
+          ? this.editorConfig.max
+          : 100;
     },
     sliderStep: function () {
       return typeof this.step !== "undefined"
         ? this.step
         : "step" in this.editorConfig
-        ? this.editorConfig.step
-        : 1;
+          ? this.editorConfig.step
+          : 1;
     },
     sliderDelimiter() {
       return this.delimiter
         ? this.delimiter
         : "delimiter" in this.editorConfig
-        ? this.editorConfig.delimiter
-        : "-";
+          ? this.editorConfig.delimiter
+          : "-";
     },
+  },
+  watch: {
+    data() {
+      this.initializeSliderValues();
+    },
+  },
+  created() {
+    this.initializeSliderValues();
   },
   methods: {
     initializeSliderValues() {
@@ -128,11 +133,6 @@ export default {
         }
       }
       return values.join(this.sliderDelimiter);
-    },
-  },
-  watch: {
-    data() {
-      this.initializeSliderValues();
     },
   },
 };

@@ -1,7 +1,8 @@
 <template>
   <div class="input-group">
-    <input class="form-control"
+    <input
       ref="textInput"
+      class="form-control"
       type="number"
       :value="value"
       :min="parameter.min"
@@ -11,16 +12,14 @@
       @keydown.enter="enterKeyPressed"
     />
     <span class="input-group-text">
-      <button class="btn btn-primary" :disabled="disabled" @click="submit"
-        >Submit</button
-      >
+      <button class="btn btn-primary" :disabled="disabled" @click="submit">Submit</button>
     </span>
   </div>
 </template>
 
 <script>
 export default {
-  name: "interactive-parameter-stepper-widget",
+  name: "InteractiveParameterStepperWidget",
   props: {
     value: {
       type: Number,

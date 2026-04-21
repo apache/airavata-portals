@@ -17,11 +17,7 @@
     "django-airavata-api": "^1.0.0-beta"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.0.0",
-    "eslint": "^8.0.0",
-    "eslint-plugin-vue": "^9.0.0",
-    "prettier": "^3.0.0",
-    "vite": "^6.0.0"
+    "@airavata/tooling": "*"
   },
   "browserslist": [
     "> 1%",

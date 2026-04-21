@@ -39,7 +39,7 @@ const FIELDS = [
   {
     name: "intermediate_output",
     type: IntermediateOutput,
-  }
+  },
 ];
 
 export default class OutputDataObjectType extends BaseModel {

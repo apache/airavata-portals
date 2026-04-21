@@ -1,5 +1,2 @@
-{% if not gateway_title %}
-    {{ default_title }}
-{% else %}
-    {{ gateway_title.title_text }}
-{% endif %}
+{% if not gateway_title %} {{ default_title }} {% else %} {{
+gateway_title.title_text }} {% endif %}

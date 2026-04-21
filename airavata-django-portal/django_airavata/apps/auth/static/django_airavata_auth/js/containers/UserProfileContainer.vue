@@ -1,40 +1,37 @@
 <template>
   <div>
     <h1 class="h4 mb-4">User Profile Editor</h1>
-    <div class="alert alert-danger" v-if="user && !user.username_valid">
+    <div v-if="user && !user.username_valid" class="alert alert-danger">
       <p>
-        Unfortunately the username on your profile is invalid, which prevents
-        creating or updating your user profile. The administrators have been
-        notified and will be able to update your user account with a valid
-        username. An administrator will notify you once your username has been
-        updated to a valid value.
+        Unfortunately the username on your profile is invalid, which prevents creating or updating
+        your user profile. The administrators have been notified and will be able to update your
+        user account with a valid username. An administrator will notify you once your username has
+        been updated to a valid value.
       </p>
-      <p>
-        In the meantime, please complete as much of your profile as possible.
-      </p>
+      <p>In the meantime, please complete as much of your profile as possible.</p>
     </div>
-    <div class="alert alert-info" v-else-if="mustComplete"
-      >Please complete your user profile before continuing.</div
-    >
-    <div class="card"><div class="card-body">
-      <user-profile-editor
-        ref="userProfileEditor"
-        @save="onSave"
-        @resend-email-verification="handleResendEmailVerification"
-      />
-      <!-- include extended-user-profile-editor if there are extendedUserProfileFields -->
-      <template v-if="hasExtendedUserProfileFields">
-        <hr />
-        <extended-user-profile-editor ref="extendedUserProfileEditor" />
-      </template>
+    <div v-else-if="mustComplete" class="alert alert-info">
+      Please complete your user profile before continuing.
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <user-profile-editor
+          ref="userProfileEditor"
+          @save="onSave"
+          @resend-email-verification="handleResendEmailVerification"
+        />
+        <!-- include extended-user-profile-editor if there are extendedUserProfileFields -->
+        <template v-if="hasExtendedUserProfileFields">
+          <hr />
+          <extended-user-profile-editor ref="extendedUserProfileEditor" />
+        </template>
 
-      <button class="btn btn-primary" @click="onSave">Save</button>
-      <button class="btn btn-success"
-        v-if="!mustComplete"
-        href="/workspace/applications"
-        >Go to Applications</button
-      >
-    </div></div>
+        <button class="btn btn-primary" @click="onSave">Save</button>
+        <button v-if="!mustComplete" class="btn btn-success" href="/workspace/applications">
+          Go to Applications
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -45,8 +42,13 @@ import { mapActions, mapGetters } from "vuex";
 import ExtendedUserProfileEditor from "../components/ExtendedUserProfileEditor.vue";
 
 export default {
+  name: "UserProfileContainer",
   components: { UserProfileEditor, ExtendedUserProfileEditor },
-  name: "user-profile-container",
+  data() {
+    return {
+      invalidForm: false,
+    };
+  },
   async created() {
     await this.loadCurrentUser();
     await this.loadExtendedUserProfileFields();
@@ -62,16 +64,11 @@ export default {
           type: "SUCCESS",
           message: "Email address verified and updated",
           duration: 5,
-        })
+        }),
       );
       // Update URL, removing the code from the query string
       window.history.replaceState({}, "", "/auth/user-profile/");
     }
-  },
-  data() {
-    return {
-      invalidForm: false,
-    };
   },
   computed: {
     ...mapGetters("userProfile", ["user"]),
@@ -80,9 +77,7 @@ export default {
       "hasExtendedUserProfileFields",
     ]),
     mustComplete() {
-      return (
-        this.user && (!this.user.complete || !this.user.ext_user_profile_valid)
-      );
+      return this.user && (!this.user.complete || !this.user.ext_user_profile_valid);
     },
   },
   methods: {
@@ -100,8 +95,7 @@ export default {
     async onSave() {
       if (
         this.$refs.userProfileEditor.valid &&
-        (!this.hasExtendedUserProfileFields ||
-          this.$refs.extendedUserProfileEditor.valid)
+        (!this.hasExtendedUserProfileFields || this.$refs.extendedUserProfileEditor.valid)
       ) {
         await this.updateUser();
         if (this.hasExtendedUserProfileFields) {
@@ -114,7 +108,7 @@ export default {
             type: "SUCCESS",
             message: "User profile saved",
             duration: 5,
-          })
+          }),
         );
       } else if (this.hasExtendedUserProfileFields) {
         this.$refs.extendedUserProfileEditor.touch();
@@ -127,7 +121,7 @@ export default {
           type: "SUCCESS",
           message: "Verification link sent",
           duration: 5,
-        })
+        }),
       );
     },
   },

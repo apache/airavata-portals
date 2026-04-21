@@ -3,12 +3,10 @@
     <div class="user-storage-file-edit-viewer-status">
       <div class="user-storage-file-edit-viewer-status-message"></div>
       <div class="user-storage-file-edit-viewer-status-actions">
-        <user-storage-download-button :data-product-uri="dataProductUri" :file-name="fileName"/>
+        <user-storage-download-button :data-product-uri="dataProductUri" :file-name="fileName" />
       </div>
     </div>
-    <div class="user-storage-file-edit-viewer-no-preview">
-      No preview available.
-    </div>
+    <div class="user-storage-file-edit-viewer-no-preview">No preview available.</div>
   </div>
 </template>
 
@@ -16,7 +14,10 @@
 import UserStorageDownloadButton from "./UserStorageDownloadButton";
 
 export default {
-  name: "user-storage-default-file-edit-viewer",
+  name: "UserStorageDefaultFileEditViewer",
+  components: {
+    UserStorageDownloadButton: UserStorageDownloadButton,
+  },
   props: {
     fileName: {
       required: true,
@@ -29,10 +30,7 @@ export default {
     },
     downloadUrl: {
       required: true,
-    }
-  },
-  components: {
-    UserStorageDownloadButton: UserStorageDownloadButton,
+    },
   },
 };
 </script>

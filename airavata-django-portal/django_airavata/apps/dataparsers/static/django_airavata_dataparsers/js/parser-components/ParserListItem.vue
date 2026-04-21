@@ -4,10 +4,7 @@
     <td>{{ parser.imageName }}</td>
     <td>{{ parser.executionCommand }}</td>
     <td>
-      <a
-        class="action-link"
-        :href="'/dataparsers/edit/' + encodeURIComponent(parser.id) + '/'"
-      >
+      <a class="action-link" :href="'/dataparsers/edit/' + encodeURIComponent(parser.id) + '/'">
         Edit <i class="fa fa-edit"></i>
       </a>
     </td>
@@ -16,7 +13,8 @@
 
 <script>
 export default {
-  name: "parser-list-item",
+  name: "ParserListItem",
+  props: ["parser"],
   data() {
     return {
       show: false,
@@ -29,7 +27,6 @@ export default {
       deleting: false,
     };
   },
-  props: ["parser"],
   computed: {},
   methods: {},
 };

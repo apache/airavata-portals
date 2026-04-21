@@ -228,9 +228,7 @@ export default {
     ],
     modelClass: ExperimentSummary,
     pagination: true,
-    queryParams: ["limit", "offset"].concat(
-      ExperimentSearchFields.values.map((f) => f.name)
-    ),
+    queryParams: ["limit", "offset"].concat(ExperimentSearchFields.values.map((f) => f.name)),
   },
   ExperimentStatistics: {
     url: "/api/experiment-statistics",

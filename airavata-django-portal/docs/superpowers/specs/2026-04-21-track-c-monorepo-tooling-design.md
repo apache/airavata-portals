@@ -33,29 +33,29 @@ tooling/
 
 ```json
 {
-  "name": "@airavata/tooling",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "exports": {
-    "./eslint.config.js": "./eslint.config.js",
-    "./prettier.config.js": "./prettier.config.js",
-    "./vite.config.js": "./vite.config.js",
-    "./tsconfig.base.json": "./tsconfig.base.json"
-  },
-  "dependencies": {
-    "@eslint/js": "^9",
-    "@vitejs/plugin-vue": "^5",
-    "eslint": "^9",
-    "eslint-config-prettier": "^9",
-    "eslint-plugin-vue": "^10",
-    "globals": "^15",
-    "prettier": "^3",
-    "typescript": "^5",
-    "vite": "^6",
-    "vue-eslint-parser": "^10",
-    "vue-tsc": "^2"
-  }
+    "name": "@airavata/tooling",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        "./eslint.config.js": "./eslint.config.js",
+        "./prettier.config.js": "./prettier.config.js",
+        "./vite.config.js": "./vite.config.js",
+        "./tsconfig.base.json": "./tsconfig.base.json"
+    },
+    "dependencies": {
+        "@eslint/js": "^9",
+        "@vitejs/plugin-vue": "^5",
+        "eslint": "^9",
+        "eslint-config-prettier": "^9",
+        "eslint-plugin-vue": "^10",
+        "globals": "^15",
+        "prettier": "^3",
+        "typescript": "^5",
+        "vite": "^6",
+        "vue-eslint-parser": "^10",
+        "vue-tsc": "^2"
+    }
 }
 ```
 
@@ -96,31 +96,31 @@ import prettierConfig from "eslint-config-prettier";
 import globals from "globals";
 
 export default [
-  js.configs.recommended,
-  ...vuePlugin.configs["flat/recommended"],
-  prettierConfig,
-  {
-    languageOptions: {
-      parser: vueParser,
-      ecmaVersion: 2024,
-      sourceType: "module",
-      globals: { ...globals.browser, ...globals.es2024, ...globals.node },
+    js.configs.recommended,
+    ...vuePlugin.configs["flat/recommended"],
+    prettierConfig,
+    {
+        languageOptions: {
+            parser: vueParser,
+            ecmaVersion: 2024,
+            sourceType: "module",
+            globals: { ...globals.browser, ...globals.es2024, ...globals.node },
+        },
+        rules: {
+            "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+            "no-undef": "error",
+            "no-unreachable": "error",
+            eqeqeq: ["error", "always"],
+            "vue/multi-word-component-names": "off",
+            "vue/no-v-html": "warn",
+        },
+        ignores: [
+            "**/dist/**",
+            "**/node_modules/**",
+            "**/*.d.ts",
+            "**/static/**/manifest.json",
+        ],
     },
-    rules: {
-      "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
-      "no-undef": "error",
-      "no-unreachable": "error",
-      "eqeqeq": ["error", "always"],
-      "vue/multi-word-component-names": "off",
-      "vue/no-v-html": "warn",
-    },
-    ignores: [
-      "**/dist/**",
-      "**/node_modules/**",
-      "**/*.d.ts",
-      "**/static/**/manifest.json",
-    ],
-  },
 ];
 ```
 
@@ -139,12 +139,12 @@ same commit.
 
 ```js
 module.exports = {
-  semi: true,
-  singleQuote: false,
-  trailingComma: "all",
-  printWidth: 100,
-  tabWidth: 2,
-  vueIndentScriptAndStyle: false,
+    semi: true,
+    singleQuote: false,
+    trailingComma: "all",
+    printWidth: 100,
+    tabWidth: 2,
+    vueIndentScriptAndStyle: false,
 };
 ```
 
@@ -160,29 +160,29 @@ import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
 
 export function defineAppConfig({
-  appLabel,
-  srcDir,
-  entries,
-  isLibrary = false,
-  overrides = {},
+    appLabel,
+    srcDir,
+    entries,
+    isLibrary = false,
+    overrides = {},
 }) {
-  const base = isLibrary ? "/" : `/static/${appLabel}/dist/`;
-  return defineConfig({
-    plugins: [vue()],
-    base,
-    build: {
-      manifest: isLibrary ? false : "manifest.json",
-      outDir: resolve(srcDir, `../../static/${appLabel}/dist`),
-      rollupOptions: { input: entries },
-    },
-    css: { preprocessorOptions: { scss: { quietDeps: true } } },
-    resolve: {
-      extensions: [".vue", ".ts", ".js", ".json"],
-      alias: { "@": srcDir },
-    },
-    server: { port: 9000, origin: "http://localhost:9000" },
-    ...overrides,
-  });
+    const base = isLibrary ? "/" : `/static/${appLabel}/dist/`;
+    return defineConfig({
+        plugins: [vue()],
+        base,
+        build: {
+            manifest: isLibrary ? false : "manifest.json",
+            outDir: resolve(srcDir, `../../static/${appLabel}/dist`),
+            rollupOptions: { input: entries },
+        },
+        css: { preprocessorOptions: { scss: { quietDeps: true } } },
+        resolve: {
+            extensions: [".vue", ".ts", ".js", ".json"],
+            alias: { "@": srcDir },
+        },
+        server: { port: 9000, origin: "http://localhost:9000" },
+        ...overrides,
+    });
 }
 ```
 
@@ -193,12 +193,12 @@ import { defineAppConfig } from "@airavata/tooling/vite.config.js";
 import { resolve } from "path";
 
 export default defineAppConfig({
-  appLabel: "django_airavata_admin",
-  srcDir: resolve(import.meta.dirname, "./static/django_airavata_admin/src"),
-  entries: resolve(
-    import.meta.dirname,
-    "./static/django_airavata_admin/src/main.js",
-  ),
+    appLabel: "django_airavata_admin",
+    srcDir: resolve(import.meta.dirname, "./static/django_airavata_admin/src"),
+    entries: resolve(
+        import.meta.dirname,
+        "./static/django_airavata_admin/src/main.js",
+    ),
 });
 ```
 
@@ -206,13 +206,13 @@ Library-mode example for `django-airavata-api` (no manifest, no base prefix):
 
 ```js
 export default defineAppConfig({
-  appLabel: "django_airavata_api",
-  srcDir: resolve(import.meta.dirname, "./static/django_airavata_api/js"),
-  entries: resolve(
-    import.meta.dirname,
-    "./static/django_airavata_api/js/index.js",
-  ),
-  isLibrary: true,
+    appLabel: "django_airavata_api",
+    srcDir: resolve(import.meta.dirname, "./static/django_airavata_api/js"),
+    entries: resolve(
+        import.meta.dirname,
+        "./static/django_airavata_api/js/index.js",
+    ),
+    isLibrary: true,
 });
 ```
 
@@ -222,20 +222,20 @@ export default defineAppConfig({
 
 ```json
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "strict": true,
-    "allowJs": false,
-    "noEmit": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "isolatedModules": true,
-    "resolveJsonModule": true,
-    "jsx": "preserve",
-    "types": ["vite/client"]
-  }
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "strict": true,
+        "allowJs": false,
+        "noEmit": true,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "isolatedModules": true,
+        "resolveJsonModule": true,
+        "jsx": "preserve",
+        "types": ["vite/client"]
+    }
 }
 ```
 
@@ -262,14 +262,14 @@ Root `package.json` gets all five scripts wired (Q7-a):
 
 ```json
 {
-  "scripts": {
-    "lint": "npm run lint --workspaces --if-present",
-    "format": "prettier --write \"**/*.{js,ts,vue,json,md,scss,css}\" --ignore-path=.gitignore",
-    "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
-    "test:e2e": "echo 'test:e2e placeholder — wired up in Track Pre-A'",
-    "build": "npm run build --workspaces --if-present"
-  }
+    "scripts": {
+        "lint": "npm run lint --workspaces --if-present",
+        "format": "prettier --write \"**/*.{js,ts,vue,json,md,scss,css}\" --ignore-path=.gitignore",
+        "typecheck": "npm run typecheck --workspaces --if-present",
+        "test": "npm run test --workspaces --if-present",
+        "test:e2e": "echo 'test:e2e placeholder — wired up in Track Pre-A'",
+        "build": "npm run build --workspaces --if-present"
+    }
 }
 ```
 
@@ -279,6 +279,7 @@ can run in a single workspace.
 ### 8. Documentation
 
 New `tooling/README.md` (~30 lines) covering:
+
 - What `@airavata/tooling` exposes
 - How to add a new workspace (`eslint.config.js`, `prettier.config.js`,
   `vite.config.js`, `jsconfig.json` stanzas)
@@ -293,16 +294,16 @@ New `tooling/README.md` (~30 lines) covering:
 
 ## Design decisions
 
-| # | Decision | Alternatives |
-|---|---|---|
-| Q1 | Single `tooling/` workspace with all 4 shared configs | 4 sub-workspaces; flat files at repo root |
-| Q2 | Single flat `eslint.config.js` export | Layered base/vue/ts exports; plugin-preset passthrough |
-| Q3 | Strict from day one; fix every violation in Track C | Minimal-safe baseline; Prettier-compatible recommended |
-| Q4 | Shared `defineAppConfig()` Vite helper | Vite `mergeConfig()` pattern; leave vite alone |
-| Q5 | Switch Yarn 1 → npm workspaces | Stay on Yarn 1 + corepack; switch to pnpm |
-| Q6 | `strict: true, allowJs: false` | `allowJs: true` for gradual migration; two tsconfigs |
-| Q7 | All 5 root scripts now; `test:e2e` is a placeholder | Defer `test:e2e` to Track Pre-A; no-op stubs |
-| Q8 | One squashed commit for Track C | Three logical commits; per-change commits |
+| #   | Decision                                              | Alternatives                                           |
+| --- | ----------------------------------------------------- | ------------------------------------------------------ |
+| Q1  | Single `tooling/` workspace with all 4 shared configs | 4 sub-workspaces; flat files at repo root              |
+| Q2  | Single flat `eslint.config.js` export                 | Layered base/vue/ts exports; plugin-preset passthrough |
+| Q3  | Strict from day one; fix every violation in Track C   | Minimal-safe baseline; Prettier-compatible recommended |
+| Q4  | Shared `defineAppConfig()` Vite helper                | Vite `mergeConfig()` pattern; leave vite alone         |
+| Q5  | Switch Yarn 1 → npm workspaces                        | Stay on Yarn 1 + corepack; switch to pnpm              |
+| Q6  | `strict: true, allowJs: false`                        | `allowJs: true` for gradual migration; two tsconfigs   |
+| Q7  | All 5 root scripts now; `test:e2e` is a placeholder   | Defer `test:e2e` to Track Pre-A; no-op stubs           |
+| Q8  | One squashed commit for Track C                       | Three logical commits; per-change commits              |
 
 ## Testing protocol
 
@@ -360,6 +361,7 @@ npm run test       # vitest suites where defined
 ### Layer 4 — Tilt still boots
 
 Spot-check `tilt up`:
+
 - `frontend-build` resource runs npm commands, not yarn.
 - `frontend-<app>` resources still start Vite dev server on port 9000.
 - Portal at `localhost:8000` serves built bundles identically.
@@ -476,11 +478,11 @@ find . -maxdepth 4 \( -name '.eslintrc*' -o -name '.prettierrc*' \) \
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| ESLint 9 strict surfaces so many violations we can't land the track in one commit | Layer 3 testing exposes the blast radius early; if >200 violations need manual fixes, pause and re-brainstorm cadence (Q8) |
-| npm workspaces behave differently from Yarn workspaces on Tilt's hot-reload path | Layer 4 spot-check; falls back to rerunning `npm install` if hoisting issues appear |
-| Manifest drift after build (a build-time plugin behaves differently under npm workspaces) | Layer 2 parity check catches byte-identical key drift |
-| `"packageManager": "npm@..."` field not honoured because corepack isn't installed | Harmless — the field becomes documentation-only when corepack is absent |
-| Umbrella "Yarn 1 classic" guardrail deviation | Explicit: amend umbrella spec at Track C merge time (not here) to reflect npm switch |
-| vue-tsc `strict:true,allowJs:false` makes Track A's dependency-order migration harder | Track A's own spec will plan conversion order leaves-first; this spec simply documents the constraint |
+| Risk                                                                                      | Mitigation                                                                                                                 |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| ESLint 9 strict surfaces so many violations we can't land the track in one commit         | Layer 3 testing exposes the blast radius early; if >200 violations need manual fixes, pause and re-brainstorm cadence (Q8) |
+| npm workspaces behave differently from Yarn workspaces on Tilt's hot-reload path          | Layer 4 spot-check; falls back to rerunning `npm install` if hoisting issues appear                                        |
+| Manifest drift after build (a build-time plugin behaves differently under npm workspaces) | Layer 2 parity check catches byte-identical key drift                                                                      |
+| `"packageManager": "npm@..."` field not honoured because corepack isn't installed         | Harmless — the field becomes documentation-only when corepack is absent                                                    |
+| Umbrella "Yarn 1 classic" guardrail deviation                                             | Explicit: amend umbrella spec at Track C merge time (not here) to reflect npm switch                                       |
+| vue-tsc `strict:true,allowJs:false` makes Track A's dependency-order migration harder     | Track A's own spec will plan conversion order leaves-first; this spec simply documents the constraint                      |

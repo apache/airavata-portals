@@ -1,37 +1,42 @@
 // ============================================================================
 // Design tokens
 // ============================================================================
-$font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-$font-size-xs:    0.75rem;
-$font-size-sm:    0.8125rem;
-$font-size-base:  0.875rem;
-$font-size-md:    1rem;
-$font-size-lg:    1.25rem;
-$font-size-xl:    1.5rem;
+$font-family:
+  -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+$font-size-xs: 0.75rem;
+$font-size-sm: 0.8125rem;
+$font-size-base: 0.875rem;
+$font-size-md: 1rem;
+$font-size-lg: 1.25rem;
+$font-size-xl: 1.5rem;
 
-$color-text:       #1a1a2e;
+$color-text: #1a1a2e;
 $color-text-muted: #6c757d;
-$color-border:     #e5e7eb;
-$color-bg:         #f8f9fa;
-$color-bg-white:   #ffffff;
-$color-primary:    #4f46e5;
+$color-border: #e5e7eb;
+$color-bg: #f8f9fa;
+$color-bg-white: #ffffff;
+$color-primary: #4f46e5;
 
-$spacing-xs:  0.25rem;
-$spacing-sm:  0.5rem;
-$spacing-md:  1rem;
-$spacing-lg:  1.5rem;
-$spacing-xl:  2rem;
+$spacing-xs: 0.25rem;
+$spacing-sm: 0.5rem;
+$spacing-md: 1rem;
+$spacing-lg: 1.5rem;
+$spacing-xl: 2rem;
 
-$sidebar-width:    220px;
+$sidebar-width: 220px;
 $sidebar-collapsed: 0px;
-$footer-height:    28px;
-$border-radius:    6px;
-$transition:       0.2s ease;
+$footer-height: 28px;
+$border-radius: 6px;
+$transition: 0.2s ease;
 
 // ============================================================================
 // Base
 // ============================================================================
-html, body { height: 100%; margin: 0; }
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
 
 body {
   font-family: $font-family;
@@ -42,14 +47,46 @@ body {
   overflow: hidden;
 }
 
-h1, .h1 { font-size: $font-size-xl; font-weight: 600; margin-bottom: $spacing-xs; }
-h2, .h2 { font-size: $font-size-lg; font-weight: 600; margin-bottom: $spacing-xs; }
-h3, .h3, h4, .h4 { font-size: $font-size-md; font-weight: 600; margin-bottom: $spacing-xs; }
-h5, .h5 { font-size: $font-size-base; font-weight: 600; margin-bottom: $spacing-xs; }
-h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: $color-text-muted; }
+h1,
+.h1 {
+  font-size: $font-size-xl;
+  font-weight: 600;
+  margin-bottom: $spacing-xs;
+}
+h2,
+.h2 {
+  font-size: $font-size-lg;
+  font-weight: 600;
+  margin-bottom: $spacing-xs;
+}
+h3,
+.h3,
+h4,
+.h4 {
+  font-size: $font-size-md;
+  font-weight: 600;
+  margin-bottom: $spacing-xs;
+}
+h5,
+.h5 {
+  font-size: $font-size-base;
+  font-weight: 600;
+  margin-bottom: $spacing-xs;
+}
+h6,
+.h6 {
+  font-size: $font-size-sm;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: $color-text-muted;
+}
 
 // Legacy (hidden)
-.c-header, .c-nav { display: none; }
+.c-header,
+.c-nav {
+  display: none;
+}
 
 // ============================================================================
 // App shell — 3-column layout with footer
@@ -113,7 +150,11 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
     text-decoration: none;
     color: $color-text;
 
-    img, svg { max-height: 24px; width: auto; }
+    img,
+    svg {
+      max-height: 24px;
+      width: auto;
+    }
   }
 
   &__brand-text {
@@ -148,7 +189,10 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
     color: $color-text;
     transition: background $transition;
 
-    &:hover { background: rgba(0, 0, 0, 0.04); color: $color-text; }
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: $color-text;
+    }
 
     &.is-active {
       background: rgba($color-primary, 0.08);
@@ -163,7 +207,9 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
       flex-shrink: 0;
     }
 
-    span { white-space: nowrap; }
+    span {
+      white-space: nowrap;
+    }
   }
 
   &__footer {
@@ -183,7 +229,10 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
     font-size: $font-size-sm;
     width: 100%;
 
-    &:hover { background: rgba(0, 0, 0, 0.04); color: $color-text; }
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: $color-text;
+    }
   }
 
   &__avatar {
@@ -199,9 +248,26 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
     flex-shrink: 0;
   }
 
-  &__user-info { flex: 1; min-width: 0; }
-  &__user-name { font-weight: 600; font-size: $font-size-sm; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  &__user-email { font-size: $font-size-xs; color: $color-text-muted; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  &__user-info {
+    flex: 1;
+    min-width: 0;
+  }
+  &__user-name {
+    font-weight: 600;
+    font-size: $font-size-sm;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  &__user-email {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 // ============================================================================
@@ -245,14 +311,19 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
   color: $color-text-muted;
   z-index: 100;
 
-  &__left, &__right {
+  &__left,
+  &__right {
     display: flex;
     align-items: center;
     gap: $spacing-sm;
   }
 
-  &__left { flex: 1; }
-  &__right { flex: 0; }
+  &__left {
+    flex: 1;
+  }
+  &__right {
+    flex: 0;
+  }
 
   &__toggle {
     background: none;
@@ -287,7 +358,9 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
   padding: $spacing-lg;
   overflow-y: auto;
 
-  &--with-sidebar { max-width: none; }
+  &--with-sidebar {
+    max-width: none;
+  }
 }
 
 .sidebar {
@@ -324,8 +397,14 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
     text-align: center;
     position: relative;
 
-    &:hover { color: $color-text; background: rgba(0, 0, 0, 0.02); }
-    &.is-active { color: $color-primary; border-bottom-color: $color-primary; }
+    &:hover {
+      color: $color-text;
+      background: rgba(0, 0, 0, 0.02);
+    }
+    &.is-active {
+      color: $color-primary;
+      border-bottom-color: $color-primary;
+    }
   }
 
   &__badge {
@@ -353,12 +432,29 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
   border-bottom: 1px solid $color-border;
   font-size: $font-size-sm;
 
-  &--unread { background: rgba($color-primary, 0.03); }
+  &--unread {
+    background: rgba($color-primary, 0.03);
+  }
 
-  &__title { font-weight: 600; font-size: $font-size-sm; }
-  &__body { color: $color-text-muted; margin-top: 2px; font-size: $font-size-xs; }
-  &__time { color: $color-text-muted; margin-top: 2px; font-size: $font-size-xs; font-style: italic; }
-  &__action { font-size: $font-size-xs; color: $color-primary; }
+  &__title {
+    font-weight: 600;
+    font-size: $font-size-sm;
+  }
+  &__body {
+    color: $color-text-muted;
+    margin-top: 2px;
+    font-size: $font-size-xs;
+  }
+  &__time {
+    color: $color-text-muted;
+    margin-top: 2px;
+    font-size: $font-size-xs;
+    font-style: italic;
+  }
+  &__action {
+    font-size: $font-size-xs;
+    color: $color-primary;
+  }
 }
 
 // Footer badge for notification count
@@ -380,8 +476,16 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
   align-items: center;
   border-bottom: 1px solid $color-border;
 
-  &__title { font-size: $font-size-xs; text-transform: uppercase; letter-spacing: 0.04rem; margin: 0; }
-  &__action { margin-left: auto; font-size: $font-size-sm; }
+  &__title {
+    font-size: $font-size-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.04rem;
+    margin: 0;
+  }
+  &__action {
+    margin-left: auto;
+    font-size: $font-size-sm;
+  }
 }
 
 // ============================================================================
@@ -399,17 +503,33 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
   }
 }
 
-.card.border-default { border: 1px solid $color-border; }
-.card-text--small { line-height: 1.4; font-size: $font-size-sm; }
+.card.border-default {
+  border: 1px solid $color-border;
+}
+.card-text--small {
+  line-height: 1.4;
+  font-size: $font-size-sm;
+}
 
 .card.is-disabled {
   background: #eee;
-  .card-title { color: #999; }
-  .badge { background: #ccc; color: #999; }
+  .card-title {
+    color: #999;
+  }
+  .badge {
+    background: #ccc;
+    color: #999;
+  }
 }
 
-.card-link:hover { text-decoration: none; background: #fafafa; }
-.card.is-disabled .card-link:hover { background: #ddd; cursor: not-allowed; }
+.card-link:hover {
+  text-decoration: none;
+  background: #fafafa;
+}
+.card.is-disabled .card-link:hover {
+  background: #ddd;
+  cursor: not-allowed;
+}
 
 // ============================================================================
 // Feed (recent experiments sidebar)
@@ -419,10 +539,27 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
   margin: 0;
   padding: 0;
 
-  &__list-item { padding: $spacing-md; border-bottom: 1px solid $color-border; }
-  &__label { font-size: $font-size-xs; text-transform: uppercase; color: $color-text-muted; }
-  &__title { font-size: $font-size-base; margin: 0; a { color: $color-text; } }
-  &__item-meta { margin: 0; font-size: $font-size-xs; color: $color-text-muted; }
+  &__list-item {
+    padding: $spacing-md;
+    border-bottom: 1px solid $color-border;
+  }
+  &__label {
+    font-size: $font-size-xs;
+    text-transform: uppercase;
+    color: $color-text-muted;
+  }
+  &__title {
+    font-size: $font-size-base;
+    margin: 0;
+    a {
+      color: $color-text;
+    }
+  }
+  &__item-meta {
+    margin: 0;
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+  }
 }
 
 // ============================================================================
@@ -463,7 +600,8 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
     cursor: default;
   }
 
-  td a, td .action-link {
+  td a,
+  td .action-link {
     font-size: $font-size-xs;
     white-space: nowrap;
   }
@@ -496,14 +634,26 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
 // ============================================================================
 // Forms
 // ============================================================================
-.form-control, .form-select { font-size: $font-size-base; }
-.form-label { font-size: $font-size-sm; font-weight: 500; margin-bottom: $spacing-xs; }
+.form-control,
+.form-select {
+  font-size: $font-size-base;
+}
+.form-label {
+  font-size: $font-size-sm;
+  font-weight: 500;
+  margin-bottom: $spacing-xs;
+}
 
 // ============================================================================
 // Buttons
 // ============================================================================
-.btn { font-size: $font-size-base; border-radius: $border-radius; }
-.btn-sm { font-size: $font-size-sm; }
+.btn {
+  font-size: $font-size-base;
+  border-radius: $border-radius;
+}
+.btn-sm {
+  font-size: $font-size-sm;
+}
 
 // Small pill-shaped action buttons (used in tables, list rows, etc.)
 // Defined globally so <a> and <button> elements render identically
@@ -522,71 +672,129 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
   text-decoration: none;
 }
 
-.btn-container + .btn, .btn + .btn,
-.btn-container + .action-link, .action-link + .action-link { margin-left: $spacing-xs; }
-.btn + .btn-block { margin-left: 0; }
-.action-link { white-space: nowrap; font-size: $font-size-sm; }
+.btn-container + .btn,
+.btn + .btn,
+.btn-container + .action-link,
+.action-link + .action-link {
+  margin-left: $spacing-xs;
+}
+.btn + .btn-block {
+  margin-left: 0;
+}
+.action-link {
+  white-space: nowrap;
+  font-size: $font-size-sm;
+}
 
 // ============================================================================
 // Badges & alerts
 // ============================================================================
-.badge { font-size: $font-size-xs; font-weight: 500; }
-.alert { font-size: $font-size-base; border-radius: $border-radius; }
+.badge {
+  font-size: $font-size-xs;
+  font-weight: 500;
+}
+.alert {
+  font-size: $font-size-base;
+  border-radius: $border-radius;
+}
 
 // ============================================================================
 // Vue transitions
 // ============================================================================
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
-.fade-enter, .fade-leave-to { opacity: 0; }
-.fade-move { transition: transform 0.3s; }
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}
+.fade-move {
+  transition: transform 0.3s;
+}
 
 // ============================================================================
 // Spinner
 // ============================================================================
-#airavata-spinner { display: none; }
+#airavata-spinner {
+  display: none;
+}
 
 .loading {
   position: absolute;
   z-index: 2000;
-  top: 0; bottom: 0; left: 0; right: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   background: rgba(255, 255, 255, 0.5);
 }
 
 .sk-folding-cube {
   margin: 20px auto;
-  width: 40px; height: 40px;
+  width: 40px;
+  height: 40px;
   position: relative;
   transform: rotateZ(45deg);
   top: calc(50% - 40px);
 }
 
 .sk-folding-cube .sk-cube {
-  float: left; width: 50%; height: 50%;
+  float: left;
+  width: 50%;
+  height: 50%;
   position: relative;
   transform: scale(1.1);
   color: $color-primary;
 }
 
 .sk-folding-cube .sk-cube:before {
-  content: '';
+  content: "";
   position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: currentColor;
   animation: sk-foldCubeAngle 2.4s infinite linear both;
   transform-origin: 100% 100%;
 }
 
-.sk-folding-cube .sk-cube2 { transform: scale(1.1) rotateZ(90deg); }
-.sk-folding-cube .sk-cube3 { transform: scale(1.1) rotateZ(180deg); }
-.sk-folding-cube .sk-cube4 { transform: scale(1.1) rotateZ(270deg); }
-.sk-folding-cube .sk-cube2:before { animation-delay: 0.3s; }
-.sk-folding-cube .sk-cube3:before { animation-delay: 0.6s; }
-.sk-folding-cube .sk-cube4:before { animation-delay: 0.9s; }
+.sk-folding-cube .sk-cube2 {
+  transform: scale(1.1) rotateZ(90deg);
+}
+.sk-folding-cube .sk-cube3 {
+  transform: scale(1.1) rotateZ(180deg);
+}
+.sk-folding-cube .sk-cube4 {
+  transform: scale(1.1) rotateZ(270deg);
+}
+.sk-folding-cube .sk-cube2:before {
+  animation-delay: 0.3s;
+}
+.sk-folding-cube .sk-cube3:before {
+  animation-delay: 0.6s;
+}
+.sk-folding-cube .sk-cube4:before {
+  animation-delay: 0.9s;
+}
 
 @keyframes sk-foldCubeAngle {
-  0%, 10% { transform: perspective(140px) rotateX(-180deg); opacity: 0; }
-  25%, 75% { transform: perspective(140px) rotateX(0deg); opacity: 1; }
-  90%, 100% { transform: perspective(140px) rotateY(180deg); opacity: 0; }
+  0%,
+  10% {
+    transform: perspective(140px) rotateX(-180deg);
+    opacity: 0;
+  }
+  25%,
+  75% {
+    transform: perspective(140px) rotateX(0deg);
+    opacity: 1;
+  }
+  90%,
+  100% {
+    transform: perspective(140px) rotateY(180deg);
+    opacity: 0;
+  }
 }
 
 // ============================================================================
@@ -595,14 +803,17 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
 .fixed-footer {
   position: fixed;
   bottom: $footer-height;
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
   z-index: 3;
   padding: $spacing-md $spacing-lg;
   background: $color-bg;
   border-top: 1px solid $color-border;
 }
 
-.has-fixed-footer { padding-bottom: 100px; }
+.has-fixed-footer {
+  padding-bottom: 100px;
+}
 
 // ============================================================================
 // Bootstrap overrides — enforce consistent theming
@@ -612,23 +823,41 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
 .btn-primary {
   background-color: $color-primary;
   border-color: $color-primary;
-  &:hover, &:focus { background-color: darken($color-primary, 8%); border-color: darken($color-primary, 8%); }
-  &:active { background-color: darken($color-primary, 12%); border-color: darken($color-primary, 12%); }
+  &:hover,
+  &:focus {
+    background-color: darken($color-primary, 8%);
+    border-color: darken($color-primary, 8%);
+  }
+  &:active {
+    background-color: darken($color-primary, 12%);
+    border-color: darken($color-primary, 12%);
+  }
 }
 
 .btn-outline-primary {
   color: $color-primary;
   border-color: $color-primary;
-  &:hover { background-color: $color-primary; border-color: $color-primary; color: #fff; }
+  &:hover {
+    background-color: $color-primary;
+    border-color: $color-primary;
+    color: #fff;
+  }
 }
 
-.bg-primary { background-color: $color-primary !important; }
-.text-primary { color: $color-primary !important; }
-.border-primary { border-color: $color-primary !important; }
+.bg-primary {
+  background-color: $color-primary !important;
+}
+.text-primary {
+  color: $color-primary !important;
+}
+.border-primary {
+  border-color: $color-primary !important;
+}
 
 // Consistent input groups
 .input-group {
-  .form-control, .form-select {
+  .form-control,
+  .form-select {
     font-size: $font-size-base;
   }
   .input-group-text {
@@ -652,8 +881,14 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
     font-size: $font-size-sm;
     padding: $spacing-sm $spacing-md;
 
-    &:hover { background: $color-bg; }
-    &.active, &:active { background: rgba($color-primary, 0.08); color: $color-primary; }
+    &:hover {
+      background: $color-bg;
+    }
+    &.active,
+    &:active {
+      background: rgba($color-primary, 0.08);
+      color: $color-primary;
+    }
   }
 }
 
@@ -667,7 +902,10 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
   padding: $spacing-md $spacing-lg;
   border-bottom: 1px solid $color-border;
 
-  .modal-title { font-size: $font-size-md; font-weight: 600; }
+  .modal-title {
+    font-size: $font-size-md;
+    font-weight: 600;
+  }
 }
 
 .modal-body {
@@ -691,8 +929,15 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
     border-bottom: 2px solid transparent;
     padding: $spacing-sm $spacing-md;
 
-    &:hover { color: $color-text; border-bottom-color: $color-border; }
-    &.active { color: $color-primary; border-bottom-color: $color-primary; font-weight: 600; }
+    &:hover {
+      color: $color-text;
+      border-bottom-color: $color-border;
+    }
+    &.active {
+      color: $color-primary;
+      border-bottom-color: $color-primary;
+      font-weight: 600;
+    }
   }
 }
 
@@ -710,7 +955,10 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
     border-color: $color-border;
     color: $color-text;
 
-    &:hover { background: $color-bg; color: $color-primary; }
+    &:hover {
+      background: $color-bg;
+      color: $color-primary;
+    }
   }
   .page-item.active .page-link {
     background-color: $color-primary;
@@ -725,24 +973,75 @@ h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase;
 
 // Badge overrides
 .badge {
-  &.bg-primary { background-color: $color-primary !important; }
-  &.badge-primary { background-color: $color-primary; color: #fff; }
+  &.bg-primary {
+    background-color: $color-primary !important;
+  }
+  &.badge-primary {
+    background-color: $color-primary;
+    color: #fff;
+  }
 }
 
 // Make sure all text elements within main content use consistent sizing
 .main-content {
-  h1, .h1 { font-size: $font-size-xl; font-weight: 600; margin-bottom: $spacing-sm; }
-  h2, .h2 { font-size: $font-size-lg; font-weight: 600; margin-bottom: $spacing-sm; }
-  h3, .h3 { font-size: $font-size-md; font-weight: 600; margin-bottom: $spacing-sm; }
-  h4, .h4 { font-size: $font-size-md; font-weight: 600; margin-bottom: $spacing-xs; }
-  h5, .h5 { font-size: $font-size-base; font-weight: 600; }
-  h6, .h6 { font-size: $font-size-sm; font-weight: 600; text-transform: uppercase; color: $color-text-muted; letter-spacing: 0.04em; }
+  h1,
+  .h1 {
+    font-size: $font-size-xl;
+    font-weight: 600;
+    margin-bottom: $spacing-sm;
+  }
+  h2,
+  .h2 {
+    font-size: $font-size-lg;
+    font-weight: 600;
+    margin-bottom: $spacing-sm;
+  }
+  h3,
+  .h3 {
+    font-size: $font-size-md;
+    font-weight: 600;
+    margin-bottom: $spacing-sm;
+  }
+  h4,
+  .h4 {
+    font-size: $font-size-md;
+    font-weight: 600;
+    margin-bottom: $spacing-xs;
+  }
+  h5,
+  .h5 {
+    font-size: $font-size-base;
+    font-weight: 600;
+  }
+  h6,
+  .h6 {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: $color-text-muted;
+    letter-spacing: 0.04em;
+  }
 
-  p { font-size: $font-size-base; line-height: 1.6; }
-  small, .small, .text-muted { font-size: $font-size-sm; }
+  p {
+    font-size: $font-size-base;
+    line-height: 1.6;
+  }
+  small,
+  .small,
+  .text-muted {
+    font-size: $font-size-sm;
+  }
 
   // Consistent card body text
-  .card-body { font-size: $font-size-base; }
-  .card-title { font-size: $font-size-base; font-weight: 600; margin-bottom: $spacing-sm; }
-  .card-text { font-size: $font-size-sm; }
+  .card-body {
+    font-size: $font-size-base;
+  }
+  .card-title {
+    font-size: $font-size-base;
+    font-weight: 600;
+    margin-bottom: $spacing-sm;
+  }
+  .card-text {
+    font-size: $font-size-sm;
+  }
 }

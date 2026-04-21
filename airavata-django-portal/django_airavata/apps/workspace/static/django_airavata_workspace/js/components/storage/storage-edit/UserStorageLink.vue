@@ -3,19 +3,16 @@
     <a :href="storageFileViewRouteUrl()" @click="showFilePreview($event)">
       {{ fileName }}
     </a>
-    <!-- TODO: Replace b-modal with Bootstrap 5 modal --><div class="modal" :title="fileName" ref="modal" scrollable size="lg" static lazy>
+    <!-- TODO: Replace b-modal with Bootstrap 5 modal -->
+    <div ref="modal" class="modal" :title="fileName" scrollable size="lg" static lazy>
       <user-storage-file-edit-viewer
         :file-name="fileName"
         :data-product-uri="dataProductUri"
         :mime-type="mimeType"
-        @file-content-changed="
-          (fileContent) => $emit('file-content-changed', fileContent)
-        "
+        @file-content-changed="(fileContent) => $emit('file-content-changed', fileContent)"
       />
       <template slot="modal-footer">
-        <a :href="storageFileViewRouteUrl()" target="_blank"
-          >Open in a new window</a
-        >
+        <a :href="storageFileViewRouteUrl()" target="_blank">Open in a new window</a>
       </template>
     </div>
   </div>
@@ -25,7 +22,7 @@
 import UserStorageFileEditViewer from "./UserStorageEditViewer";
 
 export default {
-  name: "user-storage-link",
+  name: "UserStorageLink",
   components: { UserStorageFileEditViewer },
   props: {
     fileName: {

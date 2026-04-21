@@ -1,8 +1,8 @@
 <template>
-  <div style="display: inline-block;">
+  <div style="display: inline-block">
     <button
-      type="button"
       ref="copyLink"
+      type="button"
       :data-clipboard-text="text"
       class="btn btn-outline-primary btn-pill"
       :class="linkClasses"
@@ -10,9 +10,7 @@
       <slot name="icon">
         <i class="far fa-clipboard me-1"></i>
       </slot>
-      <slot>
-        Copy Key
-      </slot>
+      <slot> Copy Key </slot>
     </button>
     <div v-if="show" class="tooltip show position-absolute" role="tooltip">
       <slot name="tooltip">Copied!</slot>
@@ -24,7 +22,7 @@
 import ClipboardJS from "clipboard";
 
 export default {
-  name: "clipboard-copy-link",
+  name: "ClipboardCopyLink",
   props: {
     text: {
       type: String,
@@ -55,4 +53,3 @@ export default {
   },
 };
 </script>
-

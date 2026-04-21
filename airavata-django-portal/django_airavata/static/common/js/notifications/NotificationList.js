@@ -15,7 +15,7 @@ class NotificationList {
       new Notification({
         type: "ERROR",
         message: error.message,
-      })
+      }),
     );
   }
 

@@ -21,10 +21,7 @@ export const mutations = {
   setClonedExperiment(state, { clonedExperiment }) {
     state.clonedExperiment = clonedExperiment;
   },
-  setRunningIntermediateOutputFetches(
-    state,
-    { runningIntermediateOutputFetches }
-  ) {
+  setRunningIntermediateOutputFetches(state, { runningIntermediateOutputFetches }) {
     state.runningIntermediateOutputFetches = runningIntermediateOutputFetches;
   },
   setApplicationInterface(state, { applicationInterface }) {
@@ -48,7 +45,7 @@ export const actions = {
     try {
       const applicationInterface = await services.ApplicationInterfaceService.retrieve(
         { lookup: appInterfaceId },
-        { ignoreErrors: true }
+        { ignoreErrors: true },
       );
       commit("setApplicationInterface", { applicationInterface });
     } catch (error) {
@@ -70,7 +67,7 @@ export const actions = {
   async loadExperiment({ commit }, { experimentId, showSpinner = false }) {
     const fullExperiment = await services.FullExperimentService.retrieve(
       { lookup: experimentId },
-      { ignoreErrors: true, showSpinner }
+      { ignoreErrors: true, showSpinner },
     );
     commit("setFullExperiment", { fullExperiment });
   },
@@ -129,10 +126,7 @@ export const actions = {
     });
     dispatch("loadExperiment", { experimentId: getters.experimentId });
   },
-  async submitFetchIntermediateOutputs(
-    { commit, getters, state },
-    { outputNames }
-  ) {
+  async submitFetchIntermediateOutputs({ commit, getters, state }, { outputNames }) {
     await services.ExperimentService.fetchIntermediateOutputs({
       lookup: getters.experimentId,
       data: {
@@ -150,9 +144,9 @@ export const actions = {
     }
   },
   async loadGroupResourceProfile({ getters, commit }) {
-    const groupResourceProfile = await services.ProjectResourceProfileService.retrieve(
-      { lookup: getters.groupResourceProfileId }
-    );
+    const groupResourceProfile = await services.ProjectResourceProfileService.retrieve({
+      lookup: getters.groupResourceProfileId,
+    });
     commit("setGroupResourceProfile", { groupResourceProfile });
   },
 };
@@ -164,9 +158,7 @@ function getDataProducts(io, collection) {
   let dataProducts = null;
   if (io.type === models.DataType.URI_COLLECTION) {
     const dataProductURIs = io.value.split(",");
-    dataProducts = dataProductURIs.map((uri) =>
-      collection.find((dp) => dp.product_uri === uri)
-    );
+    dataProducts = dataProductURIs.map((uri) => collection.find((dp) => dp.product_uri === uri));
   } else {
     const dataProductURI = io.value;
     dataProducts = collection.filter((dp) => dp.product_uri === dataProductURI);
@@ -176,27 +168,20 @@ function getDataProducts(io, collection) {
 
 export const getters = {
   isPolling: (state) => state.polling,
-  experimentId: (state) =>
-    state.fullExperiment ? state.fullExperiment.experiment_id : null,
-  experiment: (state) =>
-    state.fullExperiment ? state.fullExperiment.experiment : null,
+  experimentId: (state) => (state.fullExperiment ? state.fullExperiment.experiment_id : null),
+  experiment: (state) => (state.fullExperiment ? state.fullExperiment.experiment : null),
   isExecuting: (state, getters) =>
     getters.experiment &&
     getters.experiment.latestStatus &&
     getters.experiment.latestStatus.state === ExperimentState.EXECUTING,
-  isFinished: (state, getters) =>
-    getters.experiment && getters.experiment.isFinished,
+  isFinished: (state, getters) => getters.experiment && getters.experiment.isFinished,
   finishedOrExecuting: (state, getters) =>
-    getters.experiment &&
-    (getters.experiment.isFinished || getters.isExecuting),
+    getters.experiment && (getters.experiment.isFinished || getters.isExecuting),
   outputDataProducts(state) {
     const result = {};
     if (state.fullExperiment && state.fullExperiment.output_data_products) {
       state.fullExperiment.experiment.experiment_outputs.forEach((output) => {
-        result[output.name] = getDataProducts(
-          output,
-          state.fullExperiment.output_data_products
-        );
+        result[output.name] = getDataProducts(output, state.fullExperiment.output_data_products);
       });
     }
     return result;
@@ -211,9 +196,7 @@ export const getters = {
         const processStatus = output.intermediate_output
           ? output.intermediate_output.process_status
           : null;
-        const processStatusTimestamp = processStatus
-          ? processStatus.time_of_state_change
-          : null;
+        const processStatusTimestamp = processStatus ? processStatus.time_of_state_change : null;
         result[output.name] = false;
         // If our most recent timestamp for the intermediate output is the
         // request to fetch it, the assume it is currently running
@@ -240,16 +223,12 @@ export const getters = {
       state.fullExperiment &&
       state.fullExperiment.job_details &&
       state.fullExperiment.job_details.some(
-        (job) =>
-          job.latestJobStatus &&
-          job.latestJobStatus.jobState === JobState.ACTIVE
+        (job) => job.latestJobStatus && job.latestJobStatus.jobState === JobState.ACTIVE,
       )
     );
   },
   showQueueSettings(state) {
-    return state.applicationInterface
-      ? state.applicationInterface.show_queue_settings
-      : false;
+    return state.applicationInterface ? state.applicationInterface.show_queue_settings : false;
   },
   groupResourceProfileId(state, getters) {
     return getters.experiment?.user_configuration_data?.group_resource_profile_id;

@@ -18,7 +18,7 @@ import InteractiveParameterWidgetContainer from "./InteractiveParameterWidgetCon
 import { components } from "django-airavata-common-ui";
 
 export default {
-  name: "interactive-parameters-panel",
+  name: "InteractiveParametersPanel",
   components: {
     InteractiveParameterWidgetContainer,
     "validated-form": components.ValidatedForm,
@@ -28,6 +28,11 @@ export default {
       type: Array,
       required: true,
     },
+  },
+  data() {
+    return {
+      localParameters: this.parametersCopy(),
+    };
   },
   computed: {
     formItems() {
@@ -44,10 +49,10 @@ export default {
       return this.$refs.validatedForm.valid;
     },
   },
-  data() {
-    return {
-      localParameters: this.parametersCopy(),
-    };
+  watch: {
+    parameters() {
+      this.localParameters = this.parametersCopy();
+    },
   },
   methods: {
     updated(param, value) {
@@ -57,11 +62,6 @@ export default {
     },
     parametersCopy() {
       return JSON.parse(JSON.stringify(this.parameters));
-    },
-  },
-  watch: {
-    parameters() {
-      this.localParameters = this.parametersCopy();
     },
   },
 };

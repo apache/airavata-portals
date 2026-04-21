@@ -9,124 +9,121 @@
           Created by <span :title="ownerTitle">{{ ownerUserId }}</span>
         </p>
         <share-button
-          class="mt-2 mb-2"
           v-if="localSharedEntity"
+          class="mt-2 mb-2"
           :shared-entity="localSharedEntity"
           @saved="savedSharedEntity"
           @unsaved="unsavedSharedEntity"
         />
-        <form-group
-          label="Application Executable Path"
-          label-for="executable-path"
-        >
-          <input class="form-control"
+        <form-group label="Application Executable Path" label-for="executable-path">
+          <input
             id="executable-path"
-            type="text"
             v-model="data.executablePath"
+            class="form-control"
+            type="text"
             required
             :disabled="readonly"
           />
         </form-group>
-        <form-group
-          label="Application Parallelism Type"
-          label-for="parallelism-type"
-        >
-          <select class="form-select"
+        <form-group label="Application Parallelism Type" label-for="parallelism-type">
+          <select
             id="parallelism-type"
             v-model="data.parallelism"
+            class="form-select"
             :options="parallelismTypeOptions"
             :disabled="readonly"
           />
         </form-group>
-        <form-group
-          label="Application Deployment Description"
-          label-for="deployment-description"
-        >
-          <textarea class="form-control"
+        <form-group label="Application Deployment Description" label-for="deployment-description">
+          <textarea
             id="deployment-description"
             v-model="data.appDeploymentDescription"
+            class="form-control"
             :rows="3"
             :disabled="readonly"
           ></textarea>
         </form-group>
         <command-objects-editor
+          v-model="data.moduleLoadCmds"
           title="Module Load Commands"
           add-button-label="Add Module Load Command"
-          v-model="data.moduleLoadCmds"
           :readonly="readonly"
         />
         <set-env-paths-editor
+          v-model="data.libPrependPaths"
           title="Library Prepend Paths"
           add-button-label="Add a Library Prepend Path"
-          v-model="data.libPrependPaths"
           :readonly="readonly"
         />
         <set-env-paths-editor
+          v-model="data.libAppendPaths"
           title="Library Append Paths"
           add-button-label="Add a Library Append Path"
-          v-model="data.libAppendPaths"
           :readonly="readonly"
         />
         <set-env-paths-editor
+          v-model="data.setEnvironment"
           title="Environment Variables"
           add-button-label="Add Environment Variable"
-          v-model="data.setEnvironment"
           :readonly="readonly"
         />
         <command-objects-editor
+          v-model="data.preJobCommands"
           title="Pre Job Commands"
           add-button-label="Add Pre Job Command"
-          v-model="data.preJobCommands"
           :readonly="readonly"
         />
         <command-objects-editor
+          v-model="data.postJobCommands"
           title="Post Job Commands"
           add-button-label="Add Post Job Command"
-          v-model="data.postJobCommands"
           :readonly="readonly"
         />
         <div class="mb-3" label="Default Queue Name" label-for="default-queue-name">
-          <select class="form-select"
+          <select
             id="default-queue-name"
             v-model="data.defaultQueueName"
-            @change="defaultQueueChanged"
+            class="form-select"
             :disabled="readonly"
+            @change="defaultQueueChanged"
           >
             <option :value="null">Select a Default Queue</option>
-            <option v-for="opt in queueNameOptions" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
+            <option v-for="opt in queueNameOptions" :key="opt.value" :value="opt.value">
+              {{ opt.text }}
+            </option>
           </select>
         </div>
         <div class="mb-3" label="Default Node Count" label-for="default-node-count">
-          <input class="form-control"
+          <input
             id="default-node-count"
-            type="number"
             v-model="data.defaultNodeCount"
+            class="form-control"
+            type="number"
             min="0"
             :max="maxNodes"
             :disabled="defaultQueueAttributesDisabled"
           />
         </div>
         <div class="mb-3" label="Default CPU Count" label-for="default-cpu-count">
-          <input class="form-control"
+          <input
             id="default-cpu-count"
-            type="number"
             v-model="data.defaultCPUCount"
+            class="form-control"
+            type="number"
             min="0"
             :max="maxCPUCount"
             :disabled="defaultQueueAttributesDisabled"
           />
-          <small class="form-text text-muted" v-if="cpuPerNode > 0">
+          <small v-if="cpuPerNode > 0" class="form-text text-muted">
             There are {{ cpuPerNode }} cores per node.
           </small>
         </div>
-        <form-group
-          label="Default Walltime (in minutes)"
-          label-for="default-walltime"
-        >
-          <input class="form-control"
+        <form-group label="Default Walltime (in minutes)" label-for="default-walltime">
+          <input
             id="default-walltime"
-            type="number"
             v-model="data.defaultWalltime"
+            class="form-control"
+            type="number"
             min="0"
             :max="maxWalltime"
             :disabled="defaultQueueAttributesDisabled"
@@ -144,7 +141,12 @@ import SetEnvPathsEditor from "./SetEnvPathsEditor.vue";
 import { components, mixins } from "django-airavata-common-ui";
 
 export default {
-  name: "application-deployment-editor",
+  name: "ApplicationDeploymentEditor",
+  components: {
+    CommandObjectsEditor,
+    SetEnvPathsEditor,
+    "share-button": components.ShareButton,
+  },
   mixins: [mixins.VModelMixin],
   props: {
     value: {
@@ -159,29 +161,12 @@ export default {
       required: true,
     },
   },
-  components: {
-    CommandObjectsEditor,
-    SetEnvPathsEditor,
-    "share-button": components.ShareButton,
-  },
   data() {
     return {
       computeResource: null,
       localSharedEntity: this.sharedEntity ? this.sharedEntity.clone() : null,
       dirty: false,
     };
-  },
-  mounted() {
-    this.$on("input", () => {
-      this.dirty = true;
-    });
-  },
-  unmounted() {
-    // Vue 3 removed the $off() instance method and `destroyed()` hook.
-    // Listeners attached via `this.$on("input", ...)` would need to track
-    // their own cleanup; leaving this as a renamed stub is a no-op under
-    // Vue 3, matching the pre-fix behaviour (destroyed was silently
-    // ignored).
   },
   computed: {
     name() {
@@ -212,33 +197,25 @@ export default {
     },
     maxNodes() {
       const queue = this.computeResource
-        ? this.computeResource.batch_queues.find(
-            (q) => q.queue_name === this.data.defaultQueueName
-          )
+        ? this.computeResource.batch_queues.find((q) => q.queue_name === this.data.defaultQueueName)
         : null;
       return queue ? queue.max_nodes : 0;
     },
     maxCPUCount() {
       const queue = this.computeResource
-        ? this.computeResource.batch_queues.find(
-            (q) => q.queue_name === this.data.defaultQueueName
-          )
+        ? this.computeResource.batch_queues.find((q) => q.queue_name === this.data.defaultQueueName)
         : null;
       return queue ? queue.max_processors : 0;
     },
     maxWalltime() {
       const queue = this.computeResource
-        ? this.computeResource.batch_queues.find(
-            (q) => q.queue_name === this.data.defaultQueueName
-          )
+        ? this.computeResource.batch_queues.find((q) => q.queue_name === this.data.defaultQueueName)
         : null;
       return queue ? queue.max_run_time : 0;
     },
     cpuPerNode() {
       const queue = this.computeResource
-        ? this.computeResource.batch_queues.find(
-            (q) => q.queue_name === this.data.defaultQueueName
-          )
+        ? this.computeResource.batch_queues.find((q) => q.queue_name === this.data.defaultQueueName)
         : null;
       return queue ? queue.cpu_per_node : 0;
     },
@@ -255,14 +232,26 @@ export default {
     },
     ownerTitle() {
       return this.owner
-        ? this.owner.first_name +
-            " " +
-            this.owner.last_name +
-            " (" +
-            this.owner.email +
-            ")"
+        ? this.owner.first_name + " " + this.owner.last_name + " (" + this.owner.email + ")"
         : null;
     },
+  },
+  watch: {
+    sharedEntity(newValue) {
+      this.localSharedEntity = newValue.clone();
+    },
+  },
+  mounted() {
+    this.$on("input", () => {
+      this.dirty = true;
+    });
+  },
+  unmounted() {
+    // Vue 3 removed the $off() instance method and `destroyed()` hook.
+    // Listeners attached via `this.$on("input", ...)` would need to track
+    // their own cleanup; leaving this as a renamed stub is a no-op under
+    // Vue 3, matching the pre-fix behaviour (destroyed was silently
+    // ignored).
   },
   created() {
     services.ComputeResourceService.retrieve({
@@ -284,9 +273,7 @@ export default {
     },
     defaultQueueChanged(queueName) {
       if (queueName) {
-        const queue = this.computeResource.batch_queues.find(
-          (q) => q.queue_name === queueName
-        );
+        const queue = this.computeResource.batch_queues.find((q) => q.queue_name === queueName);
         this.data.defaultNodeCount = queue.default_node_count;
         this.data.defaultCPUCount = queue.default_cpu_count;
         this.data.defaultWalltime = queue.default_walltime;
@@ -302,11 +289,6 @@ export default {
     unsavedSharedEntity(newSharedEntity) {
       this.dirty = true;
       this.$emit("sharing-changed", newSharedEntity, this.data, true);
-    },
-  },
-  watch: {
-    sharedEntity(newValue) {
-      this.localSharedEntity = newValue.clone();
     },
   },
 };

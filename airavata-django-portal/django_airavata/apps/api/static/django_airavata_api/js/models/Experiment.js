@@ -82,8 +82,7 @@ export default class Experiment extends BaseModel {
   validate() {
     let validationResults = {};
     if (this.isEmpty(this.experiment_name)) {
-      validationResults["experiment_name"] =
-        "Please provide a name for this experiment.";
+      validationResults["experiment_name"] = "Please provide a name for this experiment.";
     }
     if (this.isEmpty(this.project_id)) {
       validationResults["project_id"] = "Please select a project.";
@@ -117,16 +116,12 @@ export default class Experiment extends BaseModel {
       ExperimentState.FAILED,
       ExperimentState.COMPLETED,
     ];
-    return (
-      this.latestStatus &&
-      hasLaunchedStates.indexOf(this.latestStatus.state) >= 0
-    );
+    return this.latestStatus && hasLaunchedStates.indexOf(this.latestStatus.state) >= 0;
   }
 
   get isEditable() {
     return (
-      (!this.latestStatus ||
-        this.latestStatus.state === ExperimentState.CREATED) &&
+      (!this.latestStatus || this.latestStatus.state === ExperimentState.CREATED) &&
       this.user_has_write_access
     );
   }
@@ -146,16 +141,13 @@ export default class Experiment extends BaseModel {
   get resourceHostId() {
     return this.user_configuration_data &&
       this.user_configuration_data.computational_resource_scheduling
-      ? this.user_configuration_data.computational_resource_scheduling
-          .resource_host_id
+      ? this.user_configuration_data.computational_resource_scheduling.resource_host_id
       : null;
   }
 
   populateInputsOutputsFromApplicationInterface(applicationInterface) {
     // Copy application inputs and outputs to the experiment
-    this.experiment_inputs = applicationInterface.application_inputs.map(
-      (input) => input.clone()
-    );
+    this.experiment_inputs = applicationInterface.application_inputs.map((input) => input.clone());
     this.evaluateInputDependencies();
     this.experiment_outputs = applicationInterface.application_outputs.slice();
   }
@@ -168,11 +160,11 @@ export default class Experiment extends BaseModel {
   }
 
   getExperimentInput(inputName) {
-    return this.experiment_inputs.find(inp => inp.name === inputName);
+    return this.experiment_inputs.find((inp) => inp.name === inputName);
   }
 
   getExperimentOutput(outputName) {
-    return this.experiment_outputs.find(out => out.name === outputName);
+    return this.experiment_outputs.find((out) => out.name === outputName);
   }
 
   _collectInputValues() {

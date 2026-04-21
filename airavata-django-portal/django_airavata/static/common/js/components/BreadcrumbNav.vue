@@ -1,5 +1,5 @@
 <template>
-  <nav aria-label="breadcrumb" class="mb-3" v-if="crumbs.length > 0">
+  <nav v-if="crumbs.length > 0" aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb mb-0">
       <li
         v-for="(crumb, index) in crumbs"
@@ -16,7 +16,7 @@
 
 <script>
 export default {
-  name: "breadcrumb-nav",
+  name: "BreadcrumbNav",
   props: {
     crumbs: {
       type: Array,

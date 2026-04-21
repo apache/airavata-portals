@@ -12,12 +12,12 @@ Web portal for Apache Airavata, providing a user interface for managing experime
 ## Prerequisites
 
 | Requirement | Version |
-|-------------|---------|
-| Python | 3.12+ |
-| Node.js | 22+ |
-| Yarn | 1.22+ |
-| Docker | 20.10+ |
-| Tilt | 0.33+ |
+| ----------- | ------- |
+| Python      | 3.12+   |
+| Node.js     | 22+     |
+| Yarn        | 1.22+   |
+| Docker      | 20.10+  |
+| Tilt        | 0.33+   |
 
 ## Quick Start
 

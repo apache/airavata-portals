@@ -16,7 +16,7 @@ const parsePathParams = function (url) {
   }
   for (let pathParamMatch of pathParamsMatch) {
     let pathParam = pathParamMatch.split(":");
-    if (pathParam.length == 2) {
+    if (pathParam.length === 2) {
       pathParams[pathParam[1]] = pathParam[0].replace(/<|>/gi, "");
     } else {
       pathParams[pathParam[0].replace(/<|>/gi, "")] = null;
@@ -41,9 +41,7 @@ const parseServiceMapping = function (serviceConfiguration) {
   let queryParams = serviceConfiguration.queryParams;
   let defaultPagination = serviceConfiguration.pagination ? true : false;
   let encodePathParams =
-    "encodePathParams" in serviceConfiguration
-      ? serviceConfiguration.encodePathParams
-      : true;
+    "encodePathParams" in serviceConfiguration ? serviceConfiguration.encodePathParams : true;
   for (let viewSetFunction of viewSetFunctions) {
     let viewSetFunctionName = viewSetFunction;
     let pagination = defaultPagination;
@@ -121,14 +119,8 @@ const parseServiceMapping = function (serviceConfiguration) {
         url: methodConfig.url || url,
         requestType: methodConfig.requestType || getKey,
         queryParams: methodConfig.queryParams || queryParams,
-        pagination:
-          "pagination" in methodConfig
-            ? methodConfig.pagination
-            : defaultPagination,
-        encodePathParams:
-          "encodePathParams" in methodConfig
-            ? methodConfig.encodePathParams
-            : true,
+        pagination: "pagination" in methodConfig ? methodConfig.pagination : defaultPagination,
+        encodePathParams: "encodePathParams" in methodConfig ? methodConfig.encodePathParams : true,
       };
       if ("modelClass" in methodConfig) {
         mappedFunctions[methodName]["modelClass"] = methodConfig.modelClass;
@@ -170,9 +162,7 @@ class ServiceFactory {
   constructor(serviceConfigurations) {
     const parsedConfigurations = {};
     for (let serviceName of Object.keys(serviceConfigurations)) {
-      parsedConfigurations[serviceName] = parseServiceMapping(
-        serviceConfigurations[serviceName]
-      );
+      parsedConfigurations[serviceName] = parseServiceMapping(serviceConfigurations[serviceName]);
     }
     this.serviceConfigurations = parsedConfigurations;
   }
@@ -204,7 +194,7 @@ class ServiceFactory {
               " for the function: " +
               functionName +
               " in the service: " +
-              serviceName
+              serviceName,
           );
       }
       let pathParamsMapping = parsePathParams(config.url);
@@ -215,7 +205,7 @@ class ServiceFactory {
           ignoreErrors: false,
           showSpinner: true,
           cache: false,
-        }
+        },
       ) {
         let url = config.url;
         let paramKeys = Object.keys(params);
@@ -227,16 +217,12 @@ class ServiceFactory {
             if (pathParamsMapping[paramKey] !== null) {
               url = url.replace(
                 "<" + pathParamsMapping[paramKey] + ":" + paramKey + ">",
-                config.encodePathParams
-                  ? encodeURIComponent(params[paramKey])
-                  : params[paramKey]
+                config.encodePathParams ? encodeURIComponent(params[paramKey]) : params[paramKey],
               );
             } else {
               url = url.replace(
                 "<" + paramKey + ">",
-                config.encodePathParams
-                  ? encodeURIComponent(params[paramKey])
-                  : params[paramKey]
+                config.encodePathParams ? encodeURIComponent(params[paramKey]) : params[paramKey],
               );
             }
           } else if (paramKey in queryParamsMapping) {
@@ -246,21 +232,18 @@ class ServiceFactory {
               queryParams[queryParamsMapping[paramKey]] = params[paramKey];
             }
           } else if (
-            (config.requestType == postKey || config.requestType == putKey) &&
+            (config.requestType === postKey || config.requestType === putKey) &&
             config.bodyParams instanceof Array &&
             paramKey in config.bodyParams
           ) {
             bodyParams[paramKey] = params[paramKey];
           } else if (
-            (config.requestType == postKey || config.requestType == putKey) &&
+            (config.requestType === postKey || config.requestType === putKey) &&
             config.bodyParams !== null &&
-            config.bodyParams.name == paramKey
+            config.bodyParams.name === paramKey
           ) {
             bodyParams = params[paramKey];
-          } else if (
-            config.initialDataParam &&
-            paramKey === config.initialDataParam
-          ) {
+          } else if (config.initialDataParam && paramKey === config.initialDataParam) {
             initialData = params[paramKey];
           }
         }

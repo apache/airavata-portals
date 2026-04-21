@@ -24,10 +24,10 @@ import { mixins } from "django-airavata-common-ui";
 import SSHCredentialSelector from "../credentials/SSHCredentialSelector.vue";
 
 export default {
-  name: "gateway-resource-profile-editor",
-  mixins: [mixins.VModelMixin],
+  name: "GatewayResourceProfileEditor",
   components: {
     "ssh-credential-selector": SSHCredentialSelector,
   },
+  mixins: [mixins.VModelMixin],
 };
 </script>

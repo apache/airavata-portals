@@ -10,18 +10,18 @@
         <div class="card">
           <div class="card-body">
             <list-layout
-              @add-new-item="addNewNotice"
               title="Notice"
               new-item-button-text="New Notice"
               :new-button-disabled="!isGatewayAdmin"
+              @add-new-item="addNewNotice"
             >
               <template #new-item-editor>
-                <div class="card" v-if="showNewItemEditor">
+                <div v-if="showNewItemEditor" class="card">
                   <notice-editor
-                    v-model="newNotice"
                     ref="noticeEditor"
-                    @cancelNewNotice="cancelNewNotice"
-                    @saveNewNotice="saveNewNotice"
+                    v-model="newNotice"
+                    @cancel-new-notice="cancelNewNotice"
+                    @save-new-notice="saveNewNotice"
                   >
                     <template #title>
                       <h1 class="h4 mb-4 me-auto">New Notice</h1>
@@ -48,9 +48,7 @@
                             Edit
                             <i class="fa fa-edit" aria-hidden="true"></i>
                           </a>
-                          <delete-link
-                            @delete="deleteNotice(item.notificationId)"
-                          >
+                          <delete-link @delete="deleteNotice(item.notificationId)">
                             Are you sure you want to delete the notice?
                           </delete-link>
                         </template>
@@ -79,7 +77,13 @@ import { components, layouts } from "django-airavata-common-ui";
 import NoticeEditor from "./NoticeEditor";
 
 export default {
-  name: "notice-management-container",
+  name: "NoticeManagementContainer",
+  components: {
+    "human-date": components.HumanDate,
+    "delete-link": components.DeleteLink,
+    "list-layout": layouts.ListLayout,
+    NoticeEditor,
+  },
   data() {
     return {
       notices: null,
@@ -87,17 +91,6 @@ export default {
       showNewItemEditor: false,
       showingDetails: {},
     };
-  },
-  components: {
-    "human-date": components.HumanDate,
-    "delete-link": components.DeleteLink,
-    "list-layout": layouts.ListLayout,
-    NoticeEditor,
-  },
-  created() {
-    services.ManageNotificationService.list().then(
-      (notices) => (this.notices = notices)
-    );
   },
   computed: {
     fields() {
@@ -139,20 +132,21 @@ export default {
       return session.Session.is_gateway_admin;
     },
   },
+  created() {
+    services.ManageNotificationService.list().then((notices) => (this.notices = notices));
+  },
   methods: {
     saveNewNotice() {
-      services.ManageNotificationService.create({ data: this.newNotice }).then(
-        (sp) => {
-          this.notices.push(sp);
-        }
-      );
+      services.ManageNotificationService.create({ data: this.newNotice }).then((sp) => {
+        this.notices.push(sp);
+      });
       this.showNewItemEditor = true;
     },
     updateNotice() {
       const validation = this.updatedNotice.validate();
       if (Object.keys(validation).length === 0) {
         const index = this.notices.findIndex(
-          (sp) => sp.notificationId === this.updatedNotice.notificationId
+          (sp) => sp.notificationId === this.updatedNotice.notificationId,
         );
         services.ManageNotificationService.update({
           lookup: this.updatedNotice.notificationId,
@@ -173,19 +167,14 @@ export default {
       services.ManageNotificationService.delete({
         lookup: notificationId,
       }).then(() => {
-        const index = this.notices.findIndex(
-          (sp) => sp.notificationId === notificationId
-        );
+        const index = this.notices.findIndex((sp) => sp.notificationId === notificationId);
         this.notices.splice(index, 1);
       });
     },
     toggleDetails(row) {
-      (this.updatedNotice = new models.Notification()),
-        (this.updatedNotice = row.item);
+      ((this.updatedNotice = new models.Notification()), (this.updatedNotice = row.item));
       row.toggleDetails();
-      this.showingDetails[row.item.notificationId] = !this.showingDetails[
-        row.item.notificationId
-      ];
+      this.showingDetails[row.item.notificationId] = !this.showingDetails[row.item.notificationId];
     },
   },
 };

@@ -11,19 +11,20 @@
           <div class="card-text">
             <div class="mb-3">
               <div class="input-group">
-                <input class="form-control"
+                <input
                   v-model.trim="experimentId"
+                  class="form-control"
                   placeholder="Experiment ID"
-                  @keydown.enter="
-                    experimentId && showExperimentDetails(experimentId)
-                  "
+                  @keydown.enter="experimentId && showExperimentDetails(experimentId)"
                 />
                 <span class="input-group-text">
-                  <button class="btn"
+                  <button
+                    class="btn"
                     :disabled="!experimentId"
                     @click="showExperimentDetails(experimentId)"
-                    >Load</button
                   >
+                    Load
+                  </button>
                 </span>
               </div>
             </div>
@@ -33,19 +34,20 @@
           <div class="card-text">
             <div class="mb-3">
               <div class="input-group">
-                <input class="form-control"
+                <input
                   v-model.trim="jobId"
+                  class="form-control"
                   placeholder="Job ID"
-                  @keydown.enter="
-                    jobId && showExperimentDetailsForJobId(jobId)
-                  "
+                  @keydown.enter="jobId && showExperimentDetailsForJobId(jobId)"
                 />
                 <span class="input-group-text">
-                  <button class="btn"
+                  <button
+                    class="btn"
                     :disabled="!jobId"
                     @click="showExperimentDetailsForJobId(jobId)"
-                    >Load</button
                   >
+                    Load
+                  </button>
                 </span>
               </div>
             </div>
@@ -54,7 +56,7 @@
       </ul>
     </div>
     <div class="card" no-body>
-      <ul class="nav nav-tabs" ref="tabs">
+      <ul ref="tabs" class="nav nav-tabs">
         <li class="nav-item" :title="selectedExperimentsTabTitle">
           <div class="row">
             <div class="col">
@@ -66,39 +68,38 @@
                   <flat-pickr
                     :value="dateRange"
                     :config="dateConfig"
-                    @on-change="dateRangeChanged"
                     class="form-control"
+                    @on-change="dateRangeChanged"
                   />
                   <span class="input-group-text">
-                    <button class="btn"
-                      @click="getPast24Hours"
-                      >Past 24 Hours</button
-                    >
-                    <button class="btn" @click="getPastWeek"
-                      >Past Week</button
-                    >
+                    <button class="btn" @click="getPast24Hours">Past 24 Hours</button>
+                    <button class="btn" @click="getPastWeek">Past Week</button>
                   </span>
                 </div>
                 <div class="dropdown mb-2">
-                  <a class="dropdown-item"
+                  <a
                     v-if="!usernameFilterEnabled"
+                    class="dropdown-item"
                     @click="usernameFilterEnabled = true"
                     >Username</a
                   >
-                  <a class="dropdown-item"
+                  <a
                     v-if="!applicationNameFilterEnabled"
+                    class="dropdown-item"
                     @click="applicationNameFilterEnabled = true"
                     >Application Name</a
                   >
-                  <a class="dropdown-item"
+                  <a
                     v-if="!hostnameFilterEnabled"
+                    class="dropdown-item"
                     @click="hostnameFilterEnabled = true"
                     >Hostname</a
                   >
                 </div>
-                <div class="input-group mb-2" v-if="usernameFilterEnabled">
-                  <input class="form-control"
+                <div v-if="usernameFilterEnabled" class="input-group mb-2">
+                  <input
                     v-model="usernameFilter"
+                    class="form-control"
                     placeholder="Username"
                     @keydown.enter="loadStatistics"
                   />
@@ -109,37 +110,33 @@
                     </button>
                   </span>
                 </div>
-                <div class="input-group mb-2" v-if="applicationNameFilterEnabled">
-                  <select class="form-select"
+                <div v-if="applicationNameFilterEnabled" class="input-group mb-2">
+                  <select
                     v-model="applicationNameFilter"
+                    class="form-select"
                     :options="applicationNameOptions"
                     @input="loadStatistics"
                   >
                     <template slot="first">
-                      <option :value="null" disabled>
-                        Select an application to filter on
-                      </option>
+                      <option :value="null" disabled>Select an application to filter on</option>
                     </template>
                   </select>
                   <span class="input-group-text">
                     <button class="btn" @click="removeApplicationNameFilter">
                       <i class="fa fa-times"></i>
-                      <span class="visually-hidden"
-                        >Remove application name filter</span
-                      >
+                      <span class="visually-hidden">Remove application name filter</span>
                     </button>
                   </span>
                 </div>
-                <div class="input-group mb-2" v-if="hostnameFilterEnabled">
-                  <select class="form-select"
+                <div v-if="hostnameFilterEnabled" class="input-group mb-2">
+                  <select
                     v-model="hostnameFilter"
+                    class="form-select"
                     :options="hostnameOptions"
                     @input="loadStatistics"
                   >
                     <template slot="first">
-                      <option :value="null" disabled>
-                        Select compute resource to filter on
-                      </option>
+                      <option :value="null" disabled>Select compute resource to filter on</option>
                     </template>
                   </select>
                   <span class="input-group-text">
@@ -151,10 +148,7 @@
                 </div>
                 <template slot="footer">
                   <div class="d-flex justify-content-end">
-                    <button class="btn ms-auto"
-                      @click="loadStatistics"
-                      >Get Statistics</button
-                    >
+                    <button class="btn ms-auto" @click="loadStatistics">Get Statistics</button>
                   </div>
                 </template>
               </div>
@@ -177,7 +171,9 @@
                 title="Total Experiments"
                 @click="selectExperiments('allExperiments')"
               >
-                <span slot="link-text">All</span>
+                <template #link-text>
+                  <span>All</span>
+                </template>
               </experiment-statistics-card>
             </div>
             <div class="col-xl-2 col-md-4">
@@ -238,27 +234,31 @@
               </experiment-statistics-card>
             </div>
           </div>
-          <div class="row" v-if="items.length > 0">
+          <div v-if="items.length > 0" class="row">
             <div class="col">
               <div class="card">
                 <div class="card-body">
-                <!-- TODO: Replace b-table with native table -->
-                <table class="table">
-                  <tbody>
-                    <tr v-for="item in items" :key="item.experiment_id">
-                      <td><application-name :application-interface-id="item.execution_id" /></td>
-                      <td><compute-resource-name :compute-resource-id="item.resource_host_id" /></td>
-                      <td><human-date :date="item.creation_time" /></td>
-                      <td><experiment-status-badge :status-name="item.experiment_status.name" /></td>
-                      <td>
-                        <a @click="showExperimentDetails(item.experiment_id)">
-                          View Details
-                          <i class="far fa-chart-bar" aria-hidden="true"></i>
-                        </a>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                  <!-- TODO: Replace b-table with native table -->
+                  <table class="table">
+                    <tbody>
+                      <tr v-for="item in items" :key="item.experiment_id">
+                        <td><application-name :application-interface-id="item.execution_id" /></td>
+                        <td>
+                          <compute-resource-name :compute-resource-id="item.resource_host_id" />
+                        </td>
+                        <td><human-date :date="item.creation_time" /></td>
+                        <td>
+                          <experiment-status-badge :status-name="item.experiment_status.name" />
+                        </td>
+                        <td>
+                          <a @click="showExperimentDetails(item.experiment_id)">
+                            View Details
+                            <i class="far fa-chart-bar" aria-hidden="true"></i>
+                          </a>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
               <pager
@@ -270,17 +270,16 @@
             </div>
           </div>
         </li>
-        <li class="nav-item"
+        <li
           v-for="experimentTab in experimentDetailTabs"
           :key="experimentTab.experiment.experiment_id"
+          class="nav-item"
         >
           <template slot="title">
             {{ experimentTab.tabTitle }}
             <a
-              @click="
-                removeExperimentDetailTab(experimentTab.experiment.experiment_id)
-              "
               class="text-secondary"
+              @click="removeExperimentDetailTab(experimentTab.experiment.experiment_id)"
             >
               <i class="fas fa-times"></i>
               <span class="visually-hidden">Close experiment tab</span>
@@ -301,7 +300,16 @@ import ExperimentDetailsView from "./ExperimentDetailsView";
 import moment from "moment";
 
 export default {
-  name: "experiment-statistics-container",
+  name: "ExperimentStatisticsContainer",
+  components: {
+    ExperimentDetailsView,
+    ExperimentStatisticsCard,
+    "application-name": components.ApplicationName,
+    "compute-resource-name": components.ComputeResourceName,
+    "human-date": components.HumanDate,
+    "experiment-status-badge": components.ExperimentStatusBadge,
+    pager: components.Pager,
+  },
   data() {
     //fp_incr sets the time of the date to midnight.
     //Calculating from today midnight to tomorrow midnight.
@@ -333,25 +341,9 @@ export default {
       activeTabIndex: 0,
     };
   },
-  created() {
-    this.loadStatistics();
-    this.loadApplicationInterfaces();
-    this.loadComputeResources();
-  },
-  components: {
-    ExperimentDetailsView,
-    ExperimentStatisticsCard,
-    "application-name": components.ApplicationName,
-    "compute-resource-name": components.ComputeResourceName,
-    "human-date": components.HumanDate,
-    "experiment-status-badge": components.ExperimentStatusBadge,
-    pager: components.Pager,
-  },
   computed: {
     experimentStatistics() {
-      return this.experimentStatisticsPaginator
-        ? this.experimentStatisticsPaginator.results
-        : {};
+      return this.experimentStatisticsPaginator ? this.experimentStatisticsPaginator.results : {};
     },
     createdStates() {
       // TODO: moved to ExperimentStatistics model
@@ -368,10 +360,7 @@ export default {
       return [models.ExperimentState.COMPLETED];
     },
     canceledStates() {
-      return [
-        models.ExperimentState.CANCELING,
-        models.ExperimentState.CANCELED,
-      ];
+      return [models.ExperimentState.CANCELING, models.ExperimentState.CANCELED];
     },
     failedStates() {
       return [models.ExperimentState.FAILED];
@@ -462,13 +451,9 @@ export default {
         return "Created Experiments";
       } else if (this.selectedExperimentSummariesKey === "runningExperiments") {
         return "Running Experiments";
-      } else if (
-        this.selectedExperimentSummariesKey === "completedExperiments"
-      ) {
+      } else if (this.selectedExperimentSummariesKey === "completedExperiments") {
         return "Completed Experiments";
-      } else if (
-        this.selectedExperimentSummariesKey === "cancelledExperiments"
-      ) {
+      } else if (this.selectedExperimentSummariesKey === "cancelledExperiments") {
         return "Cancelled Experiments";
       } else if (this.selectedExperimentSummariesKey === "failedExperiments") {
         return "Failed Experiments";
@@ -476,6 +461,11 @@ export default {
         return "Experiments";
       }
     },
+  },
+  created() {
+    this.loadStatistics();
+    this.loadApplicationInterfaces();
+    this.loadComputeResources();
   },
   methods: {
     dateRangeChanged(selectedDates) {
@@ -486,12 +476,12 @@ export default {
     },
     loadApplicationInterfaces() {
       return services.ApplicationInterfaceService.list().then(
-        (appInterfaces) => (this.appInterfaces = appInterfaces)
+        (appInterfaces) => (this.appInterfaces = appInterfaces),
       );
     },
     loadComputeResources() {
       return services.ComputeResourceService.namesList().then(
-        (names) => (this.computeResourceNames = names)
+        (names) => (this.computeResourceNames = names),
       );
     },
     loadStatistics() {
@@ -508,11 +498,9 @@ export default {
       if (this.hostnameFilterEnabled && this.hostnameFilter) {
         requestData["resource_host_name"] = this.hostnameFilter;
       }
-      return services.ExperimentStatisticsService.get(requestData).then(
-        (stats) => {
-          this.experimentStatisticsPaginator = stats;
-        }
-      );
+      return services.ExperimentStatisticsService.get(requestData).then((stats) => {
+        this.experimentStatisticsPaginator = stats;
+      });
     },
     getPast24Hours() {
       this.fromTime = new Date().fp_incr(0);
@@ -564,7 +552,7 @@ export default {
             {
               lookup: experimentId,
             },
-            { ignoreErrors: true }
+            { ignoreErrors: true },
           );
           this.experimentDetailTabs.push({
             tabTitle: tabTitle || exp.experiment_name,
@@ -579,7 +567,7 @@ export default {
                 type: "WARNING",
                 message: `No experiment exists with experiment id ${experimentId}`,
                 duration: 5,
-              })
+              }),
             );
           } else {
             utils.FetchUtils.reportError(error);
@@ -597,7 +585,7 @@ export default {
             type: "WARNING",
             message: `No experiment exists with job id ${jobId}`,
             duration: 5,
-          })
+          }),
         );
       } else {
         if (searchResults.results.length > 1) {
@@ -606,13 +594,10 @@ export default {
               type: "WARNING",
               message: `More than one experiment matches job id ${jobId}, showing the latest one`,
               duration: 5,
-            })
+            }),
           );
         }
-        this.showExperimentDetails(
-          searchResults.results[0].experiment_id,
-          `Job ${jobId}`
-        );
+        this.showExperimentDetails(searchResults.results[0].experiment_id, `Job ${jobId}`);
       }
     },
     selectExperimentDetailsTab(experimentId) {
@@ -626,7 +611,7 @@ export default {
     },
     getExperimentDetailTabsIndex(experimentId) {
       return this.experimentDetailTabs.findIndex(
-        (tab) => tab.experiment.experiment_id === experimentId
+        (tab) => tab.experiment.experiment_id === experimentId,
       );
     },
     removeExperimentDetailTab(experimentId) {
@@ -637,10 +622,7 @@ export default {
       this.$refs.tabs.$el.scrollIntoView({ behavior: "smooth" });
     },
     selectExperiments(experimentSummariesKey) {
-      if (
-        this.experimentStatisticsPaginator &&
-        this.experimentStatisticsPaginator.offset > 0
-      ) {
+      if (this.experimentStatisticsPaginator && this.experimentStatisticsPaginator.offset > 0) {
         this.loadStatistics();
       }
       this.selectedExperimentSummariesKey = experimentSummariesKey;

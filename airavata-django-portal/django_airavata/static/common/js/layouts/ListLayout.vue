@@ -9,10 +9,7 @@
       <div class="col-auto">
         <slot name="additional-buttons"> </slot>
         <slot name="new-item-button">
-          <button class="btn btn-primary"
-            @click="addNewItem"
-            :disabled="newButtonDisabled"
-          >
+          <button class="btn btn-primary" :disabled="newButtonDisabled" @click="addNewItem">
             {{ newItemButtonText }}
             <i class="fa fa-plus" aria-hidden="true"></i>
           </button>
@@ -36,7 +33,7 @@
           v-if="itemsPaginator"
           :paginator="itemsPaginator"
           next="nextItems"
-          v-on:previous="previousItems"
+          @previous="previousItems"
         ></pager>
       </div>
     </div>
@@ -48,6 +45,10 @@ import { utils } from "django-airavata-api";
 import Pager from "../components/Pager.vue";
 
 export default {
+  name: "ListLayout",
+  components: {
+    pager: Pager,
+  },
   props: {
     items: Array,
     itemsPaginator: utils.PaginationIterator,
@@ -67,12 +68,13 @@ export default {
       default: false,
     },
   },
-  name: "list-layout",
   data() {
     return {};
   },
-  components: {
-    pager: Pager,
+  computed: {
+    itemsList: function () {
+      return this.itemsPaginator ? this.itemsPaginator.results : this.items;
+    },
   },
   methods: {
     nextItems: function () {
@@ -83,11 +85,6 @@ export default {
     },
     addNewItem: function () {
       this.$emit("add-new-item");
-    },
-  },
-  computed: {
-    itemsList: function () {
-      return this.itemsPaginator ? this.itemsPaginator.results : this.items;
     },
   },
 };

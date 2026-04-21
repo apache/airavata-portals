@@ -3,26 +3,23 @@
     <storage-path-breadcrumb
       v-if="experimentStoragePath"
       :parts="experimentStoragePath.parts"
-      rootName="Exp Data Dir"
+      root-name="Exp Data Dir"
       @directory-selected="$emit('directory-selected', $event)"
     />
 
-    <!-- TODO: migrate to native HTML table --><table class="table"
+    <!-- TODO: migrate to native HTML table -->
+    <table
       v-if="experimentStoragePath"
+      class="table"
       :fields="fields"
       :items="items"
       sort-by="name"
     >
       <template slot="cell(name)" slot-scope="data">
-        <a
-          v-if="data.item.type === 'dir'"
-          @click="directorySelected(data.item)"
-        >
+        <a v-if="data.item.type === 'dir'" @click="directorySelected(data.item)">
           <i class="fa fa-folder-open"></i> {{ data.item.name }}</a
         >
-        <a v-else :href="data.item.download_url" :target="downloadTarget">
-          {{ data.item.name }}</a
-        >
+        <a v-else :href="data.item.download_url" :target="downloadTarget"> {{ data.item.name }}</a>
       </template>
       <template slot="cell(modifiedTimestamp)" slot-scope="data">
         <human-date :date="data.item.modified_time" />
@@ -40,7 +37,7 @@
           v-if="data.item.type === 'dir'"
           class="action-link"
           :href="`/sdk/download-experiment-dir/${encodeURIComponent(
-            experimentId
+            experimentId,
           )}/?path=${data.item.path}`"
         >
           Download Zip
@@ -55,7 +52,11 @@ import StoragePathBreadcrumb from "./StoragePathBreadcrumb.vue";
 import { components } from "django-airavata-common-ui";
 
 export default {
-  name: "experiment-storage-path-viewer",
+  name: "ExperimentStoragePathViewer",
+  components: {
+    "human-date": components.HumanDate,
+    StoragePathBreadcrumb,
+  },
   props: {
     experimentStoragePath: {
       required: true,
@@ -67,10 +68,6 @@ export default {
     experimentId: {
       required: true,
     },
-  },
-  components: {
-    "human-date": components.HumanDate,
-    StoragePathBreadcrumb,
   },
   computed: {
     fields() {

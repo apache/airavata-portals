@@ -4,7 +4,7 @@
 
 <script>
 export default {
-  name: "html-output-display",
+  name: "HtmlOutputDisplay",
   props: {
     viewData: {
       type: Object,
@@ -13,12 +13,18 @@ export default {
   },
   computed: {
     rawOutput() {
-      return this.viewData && this.viewData.output
-        ? this.viewData.output
-        : null;
+      return this.viewData && this.viewData.output ? this.viewData.output : null;
     },
     rawJSFile() {
       return this.viewData && this.viewData.js ? this.viewData.js : null;
+    },
+  },
+  watch: {
+    rawJSFile() {
+      // TODO: check if script is already loaded
+      if (this.rawJSFile) {
+        this.loadScripts();
+      }
     },
   },
   methods: {
@@ -37,14 +43,6 @@ export default {
           resolve();
         });
       });
-    },
-  },
-  watch: {
-    rawJSFile() {
-      // TODO: check if script is already loaded
-      if (this.rawJSFile) {
-        this.loadScripts();
-      }
     },
   },
 };

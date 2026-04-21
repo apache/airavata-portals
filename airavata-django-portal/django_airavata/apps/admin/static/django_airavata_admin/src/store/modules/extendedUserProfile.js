@@ -17,9 +17,9 @@ const actions = {
     commit("setExtendedUserProfileFields", { extendedUserProfileFields });
   },
   async loadExtendedUserProfileValues({ commit }, { username }) {
-    const extendedUserProfileValues = await services.ExtendedUserProfileValueService.list(
-      { username }
-    );
+    const extendedUserProfileValues = await services.ExtendedUserProfileValueService.list({
+      username,
+    });
     commit("setExtendedUserProfileValues", { extendedUserProfileValues });
   },
   async saveExtendedUserProfileFields({ commit, dispatch, state }) {
@@ -74,9 +74,7 @@ const actions = {
 };
 
 function getField(state, field) {
-  const extendedUserProfileField = state.extendedUserProfileFields.find(
-    (f) => f === field
-  );
+  const extendedUserProfileField = state.extendedUserProfileFields.find((f) => f === field);
   return extendedUserProfileField;
 }
 function setFieldProp(state, field, prop, value) {
@@ -119,7 +117,7 @@ const mutations = {
     field.choices.push(
       new models.ExtendedUserProfileFieldChoice({
         display_text: "",
-      })
+      }),
     );
   },
   setChoiceOrder(state, { choice, order }) {
@@ -144,7 +142,7 @@ const mutations = {
         url: "",
         display_link: true,
         display_inline: false,
-      })
+      }),
     );
   },
   updateLinkLabel(state, { link, label }) {

@@ -17,15 +17,15 @@ import MultiFileInputEditor from "../../components/experiment/input-editors/Mult
 import WebComponentInputEditorMixin from "./WebComponentInputEditorMixin.js";
 
 export default {
+  components: {
+    MultiFileInputEditor,
+  },
   mixins: [WebComponentInputEditorMixin],
   props: {
     // Explicit copy props from mixin, workaround for bug, see
     // https://github.com/vuejs/vue-web-component-wrapper/issues/30#issuecomment-427350734
     // for more details
     ...WebComponentInputEditorMixin.props,
-  },
-  components: {
-    MultiFileInputEditor,
   },
 };
 </script>

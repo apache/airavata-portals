@@ -94,7 +94,7 @@ export default class ApplicationInterfaceDefinition extends BaseModel {
     if (!this.application_modules || this.application_modules.length > 1) {
       throw new Error(
         `No unique application module exists for interface
-        ${this.application_name}: modules=${this.application_modules}`
+        ${this.application_name}: modules=${this.application_modules}`,
       );
     }
     return this.application_modules[0];

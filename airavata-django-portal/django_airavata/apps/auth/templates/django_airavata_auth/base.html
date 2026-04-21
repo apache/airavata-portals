@@ -1,11 +1,3 @@
-{% extends 'base.html' %}
-
-{% load static django_vite %}
-
-{% block content %}
+{% extends 'base.html' %} {% load static django_vite %} {% block content %}
 <div id="{{ bundle_name }}"></div>
-{% endblock %}
-
-{% block scripts %}
-{% vite_asset entry_point app="AUTH" %}
-{% endblock %}
+{% endblock %} {% block scripts %} {% vite_asset entry_point app="AUTH" %} {% endblock %}

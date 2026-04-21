@@ -6,9 +6,9 @@ class FullExperimentService {
     if (data) {
       return Promise.resolve(new FullExperiment(data));
     } else {
-      return FetchUtils.get(
-        "/api/full-experiments/" + encodeURIComponent(experimentId) + "/"
-      ).then((result) => new FullExperiment(result));
+      return FetchUtils.get("/api/full-experiments/" + encodeURIComponent(experimentId) + "/").then(
+        (result) => new FullExperiment(result),
+      );
     }
   }
 }

@@ -1,14 +1,7 @@
 import BaseModel from "./BaseModel";
 import { v4 as uuidv4 } from "uuid";
 
-const FIELDS = [
-  "id",
-  "label",
-  "url",
-  "order",
-  "display_link",
-  "display_inline",
-];
+const FIELDS = ["id", "label", "url", "order", "display_link", "display_inline"];
 
 export default class ExtendedUserProfileFieldLink extends BaseModel {
   constructor(data = {}) {

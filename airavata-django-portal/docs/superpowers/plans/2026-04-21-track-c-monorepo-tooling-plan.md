@@ -43,7 +43,7 @@
 
 ### ESLint violation fixes
 
-Touches all 7 workspaces; scope is large but surgical — fixes target specific rules from the strict preset (no-unused-vars, no-undef, no-unreachable, eqeqeq, vue/* recommended).
+Touches all 7 workspaces; scope is large but surgical — fixes target specific rules from the strict preset (no-unused-vars, no-undef, no-unreachable, eqeqeq, vue/\* recommended).
 
 ---
 
@@ -60,6 +60,7 @@ cd /Users/yasith/code/artisan/worktree-feat-sdk-and-devenv/airavata-portals/aira
 git status --porcelain
 git branch --show-current
 ```
+
 Expected: empty status; branch is `track-c/monorepo-tooling`.
 
 - [ ] **Step 2: Temporarily switch to modernization for baseline**
@@ -68,6 +69,7 @@ Expected: empty status; branch is `track-c/monorepo-tooling`.
 git checkout modernization
 git pull origin modernization
 ```
+
 Expected: HEAD is the Track D merge commit.
 
 - [ ] **Step 3: Fresh Yarn install + build all workspaces**
@@ -79,6 +81,7 @@ rm -rf node_modules */node_modules \
 yarn install 2>&1 | tail -3
 yarn workspaces run build 2>&1 | tail -10
 ```
+
 Expected: all 7 workspaces build without error. Some may print warnings — note but ignore.
 
 - [ ] **Step 4: Snapshot every workspace's dist/**
@@ -96,6 +99,7 @@ cp -r django_airavata/apps/workspace/django-airavata-workspace-plugin-api/dist \
       /tmp/td-c-pre-plugin-api-dist 2>/dev/null || echo "plugin-api has no dist/"
 ls /tmp/td-c-pre-*-dist 2>/dev/null | head
 ```
+
 Expected: 5-6 snapshot directories at `/tmp/td-c-pre-*-dist/`, each containing a `manifest.json` (except library ones).
 
 - [ ] **Step 5: Snapshot manifest keys for later parity check**
@@ -112,6 +116,7 @@ open('/tmp/td-c-pre-$app-manifest-keys.txt', 'w').write('\n'.join(keys) + '\n')
 done
 cat /tmp/td-c-pre-workspace-manifest-keys.txt | head
 ```
+
 Expected: each app reports its entry count. `workspace` should have ~18 entries (biggest).
 
 - [ ] **Step 6: Return to track-c/monorepo-tooling**
@@ -120,6 +125,7 @@ Expected: each app reports its entry count. `workspace` should have ~18 entries 
 git checkout track-c/monorepo-tooling
 git status --porcelain  # clean
 ```
+
 Expected: back on `track-c/monorepo-tooling`, clean tree.
 
 ---
@@ -127,6 +133,7 @@ Expected: back on `track-c/monorepo-tooling`, clean tree.
 ## Task 2: Scaffold the `tooling/` workspace
 
 **Files:**
+
 - Create: `tooling/package.json`
 - Create: `tooling/README.md`
 - Create: `tooling/tsconfig.base.json`
@@ -144,30 +151,30 @@ mkdir -p tooling
 
 ```json
 {
-  "name": "@airavata/tooling",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Shared JS tooling configs for the Airavata Django Portal monorepo.",
-  "exports": {
-    "./eslint.config.js": "./eslint.config.js",
-    "./prettier.config.js": "./prettier.config.js",
-    "./vite.config.js": "./vite.config.js",
-    "./tsconfig.base.json": "./tsconfig.base.json"
-  },
-  "dependencies": {
-    "@eslint/js": "^9.0.0",
-    "@vitejs/plugin-vue": "^5.0.0",
-    "eslint": "^9.0.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-vue": "^10.0.0",
-    "globals": "^15.0.0",
-    "prettier": "^3.0.0",
-    "typescript": "^5.0.0",
-    "vite": "^6.0.0",
-    "vue-eslint-parser": "^10.0.0",
-    "vue-tsc": "^2.0.0"
-  }
+    "name": "@airavata/tooling",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "description": "Shared JS tooling configs for the Airavata Django Portal monorepo.",
+    "exports": {
+        "./eslint.config.js": "./eslint.config.js",
+        "./prettier.config.js": "./prettier.config.js",
+        "./vite.config.js": "./vite.config.js",
+        "./tsconfig.base.json": "./tsconfig.base.json"
+    },
+    "dependencies": {
+        "@eslint/js": "^9.0.0",
+        "@vitejs/plugin-vue": "^5.0.0",
+        "eslint": "^9.0.0",
+        "eslint-config-prettier": "^9.0.0",
+        "eslint-plugin-vue": "^10.0.0",
+        "globals": "^15.0.0",
+        "prettier": "^3.0.0",
+        "typescript": "^5.0.0",
+        "vite": "^6.0.0",
+        "vue-eslint-parser": "^10.0.0",
+        "vue-tsc": "^2.0.0"
+    }
 }
 ```
 
@@ -175,20 +182,20 @@ mkdir -p tooling
 
 ```json
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "strict": true,
-    "allowJs": false,
-    "noEmit": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "isolatedModules": true,
-    "resolveJsonModule": true,
-    "jsx": "preserve",
-    "types": ["vite/client"]
-  }
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "strict": true,
+        "allowJs": false,
+        "noEmit": true,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "isolatedModules": true,
+        "resolveJsonModule": true,
+        "jsx": "preserve",
+        "types": ["vite/client"]
+    }
 }
 ```
 
@@ -197,12 +204,12 @@ mkdir -p tooling
 ```js
 // CommonJS because some workspaces still use CJS for prettier config.
 module.exports = {
-  semi: true,
-  singleQuote: false,
-  trailingComma: "all",
-  printWidth: 100,
-  tabWidth: 2,
-  vueIndentScriptAndStyle: false,
+    semi: true,
+    singleQuote: false,
+    trailingComma: "all",
+    printWidth: 100,
+    tabWidth: 2,
+    vueIndentScriptAndStyle: false,
 };
 ```
 
@@ -216,36 +223,36 @@ import prettierConfig from "eslint-config-prettier";
 import globals from "globals";
 
 export default [
-  js.configs.recommended,
-  ...vuePlugin.configs["flat/recommended"],
-  prettierConfig,
-  {
-    languageOptions: {
-      parser: vueParser,
-      ecmaVersion: 2024,
-      sourceType: "module",
-      globals: {
-        ...globals.browser,
-        ...globals.es2024,
-        ...globals.node,
-      },
+    js.configs.recommended,
+    ...vuePlugin.configs["flat/recommended"],
+    prettierConfig,
+    {
+        languageOptions: {
+            parser: vueParser,
+            ecmaVersion: 2024,
+            sourceType: "module",
+            globals: {
+                ...globals.browser,
+                ...globals.es2024,
+                ...globals.node,
+            },
+        },
+        rules: {
+            "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+            "no-undef": "error",
+            "no-unreachable": "error",
+            eqeqeq: ["error", "always"],
+            "vue/multi-word-component-names": "off",
+            "vue/no-v-html": "warn",
+        },
+        ignores: [
+            "**/dist/**",
+            "**/node_modules/**",
+            "**/*.d.ts",
+            "**/static/**/manifest.json",
+            "**/static/common/dist/**",
+        ],
     },
-    rules: {
-      "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
-      "no-undef": "error",
-      "no-unreachable": "error",
-      "eqeqeq": ["error", "always"],
-      "vue/multi-word-component-names": "off",
-      "vue/no-v-html": "warn",
-    },
-    ignores: [
-      "**/dist/**",
-      "**/node_modules/**",
-      "**/*.d.ts",
-      "**/static/**/manifest.json",
-      "**/static/common/dist/**",
-    ],
-  },
 ];
 ```
 
@@ -267,35 +274,35 @@ import { resolve } from "path";
  * @param {object}  [opts.overrides]   shallow-merged over the generated config
  */
 export function defineAppConfig({
-  appLabel,
-  srcDir,
-  entries,
-  isLibrary = false,
-  overrides = {},
+    appLabel,
+    srcDir,
+    entries,
+    isLibrary = false,
+    overrides = {},
 }) {
-  const base = isLibrary ? "/" : `/static/${appLabel}/dist/`;
-  return defineConfig({
-    plugins: [vue()],
-    base,
-    build: {
-      manifest: isLibrary ? false : "manifest.json",
-      outDir: resolve(srcDir, `../../static/${appLabel}/dist`),
-      rollupOptions: { input: entries },
-    },
-    css: { preprocessorOptions: { scss: { quietDeps: true } } },
-    resolve: {
-      extensions: [".vue", ".ts", ".js", ".json"],
-      alias: { "@": srcDir },
-    },
-    server: { port: 9000, origin: "http://localhost:9000" },
-    ...overrides,
-  });
+    const base = isLibrary ? "/" : `/static/${appLabel}/dist/`;
+    return defineConfig({
+        plugins: [vue()],
+        base,
+        build: {
+            manifest: isLibrary ? false : "manifest.json",
+            outDir: resolve(srcDir, `../../static/${appLabel}/dist`),
+            rollupOptions: { input: entries },
+        },
+        css: { preprocessorOptions: { scss: { quietDeps: true } } },
+        resolve: {
+            extensions: [".vue", ".ts", ".js", ".json"],
+            alias: { "@": srcDir },
+        },
+        server: { port: 9000, origin: "http://localhost:9000" },
+        ...overrides,
+    });
 }
 ```
 
 - [ ] **Step 7: Write `tooling/README.md`**
 
-```markdown
+````markdown
 # @airavata/tooling
 
 Shared JavaScript tooling configs for the Airavata Django Portal monorepo.
@@ -316,6 +323,7 @@ Shared JavaScript tooling configs for the Airavata Django Portal monorepo.
 // eslint.config.js
 export { default } from "@airavata/tooling/eslint.config.js";
 ```
+````
 
 ```js
 // prettier.config.js
@@ -328,9 +336,15 @@ import { defineAppConfig } from "@airavata/tooling/vite.config.js";
 import { resolve } from "path";
 
 export default defineAppConfig({
-  appLabel: "django_airavata_<label>",
-  srcDir: resolve(import.meta.dirname, "./static/django_airavata_<label>/src"),
-  entries: resolve(import.meta.dirname, "./static/django_airavata_<label>/src/main.js"),
+    appLabel: "django_airavata_<label>",
+    srcDir: resolve(
+        import.meta.dirname,
+        "./static/django_airavata_<label>/src",
+    ),
+    entries: resolve(
+        import.meta.dirname,
+        "./static/django_airavata_<label>/src/main.js",
+    ),
 });
 ```
 
@@ -347,7 +361,8 @@ export default defineAppConfig({
    `devDependency` (npm workspaces hoist it automatically, but the entry
    makes the dep graph explicit).
 4. Run `npm install` at the repo root so the symlink is created.
-```
+
+````
 
 - [ ] **Step 8: Checkpoint commit**
 
@@ -355,13 +370,14 @@ export default defineAppConfig({
 git add tooling/
 git commit -m "wip(track-c): scaffold tooling/ workspace with shared configs"
 git log --oneline -3
-```
+````
 
 ---
 
 ## Task 3: Switch Yarn 1 → npm workspaces
 
 **Files:**
+
 - Modify: `package.json` (root) — add tooling to workspaces, add packageManager, rewrite scripts
 - Modify: `Tiltfile` — replace yarn commands with npm
 - Delete: `yarn.lock`
@@ -373,33 +389,33 @@ Edit `package.json` so it reads:
 
 ```json
 {
-  "private": true,
-  "packageManager": "npm@10.9.0",
-  "workspaces": [
-    "tooling",
-    "django_airavata/static/common",
-    "django_airavata/apps/admin",
-    "django_airavata/apps/api",
-    "django_airavata/apps/auth",
-    "django_airavata/apps/dataparsers",
-    "django_airavata/apps/workspace",
-    "django_airavata/apps/workspace/django-airavata-workspace-plugin-api"
-  ],
-  "scripts": {
-    "build": "npm run build --workspaces --if-present",
-    "dev": "echo 'Use tilt up for dev servers'",
-    "lint": "npm run lint --workspaces --if-present",
-    "format": "prettier --write \"**/*.{js,ts,vue,json,md,scss,css}\" --ignore-path=.gitignore",
-    "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
-    "test:e2e": "echo 'test:e2e placeholder — wired up in Track Pre-A'"
-  },
-  "engines": {
-    "node": ">=22"
-  },
-  "dependencies": {
-    "moment": "^2.30.1"
-  }
+    "private": true,
+    "packageManager": "npm@10.9.0",
+    "workspaces": [
+        "tooling",
+        "django_airavata/static/common",
+        "django_airavata/apps/admin",
+        "django_airavata/apps/api",
+        "django_airavata/apps/auth",
+        "django_airavata/apps/dataparsers",
+        "django_airavata/apps/workspace",
+        "django_airavata/apps/workspace/django-airavata-workspace-plugin-api"
+    ],
+    "scripts": {
+        "build": "npm run build --workspaces --if-present",
+        "dev": "echo 'Use tilt up for dev servers'",
+        "lint": "npm run lint --workspaces --if-present",
+        "format": "prettier --write \"**/*.{js,ts,vue,json,md,scss,css}\" --ignore-path=.gitignore",
+        "typecheck": "npm run typecheck --workspaces --if-present",
+        "test": "npm run test --workspaces --if-present",
+        "test:e2e": "echo 'test:e2e placeholder — wired up in Track Pre-A'"
+    },
+    "engines": {
+        "node": ">=22"
+    },
+    "dependencies": {
+        "moment": "^2.30.1"
+    }
 }
 ```
 
@@ -435,6 +451,7 @@ npm install 2>&1 | tail -10
 ls node_modules/@airavata/tooling
 test -f package-lock.json && echo "OK package-lock.json created"
 ```
+
 Expected: `npm install` finishes clean; `node_modules/@airavata/tooling` is a symlink to `tooling/`; `package-lock.json` exists.
 
 - [ ] **Step 5: Update `Tiltfile`**
@@ -472,6 +489,7 @@ Note: `package-lock.json` is large (~1MB). That's fine — it belongs in git per
 ```bash
 npm run build --workspaces --if-present 2>&1 | tail -15
 ```
+
 Expected: all 7 workspaces build successfully.
 
 ---
@@ -479,6 +497,7 @@ Expected: all 7 workspaces build successfully.
 ## Task 4: Wire each workspace to `@airavata/tooling`
 
 **Files:** per-workspace edits across 7 workspaces. For each workspace `W`:
+
 - Create: `W/eslint.config.js` (re-export)
 - Create: `W/prettier.config.js` (re-export)
 - Create: `W/jsconfig.json` (extends)
@@ -487,15 +506,15 @@ Expected: all 7 workspaces build successfully.
 
 Workspaces and their specifics:
 
-| Workspace | App label | srcDir suffix | Mode | Entries |
-|---|---|---|---|---|
-| `django_airavata/static/common` | `common` | `./js` (see notes) | library | `./js/index.js` |
-| `django_airavata/apps/admin` | `django_airavata_admin` | `./static/django_airavata_admin/src` | app | `./static/django_airavata_admin/src/main.js` |
-| `django_airavata/apps/api` | `django_airavata_api` | `./static/django_airavata_api/js` | library | entries object (inspect current vite.config.js) |
-| `django_airavata/apps/auth` | `django_airavata_auth` | `./static/django_airavata_auth/js` | app | entries object |
-| `django_airavata/apps/dataparsers` | `django_airavata_dataparsers` | `./static/django_airavata_dataparsers/js` | app | entries object |
-| `django_airavata/apps/workspace` | `django_airavata_workspace` | `./static/django_airavata_workspace/js` | app | 18 entries |
-| `django_airavata/apps/workspace/django-airavata-workspace-plugin-api` | `<n/a>` | `./js` | library | `./js/index.js` |
+| Workspace                                                             | App label                     | srcDir suffix                             | Mode    | Entries                                         |
+| --------------------------------------------------------------------- | ----------------------------- | ----------------------------------------- | ------- | ----------------------------------------------- |
+| `django_airavata/static/common`                                       | `common`                      | `./js` (see notes)                        | library | `./js/index.js`                                 |
+| `django_airavata/apps/admin`                                          | `django_airavata_admin`       | `./static/django_airavata_admin/src`      | app     | `./static/django_airavata_admin/src/main.js`    |
+| `django_airavata/apps/api`                                            | `django_airavata_api`         | `./static/django_airavata_api/js`         | library | entries object (inspect current vite.config.js) |
+| `django_airavata/apps/auth`                                           | `django_airavata_auth`        | `./static/django_airavata_auth/js`        | app     | entries object                                  |
+| `django_airavata/apps/dataparsers`                                    | `django_airavata_dataparsers` | `./static/django_airavata_dataparsers/js` | app     | entries object                                  |
+| `django_airavata/apps/workspace`                                      | `django_airavata_workspace`   | `./static/django_airavata_workspace/js`   | app     | 18 entries                                      |
+| `django_airavata/apps/workspace/django-airavata-workspace-plugin-api` | `<n/a>`                       | `./js`                                    | library | `./js/index.js`                                 |
 
 - [ ] **Step 1: Wire `django_airavata/apps/workspace` (biggest, establishes the pattern)**
 
@@ -515,8 +534,8 @@ Create `django_airavata/apps/workspace/jsconfig.json`:
 
 ```json
 {
-  "extends": "@airavata/tooling/tsconfig.base.json",
-  "include": ["static/django_airavata_workspace/js/**/*"]
+    "extends": "@airavata/tooling/tsconfig.base.json",
+    "include": ["static/django_airavata_workspace/js/**/*"]
 }
 ```
 
@@ -527,37 +546,38 @@ import { defineAppConfig } from "@airavata/tooling/vite.config.js";
 import { resolve } from "path";
 
 const srcDir = resolve(
-  import.meta.dirname,
-  "./static/django_airavata_workspace/js",
+    import.meta.dirname,
+    "./static/django_airavata_workspace/js",
 );
 
 export default defineAppConfig({
-  appLabel: "django_airavata_workspace",
-  srcDir,
-  entries: {
-    dashboard: resolve(srcDir, "entry-dashboard.js"),
-    "project-list": resolve(srcDir, "entry-project-list.js"),
-    applications: resolve(srcDir, "entry-applications.js"),
-    "create-experiment": resolve(srcDir, "entry-create-experiment.js"),
-    "view-experiment": resolve(srcDir, "entry-view-experiment.js"),
-    "experiment-list": resolve(srcDir, "entry-experiment-list.js"),
-    "edit-experiment": resolve(srcDir, "entry-edit-experiment.js"),
-    "edit-project": resolve(srcDir, "entry-edit-project.js"),
-    "user-storage": resolve(srcDir, "entry-user-storage.js"),
-    compute: resolve(srcDir, "entry-compute.js"),
-    datasets: resolve(srcDir, "entry-datasets.js"),
-    "datasets-list": resolve(srcDir, "entry-datasets-list.js"),
-    credentials: resolve(srcDir, "entry-credentials.js"),
-    "gateway-settings": resolve(srcDir, "entry-gateway-settings.js"),
-    "storage-detail": resolve(srcDir, "entry-storage-detail.js"),
-    "compute-detail": resolve(srcDir, "entry-compute-detail.js"),
-    "project-overview": resolve(srcDir, "entry-project-overview.js"),
-    "application-editor": resolve(srcDir, "entry-application-editor.js"),
-  },
+    appLabel: "django_airavata_workspace",
+    srcDir,
+    entries: {
+        dashboard: resolve(srcDir, "entry-dashboard.js"),
+        "project-list": resolve(srcDir, "entry-project-list.js"),
+        applications: resolve(srcDir, "entry-applications.js"),
+        "create-experiment": resolve(srcDir, "entry-create-experiment.js"),
+        "view-experiment": resolve(srcDir, "entry-view-experiment.js"),
+        "experiment-list": resolve(srcDir, "entry-experiment-list.js"),
+        "edit-experiment": resolve(srcDir, "entry-edit-experiment.js"),
+        "edit-project": resolve(srcDir, "entry-edit-project.js"),
+        "user-storage": resolve(srcDir, "entry-user-storage.js"),
+        compute: resolve(srcDir, "entry-compute.js"),
+        datasets: resolve(srcDir, "entry-datasets.js"),
+        "datasets-list": resolve(srcDir, "entry-datasets-list.js"),
+        credentials: resolve(srcDir, "entry-credentials.js"),
+        "gateway-settings": resolve(srcDir, "entry-gateway-settings.js"),
+        "storage-detail": resolve(srcDir, "entry-storage-detail.js"),
+        "compute-detail": resolve(srcDir, "entry-compute-detail.js"),
+        "project-overview": resolve(srcDir, "entry-project-overview.js"),
+        "application-editor": resolve(srcDir, "entry-application-editor.js"),
+    },
 });
 ```
 
 Modify `django_airavata/apps/workspace/package.json`:
+
 - Add `"@airavata/tooling": "*"` to `devDependencies`.
 - Remove from `devDependencies`: `eslint`, `eslint-plugin-vue`, `prettier`, `vite`, `@vitejs/plugin-vue`, `vite-plugin-vue` (if present), `sass` stays (workspace-specific).
 
@@ -574,6 +594,7 @@ assert pre == post, f'manifest drift: +{post-pre} -{pre-post}'
 print('OK workspace manifest parity')
 "
 ```
+
 Expected: `OK workspace manifest parity`.
 
 - [ ] **Step 3: Wire `django_airavata/apps/admin`**
@@ -585,20 +606,21 @@ import { defineAppConfig } from "@airavata/tooling/vite.config.js";
 import { resolve } from "path";
 
 export default defineAppConfig({
-  appLabel: "django_airavata_admin",
-  srcDir: resolve(import.meta.dirname, "./static/django_airavata_admin/src"),
-  entries: resolve(
-    import.meta.dirname,
-    "./static/django_airavata_admin/src/main.js",
-  ),
+    appLabel: "django_airavata_admin",
+    srcDir: resolve(import.meta.dirname, "./static/django_airavata_admin/src"),
+    entries: resolve(
+        import.meta.dirname,
+        "./static/django_airavata_admin/src/main.js",
+    ),
 });
 ```
 
 `jsconfig.json`:
+
 ```json
 {
-  "extends": "@airavata/tooling/tsconfig.base.json",
-  "include": ["static/django_airavata_admin/src/**/*"]
+    "extends": "@airavata/tooling/tsconfig.base.json",
+    "include": ["static/django_airavata_admin/src/**/*"]
 }
 ```
 
@@ -607,6 +629,7 @@ export default defineAppConfig({
 Update `package.json`: add `"@airavata/tooling": "*"`, drop the 5 moved dev deps.
 
 Build verification:
+
 ```bash
 cd django_airavata/apps/admin && npm run build && cd - > /dev/null
 python3 -c "
@@ -653,6 +676,7 @@ rm -rf node_modules tooling/node_modules django_airavata/apps/*/node_modules \
        django_airavata/apps/workspace/django-airavata-workspace-plugin-api/node_modules
 npm install 2>&1 | tail -3
 ```
+
 Expected: clean install.
 
 - [ ] **Step 10: Build everything; full manifest parity gauntlet**
@@ -669,6 +693,7 @@ print('OK $app manifest parity')
 "
 done
 ```
+
 Expected: 4× "OK ... manifest parity".
 
 - [ ] **Step 11: Checkpoint commit**
@@ -691,6 +716,7 @@ npm run lint 2>&1 | tee /tmp/td-c-lint-raw.txt | tail -30
 echo "---"
 grep -E "error|warning" /tmp/td-c-lint-raw.txt | wc -l
 ```
+
 Expected: possibly hundreds of errors and warnings. Record the count.
 
 - [ ] **Step 2: Auto-fix what ESLint can**
@@ -722,6 +748,7 @@ Walk the remaining output. For each violation:
 - **`vue/no-mutating-props`** — restructure to emit an event and let parent mutate.
 
 After each workspace's fixes, build to confirm nothing broke:
+
 ```bash
 cd django_airavata/apps/<workspace> && npm run build && cd - > /dev/null
 ```
@@ -738,6 +765,7 @@ If a violation is truly un-fixable in-scope (e.g., refactor required), disable i
 npm run lint
 echo "exit=$?"
 ```
+
 Expected: exit 0. If any errors remain, continue Step 3 until clean.
 
 - [ ] **Step 5: Run Prettier check**
@@ -745,12 +773,14 @@ Expected: exit 0. If any errors remain, continue Step 3 until clean.
 ```bash
 npx prettier --check . 2>&1 | tail -10
 ```
+
 Expected: all files listed as "matches". If any "code style issues" appear:
 
 ```bash
 npm run format   # writes fixes
 npx prettier --check .
 ```
+
 Expected: exit 0.
 
 - [ ] **Step 6: Re-build everything; re-verify manifest parity**
@@ -767,6 +797,7 @@ print('OK $app manifest parity')
 "
 done
 ```
+
 Expected: 4× OK.
 
 - [ ] **Step 7: Checkpoint commit**
@@ -787,6 +818,7 @@ git commit -m "wip(track-c): fix every ESLint 9 strict violation across 7 worksp
 ```bash
 npm run typecheck 2>&1 | tail -10
 ```
+
 Expected: each workspace reports either "0 files" (no `.ts` yet) or passes. Exit 0 overall.
 
 - [ ] **Step 2: Run vitest suites**
@@ -794,6 +826,7 @@ Expected: each workspace reports either "0 files" (no `.ts` yet) or passes. Exit
 ```bash
 npm run test 2>&1 | tail -20
 ```
+
 Expected: the workspaces that define `test:unit` (api, workspace per the survey) run vitest and pass. Exit 0 overall.
 
 - [ ] **Step 3: Run `test:e2e` placeholder**
@@ -801,6 +834,7 @@ Expected: the workspaces that define `test:unit` (api, workspace per the survey)
 ```bash
 npm run test:e2e
 ```
+
 Expected: prints `test:e2e placeholder — wired up in Track Pre-A`; exit 0.
 
 - [ ] **Step 4: Checkpoint commit (only if verification required any tweaks — else skip)**
@@ -945,7 +979,9 @@ If any gate fails, investigate and fix. Do not move to Task 8 until all 15 are O
 ```bash
 git log --oneline -8
 ```
+
 Expected sequence (bottom to top):
+
 - `f5d19f7942 docs(track-c): monorepo tooling design spec`
 - one Task-2 commit: `wip(track-c): scaffold tooling/ workspace with shared configs`
 - one Task-3 commit: `wip(track-c): switch yarn 1 → npm workspaces`
@@ -967,6 +1003,7 @@ echo "wip commits: $COUNT"
 git reset --soft "$(git log --format=%H --grep='docs(track-c): monorepo tooling design spec' -n 1)"
 git status --short | head
 ```
+
 Expected: HEAD is the spec commit; all Track C tooling changes remain staged.
 
 - [ ] **Step 4: Count the staged footprint (sanity check)**
@@ -974,6 +1011,7 @@ Expected: HEAD is the spec commit; all Track C tooling changes remain staged.
 ```bash
 git diff --cached --stat | tail -3
 ```
+
 Expected: many files (tooling/ + 7 workspaces + root package.json + Tiltfile + package-lock.json + yarn.lock deletion).
 
 - [ ] **Step 5: Create the single Track C commit**
@@ -1027,10 +1065,12 @@ git push origin modernization
 - [ ] **Step 7: Amend umbrella spec to reflect the Yarn→npm deviation**
 
 Edit `docs/superpowers/specs/2026-04-21-portal-modernization-design.md`:
+
 - Update the Track C section to say "npm workspaces" instead of "Yarn 1 classic".
 - Update the Guardrails section: strike "Yarn 1 classic", add a note that Track C switched to npm workspaces with rationale in its own spec.
 
 Commit on modernization:
+
 ```bash
 git add docs/superpowers/specs/2026-04-21-portal-modernization-design.md
 git commit -m "docs(umbrella): Track C switched to npm workspaces (deviates from Yarn 1 guardrail)"
@@ -1042,6 +1082,7 @@ git push origin modernization
 ```bash
 git log --oneline --merges -3
 ```
+
 Expected: top merge commit is `merge: Track C (monorepo tooling)`; previous is `merge: Track D (Python hygiene)`.
 
 ---
@@ -1050,20 +1091,20 @@ Expected: top merge commit is `merge: Track C (monorepo tooling)`; previous is `
 
 **Spec coverage:**
 
-| Spec section | Plan task |
-|---|---|
-| Scope 1: Create tooling/ workspace | Task 2 |
-| Scope 2: Yarn → npm switch | Task 3 |
-| Scope 3: Wire all 7 workspaces | Task 4 |
-| Scope 4: Fix ESLint strict violations | Task 5 |
-| Scope 5: Root scripts | Task 3 Step 1 (scripts block) + Task 6 verifications |
-| Scope 6: tooling/README.md | Task 2 Step 7 |
-| Testing Layer 1 (fresh install) | Task 3 Step 4 + Task 7 Step 3 (Gate 8) |
-| Testing Layer 2 (build parity) | Task 1 (baseline) + Task 4 (per-workspace) + Task 7 Step 4 (Gate 13) |
-| Testing Layer 3 (lint/typecheck/tests green) | Task 5 + Task 6 + Task 7 Steps 3-4 |
-| Testing Layer 4 (Tilt boots) | Task 3 Step 5 + ad-hoc `tilt up` after merge |
-| Done criteria (15 gate checks) | Task 7 |
-| Amend umbrella guardrail "Yarn 1 classic" | Task 8 Step 7 |
+| Spec section                                 | Plan task                                                            |
+| -------------------------------------------- | -------------------------------------------------------------------- |
+| Scope 1: Create tooling/ workspace           | Task 2                                                               |
+| Scope 2: Yarn → npm switch                   | Task 3                                                               |
+| Scope 3: Wire all 7 workspaces               | Task 4                                                               |
+| Scope 4: Fix ESLint strict violations        | Task 5                                                               |
+| Scope 5: Root scripts                        | Task 3 Step 1 (scripts block) + Task 6 verifications                 |
+| Scope 6: tooling/README.md                   | Task 2 Step 7                                                        |
+| Testing Layer 1 (fresh install)              | Task 3 Step 4 + Task 7 Step 3 (Gate 8)                               |
+| Testing Layer 2 (build parity)               | Task 1 (baseline) + Task 4 (per-workspace) + Task 7 Step 4 (Gate 13) |
+| Testing Layer 3 (lint/typecheck/tests green) | Task 5 + Task 6 + Task 7 Steps 3-4                                   |
+| Testing Layer 4 (Tilt boots)                 | Task 3 Step 5 + ad-hoc `tilt up` after merge                         |
+| Done criteria (15 gate checks)               | Task 7                                                               |
+| Amend umbrella guardrail "Yarn 1 classic"    | Task 8 Step 7                                                        |
 
 Every spec requirement maps to at least one task.
 

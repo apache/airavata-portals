@@ -4,16 +4,17 @@
       ref="file-upload"
       :xhr-upload-endpoint="uploadEndpoint"
       :tus-upload-finish-endpoint="uploadEndpoint"
-      @upload-finished="uploadFinished"
       multiple
+      @upload-finished="uploadFinished"
     />
-    <div class="input-group input-group-sm" style="max-width: 300px;">
-      <input class="form-control"
+    <div class="input-group input-group-sm" style="max-width: 300px">
+      <input
         v-model="dirName"
+        class="form-control"
         placeholder="New directory name"
         @keydown.enter="addDirectory"
       />
-      <button class="btn btn-outline-secondary" @click="addDirectory" :disabled="!this.dirName">
+      <button class="btn btn-outline-secondary" :disabled="!dirName" @click="addDirectory">
         <i class="fa fa-folder-plus me-1"></i>Add
       </button>
     </div>
@@ -25,9 +26,22 @@ import { components } from "django-airavata-common-ui";
 import { session } from "django-airavata-api";
 
 export default {
-  name: "user-storage-create-view",
+  name: "UserStorageCreateView",
   components: {
     uppy: components.Uppy,
+  },
+  props: {
+    userStoragePath: {
+      required: true,
+    },
+    storagePath: {
+      required: true,
+    },
+  },
+  data() {
+    return {
+      dirName: null,
+    };
   },
   computed: {
     uploadEndpoint() {
@@ -38,19 +52,6 @@ export default {
     },
     userHasWriteAccess() {
       return this.userStoragePath.user_has_write_access;
-    },
-  },
-  data() {
-    return {
-      dirName: null,
-    };
-  },
-  props: {
-    userStoragePath: {
-      required: true,
-    },
-    storagePath: {
-      required: true,
     },
   },
   methods: {

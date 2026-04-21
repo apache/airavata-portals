@@ -6,131 +6,121 @@
         <span class="visually-hidden">Drag handle for reordering</span>
       </div>
       <div class="me-auto">Input Field: {{ data.name }}</div>
-      <a
-        v-if="!readonly"
-        class="text-secondary"
-        @click="deleteApplicationInput"
-      >
+      <a v-if="!readonly" class="text-secondary" @click="deleteApplicationInput">
         <i class="fa fa-trash"></i>
         <span class="visually-hidden">Delete</span>
       </a>
     </div>
     <div class="card-body">
-    <div class="collapse" :id="id + '-collapse'" :visible="!collapse">
-      <div class="mb-3" label="Name" :label-for="id + '-name'">
-        <input class="form-control"
-          :id="id + '-name'"
-          type="text"
-          v-model="data.name"
-          ref="nameInput"
-          required
-          :disabled="readonly"
-        />
-      </div>
-      <div class="mb-3" label="Type" :label-for="id + '-type'">
-        <select class="form-select"
-          :id="id + '-type'"
-          v-model="data.type"
-          :options="inputTypeOptions"
-          :disabled="readonly"
-        />
-      </div>
-      <form-group
-        label="Initial Value"
-        :label-for="id + '-value'"
-        v-if="showValueField"
-      >
-        <input class="form-control"
-          :id="id + '-value'"
-          type="text"
-          v-model="data.value"
-          :disabled="readonly"
-        />
-      </form-group>
-      <form-group
-        label="Override Filename"
-        :label-for="id + '-value'"
-        v-if="showOverrideFilenameField"
-      >
-        <input class="form-control"
-          :id="id + '-override-filename'"
-          type="text"
-          v-model="data.overrideFilename"
-          :disabled="readonly"
-        />
-      </form-group>
-      <div class="mb-3" label="Application Argument" :label-for="id + '-argument'">
-        <input class="form-control"
-          :id="id + '-argument'"
-          type="text"
-          v-model="data.applicationArgument"
-          :disabled="readonly"
-        />
-      </div>
-      <form-group
-        class="flex-fill"
-        label="Required on Command Line"
-        :label-for="id + '-required-command-line'"
-        description="Add this input's value to the command line in the generated job script."
-      >
-        <form-radio-group
-          :id="id + '-required-command-line'"
-          v-model="data.requiredToAddedToCommandLine"
-          :options="trueFalseOptions"
-          :disabled="readonly"
-        />
-      </form-group>
-      <div class="d-flex">
-        <form-group
-          class="flex-fill"
-          label="Required"
-          :label-for="id + '-required'"
-        >
-          <form-radio-group
-            :id="id + '-required'"
-            v-model="data.isRequired"
-            :options="trueFalseOptions"
+      <div :id="id + '-collapse'" class="collapse" :visible="!collapse">
+        <div class="mb-3" label="Name" :label-for="id + '-name'">
+          <input
+            :id="id + '-name'"
+            ref="nameInput"
+            v-model="data.name"
+            class="form-control"
+            type="text"
+            required
+            :disabled="readonly"
+          />
+        </div>
+        <div class="mb-3" label="Type" :label-for="id + '-type'">
+          <select
+            :id="id + '-type'"
+            v-model="data.type"
+            class="form-select"
+            :options="inputTypeOptions"
+            :disabled="readonly"
+          />
+        </div>
+        <form-group v-if="showValueField" label="Initial Value" :label-for="id + '-value'">
+          <input
+            :id="id + '-value'"
+            v-model="data.value"
+            class="form-control"
+            type="text"
             :disabled="readonly"
           />
         </form-group>
         <form-group
+          v-if="showOverrideFilenameField"
+          label="Override Filename"
+          :label-for="id + '-value'"
+        >
+          <input
+            :id="id + '-override-filename'"
+            v-model="data.overrideFilename"
+            class="form-control"
+            type="text"
+            :disabled="readonly"
+          />
+        </form-group>
+        <div class="mb-3" label="Application Argument" :label-for="id + '-argument'">
+          <input
+            :id="id + '-argument'"
+            v-model="data.applicationArgument"
+            class="form-control"
+            type="text"
+            :disabled="readonly"
+          />
+        </div>
+        <form-group
           class="flex-fill"
-          label="Read Only"
-          :label-for="id + '-read-only'"
+          label="Required on Command Line"
+          :label-for="id + '-required-command-line'"
+          description="Add this input's value to the command line in the generated job script."
         >
           <form-radio-group
-            :id="id + '-read-only'"
-            v-model="data.isReadOnly"
+            :id="id + '-required-command-line'"
+            v-model="data.requiredToAddedToCommandLine"
             :options="trueFalseOptions"
             :disabled="readonly"
           />
         </form-group>
+        <div class="d-flex">
+          <form-group class="flex-fill" label="Required" :label-for="id + '-required'">
+            <form-radio-group
+              :id="id + '-required'"
+              v-model="data.isRequired"
+              :options="trueFalseOptions"
+              :disabled="readonly"
+            />
+          </form-group>
+          <form-group class="flex-fill" label="Read Only" :label-for="id + '-read-only'">
+            <form-radio-group
+              :id="id + '-read-only'"
+              v-model="data.isReadOnly"
+              :options="trueFalseOptions"
+              :disabled="readonly"
+            />
+          </form-group>
+        </div>
+        <form-group
+          label="User Friendly Description"
+          :label-for="id + '-user-friendly-description'"
+        >
+          <textarea
+            :id="id + '-user-friendly-description'"
+            v-model="data.userFriendlyDescription"
+            class="form-control"
+            :rows="3"
+            :disabled="readonly"
+          />
+        </form-group>
+        <form-group
+          label="Advanced Input Field Modification Metadata"
+          :label-for="id + '-metadata'"
+          description="Metadata for this input, in the JSON format"
+        >
+          <json-editor
+            :id="id + '-metadata'"
+            v-model="data.metaData"
+            :rows="5"
+            :disabled="readonly"
+          />
+        </form-group>
       </div>
-      <form-group
-        label="User Friendly Description"
-        :label-for="id + '-user-friendly-description'"
-      >
-        <textarea class="form-control"
-          :id="id + '-user-friendly-description'"
-          v-model="data.userFriendlyDescription"
-          :rows="3"
-          :disabled="readonly"
-        />
-      </form-group>
-      <form-group
-        label="Advanced Input Field Modification Metadata"
-        :label-for="id + '-metadata'"
-        description="Metadata for this input, in the JSON format"
-      >
-        <json-editor
-          :id="id + '-metadata'"
-          v-model="data.metaData"
-          :rows="5"
-          :disabled="readonly"
-        />
-      </form-group>
     </div>
-  </div>
   </div>
 </template>
 
@@ -140,7 +130,10 @@ import { mixins } from "django-airavata-common-ui";
 import JSONEditor from "./JSONEditor.vue";
 
 export default {
-  name: "application-input-field-editor",
+  name: "ApplicationInputFieldEditor",
+  components: {
+    "json-editor": JSONEditor,
+  },
   mixins: [mixins.VModelMixin],
   props: {
     value: {
@@ -157,9 +150,6 @@ export default {
       type: Boolean,
       default: false,
     },
-  },
-  components: {
-    "json-editor": JSONEditor,
   },
   computed: {
     inputTypeOptions() {
@@ -186,6 +176,11 @@ export default {
       return this.data.type === models.DataType.URI;
     },
   },
+  mounted() {
+    if (this.focus) {
+      this.doFocus();
+    }
+  },
   methods: {
     doFocus() {
       this.$refs.nameInput.focus();
@@ -194,11 +189,6 @@ export default {
     deleteApplicationInput() {
       this.$emit("delete");
     },
-  },
-  mounted() {
-    if (this.focus) {
-      this.doFocus();
-    }
   },
 };
 </script>

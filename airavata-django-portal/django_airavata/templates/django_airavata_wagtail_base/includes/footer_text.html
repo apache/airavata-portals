@@ -2,8 +2,7 @@
 
 <div class="container-fluid">
   <div class="row">
-    {% for block in footer_text.footer %}
-      {% include_block block.value %}
-    {% endfor %}
+    {% for block in footer_text.footer %} {% include_block block.value %} {%
+    endfor %}
   </div>
 </div>

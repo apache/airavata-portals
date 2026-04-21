@@ -11,9 +11,7 @@
       </template>
     </project-editor>
     <div class="d-flex justify-content-end">
-      <button class="btn btn-primary btn-sm" @click="saveProject" :disabled="!valid"
-        >Save</button
-      >
+      <button class="btn btn-primary btn-sm" :disabled="!valid" @click="saveProject">Save</button>
       <button class="btn btn-secondary btn-sm" @click="cancel">Cancel</button>
     </div>
   </div>
@@ -26,7 +24,11 @@ import urls from "../utils/urls";
 import ProjectEditor from "../components/project/ProjectEditor.vue";
 
 export default {
-  name: "edit-project-container",
+  name: "EditProjectContainer",
+  components: {
+    ProjectEditor,
+    "share-button": components.ShareButton,
+  },
   props: {
     projectId: {
       type: String,
@@ -39,13 +41,9 @@ export default {
       valid: false,
     };
   },
-  components: {
-    ProjectEditor,
-    "share-button": components.ShareButton,
-  },
   created() {
     services.ProjectService.retrieve({ lookup: this.projectId }).then(
-      (project) => (this.project = project)
+      (project) => (this.project = project),
     );
   },
   methods: {

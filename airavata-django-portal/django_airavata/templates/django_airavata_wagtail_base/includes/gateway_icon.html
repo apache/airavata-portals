@@ -1,6 +1,6 @@
-{% load wagtailimages_tags static %}
-{% if not gateway_icon %}
-<img src="{% static 'images/airavata-logo.png' %}" style="max-height:32px;width:auto;" />
-{% else %}
-{% image gateway_icon.icon max-32x32 %}
-{% endif %}
+{% load wagtailimages_tags static %} {% if not gateway_icon %}
+<img
+  src="{% static 'images/airavata-logo.png' %}"
+  style="max-height: 32px; width: auto"
+/>
+{% else %} {% image gateway_icon.icon max-32x32 %} {% endif %}

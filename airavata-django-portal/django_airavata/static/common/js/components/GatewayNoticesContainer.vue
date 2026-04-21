@@ -1,9 +1,5 @@
 <template>
-  <button
-    class="app-footer__toggle"
-    title="Notifications"
-    @click="showNotifications"
-  >
+  <button class="app-footer__toggle" title="Notifications" @click="showNotifications">
     <i class="fa fa-bell"></i>
     <span v-if="localUnreadCount > 0" class="app-footer__badge">{{ localUnreadCount }}</span>
   </button>
@@ -11,7 +7,7 @@
 
 <script>
 export default {
-  name: "gateway-notices-container",
+  name: "GatewayNoticesContainer",
   props: ["notices", "unreadCount"],
   data() {
     return {

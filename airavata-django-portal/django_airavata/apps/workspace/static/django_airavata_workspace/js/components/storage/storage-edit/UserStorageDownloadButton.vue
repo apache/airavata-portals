@@ -4,19 +4,19 @@
 
 <script>
 export default {
-  name: "user-storage-download-button",
+  name: "UserStorageDownloadButton",
   props: {
     fileName: {
       required: true,
     },
     dataProductUri: {
       required: true,
-    }
+    },
   },
   computed: {
     downloadUrl() {
       return `/sdk/download/?data-product-uri=${this.dataProductUri}`;
-    }
-  }
+    },
+  },
 };
 </script>

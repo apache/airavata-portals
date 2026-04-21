@@ -7,7 +7,7 @@ class UserProfileService {
       return Promise.resolve(data.map((result) => new UserProfile(result)));
     } else {
       return FetchUtils.get("/api/user-profiles/").then((results) =>
-        results.map((result) => new UserProfile(result))
+        results.map((result) => new UserProfile(result)),
       );
     }
   }

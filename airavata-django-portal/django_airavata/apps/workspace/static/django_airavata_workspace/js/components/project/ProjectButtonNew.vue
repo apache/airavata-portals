@@ -3,7 +3,7 @@
     <button class="btn btn-primary btn-sm" @click="showModal">
       <slot><i class="fa fa-plus me-1"></i>Create New</slot>
     </button>
-    <div class="modal fade" ref="modal" tabindex="-1">
+    <div ref="modal" class="modal fade" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -13,17 +13,34 @@
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">Project Name <span class="text-danger">*</span></label>
-              <input class="form-control" type="text" v-model="projectName" placeholder="Project name"
-                @keydown.enter="onCreateProject" ref="nameInput" />
+              <input
+                ref="nameInput"
+                v-model="projectName"
+                class="form-control"
+                type="text"
+                placeholder="Project name"
+                @keydown.enter="onCreateProject"
+              />
             </div>
             <div class="mb-3">
               <label class="form-label">Description</label>
-              <textarea class="form-control" v-model="projectDescription" placeholder="Optional description" rows="3"></textarea>
+              <textarea
+                v-model="projectDescription"
+                class="form-control"
+                placeholder="Optional description"
+                rows="3"
+              ></textarea>
             </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-            <button class="btn btn-primary btn-sm" @click="onCreateProject" :disabled="!projectName || !projectName.trim()">Create</button>
+            <button
+              class="btn btn-primary btn-sm"
+              :disabled="!projectName || !projectName.trim()"
+              @click="onCreateProject"
+            >
+              Create
+            </button>
           </div>
         </div>
       </div>
@@ -36,7 +53,7 @@ import { models, services } from "django-airavata-api";
 import { Modal } from "bootstrap";
 
 export default {
-  name: "project-button-new",
+  name: "ProjectButtonNew",
   data() {
     return {
       projectName: "",

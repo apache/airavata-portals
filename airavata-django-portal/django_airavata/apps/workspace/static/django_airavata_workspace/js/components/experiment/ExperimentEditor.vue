@@ -4,10 +4,7 @@
     <div class="row">
       <div class="col-auto me-auto">
         <h1 class="h4 mb-4">
-          <div
-            v-if="appModule"
-            class="application-name text-muted text-uppercase"
-          >
+          <div v-if="appModule" class="application-name text-muted text-uppercase">
             <i class="fa fa-code" aria-hidden="true"></i>
             {{ appModule.app_module_name }}
           </div>
@@ -34,18 +31,17 @@
             :feedback="getValidationFeedback('experiment_name')"
             :state="getValidationState('experiment_name')"
           >
-            <input class="form-control"
+            <input
               id="experiment-name"
-              type="text"
               v-model="localExperiment.experiment_name"
+              class="form-control"
+              type="text"
               required
               placeholder="Experiment name"
               :state="getValidationState('experiment_name')"
             />
           </form-group>
-          <experiment-description-editor
-            v-model="localExperiment.description"
-          />
+          <experiment-description-editor v-model="localExperiment.description" />
         </div>
       </div>
       <div class="row">
@@ -56,9 +52,10 @@
             :feedback="getValidationFeedback('project_id')"
             :state="getValidationState('project_id')"
           >
-            <select class="form-select"
+            <select
               id="project"
               v-model="localExperiment.project_id"
+              class="form-select"
               required
               :state="getValidationState('project_id')"
             >
@@ -66,8 +63,8 @@
               <optgroup label="My Projects">
                 <option
                   v-for="project in myProjectOptions"
-                  :value="project.value"
                   :key="project.value"
+                  :value="project.value"
                 >
                   {{ project.text }}
                 </option>
@@ -75,8 +72,8 @@
               <optgroup label="Projects Shared With Me">
                 <option
                   v-for="project in sharedProjectOptions"
-                  :value="project.value"
                   :key="project.value"
+                  :value="project.value"
                 >
                   {{ project.text }}
                 </option>
@@ -88,11 +85,9 @@
       <div class="row">
         <div class="col">
           <workspace-notices-management-container
-            class="mt-2"
             v-if="appInterface && appInterface.application_description"
-            :data="[
-              { notificationMessage: appInterface.application_description },
-            ]"
+            class="mt-2"
+            :data="[{ notificationMessage: appInterface.application_description }]"
           />
         </div>
       </div>
@@ -110,11 +105,11 @@
               <transition-group name="fade">
                 <input-editor-container
                   v-for="experimentInput in localExperiment.experiment_inputs"
-                  :experiment-input="experimentInput"
-                  :experiment="localExperiment"
-                  v-model="experimentInput.value"
                   v-show="experimentInput.show"
                   :key="experimentInput.name"
+                  v-model="experimentInput.value"
+                  :experiment-input="experimentInput"
+                  :experiment="localExperiment"
                   @invalid="recordInvalidInputEditorValue(experimentInput.name)"
                   @valid="recordValidInputEditorValue(experimentInput.name)"
                   @input="inputValueChanged"
@@ -135,11 +130,8 @@
       <div class="row">
         <div class="col">
           <computational-resource-scheduling-editor
-            v-model="
-              localExperiment.user_configuration_data
-                .computational_resource_scheduling
-            "
             v-if="localExperiment.user_configuration_data.group_resource_profile_id"
+            v-model="localExperiment.user_configuration_data.computational_resource_scheduling"
             :app-module-id="appModule.app_module_id"
             :group-resource-profile-id="
               localExperiment.user_configuration_data.group_resource_profile_id
@@ -153,7 +145,12 @@
       <div class="row">
         <div class="col">
           <div class="mb-3" label="Email Settings">
-            <div class="form-check"><input class="form-check-input" type="checkbox" v-model="localExperiment.enable_email_notification">
+            <div class="form-check">
+              <input
+                v-model="localExperiment.enable_email_notification"
+                class="form-check-input"
+                type="checkbox"
+              />
               Receive email notification of experiment status
             </div>
           </div>
@@ -161,16 +158,14 @@
       </div>
       <div class="row">
         <div id="col-exp-buttons" class="col">
-          <button class="btn btn-success btn-sm"
-            @click="saveAndLaunchExperiment"
+          <button
+            class="btn btn-success btn-sm"
             :disabled="isSaveDisabled"
+            @click="saveAndLaunchExperiment"
           >
             Save and Launch
           </button>
-          <button class="btn btn-primary btn-sm"
-            @click="saveExperiment"
-            :disabled="isSaveDisabled"
-          >
+          <button class="btn btn-primary btn-sm" :disabled="isSaveDisabled" @click="saveExperiment">
             Save
           </button>
         </div>
@@ -190,7 +185,16 @@ import WorkspaceNoticesManagementContainer from "../notices/WorkspaceNoticesMana
 import _ from "lodash";
 
 export default {
-  name: "edit-experiment",
+  name: "EditExperiment",
+  components: {
+    WorkspaceNoticesManagementContainer,
+    ComputationalResourceSchedulingEditor,
+    ExperimentDescriptionEditor,
+    GroupResourceProfileSelector,
+    InputEditorContainer,
+    "share-button": components.ShareButton,
+    "unsaved-changes-guard": components.UnsavedChangesGuard,
+  },
   props: {
     experiment: {
       type: models.Experiment,
@@ -217,39 +221,13 @@ export default {
       uploadingInputs: [],
     };
   },
-  components: {
-    WorkspaceNoticesManagementContainer,
-    ComputationalResourceSchedulingEditor,
-    ExperimentDescriptionEditor,
-    GroupResourceProfileSelector,
-    InputEditorContainer,
-    "share-button": components.ShareButton,
-    "unsaved-changes-guard": components.UnsavedChangesGuard,
-  },
-  mounted: function () {
-    services.ProjectService.listAll().then((projects) => {
-      this.projects = projects;
-      if (!this.localExperiment.project_id) {
-        services.WorkspacePreferencesService.get().then(
-          (workspacePreferences) => {
-            if (!this.localExperiment.project_id) {
-              this.localExperiment.project_id =
-                workspacePreferences.most_recent_project_id;
-            }
-          }
-        );
-      }
-    });
-  },
   computed: {
     sharedProjectOptions: function () {
       return this.projects
         .filter((p) => !p.is_owner)
         .map((project) => ({
           value: project.project_id,
-          text:
-            project.name +
-            (!project.is_owner ? " (owned by " + project.owner + ")" : ""),
+          text: project.name + (!project.is_owner ? " (owned by " + project.owner + ")" : ""),
         }));
     },
     myProjectOptions() {
@@ -278,6 +256,18 @@ export default {
     hasUploadingInputs() {
       return this.uploadingInputs.length > 0;
     },
+  },
+  mounted: function () {
+    services.ProjectService.listAll().then((projects) => {
+      this.projects = projects;
+      if (!this.localExperiment.project_id) {
+        services.WorkspacePreferencesService.get().then((workspacePreferences) => {
+          if (!this.localExperiment.project_id) {
+            this.localExperiment.project_id = workspacePreferences.most_recent_project_id;
+          }
+        });
+      }
+    });
   },
   methods: {
     saveExperiment: function () {
@@ -355,14 +345,13 @@ export default {
           lookup: this.appInterface.queue_settings_calculator_id,
           data: this.localExperiment,
         },
-        { showSpinner: false }
+        { showSpinner: false },
       );
       // Override values in computationalResourceScheduling with the values
       // returned from the queue settings calculator
       Object.assign(
-        this.localExperiment.user_configuration_data
-          .computationalResourceScheduling,
-        queueSettingsUpdate
+        this.localExperiment.user_configuration_data.computationalResourceScheduling,
+        queueSettingsUpdate,
       );
     }, 500),
     experimentInputsChanged() {
@@ -392,9 +381,10 @@ export default {
       },
       deep: true,
     },
-    "experiment.user_configuration_data.computational_resource_scheduling.resource_host_id": function () {
-      this.resourceHostIdChanged();
-    },
+    "experiment.user_configuration_data.computational_resource_scheduling.resource_host_id":
+      function () {
+        this.resourceHostIdChanged();
+      },
   },
 };
 </script>

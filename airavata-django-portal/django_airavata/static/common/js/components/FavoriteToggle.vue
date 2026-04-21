@@ -1,10 +1,5 @@
 <template>
-  <a
-    class="text-primary"
-    @click.stop="toggleFavorite"
-    v-b-tooltip
-    :title="titleText"
-  >
+  <a v-b-tooltip class="text-primary" :title="titleText" @click.stop="toggleFavorite">
     <i class="fa fa-star favorite-toggle" :class="classes"
       ><span class="visually-hidden">Toggle favorite</span></i
     >
@@ -13,20 +8,11 @@
 
 <script>
 export default {
-  name: "favorite-toggle",
+  name: "FavoriteToggle",
   props: {
     favorite: {
       type: Boolean,
       default: false,
-    },
-  },
-  methods: {
-    toggleFavorite() {
-      if (this.favorite) {
-        this.$emit("unfavorite");
-      } else {
-        this.$emit("favorite");
-      }
     },
   },
   computed: {
@@ -42,6 +28,15 @@ export default {
         return "Unmark as favorite";
       } else {
         return "Mark as favorite";
+      }
+    },
+  },
+  methods: {
+    toggleFavorite() {
+      if (this.favorite) {
+        this.$emit("unfavorite");
+      } else {
+        this.$emit("favorite");
       }
     },
   },

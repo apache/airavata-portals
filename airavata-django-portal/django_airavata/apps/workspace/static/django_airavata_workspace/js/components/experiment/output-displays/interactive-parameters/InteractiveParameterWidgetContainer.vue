@@ -17,19 +17,19 @@ import InteractiveParameterStepperWidget from "./InteractiveParameterStepperWidg
 import InteractiveParameterTextInputWidget from "./InteractiveParameterTextInputWidget.vue";
 
 export default {
-  name: "interactive-parameter-widget-container",
-  props: {
-    parameter: {
-      type: Object,
-      required: true,
-    },
-  },
+  name: "InteractiveParameterWidgetContainer",
   components: {
     InteractiveParameterCheckboxWidget,
     InteractiveParameterRangeWidget,
     InteractiveParameterSelectWidget,
     InteractiveParameterStepperWidget,
     InteractiveParameterTextInputWidget,
+  },
+  props: {
+    parameter: {
+      type: Object,
+      required: true,
+    },
   },
   computed: {
     widgetComponent() {
@@ -46,8 +46,7 @@ export default {
       ) {
         return InteractiveParameterTextInputWidget;
       } else if (
-        (this.parameter.type === "float" ||
-          this.parameter.type === "integer") &&
+        (this.parameter.type === "float" || this.parameter.type === "integer") &&
         "min" in this.parameter &&
         "max" in this.parameter
       ) {

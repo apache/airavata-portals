@@ -1,17 +1,18 @@
 <template>
   <list-layout
-    @add-new-item="addNewStoragePreference"
     :items="decoratedStoragePreferences"
     title="Storage Preferences"
     new-item-button-text="New Storage Preference"
     :new-button-disabled="readonly"
+    @add-new-item="addNewStoragePreference"
   >
-    <template slot="new-item-editor">
-      <div class="card" v-if="showNewItemEditor" title="New Storage Preference">
+    <template #new-item-editor>
+      <div v-if="showNewItemEditor" class="card" title="New Storage Preference">
         <div class="mb-3" label="Storage Resource" label-for="storage-resource">
-          <select class="form-select"
+          <select
             id="storage-resource"
             v-model="newStoragePreference.storage_resource_id"
+            class="form-select"
             :options="storageResourceOptions"
           />
         </div>
@@ -21,9 +22,7 @@
         />
         <div class="row">
           <div class="col">
-            <button class="btn btn-primary btn-sm" @click="saveNewStoragePreference">
-              Save
-            </button>
+            <button class="btn btn-primary btn-sm" @click="saveNewStoragePreference">Save</button>
             <button class="btn btn-secondary btn-sm" @click="cancelNewStoragePreference">
               Cancel
             </button>
@@ -31,34 +30,29 @@
         </div>
       </div>
     </template>
-    <template slot="item-list" slot-scope="slotProps">
-      <!-- TODO: migrate to native HTML table --><table class="table"
+    <template #item-list="slotProps">
+      <!-- TODO: migrate to native HTML table -->
+      <table
+        class="table"
         striped
         hover
         :fields="fields"
         :items="slotProps.items"
         sort-by="storage_resource_id"
       >
-        <template
-          slot="cell(resource_specific_credential_store_token)"
-          slot-scope="data"
-        >
+        <template slot="cell(resource_specific_credential_store_token)" slot-scope="data">
           {{ data.value }}
-          <span class="badge"
+          <span
             v-if="
-              defaultCredentialStoreToken &&
-              !data.item.resource_specific_credential_store_token
+              defaultCredentialStoreToken && !data.item.resource_specific_credential_store_token
             "
+            class="badge"
           >
             Default
           </span>
         </template>
         <template slot="cell(action)" slot-scope="data">
-          <a
-            v-if="!readonly"
-            class="action-link"
-            @click="toggleDetails(data)"
-          >
+          <a v-if="!readonly" class="action-link" @click="toggleDetails(data)">
             Edit
             <i class="fa fa-edit" aria-hidden="true"></i>
           </a>
@@ -68,9 +62,7 @@
             @delete="deleteStoragePreference(data.item.storage_resource_id)"
           >
             Are you sure you want to delete the storage preference for
-            <strong>{{
-              getStorageResourceName(data.item.storage_resource_id)
-            }}</strong
+            <strong>{{ getStorageResourceName(data.item.storage_resource_id) }}</strong
             >?
           </delete-link>
         </template>
@@ -79,8 +71,8 @@
             <div class="card-body">
               <storage-preference-editor
                 :value="row.item"
-                @input="updatedStoragePreference"
                 :default-credential-store-token="defaultCredentialStoreToken"
+                @input="updatedStoragePreference"
               />
               <button class="btn btn-sm" @click="toggleDetails(row)">Close</button>
             </div>
@@ -97,7 +89,7 @@ import { components, layouts } from "django-airavata-common-ui";
 import StoragePreferenceEditor from "./StoragePreferenceEditor.vue";
 
 export default {
-  name: "storage-preference-list",
+  name: "StoragePreferenceList",
   components: {
     "delete-link": components.DeleteLink,
     "list-layout": layouts.ListLayout,
@@ -167,10 +159,7 @@ export default {
       const options = [];
       for (const key in this.storageResourceNames) {
         if (
-          Object.prototype.hasOwnProperty.call(
-            this.storageResourceNames,
-            key
-          ) &&
+          Object.prototype.hasOwnProperty.call(this.storageResourceNames, key) &&
           this.currentStoragePreferenceIds.indexOf(key) < 0
         ) {
           const name = this.storageResourceNames[key];
@@ -184,9 +173,7 @@ export default {
     },
     defaultCredentialSummary() {
       if (this.defaultCredentialStoreToken && this.credentials) {
-        return this.credentials.find(
-          (cred) => cred.token === this.defaultCredentialStoreToken
-        );
+        return this.credentials.find((cred) => cred.token === this.defaultCredentialStoreToken);
       } else {
         return null;
       }
@@ -197,15 +184,12 @@ export default {
       this.storageResourceNames = names;
     });
     services.CredentialSummaryService.allSSHCredentials().then(
-      (creds) => (this.credentials = creds)
+      (creds) => (this.credentials = creds),
     );
   },
   methods: {
     getStorageResourceName(storageResourceId) {
-      if (
-        this.storageResourceNames &&
-        storageResourceId in this.storageResourceNames
-      ) {
+      if (this.storageResourceNames && storageResourceId in this.storageResourceNames) {
         return this.storageResourceNames[storageResourceId];
       } else {
         return storageResourceId.substring(0, 10) + "...";
@@ -227,9 +211,8 @@ export default {
     },
     toggleDetails(row) {
       row.toggleDetails();
-      this.showingDetails[row.item.storage_resource_id] = !this.showingDetails[
-        row.item.storage_resource_id
-      ];
+      this.showingDetails[row.item.storage_resource_id] =
+        !this.showingDetails[row.item.storage_resource_id];
     },
     deleteStoragePreference(storageResourceId) {
       this.$emit("delete", storageResourceId);

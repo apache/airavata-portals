@@ -1,13 +1,9 @@
 <template>
   <div>
-    <div
-      class="mb-2"
-      v-for="dataProductURI in selectedDataProductURIs"
-      :key="dataProductURI"
-    >
+    <div v-for="dataProductURI in selectedDataProductURIs" :key="dataProductURI" class="mb-2">
       <file-input-editor
-        :value="dataProductURI"
         :id="dataProductURI"
+        :value="dataProductURI"
         :experiment="experiment"
         :experiment-input="experimentInput"
         :read-only="readOnly"
@@ -16,11 +12,11 @@
     </div>
     <input-file-selector
       v-if="!readOnly"
-      :selectedDataProductURIs="selectedDataProductURIs"
+      :selected-data-product-u-r-is="selectedDataProductURIs"
+      multiple
       @selected="fileSelected"
       @uploadstart="$emit('uploadstart')"
       @uploadend="$emit('uploadend')"
-      multiple
     />
   </div>
 </template>
@@ -31,16 +27,16 @@ import FileInputEditor from "./FileInputEditor.vue";
 import InputFileSelector from "./InputFileSelector";
 
 export default {
-  name: "multi-file-input-editor",
+  name: "MultiFileInputEditor",
+  components: {
+    FileInputEditor,
+    InputFileSelector,
+  },
   mixins: [InputEditorMixin],
   props: {
     value: {
       type: String,
     },
-  },
-  components: {
-    FileInputEditor,
-    InputFileSelector,
   },
   data() {
     return {};
@@ -58,9 +54,7 @@ export default {
       }
     },
     removeFile(dataProductURI) {
-      const index = this.selectedDataProductURIs.findIndex(
-        (u) => u === dataProductURI
-      );
+      const index = this.selectedDataProductURIs.findIndex((u) => u === dataProductURI);
       const copyDataProductURIs = this.selectedDataProductURIs.slice();
       copyDataProductURIs.splice(index, 1);
       this.data = copyDataProductURIs.join(",");

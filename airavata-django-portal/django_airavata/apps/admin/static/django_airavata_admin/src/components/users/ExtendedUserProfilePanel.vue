@@ -4,11 +4,10 @@
     <div class="card-body">
       <template v-if="items.length === 0">
         <a href="/admin/extended-user-profile"
-          >Add additional user profile fields for gateway users to
-          complete</a
+          >Add additional user profile fields for gateway users to complete</a
         >
       </template>
-      <table class="table table-sm table-borderless mb-0" v-else>
+      <table v-else class="table table-sm table-borderless mb-0">
         <thead>
           <tr>
             <th>name</th>
@@ -34,10 +33,7 @@
           </tr>
         </tbody>
       </table>
-      <a
-        v-if="items.length > 0"
-        href="/admin/extended-user-profile"
-        class="text-muted small"
+      <a v-if="items.length > 0" href="/admin/extended-user-profile" class="text-muted small"
         >Add or edit these field definitions</a
       >
     </div>
@@ -92,9 +88,7 @@ export default {
       "loadExtendedUserProfileValues",
     ]),
     getValue(field) {
-      return this.extendedUserProfileValues.find(
-        (v) => v.ext_user_profile_field === field.id
-      );
+      return this.extendedUserProfileValues.find((v) => v.ext_user_profile_field === field.id);
     },
   },
 };

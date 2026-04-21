@@ -40,10 +40,7 @@ export default class Notification extends BaseModel {
     if (this.isEmpty(this.title)) {
       validationResults["title"] = "Please provide a Title for this notice.";
     }
-    if (
-      this.isEmpty(this.notification_message) ||
-      this.notification_message.length < 10
-    ) {
+    if (this.isEmpty(this.notification_message) || this.notification_message.length < 10) {
       validationResults["notification_message"] =
         "Please provide the message with minimum 10 characters.";
     }

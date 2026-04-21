@@ -52,7 +52,7 @@ local_resource(
 # starts a Vite dev server with HMR for hot reload on port 9000.
 local_resource(
     'frontend-build',
-    cmd='yarn install && yarn workspaces run build',
+    cmd='npm install && npm run build --workspaces --if-present',
     resource_deps=['django-server'],
     labels=['frontend'],
 )
@@ -71,7 +71,7 @@ FRONTEND_APPS = {
 for name, path_prefix in FRONTEND_APPS.items():
     local_resource(
         'frontend-' + name,
-        serve_cmd='yarn run dev',
+        serve_cmd='npm run dev',
         serve_dir=path_prefix,
         resource_deps=['frontend-build'],
         labels=['frontend-apps'],

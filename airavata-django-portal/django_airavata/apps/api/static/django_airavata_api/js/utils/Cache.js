@@ -29,16 +29,12 @@ export default class Cache {
     }
   }
 
-  put({
-    key,
-    value,
-    expireDate = new Date(Date.now() + DEFAULT_EXPIRATION_TIME_MS),
-  }) {
+  put({ key, value, expireDate = new Date(Date.now() + DEFAULT_EXPIRATION_TIME_MS) }) {
     this._cache[key] = new CacheEntry(value, expireDate);
   }
 
   has(key) {
-    if (this._cache.hasOwnProperty(key)) {
+    if (Object.hasOwn(this._cache, key)) {
       const cacheEntry = this._cache[key];
       if (cacheEntry.isExpired) {
         delete this._cache[key];

@@ -3,7 +3,7 @@
 </template>
 <script>
 export default {
-  name: "human-date",
+  name: "HumanDate",
   props: {
     date: Date,
   },

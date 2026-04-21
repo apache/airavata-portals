@@ -4,9 +4,7 @@ Place your static files (JavaScript, CSS, images, etc.) in this folder. Then
 load them in your templates using the static template tag.
 
 ```html
-{% raw %}
-{% load static %}
-{% endraw %}
+{% raw %} {% load static %} {% endraw %}
 
 <script src="{{ '{%' }} static '{{ cookiecutter.project_slug }}/some_script.js' %}"></script>
 ```

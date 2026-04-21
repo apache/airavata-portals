@@ -1,28 +1,23 @@
 <template>
   <ul class="nav nav-tabs mt-3 px-2" content->
-    <li class="nav-item"
-      title="User Profile"
-      :active="iamUserProfile.airavata_user_profile_exists"
-    >
-      <div class="alert alert-warning"
-        v-if="!iamUserProfile.userProfileComplete"
-      >
-        This user has not completed their user profile. An incomplete user
-        profile is shown below.
+    <li class="nav-item" title="User Profile" :active="iamUserProfile.airavata_user_profile_exists">
+      <div v-if="!iamUserProfile.userProfileComplete" class="alert alert-warning">
+        This user has not completed their user profile. An incomplete user profile is shown below.
       </div>
-      <div class="alert alert-danger" v-if="isUsernameInvalid">
+      <div v-if="isUsernameInvalid" class="alert alert-danger">
         The user has an invalid username. Please use
-        <strong>Change Username</strong> under the
-        <strong>Troubleshooting</strong> tab to fix the user's username.
+        <strong>Change Username</strong> under the <strong>Troubleshooting</strong> tab to fix the
+        user's username.
       </div>
-      <user-profile-panel :iamUserProfile="iamUserProfile" />
-      <extended-user-profile-panel :iamUserProfile="iamUserProfile" />
+      <user-profile-panel :iam-user-profile="iamUserProfile" />
+      <extended-user-profile-panel :iam-user-profile="iamUserProfile" />
       <external-idp-user-info-panel
         v-if="hasExternalIDPUserInfo"
-        :externalIDPUserInfo="localIAMUserProfile.external_idp_user_info"
+        :external-i-d-p-user-info="localIAMUserProfile.external_idp_user_info"
       />
     </li>
-    <li class="nav-item"
+    <li
+      class="nav-item"
       title="Troubleshooting"
       :active="!iamUserProfile.airavata_user_profile_exists"
     >
@@ -47,9 +42,9 @@
         :username="iamUserProfile.user_id"
         @delete-user="$emit('delete-user', $event)"
       />
-      <div class="alert alert-danger" v-if="isUsernameInvalid">
-        The user has an invalid username. Please fix the user's username so that
-        they can complete their user profile.
+      <div v-if="isUsernameInvalid" class="alert alert-danger">
+        The user has an invalid username. Please fix the user's username so that they can complete
+        their user profile.
       </div>
       <change-username-panel
         :username="iamUserProfile.user_id"
@@ -71,13 +66,7 @@ import UserProfilePanel from "./UserProfilePanel.vue";
 import ExtendedUserProfilePanel from "./ExtendedUserProfilePanel.vue";
 
 export default {
-  name: "user-details-container",
-  props: {
-    iamUserProfile: {
-      type: models.IAMUserProfile,
-      required: true,
-    },
-  },
+  name: "UserDetailsContainer",
   components: {
     EnableUserPanel,
     DeleteUserPanel,
@@ -87,26 +76,28 @@ export default {
     UserProfilePanel,
     ExtendedUserProfilePanel,
   },
+  props: {
+    iamUserProfile: {
+      type: models.IAMUserProfile,
+      required: true,
+    },
+  },
   data() {
     return {
       localIAMUserProfile: this.iamUserProfile.clone(),
     };
   },
+  computed: {
+    hasExternalIDPUserInfo() {
+      return Object.keys(this.localIAMUserProfile.external_idp_user_info).length !== 0;
+    },
+    isUsernameInvalid() {
+      return this.iamUserProfile.user_profile_invalid_fields.indexOf("username") >= 0;
+    },
+  },
   watch: {
     iamUserProfile(newValue) {
       this.localIAMUserProfile = newValue.clone();
-    },
-  },
-  computed: {
-    hasExternalIDPUserInfo() {
-      return (
-        Object.keys(this.localIAMUserProfile.external_idp_user_info).length !== 0
-      );
-    },
-    isUsernameInvalid() {
-      return (
-        this.iamUserProfile.user_profile_invalid_fields.indexOf("username") >= 0
-      );
     },
   },
 };

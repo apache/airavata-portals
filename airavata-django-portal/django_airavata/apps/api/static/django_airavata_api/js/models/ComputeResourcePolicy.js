@@ -26,8 +26,7 @@ export default class ComputeResourcePolicy extends BaseModel {
   validate() {
     let validationResults = {};
     if (!this.allowed_batch_queues || this.allowed_batch_queues.length === 0) {
-      validationResults["allowed_batch_queues"] =
-        "Must select at least one queue.";
+      validationResults["allowed_batch_queues"] = "Must select at least one queue.";
     }
     return validationResults;
   }

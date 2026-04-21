@@ -1,17 +1,12 @@
-{% load navigation_tags static %}
-{% load django_vite %}
-{% load humanize %}
-<!DOCTYPE html>
+{% load navigation_tags static %} {% load django_vite %} {% load humanize %}
+<!doctype html>
 
 <head>
-  {% favicon %}
-  {% include "./django_airavata/google_analytics.html" %}
-  {% vite_asset "js/main.js" app="default" %}
-  {% block css %}{% endblock %}
+  {% favicon %} {% include "./django_airavata/google_analytics.html" %} {%
+  vite_asset "js/main.js" app="default" %} {% block css %}{% endblock %}
 </head>
 
 <body class="{% if user.is_authenticated %}has-app-shell{% endif %}">
-
   {% if user.is_authenticated %}
   <div class="app-shell">
     {# ── Left sidebar (full height, always visible) ── #}
@@ -24,34 +19,58 @@
       </div>
       <div class="app-sidebar__body">
         {% for group in nav_groups %}
-          <div class="app-sidebar__group">
-            <div class="app-sidebar__group-label">{{ group.label }}</div>
-            {% for item in group.items %}
-              <a href="{% url item.url %}" class="app-sidebar__link {% if item.active %}is-active{% endif %}">
-                <i class="{{ item.icon }}"></i><span>{{ item.label }}</span>
-              </a>
-            {% endfor %}
-          </div>
-        {% endfor %}
-        {% for nav_item in custom_app_nav %}
-          <a href="{% url nav_item.url %}" class="app-sidebar__link {% if nav_item.active %}is-active{% endif %}">
-            <i class="{{ nav_item.icon }}"></i><span>{{ nav_item.label }}</span>
+        <div class="app-sidebar__group">
+          <div class="app-sidebar__group-label">{{ group.label }}</div>
+          {% for item in group.items %}
+          <a
+            href="{% url item.url %}"
+            class="app-sidebar__link {% if item.active %}is-active{% endif %}"
+          >
+            <i class="{{ item.icon }}"></i><span>{{ item.label }}</span>
           </a>
-        {% endfor %}
-        {% main_menu_navs %}
+          {% endfor %}
+        </div>
+        {% endfor %} {% for nav_item in custom_app_nav %}
+        <a
+          href="{% url nav_item.url %}"
+          class="app-sidebar__link {% if nav_item.active %}is-active{% endif %}"
+        >
+          <i class="{{ nav_item.icon }}"></i><span>{{ nav_item.label }}</span>
+        </a>
+        {% endfor %} {% main_menu_navs %}
       </div>
       <div class="app-sidebar__footer">
         <div class="dropdown w-100">
-          <a href="#" class="app-sidebar__user dropdown-toggle" data-bs-toggle="dropdown">
+          <a
+            href="#"
+            class="app-sidebar__user dropdown-toggle"
+            data-bs-toggle="dropdown"
+          >
             <div class="app-sidebar__avatar"><i class="fa fa-user"></i></div>
             <div class="app-sidebar__user-info">
-              <div class="app-sidebar__user-name">{{ request.user.first_name }} {{ request.user.last_name }}</div>
-              <div class="app-sidebar__user-email">{{ request.user.username }}</div>
+              <div class="app-sidebar__user-name">
+                {{ request.user.first_name }} {{ request.user.last_name }}
+              </div>
+              <div class="app-sidebar__user-email">
+                {{ request.user.username }}
+              </div>
             </div>
           </a>
           <ul class="dropdown-menu shadow w-100">
-            <li><a class="dropdown-item" href="{% url 'django_airavata_auth:user_profile' %}"><i class="fa fa-cog me-1"></i>Settings</a></li>
-            <li><a class="dropdown-item" href="{% url 'django_airavata_auth:logout' %}"><i class="fa fa-sign-out-alt me-1"></i>Logout</a></li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="{% url 'django_airavata_auth:user_profile' %}"
+                ><i class="fa fa-cog me-1"></i>Settings</a
+              >
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="{% url 'django_airavata_auth:logout' %}"
+                ><i class="fa fa-sign-out-alt me-1"></i>Logout</a
+              >
+            </li>
           </ul>
         </div>
       </div>
@@ -69,21 +88,25 @@
           </div>
         </div>
         <div class="stage">
-  {% endif %}
-
-          {% block content %}{% endblock %}
-
-  {% if user.is_authenticated %}
+          {% endif %} {% block content %}{% endblock %} {% if
+          user.is_authenticated %}
         </div>
       </div>
 
       {# ── Status bar (only to right of nav) ── #}
       <footer class="app-footer">
-        <div class="app-footer__left">
-        </div>
+        <div class="app-footer__left"></div>
         <div class="app-footer__right">
-          <div id="gateway-notices" data-unread-count="{{ unread_notifications }}" data-notices="{{ notifications }}"></div>
-          <button class="app-footer__toggle" id="toggle-experiments" title="Recent experiments">
+          <div
+            id="gateway-notices"
+            data-unread-count="{{ unread_notifications }}"
+            data-notices="{{ notifications }}"
+          ></div>
+          <button
+            class="app-footer__toggle"
+            id="toggle-experiments"
+            title="Recent experiments"
+          >
             <i class="fa fa-flask"></i>
           </button>
         </div>
@@ -103,8 +126,6 @@
     {% endif %}
   </script>
 
-  {% if user.is_authenticated %}
-    {% vite_asset "js/notices.js" app="default" %}
-  {% endif %}
-  {% block scripts %}{% endblock %}
+  {% if user.is_authenticated %} {% vite_asset "js/notices.js" app="default" %}
+  {% endif %} {% block scripts %}{% endblock %}
 </body>

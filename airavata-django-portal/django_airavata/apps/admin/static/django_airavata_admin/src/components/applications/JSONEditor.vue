@@ -1,17 +1,18 @@
 <template>
-  <textarea class="form-control"
+  <textarea
     :id="id"
     v-model="jsonString"
-    @input="valueChanged"
+    class="form-control"
     :rows="rows"
     :disabled="disabled"
     :state="state"
+    @input="valueChanged"
   />
 </template>
 
 <script>
 export default {
-  name: "json-editor",
+  name: "JsonEditor",
   props: {
     value: {
       type: Object,
@@ -25,6 +26,11 @@ export default {
       jsonString: this.value ? this.formatJSON(this.value) : null,
       state: null,
     };
+  },
+  watch: {
+    value(newValue) {
+      this.jsonString = newValue ? this.formatJSON(newValue) : null;
+    },
   },
   methods: {
     formatJSON(value) {
@@ -42,11 +48,6 @@ export default {
       } catch (e) {
         this.state = false;
       }
-    },
-  },
-  watch: {
-    value(newValue) {
-      this.jsonString = newValue ? this.formatJSON(newValue) : null;
     },
   },
 };

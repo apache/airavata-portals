@@ -19,7 +19,7 @@ test("error thrown when no applicationName given", async () => {
   } catch (e) {
     expect(e).toBeInstanceOf(Error);
     expect(e.message).toEqual(
-      "Either applicationInterfaceId or applicationId or applicationName is required"
+      "Either applicationInterfaceId or applicationId or applicationName is required",
     );
   }
 });
@@ -40,9 +40,7 @@ test("error thrown with applicationName doesn't match any interfaces", async () 
     await createExperiment({ applicationName: "test" });
   } catch (e) {
     expect(e).toBeInstanceOf(Error);
-    expect(e.message).toEqual(
-      "Could not find application interface named test"
-    );
+    expect(e.message).toEqual("Could not find application interface named test");
   }
 });
 
@@ -51,7 +49,7 @@ test("verify if applicationId and applicationName are given, applicationInterfac
     new ApplicationInterfaceDefinition({
       application_name: "Foo",
       application_modules: ["Foo_module1"],
-    })
+    }),
   );
   try {
     expect.assertions(2);
@@ -61,9 +59,7 @@ test("verify if applicationId and applicationName are given, applicationInterfac
     });
   } catch (e) {
     expect(services.ApplicationModuleService.list).not.toHaveBeenCalled();
-    expect(
-      services.ApplicationModuleService.getApplicationInterface
-    ).toHaveBeenCalledWith({
+    expect(services.ApplicationModuleService.getApplicationInterface).toHaveBeenCalledWith({
       lookup: "Foo_module1",
     });
   }
@@ -75,7 +71,7 @@ test("verify if applicationInterfaceId and applicationId and applicationName are
       application_interface_id: "Foo_interface1",
       application_name: "Foo",
       application_modules: ["Foo_module1"],
-    })
+    }),
   );
   try {
     expect.assertions(3);
@@ -87,9 +83,7 @@ test("verify if applicationInterfaceId and applicationId and applicationName are
   } catch (e) {
     expect(services.ApplicationModuleService.getApplicationInterface).not.toHaveBeenCalled();
     expect(services.ApplicationInterfaceService.list).not.toHaveBeenCalled();
-    expect(
-      services.ApplicationInterfaceService.retrieve
-    ).toHaveBeenCalledWith({
+    expect(services.ApplicationInterfaceService.retrieve).toHaveBeenCalledWith({
       lookup: "Foo_interface1",
     });
   }
@@ -139,7 +133,7 @@ test("error thrown when computeResourceName doesn't match any compute resources"
   } catch (e) {
     expect(e).toBeInstanceOf(Error);
     expect(e.message).toEqual(
-      "Could not find compute resource with name nonexistent.compute.resource.org"
+      "Could not find compute resource with name nonexistent.compute.resource.org",
     );
   }
 });
@@ -170,7 +164,7 @@ test("error thrown when no GRP found for compute resource", async () => {
   } catch (e) {
     expect(e).toBeInstanceOf(Error);
     expect(e.message).toEqual(
-      "Couldn't find a group resource profile for compute resource compute1.resource.org_id1"
+      "Couldn't find a group resource profile for compute resource compute1.resource.org_id1",
     );
   }
 });
@@ -215,7 +209,7 @@ test("error thrown when no deployment found for compute resource", async () => {
     });
     expect(e).toBeInstanceOf(Error);
     expect(e.message).toEqual(
-      "Couldn't find a deployment for compute resource compute1.resource.org_id1"
+      "Couldn't find a deployment for compute resource compute1.resource.org_id1",
     );
   }
 });
@@ -275,23 +269,18 @@ test("verify that default queue values are used in computationalResourceScheduli
     computeResourceName: "compute1.resource.org",
   });
   expect(
-    experiment.user_configuration_data.computational_resource_scheduling
-      .resource_host_id
+    experiment.user_configuration_data.computational_resource_scheduling.resource_host_id,
   ).toBe("compute1.resource.org_id1");
-  expect(
-    experiment.user_configuration_data.computational_resource_scheduling
-      .total_cpu_count
-  ).toBe(20);
-  expect(
-    experiment.user_configuration_data.computational_resource_scheduling.node_count
-  ).toBe(21);
-  expect(
-    experiment.user_configuration_data.computational_resource_scheduling
-      .wall_time_limit
-  ).toBe(22);
-  expect(
-    experiment.user_configuration_data.computational_resource_scheduling.queue_name
-  ).toBe("queue2");
+  expect(experiment.user_configuration_data.computational_resource_scheduling.total_cpu_count).toBe(
+    20,
+  );
+  expect(experiment.user_configuration_data.computational_resource_scheduling.node_count).toBe(21);
+  expect(experiment.user_configuration_data.computational_resource_scheduling.wall_time_limit).toBe(
+    22,
+  );
+  expect(experiment.user_configuration_data.computational_resource_scheduling.queue_name).toBe(
+    "queue2",
+  );
 });
 
 test("verify that experiment name is the given name", async () => {
@@ -448,19 +437,11 @@ test("verify that application inputs and outputs are cloned on experiment", asyn
     applicationName: "test",
     computeResourceName: "compute1.resource.org",
   });
-  expect(
-    experiment.experiment_inputs.find((i) => i.name === "appInput1")
-  ).toBeDefined();
-  expect(
-    experiment.experiment_inputs.find((i) => i.name === "appInput2")
-  ).toBeDefined();
+  expect(experiment.experiment_inputs.find((i) => i.name === "appInput1")).toBeDefined();
+  expect(experiment.experiment_inputs.find((i) => i.name === "appInput2")).toBeDefined();
   expect(experiment.experiment_inputs.length).toBe(2);
-  expect(
-    experiment.experiment_outputs.find((i) => i.name === "appOutput1")
-  ).toBeDefined();
-  expect(
-    experiment.experiment_outputs.find((i) => i.name === "appOutput2")
-  ).toBeDefined();
+  expect(experiment.experiment_outputs.find((i) => i.name === "appOutput1")).toBeDefined();
+  expect(experiment.experiment_outputs.find((i) => i.name === "appOutput2")).toBeDefined();
   expect(experiment.experiment_outputs.length).toBe(2);
 });
 
@@ -564,12 +545,8 @@ test("verify that given input values are copied to experiment", async () => {
       appInput2: "value2",
     },
   });
-  expect(
-    experiment.experiment_inputs.find((i) => i.name === "appInput1").value
-  ).toBe("value1");
-  expect(
-    experiment.experiment_inputs.find((i) => i.name === "appInput2").value
-  ).toBe("value2");
+  expect(experiment.experiment_inputs.find((i) => i.name === "appInput1").value).toBe("value1");
+  expect(experiment.experiment_inputs.find((i) => i.name === "appInput2").value).toBe("value2");
 
   // Don't pass appInput1 and take the default value instead
   const experiment2 = await createExperiment({
@@ -580,10 +557,6 @@ test("verify that given input values are copied to experiment", async () => {
       appInput2: "value2",
     },
   });
-  expect(
-    experiment2.experiment_inputs.find((i) => i.name === "appInput1").value
-  ).toBe("default1");
-  expect(
-    experiment2.experiment_inputs.find((i) => i.name === "appInput2").value
-  ).toBe("value2");
+  expect(experiment2.experiment_inputs.find((i) => i.name === "appInput1").value).toBe("default1");
+  expect(experiment2.experiment_inputs.find((i) => i.name === "appInput2").value).toBe("value2");
 });

@@ -23,11 +23,7 @@ export default class MinLengthValidator {
     if (this.customErrorMessage) {
       return this.customErrorMessage;
     } else {
-      return (
-        "The value must be at least " +
-        this.minLength +
-        " characters in length."
-      );
+      return "The value must be at least " + this.minLength + " characters in length.";
     }
   }
 }

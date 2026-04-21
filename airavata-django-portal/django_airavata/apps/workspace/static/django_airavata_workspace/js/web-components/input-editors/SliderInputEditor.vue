@@ -19,6 +19,9 @@ import SliderInputEditor from "../../components/experiment/input-editors/SliderI
 import WebComponentInputEditorMixin from "./WebComponentInputEditorMixin.js";
 
 export default {
+  components: {
+    SliderInputEditor,
+  },
   mixins: [WebComponentInputEditorMixin],
   props: {
     // Explicit copy props from mixin, workaround for bug, see
@@ -46,9 +49,6 @@ export default {
         return ["percentage"].indexOf(value) !== -1;
       },
     },
-  },
-  components: {
-    SliderInputEditor,
   },
 };
 </script>

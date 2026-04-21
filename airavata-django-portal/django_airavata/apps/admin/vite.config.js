@@ -1,27 +1,10 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
+import { defineAppConfig } from "@airavata/tooling/vite.config.js";
 import { resolve } from "path";
 
-export default defineConfig({
-  plugins: [vue()],
-  build: {
-    manifest: "manifest.json",
-    outDir: resolve(__dirname, "./static/django_airavata_admin/dist"),
-    rollupOptions: {
-      input: resolve(
-        __dirname,
-        "./static/django_airavata_admin/src/main.js"
-      ),
-    },
-  },
-  resolve: {
-    extensions: [".vue", ".js", ".json"],
-    alias: {
-      "@": resolve(__dirname, "./static/django_airavata_admin/src"),
-    },
-  },
-  server: {
-    port: 9000,
-    origin: "http://localhost:9000",
-  },
+const srcDir = resolve(import.meta.dirname, "./static/django_airavata_admin/src");
+
+export default defineAppConfig({
+  appLabel: "django_airavata_admin",
+  srcDir,
+  entries: resolve(srcDir, "main.js"),
 });

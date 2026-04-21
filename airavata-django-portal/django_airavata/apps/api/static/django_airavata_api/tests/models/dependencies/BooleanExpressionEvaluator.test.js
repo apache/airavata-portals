@@ -139,7 +139,7 @@ test("non-array given for AND throws Error", () => {
   expect(() =>
     booleanExpressionEvaluator.evaluate({
       AND: "a",
-    })
+    }),
   ).toThrow();
 });
 
@@ -147,7 +147,7 @@ test("non-array given for OR throws Error", () => {
   expect(() =>
     booleanExpressionEvaluator.evaluate({
       OR: "a",
-    })
+    }),
   ).toThrow();
 });
 
@@ -162,7 +162,7 @@ test("non-object given for NOT throws Error", () => {
           },
         },
       ],
-    })
+    }),
   ).toThrow();
 });
 
@@ -173,7 +173,7 @@ test("referenced variable not in context throws Error", () => {
         comparison: "equals",
         value: 1,
       },
-    })
+    }),
   ).toThrow(/missing context value/i);
 });
 
@@ -183,7 +183,7 @@ test("missing 'comparison' property throws Error", () => {
       INPUT1: {
         value: 1,
       },
-    })
+    }),
   ).toThrow(/missing 'comparison' property/i);
 });
 
@@ -194,7 +194,7 @@ test("unrecognized 'comparison' property throws Error", () => {
         comparison: "foo",
         value: 1,
       },
-    })
+    }),
   ).toThrow(/unrecognized comparison/i);
 });
 

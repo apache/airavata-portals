@@ -171,15 +171,15 @@ Displays a slider for picking a value between some minimum and maximum value.
 
 #### Config options
 
--   _min_ - minimum value, defaults to 0.
--   _max_ - maximum value, defaults to 100.
--   _step_ - step between values. Default is 1. Can be less that one for decimal
-    values.
--   _valueFormat.percentage_ - whether to save the value with a trailing "%".
-    Defaults to false. Note, this is the value that will be placed in the job
-    script.
--   _displayFormat.percentage_ - whether to display the value to the user with a
-    trailing "%". Defaults to false.
+- _min_ - minimum value, defaults to 0.
+- _max_ - maximum value, defaults to 100.
+- _step_ - step between values. Default is 1. Can be less that one for decimal
+  values.
+- _valueFormat.percentage_ - whether to save the value with a trailing "%".
+  Defaults to false. Note, this is the value that will be placed in the job
+  script.
+- _displayFormat.percentage_ - whether to display the value to the user with a
+  trailing "%". Defaults to false.
 
 #### Example
 
@@ -211,8 +211,8 @@ beginning and one for selecting the end of a range.
 
 All of the options of the Slider component, plus:
 
--   _delimiter_ - the character to place between the values, for example, ",".
-    The default value is a hyphen, "-". This will be placed into the job script.
+- _delimiter_ - the character to place between the values, for example, ",".
+  The default value is a hyphen, "-". This will be placed into the job script.
 
 ```json
 {
@@ -242,13 +242,13 @@ implement the REST API for returning autocomplete suggestions.
 
 #### REST API contract
 
--   URL is called with query parameter search with value of whatever the user
-    has currently typed
--   URL should return a JSON response with a search key and the value of that
-    key used for the search and an results key with a list matching results,
-    limited to the top 10. Each result should have a text key with the text
-    displayed to the user and a value key which is the value applied to the
-    experiment input if selected. For example:
+- URL is called with query parameter search with value of whatever the user
+  has currently typed
+- URL should return a JSON response with a search key and the value of that
+  key used for the search and an results key with a list matching results,
+  limited to the top 10. Each result should have a text key with the text
+  displayed to the user and a value key which is the value applied to the
+  experiment input if selected. For example:
 
 ```json
 {
@@ -266,10 +266,10 @@ implement the REST API for returning autocomplete suggestions.
 }
 ```
 
--   URL can also be called with query parameter exact with a value that was
-    previously returned. This call is made by the UI to retrieve the "text"
-    value to display to the user for this value. The JSON response should be
-    similar to the above except that it should only have one result:
+- URL can also be called with query parameter exact with a value that was
+  previously returned. This call is made by the UI to retrieve the "text"
+  value to display to the user for this value. The JSON response should be
+  similar to the above except that it should only have one result:
 
 ```json
 {
@@ -283,9 +283,9 @@ implement the REST API for returning autocomplete suggestions.
 }
 ```
 
--   If the exact query parameter is specified and there is no match for that
-    value, the JSON response should have HTTP status 404. The error reason can
-    be added to the "detail" key of the response body, for example:
+- If the exact query parameter is specified and there is no match for that
+  value, the JSON response should have HTTP status 404. The error reason can
+  be added to the "detail" key of the response body, for example:
 
 ```json
 {

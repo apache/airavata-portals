@@ -9,10 +9,7 @@
            (not Vue slots), see #mounted() -->
     </div>
     <template v-for="input in experiment.experiment_inputs" :key="input.name">
-      <div
-        :ref="input.name"
-        @input="updateInputValue(input.name, $event)"
-      >
+      <div :ref="input.name" @input="updateInputValue(input.name, $event)">
         <!-- programmatically define slots as native slots (not Vue slots), see #mounted() -->
       </div>
     </template>
@@ -33,7 +30,6 @@
 </template>
 
 <script>
-
 import store from "./store";
 import { mapGetters } from "vuex";
 import urls from "../utils/urls";
@@ -74,34 +70,21 @@ export default {
         if (["STRING", "INTEGER", "FLOAT"].includes(input.type.name)) {
           slot.textContent = `${input.name} `;
           const textInput = document.createElement("adpf-string-input-editor");
-          textInput.setAttribute(
-            "value",
-            input.value !== null ? input.value : ""
-          );
+          textInput.setAttribute("value", input.value !== null ? input.value : "");
           textInput.setAttribute("name", input.name);
           slot.appendChild(textInput);
           this.$refs[input.name][0].append(slot);
         } else if (input.type.name === "URI") {
           slot.textContent = `${input.name} `;
-          const fileInputEditor = document.createElement(
-            "adpf-file-input-editor"
-          );
-          fileInputEditor.setAttribute(
-            "value",
-            input.value !== null ? input.value : ""
-          );
+          const fileInputEditor = document.createElement("adpf-file-input-editor");
+          fileInputEditor.setAttribute("value", input.value !== null ? input.value : "");
           fileInputEditor.setAttribute("name", input.name);
           slot.appendChild(fileInputEditor);
           this.$refs[input.name][0].append(slot);
         } else if (input.type.name === "URI_COLLECTION") {
           slot.textContent = `${input.name} `;
-          const multiFileInputEditor = document.createElement(
-            "adpf-multi-file-input-editor"
-          );
-          multiFileInputEditor.setAttribute(
-            "value",
-            input.value !== null ? input.value : ""
-          );
+          const multiFileInputEditor = document.createElement("adpf-multi-file-input-editor");
+          multiFileInputEditor.setAttribute("value", input.value !== null ? input.value : "");
           multiFileInputEditor.setAttribute("name", input.name);
           slot.appendChild(multiFileInputEditor);
           this.$refs[input.name][0].append(slot);
@@ -133,62 +116,38 @@ export default {
       experimentNameInputEl.setAttribute("id", "experiment-name-input");
       experimentNameInputEl.setAttribute("type", "text");
       experimentNameInputEl.setAttribute("name", "experiment-name");
-      experimentNameInputEl.setAttribute(
-        "value",
-        this.experiment.experiment_name
-      );
+      experimentNameInputEl.setAttribute("value", this.experiment.experiment_name);
       experimentNameInputEl.setAttribute("required", "required");
-      experimentNameGroupEl.append(
-        experimentNameLabelEl,
-        experimentNameInputEl
-      );
-      this.$refs.experimentName.append(
-        this.createSlot("experiment-name", experimentNameGroupEl)
-      );
+      experimentNameGroupEl.append(experimentNameLabelEl, experimentNameInputEl);
+      this.$refs.experimentName.append(this.createSlot("experiment-name", experimentNameGroupEl));
 
       const projectSelectorEl = document.createElement("adpf-project-selector");
       if (this.experiment.project_id) {
         projectSelectorEl.setAttribute("value", this.experiment.project_id);
       }
-      this.$refs.projectSelector.append(
-        this.createSlot("experiment-project", projectSelectorEl)
-      );
+      this.$refs.projectSelector.append(this.createSlot("experiment-project", projectSelectorEl));
 
       const groupResourceProfileSelectorEl = document.createElement(
-        "adpf-group-resource-profile-selector"
+        "adpf-group-resource-profile-selector",
       );
       if (this.groupResourceProfileId) {
-        groupResourceProfileSelectorEl.setAttribute(
-          "value",
-          this.groupResourceProfileId
-        );
+        groupResourceProfileSelectorEl.setAttribute("value", this.groupResourceProfileId);
       }
       this.$refs.groupResourceProfileSelector.append(
-        this.createSlot(
-          "experiment-group-resource-profile",
-          groupResourceProfileSelectorEl
-        )
+        this.createSlot("experiment-group-resource-profile", groupResourceProfileSelectorEl),
       );
 
       const computeResourceSelectorEl = document.createElement(
-        "adpf-experiment-compute-resource-selector"
+        "adpf-experiment-compute-resource-selector",
       );
-      computeResourceSelectorEl.setAttribute(
-        "application-module-id",
-        this.applicationId
-      );
+      computeResourceSelectorEl.setAttribute("application-module-id", this.applicationId);
       this.$refs.computeResourceSelector.append(
-        this.createSlot(
-          "experiment-compute-resource",
-          computeResourceSelectorEl
-        )
+        this.createSlot("experiment-compute-resource", computeResourceSelectorEl),
       );
 
-      const queueSettingsEditorEl = document.createElement(
-        "adpf-queue-settings-editor"
-      );
+      const queueSettingsEditorEl = document.createElement("adpf-queue-settings-editor");
       this.$refs.queueSettingsEditor.append(
-        this.createSlot("experiment-queue-settings", queueSettingsEditorEl)
+        this.createSlot("experiment-queue-settings", queueSettingsEditorEl),
       );
 
       /*
@@ -200,7 +159,7 @@ export default {
       //       type="submit"
       //       variant="success"
       //       name="save-and-launch-experiment-button"
-      //       
+      //
       //     >
       //       Save and Launch
       //     </button>
@@ -213,10 +172,7 @@ export default {
       buttonsRowEl.classList.add("d-flex", "justify-content-end");
       const saveAndLaunchButtonEl = document.createElement("button");
       saveAndLaunchButtonEl.setAttribute("type", "submit");
-      saveAndLaunchButtonEl.setAttribute(
-        "name",
-        "save-and-launch-experiment-button"
-      );
+      saveAndLaunchButtonEl.setAttribute("name", "save-and-launch-experiment-button");
       saveAndLaunchButtonEl.classList.add("btn", "btn-success", "me-2");
       saveAndLaunchButtonEl.textContent = "Save and Launch";
       const saveButtonEl = document.createElement("button");
@@ -225,9 +181,7 @@ export default {
       saveButtonEl.classList.add("btn", "btn-primary");
       saveButtonEl.textContent = "Save";
       buttonsRowEl.append(saveAndLaunchButtonEl, saveButtonEl);
-      this.$refs.experimentButtons.append(
-        this.createSlot("experiment-buttons", buttonsRowEl)
-      );
+      this.$refs.experimentButtons.append(this.createSlot("experiment-buttons", buttonsRowEl));
     });
   },
   computed: {
@@ -245,8 +199,8 @@ export default {
       const value = Array.isArray(event.detail)
         ? event.detail[0]
         : event.target // Backwards compatibility: second argument changed from the value to the 'event'
-        ? event.target.value
-        : event;
+          ? event.target.value
+          : event;
       this.$store.dispatch("updateExperimentInputValue", { inputName, value });
     },
     updateProjectId(event) {

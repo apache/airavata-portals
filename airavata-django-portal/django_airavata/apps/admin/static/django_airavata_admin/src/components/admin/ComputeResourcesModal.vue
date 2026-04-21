@@ -1,14 +1,13 @@
 <template>
-  <!-- TODO: migrate to Bootstrap 5 modal --><div class="modal"
-    title="Select Compute Resource"
+  <!-- TODO: migrate to Bootstrap 5 modal -->
+  <div
     ref="modal"
-    @ok="onSelectComputeResource"
+    class="modal"
+    title="Select Compute Resource"
     :ok-disabled="modalSelectComputeResourceOkDisabled"
+    @ok="onSelectComputeResource"
   >
-    <select class="form-select"
-      v-model="selectedComputeResource"
-      :options="computeResourceOptions"
-    >
+    <select v-model="selectedComputeResource" class="form-select" :options="computeResourceOptions">
       <template slot="first">
         <option :value="null">Please select compute resource</option>
       </template>
@@ -19,7 +18,7 @@
 <script>
 import { services } from "django-airavata-api";
 export default {
-  name: "compute-resources-modal",
+  name: "ComputeResourcesModal",
   props: {
     computeResourceNames: Array,
     excludedResourceIds: Array,
@@ -30,15 +29,9 @@ export default {
       localComputeResourceNames: null,
     };
   },
-  created() {
-    if (!this.computeResourceNames) {
-      services.ComputeResourceService.namesList().then(
-        (resourceNames) => (this.localComputeResourceNames = resourceNames)
-      );
-    }
-  },
   computed: {
     modalSelectComputeResourceOkDisabled: function () {
+      // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
       return this.selectedComputeResource == null;
     },
     computeResourceOptions: function () {
@@ -48,9 +41,7 @@ export default {
       const options = names
         ? names
             .filter((comp) =>
-              this.excludedResourceIds
-                ? !this.excludedResourceIds.includes(comp.host_id)
-                : true
+              this.excludedResourceIds ? !this.excludedResourceIds.includes(comp.host_id) : true,
             )
             .map((comp) => {
               return {
@@ -59,11 +50,16 @@ export default {
               };
             })
         : [];
-      options.sort((a, b) =>
-        a.text.toLowerCase().localeCompare(b.text.toLowerCase())
-      );
+      options.sort((a, b) => a.text.toLowerCase().localeCompare(b.text.toLowerCase()));
       return options;
     },
+  },
+  created() {
+    if (!this.computeResourceNames) {
+      services.ComputeResourceService.namesList().then(
+        (resourceNames) => (this.localComputeResourceNames = resourceNames),
+      );
+    }
   },
   methods: {
     onSelectComputeResource() {

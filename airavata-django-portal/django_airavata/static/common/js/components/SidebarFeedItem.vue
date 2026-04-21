@@ -1,13 +1,11 @@
 <template>
   <li class="feed__list-item">
-    <span v-if="feedItem.type" class="feed__label text-secondary">{{
-      feedItem.type
-    }}</span>
+    <span v-if="feedItem.type" class="feed__label text-secondary">{{ feedItem.type }}</span>
     <h2 class="feed__title mb-2">
       <a v-if="feedItem.url" :href="feedItem.url">{{ feedItem.title }}</a>
       <span v-else>{{ feedItem.title }}</span>
     </h2>
-    <slot v-bind:feedItem="feedItem">
+    <slot :feed-item="feedItem">
       <div v-if="feedItem.description">{{ feedItem.description }}</div>
     </slot>
     <div v-if="timestamp" class="feed__item-meta text-secondary mt-1">
@@ -20,7 +18,7 @@
 import moment from "moment";
 
 export default {
-  name: "sidebar-feed-item",
+  name: "SidebarFeedItem",
   props: {
     /**
      * feedItem properties are

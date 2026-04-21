@@ -52,11 +52,11 @@ export default class UserConfigurationData extends BaseModel {
 
   validate() {
     const validationResults = {};
-    const computationalResourceSchedulingValidation = this.computational_resource_scheduling.validate();
+    const computationalResourceSchedulingValidation =
+      this.computational_resource_scheduling.validate();
     if (Object.keys(computationalResourceSchedulingValidation).length > 0) {
-      validationResults[
-        "computational_resource_scheduling"
-      ] = computationalResourceSchedulingValidation;
+      validationResults["computational_resource_scheduling"] =
+        computationalResourceSchedulingValidation;
     }
     return validationResults;
   }

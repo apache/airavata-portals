@@ -23,7 +23,9 @@
                 <div class="table-empty">
                   <i class="fa fa-database table-empty__icon"></i>
                   <div class="table-empty__title">No datasets available yet</div>
-                  <div class="table-empty__text">Datasets will appear here when created or shared with you.</div>
+                  <div class="table-empty__text">
+                    Datasets will appear here when created or shared with you.
+                  </div>
                 </div>
               </td>
             </tr>
@@ -46,7 +48,7 @@
 
 <script>
 export default {
-  name: "datasets-list-container",
+  name: "DatasetsListContainer",
   data() {
     return {
       datasets: [],

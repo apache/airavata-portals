@@ -1,53 +1,51 @@
 <template>
-  <div class="card"><div class="card-body">
-    <div slot="header" class="d-flex align-items-baseline">
-      <h6>{{ experimentOutput.name }}</h6>
-      <div class="dropdown ms-auto" v-if="showMenu" :text="currentView['name']" >
-        <a class="dropdown-item"
-          v-for="(view, index) in outputViews"
-          :key="view['provider-id']"
-          :active="view['provider-id'] === currentView['provider-id']"
-          @click="selectView(index)"
-          >{{ view["name"] }}</a
-        >
+  <div class="card">
+    <div class="card-body">
+      <div slot="header" class="d-flex align-items-baseline">
+        <h6>{{ experimentOutput.name }}</h6>
+        <div v-if="showMenu" class="dropdown ms-auto" :text="currentView['name']">
+          <a
+            v-for="(view, index) in outputViews"
+            :key="view['provider-id']"
+            class="dropdown-item"
+            :active="view['provider-id'] === currentView['provider-id']"
+            @click="selectView(index)"
+            >{{ view["name"] }}</a
+          >
+        </div>
+      </div>
+      <component
+        :is="outputDisplayComponentName"
+        :view-data="viewData"
+        :data-products="dataProducts"
+        :experiment-output="experimentOutput"
+      />
+      <interactive-parameters-panel
+        v-if="viewData && viewData.interactive"
+        ref="interactiveParametersPanel"
+        :parameters="viewData.interactive"
+        @input="parametersUpdated"
+      />
+      <div
+        v-if="dataProducts.length > 0 || isExecuting"
+        slot="footer"
+        class="d-flex justify-content-end align-items-baseline"
+      >
+        <template v-if="isExecuting">
+          <span class="small text-muted me-2"> {{ fetchIntermediateOutputStatusMessage }}</span>
+          <button class="btn" size="sm" :disabled="fetchLatestDisabled" @click="fetchLatest">
+            <div v-if="currentlyRunningIntermediateOutputFetch" class="spinner-border" small></div>
+            Fetch Latest
+          </button>
+        </template>
+        <template v-else-if="dataProducts.length === 1">
+          <button class="btn" size="sm" :href="dataProducts[0].download_url + '&download'">
+            Download
+          </button>
+        </template>
       </div>
     </div>
-    <component
-      :is="outputDisplayComponentName"
-      :view-data="viewData"
-      :data-products="dataProducts"
-      :experiment-output="experimentOutput"
-    />
-    <interactive-parameters-panel
-      ref="interactiveParametersPanel"
-      v-if="viewData && viewData.interactive"
-      :parameters="viewData.interactive"
-      @input="parametersUpdated"
-    />
-    <div
-      slot="footer"
-      v-if="dataProducts.length > 0 || isExecuting"
-      class="d-flex justify-content-end align-items-baseline"
-    >
-      <template v-if="isExecuting">
-        <span class="small text-muted me-2">
-          {{ fetchIntermediateOutputStatusMessage }}</span
-        >
-        <button class="btn" size="sm" @click="fetchLatest" :disabled="fetchLatestDisabled">
-          <div class="spinner-border"
-            small
-            v-if="currentlyRunningIntermediateOutputFetch"
-          ></div>
-          Fetch Latest</button
-        >
-      </template>
-      <template v-else-if="dataProducts.length === 1">
-        <button class="btn" size="sm" :href="dataProducts[0].download_url + '&download'"
-          >Download</button
-        >
-      </template>
-    </div>
-  </div></div>
+  </div>
 </template>
 
 <script>
@@ -64,13 +62,7 @@ import { mapActions, mapGetters, mapState } from "vuex";
 import ProcessState from "django-airavata-api/static/django_airavata_api/js/models/ProcessState";
 
 export default {
-  name: "output-viewer-container",
-  props: {
-    experimentOutput: {
-      type: models.OutputDataObjectType,
-      required: true,
-    },
-  },
+  name: "OutputViewerContainer",
   components: {
     "data-product-viewer": components.DataProductViewer,
     DefaultOutputDisplay,
@@ -80,26 +72,27 @@ export default {
     NotebookOutputDisplay,
     InteractiveParametersPanel,
   },
-  created() {
-    // Only show the default output view while executing or if no output dataProducts
-    if (
-      this.outputViews.length > 0 &&
-      (!this.isFinished || this.dataProducts.length === 0)
-    ) {
-      this.currentViewIndex = this.outputViews.findIndex(
-        (ov) => ov["provider-id"] === "default"
-      );
-    }
-    if (this.providerId && this.providerId !== "default") {
-      this.loader = this.createLoader();
-      this.loader.load();
-    }
+  props: {
+    experimentOutput: {
+      type: models.OutputDataObjectType,
+      required: true,
+    },
   },
   data() {
     return {
       currentViewIndex: 0,
       loader: null,
     };
+  },
+  created() {
+    // Only show the default output view while executing or if no output dataProducts
+    if (this.outputViews.length > 0 && (!this.isFinished || this.dataProducts.length === 0)) {
+      this.currentViewIndex = this.outputViews.findIndex((ov) => ov["provider-id"] === "default");
+    }
+    if (this.providerId && this.providerId !== "default") {
+      this.loader = this.createLoader();
+      this.loader.load();
+    }
   },
   computed: {
     ...mapState("viewExperiment", ["fullExperiment"]),
@@ -126,14 +119,10 @@ export default {
         : null;
     },
     viewData() {
-      return this.loader && this.loader.data
-        ? this.loader.data
-        : this.outputViewData;
+      return this.loader && this.loader.data ? this.loader.data : this.outputViewData;
     },
     outputViewData() {
-      return this.currentView && this.currentView.data
-        ? this.currentView.data
-        : {};
+      return this.currentView && this.currentView.data ? this.currentView.data : {};
     },
     displayTypeData() {
       return {
@@ -177,11 +166,7 @@ export default {
       }
     },
     showMenu() {
-      return (
-        this.isFinished &&
-        this.outputViews.length > 1 &&
-        this.dataProducts.length > 0
-      );
+      return this.isFinished && this.outputViews.length > 1 && this.dataProducts.length > 0;
     },
     providerId() {
       return this.currentView ? this.currentView["provider-id"] : null;
@@ -190,9 +175,7 @@ export default {
       return this.viewData && this.viewData.interactive;
     },
     currentlyRunningIntermediateOutputFetch() {
-      return this.currentlyRunningIntermediateOutputFetches[
-        this.experimentOutput.name
-      ];
+      return this.currentlyRunningIntermediateOutputFetches[this.experimentOutput.name];
     },
     canFetchIntermediateOutput() {
       return this.isJobActive && !this.currentlyRunningIntermediateOutputFetch;
@@ -207,8 +190,8 @@ export default {
         this.experimentOutput.intermediate_output.process_status &&
         this.experimentOutput.intermediate_output.process_status.isFinished
       ) {
-        const timestamp = this.experimentOutput.intermediate_output.process_status
-          .time_of_state_change;
+        const timestamp =
+          this.experimentOutput.intermediate_output.process_status.time_of_state_change;
         msg +=
           "Latest output fetched on " +
           timestamp.toLocaleString([], {
@@ -222,8 +205,7 @@ export default {
         this.experimentOutput.intermediate_output.process_status
       ) {
         if (
-          this.experimentOutput.intermediate_output.process_status.state ===
-          ProcessState.FAILED
+          this.experimentOutput.intermediate_output.process_status.state === ProcessState.FAILED
         ) {
           msg += "Last fetch failed, please try again.";
         }
@@ -243,10 +225,7 @@ export default {
       }
     },
     parametersUpdated(newParams) {
-      if (
-        this.hasInteractiveParameters &&
-        !this.$refs.interactiveParametersPanel.valid
-      ) {
+      if (this.hasInteractiveParameters && !this.$refs.interactiveParametersPanel.valid) {
         // Don't update if we have invalid interactive parameters
         return;
       }

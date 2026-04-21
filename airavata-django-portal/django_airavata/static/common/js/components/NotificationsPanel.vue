@@ -3,7 +3,11 @@
     <div class="sidebar-header">
       <h6 class="sidebar-header__title">Notifications</h6>
     </div>
-    <div v-if="notices.length === 0" class="text-center text-muted p-3" style="font-size:0.8125rem;">
+    <div
+      v-if="notices.length === 0"
+      class="text-center text-muted p-3"
+      style="font-size: 0.8125rem"
+    >
       No notifications
     </div>
     <div
@@ -20,7 +24,8 @@
           class="notification-item__action"
           title="Mark as read"
           @click.prevent="markRead(notice)"
-        ><i class="fas fa-check-circle"></i></a>
+          ><i class="fas fa-check-circle"></i
+        ></a>
       </div>
       <div class="notification-item__body">{{ notice.notificationMessage }}</div>
       <div class="notification-item__time">{{ fromNow(notice.publishedTime) }}</div>
@@ -32,7 +37,7 @@
 import { utils } from "django-airavata-api";
 
 export default {
-  name: "notifications-panel",
+  name: "NotificationsPanel",
   props: {
     notices: { type: Array, default: () => [] },
     unreadCount: { type: Number, default: 0 },

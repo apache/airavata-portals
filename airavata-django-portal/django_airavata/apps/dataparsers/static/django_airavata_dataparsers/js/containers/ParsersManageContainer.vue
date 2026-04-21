@@ -5,19 +5,16 @@
         <h1 class="h4 mb-4">Parsers</h1>
       </div>
       <div id="col-new-group" class="col-sm-2">
-        <button class="btn btn-primary" href="create"
-          >Create New Parser&nbsp;&nbsp;<i
-            class="fa fa-plus"
-            aria-hidden="true"
-          ></i
-        ></button>
+        <button class="btn btn-primary" href="create">
+          Create New Parser&nbsp;&nbsp;<i class="fa fa-plus" aria-hidden="true"></i>
+        </button>
       </div>
     </div>
     <div class="row">
       <div class="col">
         <div class="card">
           <div class="card-body">
-            <parser-list v-bind:parsers="parsers"></parser-list>
+            <parser-list :parsers="parsers"></parser-list>
           </div>
         </div>
       </div>
@@ -31,23 +28,15 @@ import ParserList from "../parser-components/ParserList.vue";
 import { services } from "django-airavata-api";
 
 export default {
-  name: "parsers-manage-container",
+  name: "ParsersManageContainer",
+  components: {
+    "parser-list": ParserList,
+  },
   props: [],
   data() {
     return {
       parsers: null,
     };
-  },
-  components: {
-    "parser-list": ParserList,
-  },
-  methods: {
-    nextParsers: function () {
-      this.parserPaginator.next();
-    },
-    previousParsers: function () {
-      this.parserPaginator.previous();
-    },
   },
   computed: {
     // parsers: function() {
@@ -56,6 +45,14 @@ export default {
   },
   beforeMount: function () {
     services.ParserService.list().then((result) => (this.parsers = result));
+  },
+  methods: {
+    nextParsers: function () {
+      this.parserPaginator.next();
+    },
+    previousParsers: function () {
+      this.parserPaginator.previous();
+    },
   },
 };
 </script>

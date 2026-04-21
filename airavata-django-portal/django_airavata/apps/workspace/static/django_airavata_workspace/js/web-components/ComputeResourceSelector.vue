@@ -1,19 +1,16 @@
 <template>
   <div class="mb-3" label="Compute Resource" label-for="compute-resource">
-    <select class="form-select"
+    <select
       id="compute-resource"
       v-model="resourceHostId"
+      class="form-select"
       required
+      :disabled="disabled || computeResourceOptions.length === 0"
       @change="computeResourceChanged"
       @input.stop
-      :disabled="disabled || computeResourceOptions.length === 0"
     >
       <option :value="null" disabled>Select a Compute Resource</option>
-      <option
-        v-for="opt in computeResourceOptions"
-        :key="opt.value"
-        :value="opt.value"
-      >
+      <option v-for="opt in computeResourceOptions" :key="opt.value" :value="opt.value">
         {{ opt.text }}
       </option>
     </select>
@@ -25,7 +22,7 @@ import store from "./store";
 import { mapGetters } from "vuex";
 
 export default {
-  name: "compute-resource-selector",
+  name: "ComputeResourceSelector",
   props: {
     value: {
       // compute resource host id
@@ -52,15 +49,13 @@ export default {
   },
   computed: {
     computeResourceOptions: function () {
-      const computeResourceIds = Object.keys(this.computeResourceNames).filter(
-        (crid) => {
-          if (this.includedComputeResources) {
-            return this.includedComputeResources.includes(crid);
-          } else {
-            return true;
-          }
+      const computeResourceIds = Object.keys(this.computeResourceNames).filter((crid) => {
+        if (this.includedComputeResources) {
+          return this.includedComputeResources.includes(crid);
+        } else {
+          return true;
         }
-      );
+      });
       const computeResourceOptions = computeResourceIds.map((computeHostId) => {
         return {
           value: computeHostId,

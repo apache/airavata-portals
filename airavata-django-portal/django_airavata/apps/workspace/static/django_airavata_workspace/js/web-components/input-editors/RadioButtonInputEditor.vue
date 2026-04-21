@@ -22,6 +22,9 @@ import WebComponentInputEditorMixin from "./WebComponentInputEditorMixin.js";
 import InlineOptionsMixin from "./InlineOptionsMixin.js";
 
 export default {
+  components: {
+    RadioButtonInputEditor,
+  },
   mixins: [WebComponentInputEditorMixin, InlineOptionsMixin],
   props: {
     // Explicit copy props from mixin, workaround for bug, see
@@ -32,9 +35,6 @@ export default {
       type: Array,
       default: null,
     },
-  },
-  components: {
-    RadioButtonInputEditor,
   },
 };
 </script>

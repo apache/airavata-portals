@@ -19,7 +19,7 @@ class ErrorReporter {
               stacktrace: stacktrace,
             }),
           },
-          { ignoreErrors: true }
+          { ignoreErrors: true },
         ).catch((err) => {
           console.log("Failed to log error", err); // eslint-disable-line no-console
         });

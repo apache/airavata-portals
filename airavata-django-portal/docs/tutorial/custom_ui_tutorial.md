@@ -7,16 +7,16 @@ both simple and complex customizations to the user interface.
 
 Tutorial attendees should have:
 
--   a text editor or IDE for writing Python and web code. Any text editor or IDE
-    will do but if you're looking for recommendations, I recommend
-    [Visual Studio Code](https://code.visualstudio.com/).
--   Python (3.6 - 3.10)
--   Git client
--   [Docker Desktop](https://www.docker.com/products/docker-desktop)
--   If you don't have Docker installed or can't install it, you'll also need:
-    -   [Node LTS](https://nodejs.org/en/download/),
-    -   and
-        [Yarn 1 (Classic) package manager](https://classic.yarnpkg.com/en/docs/install).
+- a text editor or IDE for writing Python and web code. Any text editor or IDE
+  will do but if you're looking for recommendations, I recommend
+  [Visual Studio Code](https://code.visualstudio.com/).
+- Python (3.6 - 3.10)
+- Git client
+- [Docker Desktop](https://www.docker.com/products/docker-desktop)
+- If you don't have Docker installed or can't install it, you'll also need:
+    - [Node LTS](https://nodejs.org/en/download/),
+    - and
+      [Yarn 1 (Classic) package manager](https://classic.yarnpkg.com/en/docs/install).
 
 ### Installing Python
 
@@ -25,8 +25,8 @@ Python 3.6-3.10 are supported, but I highly recommend you download and use
 
 Download and install Python 3.10.
 
--   (macOS/Windows): Download from <https://www.python.org/downloads/>
--   (Linux): use your distribution's package manager to install Python 3.10
+- (macOS/Windows): Download from <https://www.python.org/downloads/>
+- (Linux): use your distribution's package manager to install Python 3.10
 
 Verify you have installed Python 3.10:
 
@@ -175,17 +175,17 @@ Verify that you have installed Yarn:
 
 ## Outline
 
--   Introduction
--   Presentation: Overview of Airavata and Django Portal
-    -   History of the Airavata UI and how did we get here
--   Hands on: run a basic computational experiment in the Django portal
--   Tutorial exercise: customize the input user interface for an application
--   Tutorial exercise: Create a custom output viewer for an output file
--   Tutorial exercise: Create a custom Django app
-    -   use the `AiravataAPI` JavaScript library for utilizing the backend
-        Airavata API
-    -   develop a simple custom user interface for setting up and visualizing
-        computational experiments
+- Introduction
+- Presentation: Overview of Airavata and Django Portal
+    - History of the Airavata UI and how did we get here
+- Hands on: run a basic computational experiment in the Django portal
+- Tutorial exercise: customize the input user interface for an application
+- Tutorial exercise: Create a custom output viewer for an output file
+- Tutorial exercise: Create a custom Django app
+    - use the `AiravataAPI` JavaScript library for utilizing the backend
+      Airavata API
+    - develop a simple custom user interface for setting up and visualizing
+      computational experiments
 
 ## Hands on: run a Gaussian computational experiment in the Django portal
 
@@ -228,7 +228,7 @@ application requires one input, an _Input-File_. The following is a
 preconfigured Gaussian input file. Download this to your local computer and then
 click the **Browse** button to upload the file:
 
--   [npentane12diol.inp](./data/npentane12diol.inp)
+- [npentane12diol.inp](./data/npentane12diol.inp)
 
 You can click on the file to take a quick look at the file in a popup window.
 
@@ -320,21 +320,21 @@ interface.
 
 There are a few things to point out now:
 
--   the _Target ID_ input takes a string value, but only certain characters
-    (alphanumeric) are allowed and the string value has a minimum and maximum
-    allowed length.
--   the _Screening libraries_ and _Visualization scripts_ only accept specific
-    values. For example, one of the allowed values for _Screening libraries_ is
-    `screen_drugbank`
+- the _Target ID_ input takes a string value, but only certain characters
+  (alphanumeric) are allowed and the string value has a minimum and maximum
+  allowed length.
+- the _Screening libraries_ and _Visualization scripts_ only accept specific
+  values. For example, one of the allowed values for _Screening libraries_ is
+  `screen_drugbank`
 
 We can make this user interface more user friendly by providing more guidance in
 the application inputs' user interface. What we'll do:
 
--   for _Target ID_ (input #1) we'll provide validation feedback that verifies
-    that the given value has an allowed length and only allowed characters.
--   nothing to configure for _Target Structure_ (input #2)
--   for _Screening libraries_ and _Visualization scripts_ (inputs #3 and #4)
-    we'll provide a list of labeled checkboxes for the user to select.
+- for _Target ID_ (input #1) we'll provide validation feedback that verifies
+  that the given value has an allowed length and only allowed characters.
+- nothing to configure for _Target Structure_ (input #2)
+- for _Screening libraries_ and _Visualization scripts_ (inputs #3 and #4)
+  we'll provide a list of labeled checkboxes for the user to select.
 
 1. Go back to **Settings** and in the **Application Catalog** click on your
    eFindSite application.
@@ -379,9 +379,9 @@ It should look something like this:
 
 This JSON configuration customizes the input editor in two ways:
 
--   it adds 3 validations: min-length, max-length and a regex
--   it sets the UI component of the input editor to be the `string-input-editor`
-    (which is also the default)
+- it adds 3 validations: min-length, max-length and a regex
+- it sets the UI component of the input editor to be the `string-input-editor`
+  (which is also the default)
 
 4. Skipping past _Target Structure_ (input #2) and on to **_Screening
    Libraries_** (input #3), set the _Advanced Input Field Modification Metadata_
@@ -495,9 +495,9 @@ Other
 [UI components](https://github.com/apache/airavata-django-portal/tree/master/django_airavata/apps/workspace/static/django_airavata_workspace/js/components/experiment/input-editors)
 are available:
 
--   textarea
--   radio buttons
--   dropdown
+- textarea
+- radio buttons
+- dropdown
 
 We're working to provide a way for custom input editors to be added by the
 community, especially domain specific input editors. For example, a ball and
@@ -513,10 +513,10 @@ By default, the Django portal provides a very simple view for output files that
 allows users to download the file to their local machine. However, it is
 possible to provide additional custom views for output files. Examples include:
 
--   image (visualization)
--   link (perhaps to another web application that can visualize the file)
--   chart
--   parameterized notebook
+- image (visualization)
+- link (perhaps to another web application that can visualize the file)
+- chart
+- parameterized notebook
 
 To be able to create a custom output viewer we'll need to write some Python
 code. First we'll generate the custom Django app code.
@@ -577,12 +577,12 @@ version [0.1.0]:
 For running the local Django portal development environment, there are a few
 options:
 
--   **Docker**: Run the portal as a Docker container. If you have Docker
-    installed, this is the **recommended** option for the tutorial.
--   **Python**: Install the portal dependencies (Python and Nodejs) and then run
-    it directly on your computer. This is recommended when you don't or can't
-    have Docker installed. It is also what we recommend when you are developing
-    a real custom django app extension.
+- **Docker**: Run the portal as a Docker container. If you have Docker
+  installed, this is the **recommended** option for the tutorial.
+- **Python**: Install the portal dependencies (Python and Nodejs) and then run
+  it directly on your computer. This is recommended when you don't or can't
+  have Docker installed. It is also what we recommend when you are developing
+  a real custom django app extension.
 
 Regardless of which approach you use, you'll need to get a config file for
 setting up a local development environment that has the same settings as
@@ -856,7 +856,6 @@ from airavata_django_portal_sdk import user_storage
     the image bytes and _mime-type_ which should be the image's mime type. There
     implementation plots the eigenvalues of molecular orbital energies
     calculated by Gaussian and has three parts:
-
     1. Use the _cclib_ library to parse the Gaussian log file. _cclib_ is a
        Python computational chemistry library which is used to read the
        molecular orbital energies.
@@ -1074,10 +1073,10 @@ within the Django Portal.
 
 What we're going to build is a very simple user interface that will:
 
--   allow a user to pick a greeting in one of several languages
--   submit a simple _echo_ job to a batch scheduler to echo that greeting
--   display the echoed greeting by displaying the STDOUT file produced by the
-    job
+- allow a user to pick a greeting in one of several languages
+- submit a simple _echo_ job to a batch scheduler to echo that greeting
+- display the echoed greeting by displaying the STDOUT file produced by the
+  job
 
 This is an intentionally simple example to demonstrate the general principle of
 using custom REST APIs and UI to setup, execute and post-process/visualize the
@@ -1336,7 +1335,7 @@ path('languages/', views.languages, name="languages"), ]
             $("#greeting-select").append(
                 `<option value="${language.greeting}">
                     ${language.lang} - "${language.greeting}"
-                 </option>`
+                 </option>`,
             );
         });
     });
@@ -1356,7 +1355,7 @@ utils.FetchUtils.get("/custom_ui_tutorial_app/languages/").then((data) => {
         $("#greeting-select").append(
             `<option value="${language.greeting}">
                 ${language.lang} - "${language.greeting}"
-             </option>`
+             </option>`,
         );
     });
 });
@@ -1479,7 +1478,7 @@ async function loadExperiments() {
                 <td>${expSummary.creationTime}</td>
                 <td>${expSummary.experimentStatus.name}</td>
                 <td id="output_${index}"></td>
-            </tr>`
+            </tr>`,
         );
     });
 }
@@ -1593,7 +1592,6 @@ const experimentData = await utils.ExperimentUtils.createExperiment({
 4. The `utils.ExperimentUtils.createExperiment` function does a few more things
    behind the scenes and once we run it we can take a look at the REST API calls
    it makes. In summary `utils.ExperimentUtils.createExperiment`:
-
     - loads the Application Interface
     - loads the compute resource ID
     - finds a Group Resource Profile that can be used to submit the job to the
@@ -1665,9 +1663,8 @@ if (expSummary.experimentStatus === models.ExperimentState.COMPLETED) {
     const stdoutInput = experiment.getExperimentOutput("Echo-STDOUT");
     const dataProductURI = stdoutInput.value;
     try {
-        const stdout = await utils.ExperimentUtils.readDataProduct(
-            dataProductURI
-        );
+        const stdout =
+            await utils.ExperimentUtils.readDataProduct(dataProductURI);
         $(`#output_${index}`).text(stdout);
     } catch (error) {
         $(`#output_${index}`).text("N/A");
@@ -1697,7 +1694,7 @@ async function loadExperiments() {
                 <td>${expSummary.creationTime}</td>
                 <td>${expSummary.experimentStatus.name}</td>
                 <td id="output_${index}"></td>
-            </tr>`
+            </tr>`,
         );
 
         // STARTING HERE
@@ -1709,9 +1706,8 @@ async function loadExperiments() {
             const stdoutInput = experiment.getExperimentOutput("Echo-STDOUT");
             const dataProductURI = stdoutInput.value;
             try {
-                const stdout = await utils.ExperimentUtils.readDataProduct(
-                    dataProductURI
-                );
+                const stdout =
+                    await utils.ExperimentUtils.readDataProduct(dataProductURI);
                 // if stdout is null, it means the file wasn't found
                 if (stdout !== null) {
                     $(`#output_${index}`).text(stdout);
@@ -1741,9 +1737,8 @@ if (expSummary.experimentStatus === models.ExperimentState.COMPLETED) {
     const stdoutInput = experiment.getExperimentOutput("Echo-STDOUT");
     const dataProductURI = stdoutInput.value;
     try {
-        const stdout = await utils.ExperimentUtils.readDataProduct(
-            dataProductURI
-        );
+        const stdout =
+            await utils.ExperimentUtils.readDataProduct(dataProductURI);
         // if stdout is null, it means the file wasn't found
         if (stdout !== null) {
             $(`#output_${index}`).text(stdout);

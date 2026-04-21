@@ -2,18 +2,11 @@ import BaseEnum from "./BaseEnum";
 
 export default class DataType extends BaseEnum {
   get isSimpleValueType() {
-    return (
-      [DataType.STRING, DataType.INTEGER, DataType.FLOAT].indexOf(this) >= 0
-    );
+    return [DataType.STRING, DataType.INTEGER, DataType.FLOAT].indexOf(this) >= 0;
   }
   get isFileValueType() {
     return (
-      [
-        DataType.URI,
-        DataType.URI_COLLECTION,
-        DataType.STDOUT,
-        DataType.STDERR,
-      ].indexOf(this) >= 0
+      [DataType.URI, DataType.URI_COLLECTION, DataType.STDOUT, DataType.STDERR].indexOf(this) >= 0
     );
   }
 }
@@ -23,15 +16,4 @@ export default class DataType extends BaseEnum {
 // include DATA_TYPE_UNKNOWN=0 and start STRING at 1), so sending numeric
 // values would silently corrupt the data type (e.g. STDOUT would be read
 // as URI_COLLECTION). See application_io.proto.
-DataType.init(
-  [
-    "STRING",
-    "INTEGER",
-    "FLOAT",
-    "URI",
-    "URI_COLLECTION",
-    "STDOUT",
-    "STDERR",
-  ],
-  true
-);
+DataType.init(["STRING", "INTEGER", "FLOAT", "URI", "URI_COLLECTION", "STDOUT", "STDERR"], true);

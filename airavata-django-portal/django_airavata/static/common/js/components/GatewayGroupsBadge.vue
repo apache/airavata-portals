@@ -6,7 +6,7 @@
 import { models } from "django-airavata-api";
 
 export default {
-  name: "gateway-groups-badge",
+  name: "GatewayGroupsBadge",
   props: {
     group: {
       type: models.Group,

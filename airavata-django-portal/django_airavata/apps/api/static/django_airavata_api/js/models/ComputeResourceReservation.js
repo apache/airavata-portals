@@ -39,8 +39,7 @@ export default class ComputeResourceReservation extends BaseModel {
   validate() {
     let validationResults = {};
     if (this.isEmpty(this.reservation_name)) {
-      validationResults["reservation_name"] =
-        "Please provide the name of this reservation.";
+      validationResults["reservation_name"] = "Please provide the name of this reservation.";
     }
     if (this.start_time > this.end_time) {
       validationResults["end_time"] = "End time must be later than start time.";

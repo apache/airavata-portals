@@ -1,9 +1,6 @@
 <template>
   <div class="main-content-wrapper">
-    <main
-      class="main-content"
-      :class="{ 'main-content--with-sidebar': showSidebar }"
-    >
+    <main class="main-content" :class="{ 'main-content--with-sidebar': showSidebar }">
       <ssh-prompt-notification />
       <notifications-display />
       <div class="container-fluid">
@@ -29,11 +26,15 @@
           <span v-if="unreadCount > 0" class="sidebar-tabs__badge">{{ unreadCount }}</span>
         </button>
       </div>
-      <div class="sidebar-panel" v-show="activePanel === 'content' && hasSidebarSlot">
+      <div v-show="activePanel === 'content' && hasSidebarSlot" class="sidebar-panel">
         <slot name="sidebar" />
       </div>
-      <div class="sidebar-panel" v-show="activePanel === 'notifications'">
-        <notifications-panel :notices="notices" :unread-count="unreadCount" @update:unread="unreadCount = $event" />
+      <div v-show="activePanel === 'notifications'" class="sidebar-panel">
+        <notifications-panel
+          :notices="notices"
+          :unread-count="unreadCount"
+          @update:unread="unreadCount = $event"
+        />
       </div>
     </aside>
   </div>
@@ -46,7 +47,12 @@ import SshPromptNotification from "./SshPromptNotification.vue";
 import { utils } from "django-airavata-api";
 
 export default {
-  name: "main-layout",
+  name: "MainLayout",
+  components: {
+    NotificationsDisplay,
+    NotificationsPanel,
+    SshPromptNotification,
+  },
   data() {
     return {
       collapsed: false,
@@ -117,11 +123,6 @@ export default {
     persistState() {
       localStorage.setItem("rightSidebarCollapsed", this.collapsed);
     },
-  },
-  components: {
-    NotificationsDisplay,
-    NotificationsPanel,
-    SshPromptNotification,
   },
 };
 </script>

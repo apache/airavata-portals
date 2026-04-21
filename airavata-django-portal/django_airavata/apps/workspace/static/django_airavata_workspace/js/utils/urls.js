@@ -28,9 +28,7 @@ export default {
     );
   },
   navigateToViewExperiment(projectId, experiment, { launching = false } = {}) {
-    window.location.assign(
-      this.viewExperiment(projectId, experiment, { launching })
-    );
+    window.location.assign(this.viewExperiment(projectId, experiment, { launching }));
   },
   createExperiment(appModule) {
     return (

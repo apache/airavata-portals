@@ -6,29 +6,45 @@
         <strong>SSH Authentication</strong>
       </div>
       <div class="ssh-prompt-toast__body">
-        <div class="mb-2 text-muted" style="font-size: 0.8125rem;">{{ prompt.hostname }}</div>
+        <div class="mb-2 text-muted" style="font-size: 0.8125rem">{{ prompt.hostname }}</div>
         <div class="mb-2">{{ prompt.prompt }}</div>
         <div v-if="prompt.waiting" class="text-muted">
           <i class="fa fa-spinner fa-spin me-1"></i>Authenticating...
         </div>
         <div v-else class="d-flex gap-2">
           <input
+            v-model="prompt.response"
             class="form-control form-control-sm"
             :type="prompt.echo === false ? 'password' : 'text'"
-            v-model="prompt.response"
-            @keydown.enter="submitResponse(prompt)"
             placeholder="Enter response..."
+            @keydown.enter="submitResponse(prompt)"
           />
           <button class="btn btn-primary btn-sm" @click="submitResponse(prompt)">Send</button>
         </div>
       </div>
     </div>
-    <div v-for="result in results" :key="result.session_id" class="ssh-prompt-toast"
-      :class="result.success ? 'ssh-prompt-toast--success' : 'ssh-prompt-toast--error'">
+    <div
+      v-for="result in results"
+      :key="result.session_id"
+      class="ssh-prompt-toast"
+      :class="result.success ? 'ssh-prompt-toast--success' : 'ssh-prompt-toast--error'"
+    >
       <div class="ssh-prompt-toast__body">
-        <i :class="result.success ? 'fa fa-check-circle text-success' : 'fa fa-times-circle text-danger'" class="me-1"></i>
+        <i
+          :class="
+            result.success ? 'fa fa-check-circle text-success' : 'fa fa-times-circle text-danger'
+          "
+          class="me-1"
+        ></i>
         {{ result.message }}
-        <a v-if="!result.success" href="#" class="ms-2" style="font-size:0.75rem;" @click.prevent="dismissResult(result.session_id)">dismiss</a>
+        <a
+          v-if="!result.success"
+          href="#"
+          class="ms-2"
+          style="font-size: 0.75rem"
+          @click.prevent="dismissResult(result.session_id)"
+          >dismiss</a
+        >
       </div>
     </div>
   </div>
@@ -38,12 +54,24 @@
 import { utils } from "django-airavata-api";
 
 export default {
-  name: "ssh-prompt-notification",
+  name: "SshPromptNotification",
   data() {
     return {
       activePrompts: [],
       results: [],
     };
+  },
+  mounted() {
+    if (utils.SSEClient) {
+      utils.SSEClient.on("ssh_prompt", this.onSshPrompt);
+      utils.SSEClient.on("ssh_result", this.onSshResult);
+    }
+  },
+  beforeUnmount() {
+    if (utils.SSEClient) {
+      utils.SSEClient.off("ssh_prompt", this.onSshPrompt);
+      utils.SSEClient.off("ssh_result", this.onSshResult);
+    }
   },
   methods: {
     onSshPrompt(event) {
@@ -91,18 +119,6 @@ export default {
     dismissResult(session_id) {
       this.results = this.results.filter((r) => r.session_id !== session_id);
     },
-  },
-  mounted() {
-    if (utils.SSEClient) {
-      utils.SSEClient.on("ssh_prompt", this.onSshPrompt);
-      utils.SSEClient.on("ssh_result", this.onSshResult);
-    }
-  },
-  beforeUnmount() {
-    if (utils.SSEClient) {
-      utils.SSEClient.off("ssh_prompt", this.onSshPrompt);
-      utils.SSEClient.off("ssh_result", this.onSshResult);
-    }
   },
 };
 </script>

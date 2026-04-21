@@ -25,7 +25,7 @@ class ProjectService {
 
   create(project) {
     return FetchUtils.post("/api/projects/", JSON.stringify(project)).then(
-      (result) => new Project(result)
+      (result) => new Project(result),
     );
   }
 
@@ -37,9 +37,9 @@ class ProjectService {
     if (data) {
       return Promise.resolve(new Project(data));
     } else {
-      return FetchUtils.get(
-        "/api/projects/" + encodeURIComponent(projectId) + "/"
-      ).then((result) => new Project(result));
+      return FetchUtils.get("/api/projects/" + encodeURIComponent(projectId) + "/").then(
+        (result) => new Project(result),
+      );
     }
   }
 }

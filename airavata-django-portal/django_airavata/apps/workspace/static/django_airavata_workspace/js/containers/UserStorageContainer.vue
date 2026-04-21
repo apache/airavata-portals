@@ -25,20 +25,27 @@
               <th class="text-nowrap">Type</th>
               <th class="text-nowrap">Owner</th>
               <th class="text-nowrap">Status</th>
-              <th class="text-nowrap" style="width:1%">Actions</th>
+              <th class="text-nowrap" style="width: 1%">Actions</th>
             </tr>
           </thead>
           <tbody class="align-middle">
             <tr v-if="storageList.length === 0">
               <td colspan="5">
                 <div class="text-center text-muted py-4">
-                  <i class="fa fa-hdd mb-2" style="font-size:2rem;"></i>
+                  <i class="fa fa-hdd mb-2" style="font-size: 2rem"></i>
                   <div><strong>No storage resources configured</strong></div>
-                  <div class="small">Contact your administrator to configure a storage resource.</div>
+                  <div class="small">
+                    Contact your administrator to configure a storage resource.
+                  </div>
                 </div>
               </td>
             </tr>
-            <tr v-for="storage in storageList" :key="storage.id" @click="navigateToStorage(storage)" style="cursor: pointer">
+            <tr
+              v-for="storage in storageList"
+              :key="storage.id"
+              style="cursor: pointer"
+              @click="navigateToStorage(storage)"
+            >
               <td>
                 <i class="fa fa-hdd me-2 text-muted"></i>
                 <strong>{{ storage.name }}</strong>
@@ -49,15 +56,22 @@
                 <span class="badge bg-primary ms-1">Gateway</span>
               </td>
               <td>
-                <span class="badge bg-success" v-if="storage.enabled">Enabled</span>
-                <span class="badge bg-secondary" v-else>Disabled</span>
+                <span v-if="storage.enabled" class="badge bg-success">Enabled</span>
+                <span v-else class="badge bg-secondary">Disabled</span>
               </td>
-              <td class="text-nowrap" style="width:1%" @click.stop>
+              <td class="text-nowrap" style="width: 1%" @click.stop>
                 <div class="d-flex gap-2 justify-content-end flex-nowrap">
-                  <a :href="'/resources/storage/' + storage.id + '/tree'" class="btn btn-outline-secondary btn-pill">
+                  <a
+                    :href="'/resources/storage/' + storage.id + '/tree'"
+                    class="btn btn-outline-secondary btn-pill"
+                  >
                     <i class="fa fa-folder-open me-1"></i>Files
                   </a>
-                  <button type="button" class="btn btn-outline-danger btn-pill" @click="confirmDeleteStorage(storage)">
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger btn-pill"
+                    @click="confirmDeleteStorage(storage)"
+                  >
                     <i class="fa fa-trash me-1"></i>Delete
                   </button>
                 </div>
@@ -65,7 +79,11 @@
             </tr>
           </tbody>
         </table>
-        <div v-if="storageList.length > 0" class="text-end text-muted" style="font-size:0.75rem; padding: 6px 8px;">
+        <div
+          v-if="storageList.length > 0"
+          class="text-end text-muted"
+          style="font-size: 0.75rem; padding: 6px 8px"
+        >
           Showing {{ storageList.length }}
         </div>
       </div>
@@ -82,12 +100,22 @@
           <div class="modal-body">
             <div class="mb-2">
               <label class="form-label">Host Name <span class="text-danger">*</span></label>
-              <input class="form-control" v-model="newHostName" placeholder="e.g. storage.example.com" />
+              <input
+                v-model="newHostName"
+                class="form-control"
+                placeholder="e.g. storage.example.com"
+              />
             </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-            <button class="btn btn-primary btn-sm" @click="registerStorage" :disabled="!newHostName">Register</button>
+            <button
+              class="btn btn-primary btn-sm"
+              :disabled="!newHostName"
+              @click="registerStorage"
+            >
+              Register
+            </button>
           </div>
         </div>
       </div>
@@ -100,7 +128,7 @@ import { Modal } from "bootstrap";
 import { services } from "django-airavata-api";
 
 export default {
-  name: "user-storage-container",
+  name: "UserStorageContainer",
   data() {
     return {
       loading: true,
@@ -108,9 +136,12 @@ export default {
       newHostName: "",
     };
   },
+  created() {
+    this.loadStorageResources();
+  },
   methods: {
     navigateToStorage(storage) {
-      window.location.href = '/resources/storage/' + storage.id + '/';
+      window.location.href = "/resources/storage/" + storage.id + "/";
     },
     showRegisterModal() {
       this.newHostName = "";
@@ -128,7 +159,8 @@ export default {
       }
     },
     async confirmDeleteStorage(storage) {
-      if (!confirm('Delete storage resource "' + storage.name + '"? This cannot be undone.')) return;
+      if (!confirm('Delete storage resource "' + storage.name + '"? This cannot be undone.'))
+        return;
       try {
         await services.StorageResourceService.delete({ lookup: storage.id });
         await this.loadStorageResources();
@@ -150,9 +182,6 @@ export default {
       }
       this.loading = false;
     },
-  },
-  created() {
-    this.loadStorageResources();
   },
 };
 </script>

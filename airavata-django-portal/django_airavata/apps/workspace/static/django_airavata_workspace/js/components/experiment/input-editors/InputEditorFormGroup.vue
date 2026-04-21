@@ -9,7 +9,10 @@
         </li>
       </ul>
     </div>
-    <div v-else-if="feedbackMessages && feedbackMessages.length === 1" class="invalid-feedback d-block">
+    <div
+      v-else-if="feedbackMessages && feedbackMessages.length === 1"
+      class="invalid-feedback d-block"
+    >
       {{ feedbackMessages[0] }}
     </div>
     <small v-if="description" class="form-text text-muted">
@@ -21,28 +24,28 @@
 <script>
 import { components } from "django-airavata-common-ui";
 export default {
-  name: "input-editor-form-group",
+  name: "InputEditorFormGroup",
+  components: {
+    linkify: components.Linkify,
+  },
   props: {
     label: {
       type: String,
-      required: true
+      required: true,
     },
     labelFor: {
       type: String,
-      required: true
+      required: true,
     },
     state: {
-      type: Boolean
+      type: Boolean,
     },
     feedbackMessages: {
-      type: Array
+      type: Array,
     },
     description: {
-      type: String
-    }
+      type: String,
+    },
   },
-  components: {
-    linkify: components.Linkify
-  }
 };
 </script>

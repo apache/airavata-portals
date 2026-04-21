@@ -8,23 +8,27 @@
         <div class="row">
           <div class="col-md-8">
             <div class="mb-3">
-              <label for="project-name-input" class="form-label small text-muted mb-1">Project Name</label>
+              <label for="project-name-input" class="form-label small text-muted mb-1"
+                >Project Name</label
+              >
               <input
                 id="project-name-input"
+                v-model="editName"
                 type="text"
                 class="form-control form-control-lg fw-bold"
-                v-model="editName"
                 :disabled="!project"
                 placeholder="Project name"
               />
             </div>
             <div class="mb-0">
-              <label for="project-description-input" class="form-label small text-muted mb-1">Description</label>
+              <label for="project-description-input" class="form-label small text-muted mb-1"
+                >Description</label
+              >
               <textarea
                 id="project-description-input"
+                v-model="editDescription"
                 class="form-control"
                 rows="2"
-                v-model="editDescription"
                 :disabled="!project"
                 placeholder="Optional description"
               ></textarea>
@@ -49,18 +53,20 @@
           <button
             v-if="isDirty"
             class="btn btn-secondary btn-sm"
-            @click="resetEdits"
             :disabled="saving"
-          >Cancel</button>
+            @click="resetEdits"
+          >
+            Cancel
+          </button>
           <button
             v-if="isDirty"
             class="btn btn-primary btn-sm"
-            @click="saveProject"
             :disabled="saving || !editName || !editName.trim()"
+            @click="saveProject"
           >
             <i class="fa fa-save me-1"></i>{{ saving ? "Saving…" : "Save" }}
           </button>
-          <button class="btn btn-outline-danger btn-sm" @click="showDeleteModal" :disabled="saving">
+          <button class="btn btn-outline-danger btn-sm" :disabled="saving" @click="showDeleteModal">
             <i class="fa fa-trash me-1"></i>Delete
           </button>
         </div>
@@ -83,18 +89,23 @@
             <div v-if="loadingExperiments" class="text-center py-3">
               <i class="fa fa-spinner fa-spin"></i>
             </div>
-            <div v-else-if="!experiments || experiments.length === 0" class="text-center py-3 text-muted">
-              <i class="fa fa-flask d-block mb-2" style="font-size: 1.5rem;"></i>
+            <div
+              v-else-if="!experiments || experiments.length === 0"
+              class="text-center py-3 text-muted"
+            >
+              <i class="fa fa-flask d-block mb-2" style="font-size: 1.5rem"></i>
               No experiments yet
             </div>
             <template v-else>
               <div class="list-group list-group-flush">
-                <a v-for="exp in experiments" :key="exp.experiment_id"
+                <a
+                  v-for="exp in experiments"
+                  :key="exp.experiment_id"
                   :href="viewExperimentUrl(exp)"
                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
                 >
                   <span>{{ exp.name }}</span>
-                  <experiment-status-badge :statusName="exp.experiment_status.name" />
+                  <experiment-status-badge :status-name="exp.experiment_status.name" />
                 </a>
               </div>
               <pager
@@ -124,21 +135,28 @@
             <div v-if="loadingArtifacts" class="text-center py-3">
               <i class="fa fa-spinner fa-spin"></i>
             </div>
-            <div v-else-if="!artifacts || artifacts.length === 0" class="text-center py-3 text-muted">
-              <i class="fa fa-database d-block mb-2" style="font-size: 1.5rem;"></i>
+            <div
+              v-else-if="!artifacts || artifacts.length === 0"
+              class="text-center py-3 text-muted"
+            >
+              <i class="fa fa-database d-block mb-2" style="font-size: 1.5rem"></i>
               No datasets yet
             </div>
             <template v-else>
               <div class="list-group list-group-flush">
-                <div v-for="(artifact, idx) in artifacts" :key="artifactKey(artifact, idx)"
+                <div
+                  v-for="(artifact, idx) in artifacts"
+                  :key="artifactKey(artifact, idx)"
                   class="list-group-item d-flex justify-content-between align-items-center"
                 >
                   <span class="text-truncate">{{ artifactName(artifact) }}</span>
-                  <small class="text-muted ms-2" v-if="artifactDate(artifact)">{{ artifactDate(artifact) }}</small>
+                  <small v-if="artifactDate(artifact)" class="text-muted ms-2">{{
+                    artifactDate(artifact)
+                  }}</small>
                 </div>
               </div>
-              <div class="pager" v-if="artifactsTotal > 0">
-                <span class="pager-element" v-if="artifactsPage > 1">
+              <div v-if="artifactsTotal > 0" class="pager">
+                <span v-if="artifactsPage > 1" class="pager-element">
                   <a href="#" class="action-link" @click.prevent="previousArtifacts">
                     <i class="fa fa-chevron-left" aria-hidden="true"></i> Previous
                   </a>
@@ -146,7 +164,7 @@
                 <span class="pager-element">
                   Showing {{ artifactsFirst }} - {{ artifactsLast }} of {{ artifactsTotal }}
                 </span>
-                <span class="pager-element" v-if="artifactsLast < artifactsTotal">
+                <span v-if="artifactsLast < artifactsTotal" class="pager-element">
                   <a href="#" class="action-link" @click.prevent="nextArtifacts">
                     Next <i class="fa fa-chevron-right" aria-hidden="true"></i>
                   </a>
@@ -160,8 +178,8 @@
     <project-delete-modal
       v-if="project"
       ref="deleteModal"
-      :projectId="projectId"
-      :projectName="project.name"
+      :project-id="projectId"
+      :project-name="project.name"
       @delete="deleteProject"
     />
   </div>
@@ -176,12 +194,7 @@ import ProjectMembersCard from "../components/project/ProjectMembersCard.vue";
 import ProjectResourcesCard from "../components/project/ProjectResourcesCard.vue";
 
 export default {
-  name: "project-overview-container",
-  props: {
-    projectId: { type: String, required: true },
-    projectName: { type: String, required: true },
-    breadcrumbs: { type: Array, default: () => [] },
-  },
+  name: "ProjectOverviewContainer",
   components: {
     "breadcrumb-nav": comps.BreadcrumbNav,
     "experiment-status-badge": comps.ExperimentStatusBadge,
@@ -189,6 +202,11 @@ export default {
     "project-members-card": ProjectMembersCard,
     "project-resources-card": ProjectResourcesCard,
     pager: comps.Pager,
+  },
+  props: {
+    projectId: { type: String, required: true },
+    projectName: { type: String, required: true },
+    breadcrumbs: { type: Array, default: () => [] },
   },
   data() {
     return {
@@ -245,6 +263,11 @@ export default {
       const start = (this.artifactsPage - 1) * this.artifactsPageSize;
       return this.allArtifacts.slice(start, start + this.artifactsPageSize);
     },
+  },
+  beforeMount() {
+    this.loadProject();
+    this.loadExperiments();
+    this.loadArtifacts();
   },
   methods: {
     viewExperimentUrl(experiment) {
@@ -362,7 +385,13 @@ export default {
       return artifact.creation_time || artifact.creationTime || null;
     },
     artifactName(artifact) {
-      return artifact.product_name || artifact.productName || artifact.name || artifact.product_uri || "Untitled";
+      return (
+        artifact.product_name ||
+        artifact.productName ||
+        artifact.name ||
+        artifact.product_uri ||
+        "Untitled"
+      );
     },
     artifactDate(artifact) {
       const t = this.artifactCreationTime(artifact);
@@ -371,11 +400,6 @@ export default {
     artifactKey(artifact, idx) {
       return artifact.product_uri || artifact.productUri || artifact.id || idx;
     },
-  },
-  beforeMount() {
-    this.loadProject();
-    this.loadExperiments();
-    this.loadArtifacts();
   },
 };
 </script>

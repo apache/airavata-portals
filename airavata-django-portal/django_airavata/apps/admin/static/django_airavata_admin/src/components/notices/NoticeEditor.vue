@@ -3,17 +3,18 @@
     <div class="d-flex">
       <slot name="title"> </slot>
     </div>
-    <form @input="onUserInput" novalidate>
+    <form novalidate @input="onUserInput">
       <form-group
         label="Notice Title"
         label-for="notice-title"
         :invalid-feedback="getValidationFeedback('title')"
         :state="getValidationState('title')"
       >
-        <input class="form-control"
+        <input
           id="notice-title"
-          type="text"
           v-model="data.title"
+          class="form-control"
+          type="text"
           required
           placeholder="Notice Title"
           :state="getValidationState('title')"
@@ -26,10 +27,11 @@
         :invalid-feedback="getValidationFeedback('notificationMessage')"
         :state="getValidationState('notificationMessage')"
       >
-        <textarea class="form-control"
+        <textarea
           id="notice-message"
-          type="text"
           v-model="data.notificationMessage"
+          class="form-control"
+          type="text"
           required
           placeholder="Notice Message"
           :state="getValidationState('notificationMessage')"
@@ -63,40 +65,38 @@
         :invalid-feedback="getValidationFeedback('priority')"
         :state="getValidationState('priority')"
       >
-        <select class="form-select"
+        <select
           id="priority"
           v-model="data.priority"
+          class="form-select"
           :options="select.options"
           :state="getValidationState('priority')"
-        >
-        </select>
+        ></select>
       </form-group>
 
       <div class="mb-3">
         <div class="form-check">
-          <input class="form-check-input"
-            type="checkbox"
+          <input
             id="showInDashboard"
             v-model="data.showInDashboard"
+            class="form-check-input"
+            type="checkbox"
           />
-          <label class="form-check-label" for="showInDashboard">
-            Show In Dashboard
-          </label>
+          <label class="form-check-label" for="showInDashboard"> Show In Dashboard </label>
         </div>
       </div>
 
       <template v-if="!editNotification">
         <div class="row">
           <div id="col-exp-buttons" class="col">
-            <button class="btn btn-primary btn-sm"
-              @click="saveNewNotice"
+            <button
+              class="btn btn-primary btn-sm"
               :disabled="isSaveDisabled"
+              @click="saveNewNotice"
             >
               Save
             </button>
-            <button class="btn btn-secondary btn-sm" @click="cancelNewNotice">
-              Cancel
-            </button>
+            <button class="btn btn-secondary btn-sm" @click="cancelNewNotice">Cancel</button>
           </div>
         </div>
       </template>
@@ -110,7 +110,7 @@ import FlatPickr from "vue-flatpickr-component";
 import moment from "moment";
 
 export default {
-  name: "notice-editor",
+  name: "NoticeEditor",
   components: {
     FlatPickr,
   },
@@ -120,25 +120,6 @@ export default {
       type: models.Notification,
       required: true,
     },
-  },
-  created() {
-    //checks whether the component is used for editing or updating the notificaion
-    if (this.value.notificationId != null) {
-      this.editNotification = true;
-      this.inputPublishedTime = new moment(
-        this.value.publishedTime.toISOString()
-      )
-        .utc()
-        .format();
-      this.inputExpirationTime = new moment(
-        this.value.expirationTime.toISOString()
-      )
-        .utc()
-        .format();
-      this.data.priority = this.value.priority.name;
-      this.data.showInDashboard = this.value.showInDashboard;
-      this.today = new moment(this.value.expirationTime.toISOString()).format();
-    }
   },
   data() {
     return {
@@ -184,6 +165,26 @@ export default {
       return !this.valid;
     },
   },
+  watch: {
+    inputExpirationTime() {
+      this.data.expirationTime = this.inputExpirationTime;
+    },
+    inputPublishedTime() {
+      this.data.publishedTime = this.inputPublishedTime;
+    },
+  },
+  created() {
+    //checks whether the component is used for editing or updating the notificaion
+    // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
+    if (this.value.notificationId != null) {
+      this.editNotification = true;
+      this.inputPublishedTime = new moment(this.value.publishedTime.toISOString()).utc().format();
+      this.inputExpirationTime = new moment(this.value.expirationTime.toISOString()).utc().format();
+      this.data.priority = this.value.priority.name;
+      this.data.showInDashboard = this.value.showInDashboard;
+      this.today = new moment(this.value.expirationTime.toISOString()).format();
+    }
+  },
   methods: {
     onUserInput() {
       this.userBeginsInput = true;
@@ -196,7 +197,7 @@ export default {
       return utils.getProperty(this.data.validate(), properties);
     },
     getValidationState: function (properties) {
-      if (this.userBeginsInput == false) {
+      if (this.userBeginsInput === false) {
         return null;
       }
       return this.getValidationFeedback(properties) ? false : true;
@@ -206,14 +207,6 @@ export default {
     },
     saveNewNotice() {
       return this.$emit("saveNewNotice");
-    },
-  },
-  watch: {
-    inputExpirationTime() {
-      this.data.expirationTime = this.inputExpirationTime;
-    },
-    inputPublishedTime() {
-      this.data.publishedTime = this.inputPublishedTime;
     },
   },
 };

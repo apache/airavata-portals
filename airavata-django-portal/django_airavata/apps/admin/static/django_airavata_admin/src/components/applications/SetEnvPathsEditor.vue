@@ -1,22 +1,24 @@
 <template>
   <div class="card" :title="title" title-tag="h5">
-    <div class="input-group mb-1 align-items-center"
+    <div
       v-for="setEnvPath in data"
       :key="setEnvPath.key"
-      
+      class="input-group mb-1 align-items-center"
     >
-      <input class="form-control"
-        type="text"
+      <input
+        ref="nameInputs"
         v-model="setEnvPath.name"
+        class="form-control"
+        type="text"
         required
         placeholder="NAME"
-        ref="nameInputs"
         :disabled="readonly"
       />
       <i class="fa fa-equals mx-1"></i>
-      <input class="form-control"
-        type="text"
+      <input
         v-model="setEnvPath.value"
+        class="form-control"
+        type="text"
         required
         placeholder="VALUE"
         :disabled="readonly"
@@ -28,9 +30,9 @@
         </button>
       </span>
     </div>
-    <button class="btn btn-secondary btn-sm" v-if="!readonly" @click="addEnvPath">{{
-      addButtonLabel
-    }}</button>
+    <button v-if="!readonly" class="btn btn-secondary btn-sm" @click="addEnvPath">
+      {{ addButtonLabel }}
+    </button>
   </div>
 </template>
 
@@ -39,7 +41,7 @@ import { models } from "django-airavata-api";
 import { mixins } from "django-airavata-common-ui";
 
 export default {
-  name: "set-env-paths-editor",
+  name: "SetEnvPathsEditor",
   mixins: [mixins.VModelMixin],
   props: {
     value: {
@@ -64,9 +66,7 @@ export default {
         this.data = [];
       }
       this.data.push(new models.SetEnvPaths());
-      this.$nextTick(() =>
-        this.$refs.nameInputs[this.$refs.nameInputs.length - 1].focus()
-      );
+      this.$nextTick(() => this.$refs.nameInputs[this.$refs.nameInputs.length - 1].focus());
     },
     deleteEnvPath(setEnvPath) {
       const index = this.data.findIndex((env) => env.key === setEnvPath.key);

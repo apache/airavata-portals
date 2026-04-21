@@ -5,20 +5,14 @@
         <h1 class="h4 mb-4">Manage Users</h1>
       </div>
       <div class="col-auto">
-        <button class="btn" :to="{ name: 'extended-user-profile' }"
-          >Extended User Profile</button
-        >
+        <button class="btn" :to="{ name: 'extended-user-profile' }">Extended User Profile</button>
       </div>
       <div class="col-auto">
         <div class="dropdown" :text="menuText">
-          <a class="dropdown-item"
-            :to="{ name: 'identity-service-users' }"
-            :exact="true"
+          <a class="dropdown-item" :to="{ name: 'identity-service-users' }" :exact="true"
             >Identity Service</a
           >
-          <a class="dropdown-item"
-            :to="{ name: 'unverified-email-users' }"
-            :exact="true"
+          <a class="dropdown-item" :to="{ name: 'unverified-email-users' }" :exact="true"
             >Unverified Emails</a
           >
         </div>
@@ -30,7 +24,7 @@
 
 <script>
 export default {
-  name: "user-management-container",
+  name: "UserManagementContainer",
   computed: {
     menuText() {
       if (this.$route.name === "identity-service-users") {

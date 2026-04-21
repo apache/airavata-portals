@@ -1,6 +1,4 @@
-
 import { utils } from "django-airavata-common-ui";
-import store from "../store";
 
 export default {
   props: {

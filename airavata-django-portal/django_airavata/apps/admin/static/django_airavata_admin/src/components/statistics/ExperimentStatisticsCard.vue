@@ -6,10 +6,7 @@
       </div>
       <div>{{ title }}</div>
     </div>
-    <a
-      :class="'text-decoration-none text-' + linkVariant"
-      @click="$emit('click')"
-    >
+    <a :class="'text-decoration-none text-' + linkVariant" @click="$emit('click')">
       <slot name="link-text">
         <div v-for="state in states" :key="state.value">{{ state.name }}</div>
       </slot>
@@ -19,7 +16,7 @@
 
 <script>
 export default {
-  name: "experiment-statistics-card",
+  name: "ExperimentStatisticsCard",
   props: {
     bgVariant: {
       type: String,

@@ -1,7 +1,6 @@
 <template>
   <vue-slider
     v-model="sliderValue"
-    @change="onChange"
     :state="componentValidState"
     :disabled="readOnly"
     :min="sliderMin"
@@ -9,6 +8,7 @@
     :interval="sliderStep"
     tooltip="always"
     :tooltip-formatter="tooltipFormatter"
+    @change="onChange"
   />
 </template>
 
@@ -17,7 +17,10 @@ import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
 import VueSlider from "vue-slider-component";
 
 export default {
-  name: "slider-input-editor",
+  name: "SliderInputEditor",
+  components: {
+    VueSlider,
+  },
   mixins: [InputEditorMixin],
   props: {
     value: {
@@ -39,39 +42,41 @@ export default {
       },
     },
   },
-  components: {
-    VueSlider,
-  },
   data() {
     return {
       sliderValue: null,
     };
-  },
-  created() {
-    this.initializeSliderValue();
   },
   computed: {
     sliderMin: function () {
       return typeof this.min !== "undefined"
         ? this.min
         : "min" in this.editorConfig
-        ? this.editorConfig.min
-        : 0;
+          ? this.editorConfig.min
+          : 0;
     },
     sliderMax: function () {
       return typeof this.max !== "undefined"
         ? this.max
         : "max" in this.editorConfig
-        ? this.editorConfig.max
-        : 100;
+          ? this.editorConfig.max
+          : 100;
     },
     sliderStep: function () {
       return typeof this.step !== "undefined"
         ? this.step
         : "step" in this.editorConfig
-        ? this.editorConfig.step
-        : 1;
+          ? this.editorConfig.step
+          : 1;
     },
+  },
+  watch: {
+    data() {
+      this.initializeSliderValue();
+    },
+  },
+  created() {
+    this.initializeSliderValue();
   },
   methods: {
     initializeSliderValue() {
@@ -114,11 +119,6 @@ export default {
         }
       }
       return String(value);
-    },
-  },
-  watch: {
-    data() {
-      this.initializeSliderValue();
     },
   },
 };

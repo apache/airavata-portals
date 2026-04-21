@@ -1,9 +1,12 @@
 <template>
   <div>
-    <template v-for="extendedUserProfileField in extendedUserProfileFields" :key="extendedUserProfileField.id">
+    <template
+      v-for="extendedUserProfileField in extendedUserProfileFields"
+      :key="extendedUserProfileField.id"
+    >
       <component
-        ref="extendedUserProfileFieldComponents"
         :is="getEditor(extendedUserProfileField)"
+        ref="extendedUserProfileFieldComponents"
         :extended-user-profile-field="extendedUserProfileField"
         @valid="recordValidChildComponent(extendedUserProfileField.id)"
         @invalid="recordInvalidChildComponent(extendedUserProfileField.id)"
@@ -40,10 +43,7 @@ export default {
         return fieldTypeEditors[extendedUserProfileField.field_type];
       } else {
         // eslint-disable-next-line no-console
-        console.error(
-          "Unexpected field_type",
-          extendedUserProfileField.field_type
-        );
+        console.error("Unexpected field_type", extendedUserProfileField.field_type);
       }
     },
     touch() {

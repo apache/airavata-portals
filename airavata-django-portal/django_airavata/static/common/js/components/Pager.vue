@@ -1,13 +1,13 @@
 <template>
   <div class="pager">
-    <span class="pager-element" v-if="hasPrevious">
-      <a href="#" class="action-link" v-on:click.prevent="getPrevious"
+    <span v-if="hasPrevious" class="pager-element">
+      <a href="#" class="action-link" @click.prevent="getPrevious"
         ><i class="fa fa-chevron-left" aria-hidden="true"></i> Previous</a
       >
     </span>
     <span class="pager-element"> Showing {{ first }} - {{ last }} </span>
-    <span class="pager-element" v-if="hasNext">
-      <a href="#" class="action-link" v-on:click.prevent="getNext"
+    <span v-if="hasNext" class="pager-element">
+      <a href="#" class="action-link" @click.prevent="getNext"
         >Next <i class="fa fa-chevron-right" aria-hidden="true"></i
       ></a>
     </span>
@@ -19,17 +19,9 @@
 import { utils } from "django-airavata-api";
 
 export default {
+  name: "Pager",
   props: {
     paginator: utils.PaginationIterator,
-  },
-  name: "pager",
-  methods: {
-    getNext: function () {
-      this.$emit("next");
-    },
-    getPrevious: function () {
-      this.$emit("previous");
-    },
   },
   computed: {
     hasNext: function () {
@@ -44,16 +36,21 @@ export default {
     last: function () {
       if (this.paginator) {
         if (this.paginator.count) {
-          return Math.min(
-            this.paginator.offset + this.paginator.limit,
-            this.paginator.count
-          );
+          return Math.min(this.paginator.offset + this.paginator.limit, this.paginator.count);
         } else {
           return this.paginator.offset + this.paginator.results.length;
         }
       } else {
         return null;
       }
+    },
+  },
+  methods: {
+    getNext: function () {
+      this.$emit("next");
+    },
+    getPrevious: function () {
+      this.$emit("previous");
     },
   },
 };

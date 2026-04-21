@@ -68,9 +68,7 @@ export default {
   },
   methods: {
     isValid(fieldName) {
-      return (
-        this.iamUserProfile.user_profile_invalid_fields.indexOf(fieldName) < 0
-      );
+      return this.iamUserProfile.user_profile_invalid_fields.indexOf(fieldName) < 0;
     },
   },
 };

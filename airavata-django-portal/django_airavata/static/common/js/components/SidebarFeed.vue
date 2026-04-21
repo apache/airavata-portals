@@ -1,13 +1,11 @@
 <template>
   <ol v-if="feedItems && feedItems.length > 0" class="feed">
-    <sidebar-feed-item
-      v-for="feedItem in feedItems"
-      :feed-item="feedItem"
-      :key="feedItem.id"
-    >
-      <div slot-scope="slotProps">
-        <slot name="description" :feedItem="slotProps.feedItem" />
-      </div>
+    <sidebar-feed-item v-for="feedItem in feedItems" :key="feedItem.id" :feed-item="feedItem">
+      <template #default="slotProps">
+        <div>
+          <slot name="description" :feed-item="slotProps.feedItem" />
+        </div>
+      </template>
     </sidebar-feed-item>
   </ol>
 </template>
@@ -16,7 +14,10 @@
 import SidebarFeedItem from "./SidebarFeedItem.vue";
 
 export default {
-  name: "sidebar-feed",
+  name: "SidebarFeed",
+  components: {
+    SidebarFeedItem,
+  },
   props: {
     feedItems: {
       type: Array,
@@ -24,9 +25,6 @@ export default {
         return [];
       },
     },
-  },
-  components: {
-    SidebarFeedItem,
   },
 };
 </script>

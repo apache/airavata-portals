@@ -3,10 +3,7 @@ export function getProperty(obj, props) {
     return obj[props];
   } else if (typeof props === "object" && props instanceof Array) {
     // Array
-    return props.reduce(
-      (o, prop) => (o && prop in o ? o[prop] : undefined),
-      obj
-    );
+    return props.reduce((o, prop) => (o && prop in o ? o[prop] : undefined), obj);
   }
 }
 export function sanitizeHTMLId(id) {

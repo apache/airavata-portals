@@ -13,7 +13,10 @@ import ParserEditor from "../parser-components/ParserEditor.vue";
 import { services } from "django-airavata-api";
 
 export default {
-  name: "parser-edit-container",
+  name: "ParserEditContainer",
+  components: {
+    ParserEditor,
+  },
   props: {
     parserId: {
       type: String,
@@ -25,8 +28,11 @@ export default {
       parser: null,
     };
   },
-  components: {
-    ParserEditor,
+  computed: {},
+  mounted: function () {
+    services.ParserService.retrieve({ lookup: this.parserId }).then(
+      (parser) => (this.parser = parser),
+    );
   },
   methods: {
     handleSaved: function () {
@@ -35,12 +41,6 @@ export default {
     handleCancelled: function () {
       window.location.assign("/dataparsers/");
     },
-  },
-  computed: {},
-  mounted: function () {
-    services.ParserService.retrieve({ lookup: this.parserId }).then(
-      (parser) => (this.parser = parser)
-    );
   },
 };
 </script>

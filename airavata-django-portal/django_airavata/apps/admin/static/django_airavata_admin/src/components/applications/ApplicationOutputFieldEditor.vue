@@ -2,90 +2,86 @@
   <div class="card">
     <div class="card-header d-flex align-items-center">
       <div class="me-auto">Output Field: {{ data.name }}</div>
-      <a
-        v-if="!readonly"
-        class="text-secondary"
-        @click="deleteApplicationOutput"
-      >
+      <a v-if="!readonly" class="text-secondary" @click="deleteApplicationOutput">
         <i class="fa fa-trash"></i>
         <span class="visually-hidden">Delete</span>
       </a>
     </div>
     <div class="card-body">
-    <div class="mb-3" label="Name" :label-for="id + '-name'">
-      <input class="form-control"
-        :id="id + '-name'"
-        type="text"
-        v-model="data.name"
-        ref="nameInput"
-        required
-        :disabled="readonly"
-      />
-    </div>
-    <div class="mb-3" label="Value" :label-for="id + '-value'">
-      <input class="form-control"
-        :id="id + '-value'"
-        type="text"
-        v-model="data.value"
-        :disabled="readonly"
-      />
-    </div>
-    <div class="mb-3" label="Type" :label-for="id + '-type'">
-      <select class="form-select"
-        :id="id + '-type'"
-        v-model="data.type"
-        :options="outputTypeOptions"
-        :disabled="readonly"
-      />
-    </div>
-    <div class="mb-3" label="Application Argument" :label-for="id + '-argument'">
-      <input class="form-control"
-        :id="id + '-argument'"
-        type="text"
-        v-model="data.applicationArgument"
-        :disabled="readonly"
-      />
-    </div>
-    <div class="d-flex">
+      <div class="mb-3" label="Name" :label-for="id + '-name'">
+        <input
+          :id="id + '-name'"
+          ref="nameInput"
+          v-model="data.name"
+          class="form-control"
+          type="text"
+          required
+          :disabled="readonly"
+        />
+      </div>
+      <div class="mb-3" label="Value" :label-for="id + '-value'">
+        <input
+          :id="id + '-value'"
+          v-model="data.value"
+          class="form-control"
+          type="text"
+          :disabled="readonly"
+        />
+      </div>
+      <div class="mb-3" label="Type" :label-for="id + '-type'">
+        <select
+          :id="id + '-type'"
+          v-model="data.type"
+          class="form-select"
+          :options="outputTypeOptions"
+          :disabled="readonly"
+        />
+      </div>
+      <div class="mb-3" label="Application Argument" :label-for="id + '-argument'">
+        <input
+          :id="id + '-argument'"
+          v-model="data.applicationArgument"
+          class="form-control"
+          type="text"
+          :disabled="readonly"
+        />
+      </div>
+      <div class="d-flex">
+        <form-group class="flex-fill" label="Is Required" :label-for="id + '-required'">
+          <form-radio-group
+            :id="id + '-required'"
+            v-model="data.isRequired"
+            :options="trueFalseOptions"
+            :disabled="readonly"
+          />
+        </form-group>
+        <form-group
+          class="flex-fill"
+          label="Required on Command Line"
+          :label-for="id + '-required-command-line'"
+        >
+          <form-radio-group
+            :id="id + '-required-command-line'"
+            v-model="data.requiredToAddedToCommandLine"
+            :options="trueFalseOptions"
+            :disabled="readonly"
+          />
+        </form-group>
+      </div>
       <form-group
-        class="flex-fill"
-        label="Is Required"
-        :label-for="id + '-required'"
+        label="Metadata"
+        :label-for="id + '-metadata'"
+        description="Metadata for this output, in the JSON format"
       >
-        <form-radio-group
-          :id="id + '-required'"
-          v-model="data.isRequired"
-          :options="trueFalseOptions"
+        <json-editor
+          :id="id + '-metadata'"
+          v-model="data.metaData"
+          :rows="5"
           :disabled="readonly"
         />
       </form-group>
-      <form-group
-        class="flex-fill"
-        label="Required on Command Line"
-        :label-for="id + '-required-command-line'"
-      >
-        <form-radio-group
-          :id="id + '-required-command-line'"
-          v-model="data.requiredToAddedToCommandLine"
-          :options="trueFalseOptions"
-          :disabled="readonly"
-        />
-      </form-group>
+      <button class="btn" size="sm" @click="setPlainText">Plain Text</button>
     </div>
-    <form-group
-      label="Metadata"
-      :label-for="id + '-metadata'"
-      description="Metadata for this output, in the JSON format"
-    >
-      <json-editor
-        :id="id + '-metadata'"
-        v-model="data.metaData"
-        :rows="5"
-        :disabled="readonly"
-      />
-    </form-group>
-    <button class="btn" size="sm" @click="setPlainText">Plain Text</button>
-  </div>
   </div>
 </template>
 
@@ -94,7 +90,10 @@ import { models } from "django-airavata-api";
 import { mixins } from "django-airavata-common-ui";
 import JSONEditor from "./JSONEditor.vue";
 export default {
-  name: "application-output-field-editor",
+  name: "ApplicationOutputFieldEditor",
+  components: {
+    "json-editor": JSONEditor,
+  },
   mixins: [mixins.VModelMixin],
   props: {
     value: {
@@ -107,9 +106,6 @@ export default {
       type: Boolean,
       default: false,
     },
-  },
-  components: {
-    "json-editor": JSONEditor,
   },
   computed: {
     outputTypeOptions() {
@@ -130,6 +126,11 @@ export default {
       return "id-" + this.data.key;
     },
   },
+  mounted() {
+    if (this.focus) {
+      this.doFocus();
+    }
+  },
   methods: {
     doFocus() {
       this.$refs.nameInput.focus();
@@ -144,11 +145,6 @@ export default {
       // Clone so that JSONEditor updates with new value
       this.data.metaData = JSON.parse(JSON.stringify(metadata));
     },
-  },
-  mounted() {
-    if (this.focus) {
-      this.doFocus();
-    }
   },
 };
 </script>

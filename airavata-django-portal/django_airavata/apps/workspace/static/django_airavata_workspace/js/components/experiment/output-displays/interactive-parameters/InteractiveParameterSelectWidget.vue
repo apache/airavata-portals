@@ -1,13 +1,6 @@
 <template>
-  <select class="form-select"
-    :value="value"
-    @change="$emit('input', $event.target.value)"
-  >
-    <option
-      v-for="opt in options"
-      :key="opt.value"
-      :value="opt.value"
-    >
+  <select class="form-select" :value="value" @change="$emit('input', $event.target.value)">
+    <option v-for="opt in options" :key="opt.value" :value="opt.value">
       {{ opt.text }}
     </option>
   </select>
@@ -15,7 +8,7 @@
 
 <script>
 export default {
-  name: "interactive-parameter-select-widget",
+  name: "InteractiveParameterSelectWidget",
   props: {
     value: {
       type: String,

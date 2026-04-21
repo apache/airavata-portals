@@ -18,26 +18,21 @@
           <div class="card-body">
             <storage-preference-list
               v-if="gatewayResourceProfile"
-              :storagePreferences="gatewayResourceProfile.storage_preferences"
-              :default-credential-store-token="
-                gatewayResourceProfile.credential_store_token
-              "
+              :storage-preferences="gatewayResourceProfile.storage_preferences"
+              :default-credential-store-token="gatewayResourceProfile.credential_store_token"
+              :readonly="!gatewayResourceProfile.user_has_write_access"
               @updated="updatedStoragePreference"
               @added="addedStoragePreference"
               @delete="deleteStoragePreference"
-              :readonly="!gatewayResourceProfile.user_has_write_access"
             />
           </div>
         </div>
       </div>
     </div>
-    <div
-      class="row"
-      v-if="gatewayResourceProfile && gatewayResourceProfile.user_has_write_access"
-    >
+    <div v-if="gatewayResourceProfile && gatewayResourceProfile.user_has_write_access" class="row">
       <div class="col">
-        <button class="btn btn-primary btn-sm" @click="save"> Save </button>
-        <button class="btn btn-secondary btn-sm" @click="cancel"> Cancel </button>
+        <button class="btn btn-primary btn-sm" @click="save">Save</button>
+        <button class="btn btn-secondary btn-sm" @click="cancel">Cancel</button>
       </div>
     </div>
   </div>
@@ -49,7 +44,7 @@ import GatewayResourceProfileEditor from "./GatewayResourceProfileEditor.vue";
 import StoragePreferenceList from "./StoragePreferenceList.vue";
 
 export default {
-  name: "gateway-resource-profile-editor-container",
+  name: "GatewayResourceProfileEditorContainer",
   components: {
     GatewayResourceProfileEditor,
     StoragePreferenceList,
@@ -80,14 +75,9 @@ export default {
     },
     updatedStoragePreference(updatedStoragePreference) {
       const index = this.gatewayResourceProfile.storage_preferences.findIndex(
-        (sp) =>
-          sp.storage_resource_id === updatedStoragePreference.storage_resource_id
+        (sp) => sp.storage_resource_id === updatedStoragePreference.storage_resource_id,
       );
-      this.gatewayResourceProfile.storage_preferences.splice(
-        index,
-        1,
-        updatedStoragePreference
-      );
+      this.gatewayResourceProfile.storage_preferences.splice(index, 1, updatedStoragePreference);
     },
     addedStoragePreference(newStoragePreference) {
       services.StoragePreferenceService.create({
@@ -101,7 +91,7 @@ export default {
         lookup: storageResourceId,
       }).then(() => {
         const index = this.gatewayResourceProfile.storage_preferences.findIndex(
-          (sp) => sp.storage_resource_id === storageResourceId
+          (sp) => sp.storage_resource_id === storageResourceId,
         );
         this.gatewayResourceProfile.storage_preferences.splice(index, 1);
       });

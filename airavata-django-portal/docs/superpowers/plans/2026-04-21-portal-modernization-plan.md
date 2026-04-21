@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> **This is a meta-plan.** The spec is a *roadmap+guardrails* umbrella — each of the five tracks ships as its own brainstorm → spec → plan → implementation cycle. The tasks below sequence those cycles, enforce the cross-track gates, and choreograph the branch strategy. The actual code changes for each track live in that track's own plan (created by a later `superpowers:writing-plans` invocation).
+> **This is a meta-plan.** The spec is a _roadmap+guardrails_ umbrella — each of the five tracks ships as its own brainstorm → spec → plan → implementation cycle. The tasks below sequence those cycles, enforce the cross-track gates, and choreograph the branch strategy. The actual code changes for each track live in that track's own plan (created by a later `superpowers:writing-plans` invocation).
 
 **Goal:** Modernize the Airavata Django Portal's server-side and JS-side stack by executing five sequenced tracks (Python hygiene → Monorepo tooling → (JS library swaps ∥ Test harness) → Vue Options/Vuex → Composition/Pinia + TypeScript) on a long-lived `modernization` branch, merging to `main` only after every track is green.
 
@@ -17,6 +17,7 @@
 ## Task 0: Set up the long-lived `modernization` integration branch
 
 **Files:**
+
 - None — branch only.
 
 - [ ] **Step 1: Verify current working tree is clean**
@@ -27,21 +28,25 @@ Expected: empty output. If not, commit or stash uncommitted work first.
 - [ ] **Step 2: Update the local `main` reference**
 
 Run:
+
 ```bash
 cd airavata-portals/airavata-django-portal
 git fetch origin
 git checkout main
 git pull origin main
 ```
+
 Expected: `main` is up to date.
 
 - [ ] **Step 3: Create the long-lived integration branch**
 
 Run:
+
 ```bash
 git checkout -b modernization
 git push -u origin modernization
 ```
+
 Expected: branch `modernization` exists both locally and on `origin`.
 
 - [ ] **Step 4: Record the branch strategy in the repo**
@@ -73,11 +78,13 @@ Examples: `track-d/python-hygiene`, `track-c/monorepo-tooling`,
 - [ ] **Step 5: Commit the branch strategy doc**
 
 Run:
+
 ```bash
 git add docs/superpowers/plans/2026-04-21-portal-modernization-branch-strategy.md
 git commit -m "docs(modernization): branch strategy for the umbrella"
 git push
 ```
+
 Expected: commit lands on `modernization`.
 
 ---
@@ -85,18 +92,21 @@ Expected: commit lands on `modernization`.
 ## Task 1: Kick off Track D (Python hygiene)
 
 **Files:**
+
 - Will be created by the per-track brainstorm: `docs/superpowers/specs/YYYY-MM-DD-track-d-python-hygiene-design.md`
 - Will be created by the per-track writing-plans: `docs/superpowers/plans/YYYY-MM-DD-track-d-python-hygiene-plan.md`
 
 - [ ] **Step 1: Create Track D's feature branch from `modernization`**
 
 Run:
+
 ```bash
 cd airavata-portals/airavata-django-portal
 git checkout modernization
 git pull origin modernization
 git checkout -b track-d/python-hygiene
 ```
+
 Expected: working tree on `track-d/python-hygiene`.
 
 - [ ] **Step 2: Invoke the brainstorming skill for Track D**
@@ -132,6 +142,7 @@ Run these exact checks in `airavata-portals/airavata-django-portal/`:
 grep -rn "^import pytz\|^from pytz\|[^a-z]pytz\." django_airavata --include='*.py' \
   | grep -v __pycache__ | grep -v .venv
 ```
+
 Expected: empty output.
 
 ```bash
@@ -154,6 +165,7 @@ if bad:
 print("OK")
 PY
 ```
+
 Expected: `OK`.
 
 ```bash
@@ -161,22 +173,26 @@ Expected: `OK`.
 uv run ruff check .
 uv run ty check .
 ```
+
 Expected: both clean (exit 0, no errors).
 
 ```bash
 # 4. Python test suite still green.
 uv run pytest -q
 ```
+
 Expected: all tests pass.
 
 - [ ] **Step 6: Merge Track D to `modernization`**
 
 Run:
+
 ```bash
 git checkout modernization
 git merge --no-ff track-d/python-hygiene -m "merge: Track D (Python hygiene)"
 git push origin modernization
 ```
+
 Expected: `track-d/python-hygiene` is merged with a merge commit.
 
 ---
@@ -184,18 +200,21 @@ Expected: `track-d/python-hygiene` is merged with a merge commit.
 ## Task 2: Kick off Track C (monorepo tooling)
 
 **Files:**
+
 - Will be created: `docs/superpowers/specs/YYYY-MM-DD-track-c-monorepo-tooling-design.md`
 - Will be created: `docs/superpowers/plans/YYYY-MM-DD-track-c-monorepo-tooling-plan.md`
 
 - [ ] **Step 1: Create Track C's feature branch from `modernization`**
 
 Run:
+
 ```bash
 cd airavata-portals/airavata-django-portal
 git checkout modernization
 git pull origin modernization
 git checkout -b track-c/monorepo-tooling
 ```
+
 Expected: working tree on `track-c/monorepo-tooling`, with Track D already merged in.
 
 - [ ] **Step 2: Invoke the brainstorming skill for Track C**
@@ -231,24 +250,28 @@ Run these checks in `airavata-portals/airavata-django-portal/`:
 test -d tooling
 grep -l "tooling" django_airavata/apps/*/package.json django_airavata/static/common/package.json
 ```
+
 Expected: `tooling/` directory exists; every workspace's `package.json` references shared config from `tooling/`.
 
 ```bash
 # 2. `packageManager` field pins Yarn via corepack.
 python3 -c "import json; d=json.load(open('package.json')); assert 'packageManager' in d, 'missing packageManager in root package.json'; print('OK packageManager=', d['packageManager'])"
 ```
+
 Expected: `OK packageManager= yarn@1.x.x`.
 
 ```bash
 # 3. Root-level scripts exist.
 python3 -c "import json; d=json.load(open('package.json'))['scripts']; missing=[s for s in ('lint','format','typecheck','test','test:e2e') if s not in d]; assert not missing, f'missing scripts: {missing}'; print('OK scripts present')"
 ```
+
 Expected: `OK scripts present`.
 
 ```bash
 # 4. ESLint 9 flat config works across every workspace.
 yarn lint
 ```
+
 Expected: no errors. (Warnings acceptable only if the Track C spec documented the exceptions.)
 
 ```bash
@@ -258,22 +281,26 @@ const x: number = 1; export default x;
 EOF
 yarn typecheck || echo 'typecheck script exists but may have nothing to check yet; confirm with the track spec'
 ```
+
 Expected: exit 0 (even if "0 files checked").
 
 ```bash
 # 6. Every workspace still builds.
 yarn build
 ```
+
 Expected: all workspaces produce `dist/` bundles; exit 0.
 
 - [ ] **Step 6: Merge Track C to `modernization`**
 
 Run:
+
 ```bash
 git checkout modernization
 git merge --no-ff track-c/monorepo-tooling -m "merge: Track C (monorepo tooling)"
 git push origin modernization
 ```
+
 Expected: merge commit lands; `modernization` now has Track D + Track C.
 
 ---
@@ -283,6 +310,7 @@ Expected: merge commit lands; `modernization` now has Track D + Track C.
 Track B (library swaps) and Track Pre-A (test harness) are independent of each other. They can be done in parallel by two agents/contributors; or serially if only one worker is available. Both must merge before Track A can start.
 
 **Files:**
+
 - Will be created: `docs/superpowers/specs/YYYY-MM-DD-track-b-library-swaps-design.md`
 - Will be created: `docs/superpowers/plans/YYYY-MM-DD-track-b-library-swaps-plan.md`
 - Will be created: `docs/superpowers/specs/YYYY-MM-DD-track-pre-a-test-harness-design.md`
@@ -291,6 +319,7 @@ Track B (library swaps) and Track Pre-A (test harness) are independent of each o
 - [ ] **Step 1: Create Track B's feature branch**
 
 Run:
+
 ```bash
 cd airavata-portals/airavata-django-portal
 git checkout modernization
@@ -326,6 +355,7 @@ grep -rn 'from [\"'"'"']moment[\"'"'"']\|require([\"'"'"']moment[\"'"'"']' \
   django_airavata --include='*.vue' --include='*.js' --include='*.ts' \
   | grep -v node_modules | grep -v dist
 ```
+
 Expected: empty output.
 
 ```bash
@@ -335,12 +365,14 @@ grep -rn 'codemirror[/\"'"'"']5\|from [\"'"'"']codemirror[\"'"'"']$' \
   | grep -v node_modules | grep -v dist
 grep -l "\"codemirror\": \"5" django_airavata/apps/*/package.json django_airavata/static/common/package.json
 ```
+
 Expected: both greps empty.
 
 ```bash
 # 3. Bundled Bootstrap 4 beta fossil is gone.
 test ! -d django_airavata/static/bootstrap-4.0.0-beta
 ```
+
 Expected: exit 0 (directory does not exist).
 
 ```bash
@@ -349,6 +381,7 @@ grep -rn 'from [\"'"'"']lodash[\"'"'"']\|require([\"'"'"']lodash[\"'"'"']' \
   django_airavata --include='*.vue' --include='*.js' --include='*.ts' \
   | grep -v node_modules | grep -v dist
 ```
+
 Expected: empty output.
 
 ```bash
@@ -357,6 +390,7 @@ grep -h 'vue-slider-component' django_airavata/apps/*/package.json \
   django_airavata/static/common/package.json \
   | grep -v beta
 ```
+
 Expected: at least one match; no match containing `beta`.
 
 ```bash
@@ -368,28 +402,33 @@ grep -l "CodeEditor" \
   django_airavata/apps/workspace/static/django_airavata_workspace/js/web-components/input-editors/FileInputEditor.vue \
   django_airavata/apps/workspace/static/django_airavata_workspace/js/components/storage/storage-edit/UserStorageTextEditViewer.vue
 ```
+
 Expected: `CodeEditor.vue` exists; all 3 old consumers reference it.
 
 ```bash
 # 7. Every workspace still builds.
 yarn build
 ```
+
 Expected: exit 0.
 
 - [ ] **Step 6: Merge Track B to `modernization`**
 
 Run:
+
 ```bash
 git checkout modernization
 git pull origin modernization
 git merge --no-ff track-b/library-swaps -m "merge: Track B (JS library swaps)"
 git push origin modernization
 ```
+
 Expected: merge commit.
 
 - [ ] **Step 7: Create Track Pre-A's feature branch**
 
 Run:
+
 ```bash
 cd airavata-portals/airavata-django-portal
 git checkout modernization
@@ -423,6 +462,7 @@ Run in `airavata-portals/airavata-django-portal/`:
 # 1. Root yarn scripts exist and run.
 yarn test --run 2>&1 | tail -20
 ```
+
 Expected: Vitest runs, reports at least 20 passing tests, exit 0.
 
 ```bash
@@ -430,29 +470,34 @@ Expected: Vitest runs, reports at least 20 passing tests, exit 0.
 test -d tests/e2e || find . -maxdepth 3 -name 'playwright.config*' -not -path '*/node_modules/*'
 find . -path '*/tests/e2e/*.spec.ts' -not -path '*/node_modules/*' | wc -l
 ```
+
 Expected: ≥ 10 Playwright spec files.
 
 ```bash
 # 3. Playwright runs green.
 yarn test:e2e 2>&1 | tail -20
 ```
+
 Expected: all journeys pass.
 
 ```bash
 # 4. Contributor doc exists.
 test -f docs/dev/testing.md || find docs -name 'test*.md' -o -name 'testing*.md' | head
 ```
+
 Expected: contributor doc exists describing how to add both test types.
 
 - [ ] **Step 12: Merge Track Pre-A to `modernization`**
 
 Run:
+
 ```bash
 git checkout modernization
 git pull origin modernization
 git merge --no-ff track-pre-a/test-harness -m "merge: Track Pre-A (test harness)"
 git push origin modernization
 ```
+
 Expected: merge commit. `modernization` now has D + C + B + Pre-A.
 
 ---
@@ -464,27 +509,32 @@ Track A is blocked until Track B and Track Pre-A have both merged to `modernizat
 - [ ] **Step 1: Confirm all prerequisite tracks are in `modernization`**
 
 Run:
+
 ```bash
 cd airavata-portals/airavata-django-portal
 git checkout modernization
 git pull origin modernization
 git log --oneline --merges | head -10
 ```
+
 Expected: merge commits for Tracks D, C, B, Pre-A are all visible.
 
 - [ ] **Step 2: Run the combined test suite on `modernization`**
 
 Run:
+
 ```bash
 yarn test --run
 yarn test:e2e
 uv run pytest -q
 ```
+
 Expected: all three suites pass.
 
 - [ ] **Step 3: Run the lint/typecheck/build gauntlet**
 
 Run:
+
 ```bash
 yarn lint
 yarn typecheck
@@ -492,11 +542,13 @@ yarn build
 uv run ruff check .
 uv run ty check .
 ```
+
 Expected: all exit 0.
 
 - [ ] **Step 4: If any gauntlet check fails, fix on `modernization` before starting Track A**
 
 Run:
+
 ```bash
 # If a check failed above, create a fix commit directly on `modernization`
 # (small integration fix, not a new track). Example:
@@ -504,6 +556,7 @@ git commit -am "fix(modernization): wire Track Pre-A's test-utils into Track C's
 git push origin modernization
 # Then re-run Step 2 and Step 3 until all checks pass.
 ```
+
 Expected: all gauntlet checks green before Task 5 starts.
 
 ---
@@ -513,18 +566,21 @@ Expected: all gauntlet checks green before Task 5 starts.
 Largest and riskiest track. Runs for 2-3 weeks on a long-lived feature branch with its own internal sub-branching strategy (decided by Track A's own spec).
 
 **Files:**
+
 - Will be created: `docs/superpowers/specs/YYYY-MM-DD-track-a-vue-composition-ts-pinia-design.md`
 - Will be created: `docs/superpowers/plans/YYYY-MM-DD-track-a-vue-composition-ts-pinia-plan.md`
 
 - [ ] **Step 1: Create Track A's feature branch**
 
 Run:
+
 ```bash
 cd airavata-portals/airavata-django-portal
 git checkout modernization
 git pull origin modernization
 git checkout -b track-a/vue-composition-ts-pinia
 ```
+
 Expected: working tree on `track-a/vue-composition-ts-pinia`.
 
 - [ ] **Step 2: Brainstorm Track A**
@@ -556,6 +612,7 @@ SETUP=$(grep -rl "<script setup" django_airavata --include='*.vue' | grep -v nod
 echo "setup=$SETUP total=$TOTAL"
 test "$SETUP" = "$TOTAL"
 ```
+
 Expected: `setup=$TOTAL` and the `test` exits 0.
 
 ```bash
@@ -564,6 +621,7 @@ grep -rnE "^\s*(destroyed|beforeDestroy)\s*\(|this\.\\\$set\(|this\.\\\$off\(" \
   django_airavata --include='*.vue' --include='*.js' --include='*.ts' \
   | grep -v node_modules | grep -v dist
 ```
+
 Expected: empty output.
 
 ```bash
@@ -572,6 +630,7 @@ grep -rnE 'mapGetters|mapMutations|mapActions|mapState' \
   django_airavata --include='*.vue' --include='*.js' --include='*.ts' \
   | grep -v node_modules | grep -v dist
 ```
+
 Expected: empty output.
 
 ```bash
@@ -581,12 +640,14 @@ grep -rn "from ['\"]vuex['\"]\|require(['\"]vuex['\"])" \
   | grep -v node_modules | grep -v dist
 grep '"vuex"' django_airavata/apps/*/package.json django_airavata/static/common/package.json
 ```
+
 Expected: both grep outputs empty.
 
 ```bash
 # 5. vue-tsc passes with strict mode.
 yarn typecheck
 ```
+
 Expected: exit 0, zero TypeScript errors.
 
 ```bash
@@ -595,6 +656,7 @@ grep -rn '@ts-expect-error\|@ts-ignore' django_airavata \
   --include='*.vue' --include='*.ts' --include='*.js' \
   | grep -v node_modules | grep -v dist
 ```
+
 Expected: empty output. (If any survive, Track A's plan must acknowledge them explicitly; empty is the goal.)
 
 ```bash
@@ -602,23 +664,27 @@ Expected: empty output. (If any survive, Track A's plan must acknowledge them ex
 yarn test --run
 yarn test:e2e
 ```
+
 Expected: all pass. Identical journey count to Pre-A merge (no silent test decay).
 
 ```bash
 # 8. Every workspace still builds.
 yarn build
 ```
+
 Expected: exit 0.
 
 - [ ] **Step 6: Merge Track A to `modernization`**
 
 Run:
+
 ```bash
 git checkout modernization
 git pull origin modernization
 git merge --no-ff track-a/vue-composition-ts-pinia -m "merge: Track A (Vue Composition + TS + Pinia)"
 git push origin modernization
 ```
+
 Expected: merge commit.
 
 ---
@@ -639,21 +705,25 @@ MATCHES=$(grep -rnE "destroyed\s*\(|beforeDestroy\s*\(|this\.\\\$set\(|this\.\\\
 echo "legacy matches: $MATCHES"
 test "$MATCHES" = "0"
 ```
+
 Expected: `legacy matches: 0` and exit 0.
 
 - [ ] **Step 2: Verify the Bootstrap 4 fossil is gone**
 
 Run:
+
 ```bash
 test ! -d django_airavata/static/bootstrap-4.0.0-beta
 find django_airavata -type d -name 'bootstrap-*' -not -path '*/node_modules/*'
 find django_airavata -name 'jquery*' -not -path '*/node_modules/*' -not -path '*/dist/*'
 ```
+
 Expected: directory absent; grep for fossil directories returns nothing; no vendored jquery remains.
 
 - [ ] **Step 3: Verify vue-tsc strict, both test suites, Python hygiene**
 
 Run:
+
 ```bash
 yarn typecheck
 yarn test --run
@@ -663,11 +733,13 @@ uv run ty check .
 uv run pytest -q
 grep -rn "pytz" django_airavata --include='*.py' | grep -v __pycache__ | grep -v .venv
 ```
+
 Expected: all commands exit 0; `grep pytz` returns empty.
 
 - [ ] **Step 4: Verify pyproject.toml has no unexplained pins**
 
 Run:
+
 ```bash
 python3 - <<'PY'
 import pathlib, sys
@@ -693,11 +765,13 @@ if bad:
 print("OK: every `<` pin has a rationale comment")
 PY
 ```
+
 Expected: `OK: every '<' pin has a rationale comment`.
 
 - [ ] **Step 5: Count Playwright journeys and Vitest suites to detect silent decay**
 
 Run:
+
 ```bash
 # Compare current counts to the baseline recorded when Pre-A merged.
 # The baseline numbers come from the Pre-A plan. If this count is LOWER,
@@ -708,6 +782,7 @@ echo "Vitest spec files:"
 find django_airavata -name '*.spec.ts' -o -name '*.test.ts' \
   -not -path '*/node_modules/*' -not -path '*/dist/*' -not -path '*/tests/e2e/*' | wc -l
 ```
+
 Expected: counts are ≥ the baseline numbers recorded by the Pre-A plan.
 
 ---
@@ -719,6 +794,7 @@ Final step. Do this only after Task 6 is fully green.
 - [ ] **Step 1: Ensure `modernization` is up to date with `main`**
 
 Run:
+
 ```bash
 cd airavata-portals/airavata-django-portal
 git fetch origin
@@ -727,11 +803,13 @@ git merge origin/main -m "merge: keep modernization current with main"
 # If conflicts, resolve, commit, then re-run Task 6's gate checks.
 git push origin modernization
 ```
+
 Expected: `modernization` contains every commit on `main` plus all five tracks.
 
 - [ ] **Step 2: Open the umbrella PR**
 
 Run (adjust remote repo name as appropriate):
+
 ```bash
 gh pr create --base main --head modernization \
   --title "chore(portal): modernization umbrella (Tracks D + C + B + Pre-A + A)" \
@@ -767,6 +845,7 @@ Umbrella done-criteria: see Task 6 checks in
 EOF
 )"
 ```
+
 Expected: PR opens on the repo.
 
 - [ ] **Step 3: Wait for human review**
@@ -780,23 +859,27 @@ Once approved, merge via the GitHub web UI using "Create a merge commit" (preser
 - [ ] **Step 5: Delete the `modernization` branch**
 
 Run:
+
 ```bash
 git checkout main
 git pull origin main
 git branch -d modernization
 git push origin --delete modernization
 ```
+
 Expected: the long-lived integration branch is removed.
 
 - [ ] **Step 6: Delete the track feature branches**
 
 Run:
+
 ```bash
 for b in track-d/python-hygiene track-c/monorepo-tooling track-b/library-swaps track-pre-a/test-harness track-a/vue-composition-ts-pinia; do
   git branch -D "$b" 2>/dev/null
   git push origin --delete "$b" 2>/dev/null
 done
 ```
+
 Expected: all five feature branches removed locally and on the remote.
 
 ---

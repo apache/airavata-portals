@@ -1,19 +1,19 @@
 <template>
   <list-layout
-    @add-new-item="newApplicationHandler"
     :items="sortedModules"
     title="Application Catalog"
     subtitle="Applications"
     new-item-button-text="New Application"
     :new-button-disabled="false"
+    @add-new-item="newApplicationHandler"
   >
-    <template slot="item-list" slot-scope="slotProps">
+    <template #item-list="slotProps">
       <div class="row">
         <application-card
           v-for="item in slotProps.items"
-          v-bind:app-module="item"
-          v-bind:key="item.app_module_id"
-          v-on:app-selected="clickHandler(item)"
+          :key="item.app_module_id"
+          :app-module="item"
+          @app-selected="clickHandler(item)"
         >
         </application-card>
       </div>
@@ -35,16 +35,10 @@ export default {
       appModules: [],
     };
   },
-  created() {
-    this.loadApplications();
-  },
   computed: {
     sortedModules() {
       if (this.appModules) {
-        return utils.StringUtils.sortIgnoreCase(
-          this.appModules.slice(),
-          (a) => a.app_module_name
-        );
+        return utils.StringUtils.sortIgnoreCase(this.appModules.slice(), (a) => a.app_module_name);
       } else {
         return [];
       }
@@ -52,6 +46,9 @@ export default {
     isGatewayAdmin() {
       return session.Session.is_gateway_admin;
     },
+  },
+  created() {
+    this.loadApplications();
   },
   methods: {
     clickHandler(item) {
@@ -65,7 +62,7 @@ export default {
     },
     loadApplications() {
       services.ApplicationModuleService.listAll().then(
-        (appModules) => (this.appModules = appModules)
+        (appModules) => (this.appModules = appModules),
       );
     },
   },

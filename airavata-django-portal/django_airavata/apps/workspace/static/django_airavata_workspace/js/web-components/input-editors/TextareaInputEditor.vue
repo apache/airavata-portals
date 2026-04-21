@@ -21,6 +21,9 @@ import TextareaInputEditor from "../../components/experiment/input-editors/Texta
 import WebComponentInputEditorMixin from "./WebComponentInputEditorMixin.js";
 
 export default {
+  components: {
+    TextareaInputEditor,
+  },
   mixins: [WebComponentInputEditorMixin],
   props: {
     // Explicit copy props from mixin, workaround for bug, see
@@ -30,9 +33,6 @@ export default {
     rows: {
       type: Number,
     },
-  },
-  components: {
-    TextareaInputEditor,
   },
 };
 </script>

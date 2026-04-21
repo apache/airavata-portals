@@ -1,6 +1,6 @@
 <template>
   <div class="delete-button">
-    <button class="btn btn-danger btn-sm" @click="$refs.modal.show()" :disabled="disabled">
+    <button class="btn btn-danger btn-sm" :disabled="disabled" @click="$refs.modal.show()">
       {{ label }}
     </button>
     <confirmation-dialog ref="modal" :title="dialogTitle" @ok="$emit('delete')">
@@ -12,7 +12,10 @@
 import ConfirmationDialog from "./ConfirmationDialog.vue";
 
 export default {
-  name: "delete-button",
+  name: "DeleteButton",
+  components: {
+    ConfirmationDialog,
+  },
   props: {
     dialogTitle: {
       type: String,
@@ -26,9 +29,6 @@ export default {
       type: String,
       default: "Delete",
     },
-  },
-  components: {
-    ConfirmationDialog,
   },
 };
 </script>

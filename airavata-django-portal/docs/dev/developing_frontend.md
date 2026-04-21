@@ -167,6 +167,6 @@ yarn format
 
 ## Recommended tools
 
--   <https://github.com/vuejs/vue-devtools> - debugging/inspection in Firefox or
-    Chrome
--   <https://vuejs.github.io/vetur/> - Vue tooling for Visual Studio Code
+- <https://github.com/vuejs/vue-devtools> - debugging/inspection in Firefox or
+  Chrome
+- <https://vuejs.github.io/vetur/> - Vue tooling for Visual Studio Code
