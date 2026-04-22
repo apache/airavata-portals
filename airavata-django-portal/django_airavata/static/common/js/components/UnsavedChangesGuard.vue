@@ -15,10 +15,9 @@ onMounted(() => {
   window.addEventListener("beforeunload", onBeforeUnload);
 });
 
-// Vue 3 lifecycle: the Vue 2 `destroyed()` hook was renamed to
-// `unmounted()`. Without this rename the listener leaks and every past
-// editor instance with dirty=true keeps blocking navigation after the
-// user has moved on.
+// Vue 3 lifecycle rename: the Vue 2 teardown hook is now onUnmounted.
+// Without this, the listener leaks and every past editor instance with
+// dirty=true keeps blocking navigation after the user has moved on.
 onUnmounted(() => {
   window.removeEventListener("beforeunload", onBeforeUnload);
 });
