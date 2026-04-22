@@ -18,7 +18,7 @@
     "format": "prettier --write \"**/*.{js,ts,vue,json,md,scss,css}\" --ignore-path=.gitignore",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "test:e2e": "echo 'test:e2e placeholder — wired up in Track Pre-A'"
+    "test:e2e": "playwright test --config=tooling/playwright.config.ts"
   },
   "engines": {
     "node": ">=22"

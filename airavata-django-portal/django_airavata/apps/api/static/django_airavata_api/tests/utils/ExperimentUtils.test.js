@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { services } from "../../js/index";
 import ApplicationInterfaceDefinition from "../../js/models/ApplicationInterfaceDefinition";
 import GroupResourceProfile from "../../js/models/GroupResourceProfile";
@@ -6,10 +7,10 @@ import BatchQueue from "../../js/models/BatchQueue";
 import { createExperiment } from "../../js/utils/ExperimentUtils";
 
 // Mock out 'index' so that RESTful service calls can be mocked
-jest.mock("../../js/index");
+vi.mock("../../js/index");
 
 beforeEach(() => {
-  jest.resetAllMocks();
+  vi.resetAllMocks();
 });
 
 test("error thrown when no applicationName given", async () => {
@@ -187,7 +188,7 @@ test("error thrown when no deployment found for compute resource", async () => {
   services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
-      computePreferences: [
+      compute_preferences: [
         {
           compute_resource_id: "compute1.resource.org_id1",
         },
@@ -232,7 +233,7 @@ test("verify that default queue values are used in computationalResourceScheduli
   services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
-      computePreferences: [
+      compute_preferences: [
         {
           compute_resource_id: "compute1.resource.org_id1",
         },
@@ -247,18 +248,18 @@ test("verify that default queue values are used in computationalResourceScheduli
   ]);
   services.ApplicationDeploymentService.getQueues.mockResolvedValue([
     new BatchQueue({
-      queueName: "queue1",
-      isDefaultQueue: false,
-      defaultCPUCount: 10,
-      defaultNodeCount: 11,
-      defaultWalltime: 12,
+      queue_name: "queue1",
+      is_default_queue: false,
+      default_cpu_count: 10,
+      default_node_count: 11,
+      default_walltime: 12,
     }),
     new BatchQueue({
-      queueName: "queue2",
-      isDefaultQueue: true,
-      defaultCPUCount: 20,
-      defaultNodeCount: 21,
-      defaultWalltime: 22,
+      queue_name: "queue2",
+      is_default_queue: true,
+      default_cpu_count: 20,
+      default_node_count: 21,
+      default_walltime: 22,
     }),
   ]);
   services.WorkspacePreferencesService.get.mockResolvedValue({
@@ -296,7 +297,7 @@ test("verify that experiment name is the given name", async () => {
   services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
-      computePreferences: [
+      compute_preferences: [
         {
           compute_resource_id: "compute1.resource.org_id1",
         },
@@ -311,11 +312,11 @@ test("verify that experiment name is the given name", async () => {
   ]);
   services.ApplicationDeploymentService.getQueues.mockResolvedValue([
     new BatchQueue({
-      queueName: "queue2",
-      isDefaultQueue: true,
-      defaultCPUCount: 20,
-      defaultNodeCount: 21,
-      defaultWalltime: 22,
+      queue_name: "queue2",
+      is_default_queue: true,
+      default_cpu_count: 20,
+      default_node_count: 21,
+      default_walltime: 22,
     }),
   ]);
   services.WorkspacePreferencesService.get.mockResolvedValue({
@@ -342,7 +343,7 @@ test("verify that if no experiment name is given, name is based on experiment na
   services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
-      computePreferences: [
+      compute_preferences: [
         {
           compute_resource_id: "compute1.resource.org_id1",
         },
@@ -357,11 +358,11 @@ test("verify that if no experiment name is given, name is based on experiment na
   ]);
   services.ApplicationDeploymentService.getQueues.mockResolvedValue([
     new BatchQueue({
-      queueName: "queue2",
-      isDefaultQueue: true,
-      defaultCPUCount: 20,
-      defaultNodeCount: 21,
-      defaultWalltime: 22,
+      queue_name: "queue2",
+      is_default_queue: true,
+      default_cpu_count: 20,
+      default_node_count: 21,
+      default_walltime: 22,
     }),
   ]);
   services.WorkspacePreferencesService.get.mockResolvedValue({
@@ -384,7 +385,7 @@ test("verify that application inputs and outputs are cloned on experiment", asyn
     new ApplicationInterfaceDefinition({
       application_name: "test",
       application_modules: ["test_module1"],
-      applicationInputs: [
+      application_inputs: [
         {
           name: "appInput1",
         },
@@ -392,7 +393,7 @@ test("verify that application inputs and outputs are cloned on experiment", asyn
           name: "appInput2",
         },
       ],
-      applicationOutputs: [
+      application_outputs: [
         {
           name: "appOutput1",
         },
@@ -408,7 +409,7 @@ test("verify that application inputs and outputs are cloned on experiment", asyn
   services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
-      computePreferences: [
+      compute_preferences: [
         {
           compute_resource_id: "compute1.resource.org_id1",
         },
@@ -423,11 +424,11 @@ test("verify that application inputs and outputs are cloned on experiment", asyn
   ]);
   services.ApplicationDeploymentService.getQueues.mockResolvedValue([
     new BatchQueue({
-      queueName: "queue2",
-      isDefaultQueue: true,
-      defaultCPUCount: 20,
-      defaultNodeCount: 21,
-      defaultWalltime: 22,
+      queue_name: "queue2",
+      is_default_queue: true,
+      default_cpu_count: 20,
+      default_node_count: 21,
+      default_walltime: 22,
     }),
   ]);
   services.WorkspacePreferencesService.get.mockResolvedValue({
@@ -458,7 +459,7 @@ test("verify that projectId is copied from preferences", async () => {
   services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
-      computePreferences: [
+      compute_preferences: [
         {
           compute_resource_id: "compute1.resource.org_id1",
         },
@@ -473,11 +474,11 @@ test("verify that projectId is copied from preferences", async () => {
   ]);
   services.ApplicationDeploymentService.getQueues.mockResolvedValue([
     new BatchQueue({
-      queueName: "queue2",
-      isDefaultQueue: true,
-      defaultCPUCount: 20,
-      defaultNodeCount: 21,
-      defaultWalltime: 22,
+      queue_name: "queue2",
+      is_default_queue: true,
+      default_cpu_count: 20,
+      default_node_count: 21,
+      default_walltime: 22,
     }),
   ]);
   services.WorkspacePreferencesService.get.mockResolvedValue({
@@ -495,7 +496,7 @@ test("verify that given input values are copied to experiment", async () => {
     new ApplicationInterfaceDefinition({
       application_name: "test",
       application_modules: ["test_module1"],
-      applicationInputs: [
+      application_inputs: [
         {
           name: "appInput1",
           value: "default1",
@@ -512,7 +513,7 @@ test("verify that given input values are copied to experiment", async () => {
   services.ProjectResourceProfileService.list.mockResolvedValue([
     new GroupResourceProfile({
       group_resource_profile_id: "groupResourceProfileId1",
-      computePreferences: [
+      compute_preferences: [
         {
           compute_resource_id: "compute1.resource.org_id1",
         },
@@ -527,11 +528,11 @@ test("verify that given input values are copied to experiment", async () => {
   ]);
   services.ApplicationDeploymentService.getQueues.mockResolvedValue([
     new BatchQueue({
-      queueName: "queue2",
-      isDefaultQueue: true,
-      defaultCPUCount: 20,
-      defaultNodeCount: 21,
-      defaultWalltime: 22,
+      queue_name: "queue2",
+      is_default_queue: true,
+      default_cpu_count: 20,
+      default_node_count: 21,
+      default_walltime: 22,
     }),
   ]);
   services.WorkspacePreferencesService.get.mockResolvedValue({
