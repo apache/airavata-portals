@@ -1,14 +1,9 @@
-{% extends './base.html' %} {% block content %}
+{% extends './base.html' %}
 
-<div
-  id="application-editor"
-  {%
-  if
-  app_module_id
-  %}data-app-module-id="{{ app_module_id }}"
-  {%
-  endif
-  %}
+{% block content %}
+
+<div id="application-editor"
+  {% if app_module_id %}data-app-module-id="{{ app_module_id }}"{% endif %}
 ></div>
 
 {% endblock content %}

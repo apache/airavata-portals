@@ -1,20 +1,9 @@
-{% extends './base.html' %} {% block content %}
-<div
-  id="{{ bundle_name }}"
+{% extends './base.html' %}
+
+{% block content %}
+<div id="{{ bundle_name }}"
   data-experiments-data="{{ experiments_data }}"
-  {%
-  if
-  project_id
-  %}data-project-id="{{ project_id }}"
-  {%
-  endif
-  %}
-  {%
-  if
-  breadcrumbs_json
-  %}data-breadcrumbs="{{ breadcrumbs_json }}"
-  {%
-  endif
-  %}
+  {% if project_id %}data-project-id="{{ project_id }}"{% endif %}
+  {% if breadcrumbs_json %}data-breadcrumbs="{{ breadcrumbs_json }}"{% endif %}
 ></div>
 {% endblock content %}

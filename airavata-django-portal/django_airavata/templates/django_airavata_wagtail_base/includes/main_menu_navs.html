@@ -1,6 +1,7 @@
-{% load wagtailcore_tags %} {% for nav_item in nav_items %}
-<a href="{{ nav_item.value.link }}" class="app-sidebar__link">
-  <i class="fa {{ nav_item.value.icon_class|default:'fa-link' }}"></i
-  ><span>{{ nav_item.value.link_text }}</span>
-</a>
+{% load wagtailcore_tags %}
+
+{% for nav_item in nav_items %}
+  <a href="{{ nav_item.value.link }}" class="app-sidebar__link">
+    <i class="fa {{ nav_item.value.icon_class|default:'fa-link' }}"></i><span>{{ nav_item.value.link_text }}</span>
+  </a>
 {% endfor %}

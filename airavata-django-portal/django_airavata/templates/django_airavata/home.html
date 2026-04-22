@@ -1,65 +1,50 @@
-{% extends 'base.html' %} {% block content %}
-<div class="main-content-wrapper">
-  <main class="main-content">
-    <div class="container">
-      <div class="jumbotron">
-        <h1>Welcome!</h1>
-        <p>
-          This is the Django based web portal for the Airavata project. This
-          portal can be used as the basis for developing a science gateway using
-          Airavata.
-        </p>
-        {% if not user.is_authenticated %}
-        <p>
-          <a
-            class="btn btn-primary btn-lg"
-            href="{% url 'django_airavata_auth:login' %}"
-            role="button"
-            >Login »</a
-          >
-        </p>
-        {% endif %}
-      </div>
-      {% if user.is_authenticated %}
-      <div class="row">
-        {% for app in airavata_apps %} {% if app.app_order < 100 %}
-        <div class="col-sm-6 d-flex mb-3">
-          <div class="card flex-grow-1">
-            <div class="card-body p-3">
-              <h5 class="card-title mb-1">
-                <i class="fa {{ app.fa_icon_class }} me-2"></i>{{
-                app.verbose_name }}
-              </h5>
-              <p class="card-text">{{ app.app_description }}</p>
-              <a href="{% url app.url_home %}" class="btn btn-primary btn-sm"
-                >Go to {{ app.verbose_name }} »</a
-              >
-            </div>
-          </div>
-        </div>
-        {% endif %} {% endfor %}
-      </div>
+{% extends 'base.html' %}
 
-      <div class="row">
-        {% for app in custom_apps %}
+{% block content %}
+<div class="main-content-wrapper">
+<main class="main-content">
+<div class="container">
+<div class="jumbotron">
+        <h1>Welcome!</h1>
+        <p>This is the Django based web portal for the Airavata project. This
+        portal can be used as the basis for developing a science gateway using
+        Airavata.</p>
+        {% if not user.is_authenticated %}
+        <p><a class="btn btn-primary btn-lg" href="{% url 'django_airavata_auth:login' %}" role="button">Login »</a></p>
+        {% endif %}
+</div>
+{% if user.is_authenticated %}
+    <div class="row">
+    {% for app in airavata_apps %}
+        {% if app.app_order < 100 %}
         <div class="col-sm-6 d-flex mb-3">
-          <div class="card flex-grow-1">
-            <div class="card-body p-3">
-              <h5 class="card-title mb-1">
-                <i class="fa {{ app.fa_icon_class }} mr-2"></i>{{
-                app.verbose_name }}
-              </h5>
-              <p class="card-text">{{ app.app_description|default:"" }}</p>
-              <a href="{% url app.url_home %}" class="btn btn-primary btn-sm"
-                >Go to {{ app.verbose_name }} »</a
-              >
+            <div class="card flex-grow-1">
+                <div class="card-body p-3">
+                    <h5 class="card-title mb-1"><i class="fa {{ app.fa_icon_class }} me-2"></i>{{ app.verbose_name }}</h5>
+                    <p class="card-text">{{ app.app_description }}</p>
+                    <a href="{% url app.url_home %}" class="btn btn-primary btn-sm">Go to {{ app.verbose_name }} »</a>
+                </div>
             </div>
-          </div>
         </div>
-        {% endfor %}
-      </div>
-      {% endif %}
+        {% endif %}
+    {% endfor %}
     </div>
-  </main>
+
+    <div class="row">
+    {% for app in custom_apps %}
+        <div class="col-sm-6 d-flex mb-3">
+            <div class="card flex-grow-1">
+                <div class="card-body p-3">
+                    <h5 class="card-title mb-1"><i class="fa {{ app.fa_icon_class }} mr-2"></i>{{ app.verbose_name }}</h5>
+                    <p class="card-text">{{ app.app_description|default:"" }}</p>
+                    <a href="{% url app.url_home %}" class="btn btn-primary btn-sm">Go to {{ app.verbose_name }} »</a>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+{% endif %}
+</div>
+</main>
 </div>
 {% endblock content %}
