@@ -335,7 +335,7 @@
 import { models, services } from "django-airavata-api";
 import { components } from "django-airavata-common-ui";
 
-import moment from "moment";
+import { relativeTime } from "django-airavata-common-ui/js/utils/dates.js";
 
 export default {
   name: "ExperimentDetailsView",
@@ -379,14 +379,14 @@ export default {
       return result;
     },
     creationTime: function () {
-      return moment(this.fullExperiment.experiment.creation_time).fromNow();
+      return relativeTime(this.fullExperiment.experiment.creation_time);
     },
     lastModifiedTime: function () {
-      return moment(this.fullExperiment.experimentStatus.time_of_state_change).fromNow();
+      return relativeTime(this.fullExperiment.experimentStatus.time_of_state_change);
     },
     jobCreationTimes: function () {
       return this.fullExperiment.jobDetails.map((jobDetail) =>
-        moment(jobDetail.creation_time).fromNow(),
+        relativeTime(jobDetail.creation_time),
       );
     },
     failedJobs() {

@@ -107,7 +107,7 @@
 import { models } from "django-airavata-api";
 import { mixins, utils } from "django-airavata-common-ui";
 import FlatPickr from "vue-flatpickr-component";
-import moment from "moment";
+import { formatShort, formatUtc } from "django-airavata-common-ui/js/utils/dates.js";
 
 export default {
   name: "NoticeEditor",
@@ -127,7 +127,7 @@ export default {
       userBeginsInput: false,
       inputPublishedTime: null,
       inputExpirationTime: null,
-      today: new moment().format(),
+      today: formatShort(new Date()),
       select: {
         selected: "LOW",
         options: [
@@ -178,11 +178,11 @@ export default {
     // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
     if (this.value.notificationId != null) {
       this.editNotification = true;
-      this.inputPublishedTime = new moment(this.value.publishedTime.toISOString()).utc().format();
-      this.inputExpirationTime = new moment(this.value.expirationTime.toISOString()).utc().format();
+      this.inputPublishedTime = formatUtc(this.value.publishedTime.toISOString());
+      this.inputExpirationTime = formatUtc(this.value.expirationTime.toISOString());
       this.data.priority = this.value.priority.name;
       this.data.showInDashboard = this.value.showInDashboard;
-      this.today = new moment(this.value.expirationTime.toISOString()).format();
+      this.today = formatShort(this.value.expirationTime.toISOString());
     }
   },
   methods: {

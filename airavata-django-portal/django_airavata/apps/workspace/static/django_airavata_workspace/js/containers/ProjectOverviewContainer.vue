@@ -188,7 +188,7 @@
 <script>
 import { services } from "django-airavata-api";
 import { components as comps } from "django-airavata-common-ui";
-import moment from "moment";
+import { relativeTime } from "django-airavata-common-ui/js/utils/dates.js";
 import ProjectDeleteModal from "../components/project/ProjectDeleteModal.vue";
 import ProjectMembersCard from "../components/project/ProjectMembersCard.vue";
 import ProjectResourcesCard from "../components/project/ProjectResourcesCard.vue";
@@ -235,7 +235,7 @@ export default {
     },
     formattedCreationTime() {
       if (this.project && this.project.creation_time) {
-        return moment(new Date(this.project.creation_time)).fromNow();
+        return relativeTime(new Date(this.project.creation_time));
       }
       return "";
     },
@@ -395,7 +395,7 @@ export default {
     },
     artifactDate(artifact) {
       const t = this.artifactCreationTime(artifact);
-      return t ? moment(new Date(t)).fromNow() : "";
+      return t ? relativeTime(new Date(t)) : "";
     },
     artifactKey(artifact, idx) {
       return artifact.product_uri || artifact.productUri || artifact.id || idx;

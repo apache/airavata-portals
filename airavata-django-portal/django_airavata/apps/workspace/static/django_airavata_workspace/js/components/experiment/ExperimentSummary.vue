@@ -286,7 +286,7 @@ import { components, notifications } from "django-airavata-common-ui";
 import OutputDisplayContainer from "./output-displays/OutputDisplayContainer";
 import urls from "../../utils/urls";
 
-import moment from "moment";
+import { relativeTime } from "django-airavata-common-ui/js/utils/dates.js";
 import ExperimentStorageViewContainer from "../storage/ExperimentStorageViewContainer.vue";
 import DataProductViewer from "django-airavata-common-ui/js/components/DataProductViewer.vue";
 import { mapActions, mapGetters, mapState } from "vuex";
@@ -336,17 +336,17 @@ export default {
       return result;
     },
     creationTime: function () {
-      return moment(this.localFullExperiment.experiment.creation_time).fromNow();
+      return relativeTime(this.localFullExperiment.experiment.creation_time);
     },
     lastModifiedTime: function () {
-      return moment(this.localFullExperiment.experimentStatus.time_of_state_change).fromNow();
+      return relativeTime(this.localFullExperiment.experimentStatus.time_of_state_change);
     },
     experiment: function () {
       return this.localFullExperiment.experiment;
     },
     jobCreationTimes: function () {
       return this.localFullExperiment.job_details.map((jobDetail) =>
-        moment(jobDetail.creation_time).fromNow(),
+        relativeTime(jobDetail.creation_time),
       );
     },
     editLink() {

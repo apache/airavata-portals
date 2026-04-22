@@ -182,7 +182,6 @@ import InputEditorContainer from "./input-editors/InputEditorContainer.vue";
 import { models, services } from "django-airavata-api";
 import { components, utils } from "django-airavata-common-ui";
 import WorkspaceNoticesManagementContainer from "../notices/WorkspaceNoticesManagementContainer";
-import _ from "lodash";
 
 export default {
   name: "EditExperiment",
@@ -339,21 +338,29 @@ export default {
     inputValueChanged: function () {
       this.localExperiment.evaluateInputDependencies();
     },
-    calculateQueueSettings: _.debounce(async function () {
-      const queueSettingsUpdate = await services.QueueSettingsCalculatorService.calculate(
-        {
-          lookup: this.appInterface.queue_settings_calculator_id,
-          data: this.localExperiment,
-        },
-        { showSpinner: false },
-      );
-      // Override values in computationalResourceScheduling with the values
-      // returned from the queue settings calculator
-      Object.assign(
-        this.localExperiment.user_configuration_data.computationalResourceScheduling,
-        queueSettingsUpdate,
-      );
-    }, 500),
+    // Inline debounce wrapper (replaces lodash.debounce).
+    calculateQueueSettings: (() => {
+      let t;
+      return function () {
+        clearTimeout(t);
+        const ctx = this;
+        t = setTimeout(async () => {
+          const queueSettingsUpdate = await services.QueueSettingsCalculatorService.calculate(
+            {
+              lookup: ctx.appInterface.queue_settings_calculator_id,
+              data: ctx.localExperiment,
+            },
+            { showSpinner: false },
+          );
+          // Override values in computationalResourceScheduling with the values
+          // returned from the queue settings calculator
+          Object.assign(
+            ctx.localExperiment.user_configuration_data.computationalResourceScheduling,
+            queueSettingsUpdate,
+          );
+        }, 500);
+      };
+    })(),
     experimentInputsChanged() {
       if (this.appInterface.queue_settings_calculator_id) {
         this.calculateQueueSettings();

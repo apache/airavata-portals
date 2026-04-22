@@ -297,7 +297,7 @@ import { components, notifications } from "django-airavata-common-ui";
 import ExperimentStatisticsCard from "./ExperimentStatisticsCard";
 import ExperimentDetailsView from "./ExperimentDetailsView";
 
-import moment from "moment";
+import { formatDate, formatIsoDate } from "django-airavata-common-ui/js/utils/dates.js";
 
 export default {
   name: "ExperimentStatisticsContainer",
@@ -405,10 +405,10 @@ export default {
       }
     },
     fromTimeDisplay() {
-      return moment(this.fromTime).format("MMM Do YYYY");
+      return formatDate(this.fromTime);
     },
     toTimeDisplay() {
-      return moment(this.toTime).format("MMM Do YYYY");
+      return formatDate(this.toTime);
     },
     selectedExperimentSummaries() {
       if (
@@ -515,8 +515,8 @@ export default {
     },
     updateDateRange() {
       this.dateRange = [
-        moment(this.fromTime).format("YYYY-MM-DD"),
-        moment(this.toTime).format("YYYY-MM-DD"),
+        formatIsoDate(this.fromTime),
+        formatIsoDate(this.toTime),
       ];
     },
     daysAgo(days) {

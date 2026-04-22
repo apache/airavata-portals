@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import moment from "moment";
+import { relativeTime } from "../utils/dates.js";
 
 export default {
   name: "SidebarFeedItem",
@@ -33,7 +33,7 @@ export default {
   computed: {
     timestamp() {
       if (this.feedItem.timestamp) {
-        return moment(this.feedItem.timestamp).fromNow();
+        return relativeTime(this.feedItem.timestamp);
       } else {
         return null;
       }

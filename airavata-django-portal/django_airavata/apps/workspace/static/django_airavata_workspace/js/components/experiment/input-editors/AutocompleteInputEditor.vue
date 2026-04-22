@@ -20,7 +20,6 @@
 import { utils } from "django-airavata-api";
 import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
 import { components } from "django-airavata-common-ui";
-import _ from "lodash";
 
 export default {
   name: "AutocompleteInputEditor",
@@ -118,26 +117,34 @@ export default {
       this.text = suggestion.name;
       this.valueChanged();
     },
-    searchChanged: _.debounce(function (newValue) {
-      // TODO: don't query when search value is empty string
-      this.searchString = newValue;
-      const currentTime = Date.now();
-      if (this.autocompleteUrl) {
-        utils.FetchUtils.get(
-          this.autocompleteUrl,
-          {
-            search: this.searchString,
-          },
-          { showSpinner: false },
-        ).then((resp) => {
-          // Prevent older responses from overwriting newer ones
-          if (currentTime > this.lastUpdate) {
-            this.searchResults = resp;
-            this.lastUpdate = currentTime;
+    // Inline debounce wrapper (replaces lodash.debounce).
+    searchChanged: (() => {
+      let t;
+      return function (newValue) {
+        clearTimeout(t);
+        const ctx = this;
+        t = setTimeout(() => {
+          // TODO: don't query when search value is empty string
+          ctx.searchString = newValue;
+          const currentTime = Date.now();
+          if (ctx.autocompleteUrl) {
+            utils.FetchUtils.get(
+              ctx.autocompleteUrl,
+              {
+                search: ctx.searchString,
+              },
+              { showSpinner: false },
+            ).then((resp) => {
+              // Prevent older responses from overwriting newer ones
+              if (currentTime > ctx.lastUpdate) {
+                ctx.searchResults = resp;
+                ctx.lastUpdate = currentTime;
+              }
+            });
           }
-        });
-      }
-    }, 200),
+        }, 200);
+      };
+    })(),
   },
   created() {
     if (this.value) {
