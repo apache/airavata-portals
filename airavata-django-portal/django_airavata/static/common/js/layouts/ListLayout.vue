@@ -44,15 +44,26 @@
 import { computed } from "vue";
 import Pager from "../components/Pager.vue";
 
+interface Paginator {
+  hasNext(): boolean;
+  hasPrevious(): boolean;
+  next(): void;
+  previous(): void;
+  offset: number;
+  limit: number;
+  count?: number;
+  results: unknown[];
+}
+
 const props = withDefaults(defineProps<{
   items?: unknown[] | null;
-  itemsPaginator?: unknown | null;
+  itemsPaginator?: Paginator | null;
   title?: string;
   subtitle?: string;
   newItemButtonText?: string;
   newButtonDisabled?: boolean;
 }>(), {
-  items: null,
+  items: () => [],
   itemsPaginator: null,
   title: "Items",
   subtitle: undefined,
@@ -66,20 +77,20 @@ const emit = defineEmits<{
 
 const itemsList = computed<unknown[]>(() => {
   if (props.itemsPaginator) {
-    return (props.itemsPaginator as { results: unknown[] }).results;
+    return props.itemsPaginator.results;
   }
   return props.items ?? [];
 });
 
 function nextItems(): void {
   if (props.itemsPaginator) {
-    (props.itemsPaginator as { next(): void }).next();
+    props.itemsPaginator.next();
   }
 }
 
 function previousItems(): void {
   if (props.itemsPaginator) {
-    (props.itemsPaginator as { previous(): void }).previous();
+    props.itemsPaginator.previous();
   }
 }
 

@@ -23,15 +23,22 @@
 import { ref, watch } from "vue";
 import SshCredentialSelector from "../credentials/SSHCredentialSelector.vue";
 
+interface GatewayResourceProfile {
+  gateway_id?: string;
+  credential_store_token?: string | null;
+  user_has_write_access?: boolean;
+  [key: string]: unknown;
+}
+
 const props = defineProps<{
-  modelValue: Record<string, unknown>;
+  modelValue: GatewayResourceProfile;
 }>();
 
 const emit = defineEmits<{
-  "update:modelValue": [value: Record<string, unknown>];
+  "update:modelValue": [value: GatewayResourceProfile];
 }>();
 
-const data = ref<Record<string, unknown>>({ ...props.modelValue });
+const data = ref<GatewayResourceProfile>({ ...props.modelValue });
 
 watch(
   () => props.modelValue,

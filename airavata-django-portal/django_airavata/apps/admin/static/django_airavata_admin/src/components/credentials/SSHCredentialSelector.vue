@@ -58,7 +58,7 @@ interface CredentialSummary {
 }
 
 const props = defineProps<{
-  modelValue: string | null;
+  modelValue: string | null | undefined;
   nullOption?: boolean;
   // This is the default credential token that will be used if the null option is selected
   nullOptionDefaultCredentialToken?: string;
@@ -72,12 +72,12 @@ const emit = defineEmits<{
 
 const newSSHCredentialModal = ref<InstanceType<typeof NewSSHCredentialModal> | null>(null);
 const credentials = ref<CredentialSummary[] | null>(null);
-const data = ref<string | null>(props.modelValue);
+const data = ref<string | null>(props.modelValue ?? null);
 
 watch(
   () => props.modelValue,
   (newValue) => {
-    data.value = newValue;
+    data.value = newValue ?? null;
   },
 );
 

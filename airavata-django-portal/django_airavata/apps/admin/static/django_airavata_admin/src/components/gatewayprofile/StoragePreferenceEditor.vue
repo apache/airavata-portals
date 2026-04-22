@@ -40,16 +40,23 @@
 import { ref, watch } from "vue";
 import SshCredentialSelector from "../credentials/SSHCredentialSelector.vue";
 
+interface StoragePreference {
+  login_user_name?: string;
+  file_system_root_location?: string;
+  resource_specific_credential_store_token?: string | null;
+  [key: string]: unknown;
+}
+
 const props = defineProps<{
-  modelValue: Record<string, unknown>;
+  modelValue: StoragePreference;
   defaultCredentialStoreToken?: string;
 }>();
 
 const emit = defineEmits<{
-  "update:modelValue": [value: Record<string, unknown>];
+  "update:modelValue": [value: StoragePreference];
 }>();
 
-const data = ref<Record<string, unknown>>({ ...props.modelValue });
+const data = ref<StoragePreference>({ ...props.modelValue });
 
 watch(
   () => props.modelValue,

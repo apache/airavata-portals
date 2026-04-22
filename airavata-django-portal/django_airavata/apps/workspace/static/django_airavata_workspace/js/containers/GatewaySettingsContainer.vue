@@ -119,7 +119,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { services, utils } from "django-airavata-api";
-import SSHCredentialSelector from "../../../../admin/static/django_airavata_admin/src/components/credentials/SSHCredentialSelector.vue";
+import SSHCredentialSelector from "../../../../../admin/static/django_airavata_admin/src/components/credentials/SSHCredentialSelector.vue";
 
 const saving = ref(false);
 const gatewayId = ref("");
