@@ -16,60 +16,72 @@
   </div>
 </template>
 
-<script>
-import store from "./store";
-import { mapGetters } from "vuex";
+<script setup lang="ts">
+import { ref, computed, watch, onMounted, getCurrentInstance } from "vue";
+import { useWebComponentsStore } from "django-airavata-common-ui/js/stores/webComponents";
 
-export default {
-  props: {
-    value: {
-      type: String,
-      default: null,
-    },
-  },
-  store: store,
-  data() {
-    return {
-      projectId: this.value,
-    };
-  },
-  async mounted() {
-    await this.$store.dispatch("loadProjects");
-  },
-  computed: {
-    ...mapGetters(["projects"]),
-    sharedProjectOptions: function () {
-      return this.projects
-        ? this.projects
-            .filter((p) => !p.is_owner)
-            .map((project) => ({
-              value: project.project_id,
-              text: project.name + (!project.is_owner ? " (owned by " + project.owner + ")" : ""),
-            }))
-        : [];
-    },
-    myProjectOptions() {
-      return this.projects
-        ? this.projects
-            .filter((p) => p.is_owner)
-            .map((project) => ({
-              value: project.project_id,
-              text: project.name,
-            }))
-        : [];
-    },
-  },
-  watch: {
-    projectId() {
-      const inputEvent = new CustomEvent("input", {
-        detail: [this.projectId],
-        composed: true,
-        bubbles: true,
-      });
-      this.$el.dispatchEvent(inputEvent);
-    },
-  },
-};
+interface Project {
+  project_id: string;
+  name: string;
+  is_owner: boolean;
+  owner: string;
+}
+
+interface ProjectOption {
+  value: string;
+  text: string;
+}
+
+const props = withDefaults(defineProps<{
+  value?: string | null;
+}>(), {
+  value: null,
+});
+
+const webComponentsStore = useWebComponentsStore();
+
+const projectId = ref<string | null>(props.value ?? null);
+
+const projects = computed(() => webComponentsStore.projects as unknown as Project[] | null);
+
+const sharedProjectOptions = computed<ProjectOption[]>(() => {
+  return projects.value
+    ? projects.value
+        .filter((p) => !p.is_owner)
+        .map((project) => ({
+          value: project.project_id,
+          text: project.name + (!project.is_owner ? " (owned by " + project.owner + ")" : ""),
+        }))
+    : [];
+});
+
+const myProjectOptions = computed<ProjectOption[]>(() => {
+  return projects.value
+    ? projects.value
+        .filter((p) => p.is_owner)
+        .map((project) => ({
+          value: project.project_id,
+          text: project.name,
+        }))
+    : [];
+});
+
+watch(projectId, () => {
+  const instance = getCurrentInstance();
+  const el = instance?.proxy?.$el as Element | undefined;
+  if (el) {
+    const inputEvent = new CustomEvent("input", {
+      detail: [projectId.value],
+      composed: true,
+      bubbles: true,
+    });
+    el.dispatchEvent(inputEvent);
+  }
+});
+
+onMounted(async () => {
+  await webComponentsStore.loadProjects();
+});
 </script>
 
 <style lang="scss">

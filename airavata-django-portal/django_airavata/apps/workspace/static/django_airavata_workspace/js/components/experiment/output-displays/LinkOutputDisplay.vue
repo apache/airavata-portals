@@ -2,14 +2,8 @@
   <a :href="viewData.url">{{ viewData.label }}</a>
 </template>
 
-<script>
-export default {
-  name: "LinkOutputDisplay",
-  props: {
-    viewData: {
-      type: Object,
-      required: true,
-    },
-  },
-};
+<script setup lang="ts">
+defineProps<{
+  viewData: { url?: string; label?: string; [key: string]: unknown };
+}>();
 </script>

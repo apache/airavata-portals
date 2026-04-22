@@ -2,23 +2,18 @@
   <img v-if="dataUrl" :src="dataUrl" />
 </template>
 
-<script>
-export default {
-  name: "ImageOutputDisplay",
-  props: {
-    viewData: {
-      type: Object,
-      required: true,
-    },
-  },
-  computed: {
-    dataUrl() {
-      if (this.viewData && this.viewData.image) {
-        return `data:${this.viewData["mime-type"]};base64,${this.viewData["image"]}`;
-      } else {
-        return null;
-      }
-    },
-  },
-};
+<script setup lang="ts">
+import { computed } from "vue";
+
+const props = defineProps<{
+  viewData: Record<string, unknown>;
+}>();
+
+const dataUrl = computed(() => {
+  if (props.viewData && props.viewData.image) {
+    return `data:${props.viewData["mime-type"]};base64,${props.viewData["image"]}`;
+  } else {
+    return null;
+  }
+});
 </script>

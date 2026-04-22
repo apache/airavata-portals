@@ -31,36 +31,37 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, nextTick } from "vue";
 import { Modal } from "bootstrap";
 
-export default {
-  name: "NewSshCredentialModal",
-  data() {
-    return {
-      description: null,
-    };
-  },
-  computed: {
-    valid() {
-      // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
-      return this.description != null && this.description.trim() !== "";
-    },
-  },
-  methods: {
-    okClicked() {
-      if (!this.valid) return;
-      this.$emit("new", { description: this.description });
-      Modal.getInstance(this.$refs.modal).hide();
-      this.description = null;
-    },
-    show() {
-      this.description = null;
-      new Modal(this.$refs.modal).show();
-      this.$nextTick(() => {
-        if (this.$refs.descInput) this.$refs.descInput.focus();
-      });
-    },
-  },
-};
+const emit = defineEmits<{
+  new: [data: { description: string }];
+}>();
+
+const modal = ref<HTMLElement | null>(null);
+const descInput = ref<HTMLInputElement | null>(null);
+const description = ref<string | null>(null);
+
+const valid = computed(
+  // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
+  () => description.value != null && description.value.trim() !== "",
+);
+
+function okClicked() {
+  if (!valid.value || !description.value) return;
+  emit("new", { description: description.value });
+  if (modal.value) Modal.getInstance(modal.value)?.hide();
+  description.value = null;
+}
+
+function show() {
+  description.value = null;
+  if (modal.value) new Modal(modal.value).show();
+  nextTick(() => {
+    descInput.value?.focus();
+  });
+}
+
+defineExpose({ show });
 </script>

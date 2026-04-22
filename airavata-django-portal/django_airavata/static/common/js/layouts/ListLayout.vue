@@ -32,7 +32,7 @@
         <pager
           v-if="itemsPaginator"
           :paginator="itemsPaginator"
-          next="nextItems"
+          @next="nextItems"
           @previous="previousItems"
         ></pager>
       </div>
@@ -40,54 +40,52 @@
   </div>
 </template>
 
-<script>
-import { utils } from "django-airavata-api";
+<script setup lang="ts">
+import { computed } from "vue";
 import Pager from "../components/Pager.vue";
 
-export default {
-  name: "ListLayout",
-  components: {
-    pager: Pager,
-  },
-  props: {
-    items: Array,
-    itemsPaginator: utils.PaginationIterator,
-    title: {
-      type: String,
-      default: "Items",
-    },
-    subtitle: {
-      type: String,
-    },
-    newItemButtonText: {
-      type: String,
-      default: "New Item",
-    },
-    newButtonDisabled: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  data() {
-    return {};
-  },
-  computed: {
-    itemsList: function () {
-      return this.itemsPaginator ? this.itemsPaginator.results : this.items;
-    },
-  },
-  methods: {
-    nextItems: function () {
-      this.itemsPaginator.next();
-    },
-    previousItems: function () {
-      this.itemsPaginator.previous();
-    },
-    addNewItem: function () {
-      this.$emit("add-new-item");
-    },
-  },
-};
+const props = withDefaults(defineProps<{
+  items?: unknown[] | null;
+  itemsPaginator?: unknown | null;
+  title?: string;
+  subtitle?: string;
+  newItemButtonText?: string;
+  newButtonDisabled?: boolean;
+}>(), {
+  items: null,
+  itemsPaginator: null,
+  title: "Items",
+  subtitle: undefined,
+  newItemButtonText: "New Item",
+  newButtonDisabled: false,
+});
+
+const emit = defineEmits<{
+  "add-new-item": [];
+}>();
+
+const itemsList = computed<unknown[]>(() => {
+  if (props.itemsPaginator) {
+    return (props.itemsPaginator as { results: unknown[] }).results;
+  }
+  return props.items ?? [];
+});
+
+function nextItems(): void {
+  if (props.itemsPaginator) {
+    (props.itemsPaginator as { next(): void }).next();
+  }
+}
+
+function previousItems(): void {
+  if (props.itemsPaginator) {
+    (props.itemsPaginator as { previous(): void }).previous();
+  }
+}
+
+function addNewItem(): void {
+  emit("add-new-item");
+}
 </script>
 
 <style scoped>

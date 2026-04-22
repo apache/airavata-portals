@@ -69,24 +69,24 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="exp in pagedExperiments" :key="exp.experiment_id">
+            <tr v-for="exp in pagedExperiments" :key="(exp as Record<string, unknown>).experiment_id as string">
               <td>
-                <a :href="viewExperimentUrl(exp)" class="text-decoration-none fw-semibold">{{
-                  exp.name
+                <a :href="viewExperimentUrl(exp as Record<string, unknown>)" class="text-decoration-none fw-semibold">{{
+                  (exp as Record<string, unknown>).name
                 }}</a>
               </td>
-              <td>{{ projectName(exp.project_id) }}</td>
-              <td>{{ applicationName(exp.execution_id) }}</td>
+              <td>{{ projectName((exp as Record<string, unknown>).project_id as string) }}</td>
+              <td>{{ applicationName((exp as Record<string, unknown>).execution_id as string) }}</td>
               <td>
                 <span
                   class="badge"
-                  :class="statusBadgeClass(exp.experiment_status && exp.experiment_status.name)"
-                  >{{ exp.experiment_status && exp.experiment_status.name }}</span
+                  :class="statusBadgeClass(((exp as Record<string, unknown>).experiment_status as Record<string, unknown> | undefined)?.name as string | undefined)"
+                  >{{ (exp as Record<string, unknown>).experiment_status && ((exp as Record<string, unknown>).experiment_status as Record<string, unknown>).name }}</span
                 >
               </td>
               <td>
-                <span v-if="exp.creation_time" :title="exp.creation_time.toLocaleString()">{{
-                  formatDate(exp.creation_time)
+                <span v-if="(exp as Record<string, unknown>).creation_time" :title="((exp as Record<string, unknown>).creation_time as Date).toLocaleString()">{{
+                  formatDate((exp as Record<string, unknown>).creation_time as Date)
                 }}</span>
               </td>
             </tr>
@@ -121,7 +121,8 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted, reactive } from "vue";
 import { services } from "django-airavata-api";
 import { Bar } from "vue-chartjs";
 import { Chart, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from "chart.js";
@@ -132,30 +133,31 @@ const RUNNING_STATES = ["EXECUTING", "SCHEDULED", "LAUNCHED", "VALIDATED"];
 const COMPLETED_STATES = ["COMPLETED"];
 const FAILED_STATES = ["FAILED", "CANCELED", "CANCELING"];
 
-function classifyState(name) {
-  if (RUNNING_STATES.includes(name)) {
-    return "running";
-  }
-  if (COMPLETED_STATES.includes(name)) {
-    return "completed";
-  }
-  if (FAILED_STATES.includes(name)) {
-    return "failed";
-  }
+function classifyState(name: string | undefined): string {
+  if (!name) return "other";
+  if (RUNNING_STATES.includes(name)) return "running";
+  if (COMPLETED_STATES.includes(name)) return "completed";
+  if (FAILED_STATES.includes(name)) return "failed";
   return "other";
 }
 
-function startOfMonth(d) {
+function startOfMonth(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
-function addMonths(d, n) {
+function addMonths(d: Date, n: number): Date {
   return new Date(d.getFullYear(), d.getMonth() + n, 1);
 }
 
-function bucketsFor(range, now, experiments) {
-  if (range === "1d") {
-    const starts = [];
+interface BucketSpec {
+  starts: Date[];
+  sizes: number[];
+  format: (_d: Date) => string;
+}
+
+function bucketsFor(rangeKey: string, now: Date, experiments: unknown[]): BucketSpec {
+  if (rangeKey === "1d") {
+    const starts: Date[] = [];
     const anchor = new Date(now);
     anchor.setMinutes(0, 0, 0);
     anchor.setHours(anchor.getHours() - 23);
@@ -168,8 +170,8 @@ function bucketsFor(range, now, experiments) {
       format: (d) => String(d.getHours()).padStart(2, "0") + ":00",
     };
   }
-  if (range === "7d") {
-    const starts = [];
+  if (rangeKey === "7d") {
+    const starts: Date[] = [];
     const anchor = new Date(now);
     anchor.setHours(0, 0, 0, 0);
     anchor.setDate(anchor.getDate() - 6);
@@ -187,8 +189,8 @@ function bucketsFor(range, now, experiments) {
         }),
     };
   }
-  if (range === "1mo") {
-    const starts = [];
+  if (rangeKey === "1mo") {
+    const starts: Date[] = [];
     const anchor = new Date(now);
     anchor.setHours(0, 0, 0, 0);
     anchor.setDate(anchor.getDate() - 29);
@@ -201,8 +203,8 @@ function bucketsFor(range, now, experiments) {
       format: (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
     };
   }
-  if (range === "1y") {
-    const starts = [];
+  if (rangeKey === "1y") {
+    const starts: Date[] = [];
     const anchorMonth = startOfMonth(now);
     const first = addMonths(anchorMonth, -11);
     for (let i = 0; i < 12; i++) {
@@ -219,19 +221,18 @@ function bucketsFor(range, now, experiments) {
     };
   }
   // 'all'
-  let earliest = null;
-  experiments.forEach((e) => {
-    if (e.creation_time && (!earliest || e.creation_time < earliest)) {
-      earliest = e.creation_time;
+  let earliest: Date | null = null;
+  (experiments as Array<Record<string, unknown>>).forEach((e) => {
+    if (e.creation_time && (!earliest || (e.creation_time as Date) < earliest)) {
+      earliest = e.creation_time as Date;
     }
   });
   if (!earliest) {
     earliest = now;
   }
-  const starts = [];
+  const starts: Date[] = [];
   let cursor = startOfMonth(earliest);
   const end = startOfMonth(now);
-  // safety cap
   let guard = 0;
   while (cursor.getTime() <= end.getTime() && guard < 600) {
     starts.push(new Date(cursor));
@@ -252,304 +253,227 @@ function bucketsFor(range, now, experiments) {
   };
 }
 
-export default {
-  name: "WorkspaceDashboardContainer",
-  components: { Bar },
-  data() {
-    return {
-      experiments: [],
-      projectsById: {},
-      applicationInterfaces: {},
-      loading: true,
-      currentPage: 1,
-      pageSize: 10,
-      range: "7d",
-      ranges: [
-        { key: "1d", label: "1 day" },
-        { key: "7d", label: "7 days" },
-        { key: "1mo", label: "1 month" },
-        { key: "1y", label: "1 year" },
-        { key: "all", label: "All" },
-      ],
-    };
-  },
-  computed: {
-    runningCount() {
-      return this.experiments.filter((e) => RUNNING_STATES.includes(this.statusName(e))).length;
-    },
-    completedCount() {
-      return this.experiments.filter((e) => COMPLETED_STATES.includes(this.statusName(e))).length;
-    },
-    failedCount() {
-      return this.experiments.filter((e) => FAILED_STATES.includes(this.statusName(e))).length;
-    },
-    totalCount() {
-      return this.experiments.length;
-    },
-    recentExperiments() {
-      // Sort by creation_time desc
-      return [...this.experiments].sort((a, b) => {
-        const ta = a.creation_time ? a.creation_time.getTime() : 0;
-        const tb = b.creation_time ? b.creation_time.getTime() : 0;
-        return tb - ta;
-      });
-    },
-    totalPages() {
-      return Math.max(1, Math.ceil(this.recentExperiments.length / this.pageSize));
-    },
-    pagedExperiments() {
-      const start = (this.currentPage - 1) * this.pageSize;
-      return this.recentExperiments.slice(start, start + this.pageSize);
-    },
-    otherCount() {
-      return Math.max(
-        0,
-        this.totalCount - this.runningCount - this.completedCount - this.failedCount,
-      );
-    },
-    bucketSpec() {
-      return bucketsFor(this.range, new Date(), this.experiments);
-    },
-    filteredExperiments() {
-      const spec = this.bucketSpec;
-      if (!spec.starts.length) {
-        return [];
-      }
-      const min = spec.starts[0].getTime();
-      const lastIdx = spec.starts.length - 1;
-      const max = spec.starts[lastIdx].getTime() + spec.sizes[lastIdx];
-      return this.experiments.filter((e) => {
-        if (!e.creation_time) {
-          return false;
-        }
-        const t = e.creation_time.getTime();
-        return t >= min && t < max;
-      });
-    },
-    filteredTotal() {
-      return this.filteredExperiments.length;
-    },
-    chartData() {
-      const spec = this.bucketSpec;
-      const n = spec.starts.length;
-      const running = new Array(n).fill(0);
-      const completed = new Array(n).fill(0);
-      const failed = new Array(n).fill(0);
-      const other = new Array(n).fill(0);
+const experiments = ref<unknown[]>([]);
+const projectsById = reactive<Record<string, unknown>>({});
+const applicationInterfaces = reactive<Record<string, unknown>>({});
+const loading = ref(true);
+const currentPage = ref(1);
+const pageSize = 10;
+const range = ref("7d");
+const ranges = [
+  { key: "1d", label: "1 day" },
+  { key: "7d", label: "7 days" },
+  { key: "1mo", label: "1 month" },
+  { key: "1y", label: "1 year" },
+  { key: "all", label: "All" },
+];
 
-      const bucketIndex = (t) => {
-        // linear search since bucket sizes may vary (months)
-        for (let i = 0; i < n; i++) {
-          const start = spec.starts[i].getTime();
-          const end = start + spec.sizes[i];
-          if (t >= start && t < end) {
-            return i;
-          }
-        }
-        return -1;
-      };
+function statusName(exp: Record<string, unknown>): string | undefined {
+  const status = exp.experiment_status as Record<string, unknown> | undefined;
+  return status ? (status.name as string) : undefined;
+}
 
-      this.filteredExperiments.forEach((e) => {
-        const idx = bucketIndex(e.creation_time.getTime());
-        if (idx < 0) {
-          return;
-        }
-        const cls = classifyState(this.statusName(e));
-        if (cls === "running") {
-          running[idx]++;
-        } else if (cls === "completed") {
-          completed[idx]++;
-        } else if (cls === "failed") {
-          failed[idx]++;
-        } else {
-          other[idx]++;
-        }
-      });
+const recentExperiments = computed<unknown[]>(() => {
+  return [...experiments.value].sort((a, b) => {
+    const ea = a as Record<string, unknown>;
+    const eb = b as Record<string, unknown>;
+    const ta = ea.creation_time ? (ea.creation_time as Date).getTime() : 0;
+    const tb = eb.creation_time ? (eb.creation_time as Date).getTime() : 0;
+    return tb - ta;
+  });
+});
 
-      return {
-        labels: spec.starts.map((d) => spec.format(d)),
-        datasets: [
-          {
-            label: "Running",
-            data: running,
-            backgroundColor: "#0d6efd",
-            stack: "exp",
-          },
-          {
-            label: "Completed",
-            data: completed,
-            backgroundColor: "#198754",
-            stack: "exp",
-          },
-          {
-            label: "Failed",
-            data: failed,
-            backgroundColor: "#dc3545",
-            stack: "exp",
-          },
-          {
-            label: "Other",
-            data: other,
-            backgroundColor: "#6c757d",
-            stack: "exp",
-          },
-        ],
-      };
-    },
-    chartOptions() {
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: true, position: "bottom" },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y} experiment(s)`,
-            },
-          },
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(recentExperiments.value.length / pageSize)),
+);
+
+const pagedExperiments = computed(() => {
+  const start = (currentPage.value - 1) * pageSize;
+  return recentExperiments.value.slice(start, start + pageSize);
+});
+
+const bucketSpec = computed(() => bucketsFor(range.value, new Date(), experiments.value));
+
+const filteredExperiments = computed<unknown[]>(() => {
+  const spec = bucketSpec.value;
+  if (!spec.starts.length) return [];
+  const min = spec.starts[0].getTime();
+  const lastIdx = spec.starts.length - 1;
+  const max = spec.starts[lastIdx].getTime() + spec.sizes[lastIdx];
+  return experiments.value.filter((e) => {
+    const exp = e as Record<string, unknown>;
+    if (!exp.creation_time) return false;
+    const t = (exp.creation_time as Date).getTime();
+    return t >= min && t < max;
+  });
+});
+
+const filteredTotal = computed(() => filteredExperiments.value.length);
+
+const chartData = computed(() => {
+  const spec = bucketSpec.value;
+  const n = spec.starts.length;
+  const running = new Array<number>(n).fill(0);
+  const completed = new Array<number>(n).fill(0);
+  const failed = new Array<number>(n).fill(0);
+  const other = new Array<number>(n).fill(0);
+
+  const bucketIndex = (t: number): number => {
+    for (let i = 0; i < n; i++) {
+      const start = spec.starts[i].getTime();
+      const end = start + spec.sizes[i];
+      if (t >= start && t < end) return i;
+    }
+    return -1;
+  };
+
+  filteredExperiments.value.forEach((e) => {
+    const exp = e as Record<string, unknown>;
+    const idx = bucketIndex((exp.creation_time as Date).getTime());
+    if (idx < 0) return;
+    const cls = classifyState(statusName(exp));
+    if (cls === "running") running[idx]++;
+    else if (cls === "completed") completed[idx]++;
+    else if (cls === "failed") failed[idx]++;
+    else other[idx]++;
+  });
+
+  return {
+    labels: spec.starts.map((d) => spec.format(d)),
+    datasets: [
+      { label: "Running", data: running, backgroundColor: "#0d6efd", stack: "exp" },
+      { label: "Completed", data: completed, backgroundColor: "#198754", stack: "exp" },
+      { label: "Failed", data: failed, backgroundColor: "#dc3545", stack: "exp" },
+      { label: "Other", data: other, backgroundColor: "#6c757d", stack: "exp" },
+    ],
+  };
+});
+
+const chartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: true, position: "bottom" as const },
+    tooltip: {
+      callbacks: {
+        label: (ctx: unknown) => {
+          const c = ctx as { dataset?: { label?: string }; parsed?: { y?: number } };
+          return ` ${c.dataset?.label ?? ""}: ${c.parsed?.y ?? 0} experiment(s)`;
         },
-        scales: {
-          x: { stacked: true },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            ticks: { precision: 0 },
-          },
-        },
-      };
+      },
     },
   },
-  mounted() {
-    this.loadDashboard();
+  scales: {
+    x: { stacked: true },
+    y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
   },
-  methods: {
-    statusName(exp) {
-      return exp.experiment_status && exp.experiment_status.name;
-    },
-    statusBadgeClass(stateName) {
-      if (!stateName) {
-        return "bg-secondary";
-      }
-      if (RUNNING_STATES.includes(stateName)) {
-        return "bg-primary";
-      }
-      if (COMPLETED_STATES.includes(stateName)) {
-        return "bg-success";
-      }
-      if (FAILED_STATES.includes(stateName)) {
-        return "bg-danger";
-      }
-      // CREATED and anything else
-      return "bg-secondary";
-    },
-    formatDate(d) {
-      if (!d) {
-        return "";
-      }
-      try {
-        return d.toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        });
-      } catch (e) {
-        return String(d);
-      }
-    },
-    projectName(projectId) {
-      if (!projectId) {
-        return "";
-      }
-      const p = this.projectsById[projectId];
-      return p ? p.name : projectId;
-    },
-    applicationName(interfaceId) {
-      if (!interfaceId) {
-        return "";
-      }
-      const ai = this.applicationInterfaces[interfaceId];
-      if (ai && ai.application_name) {
-        return ai.application_name;
-      }
-      return "";
-    },
-    viewExperimentUrl(exp) {
-      return (
-        "/workspace/projects/" +
-        encodeURIComponent(exp.project_id) +
-        "/experiments/" +
-        encodeURIComponent(exp.experiment_id) +
-        "/"
-      );
-    },
-    loadDashboard() {
-      this.loading = true;
-      const expPromise = services.ExperimentSearchService.list(
-        {
-          limit: 100,
-          offset: 0,
-        },
-        {
-          showSpinner: false,
-          ignoreErrors: true,
-        },
-      )
-        .then((result) => {
-          this.experiments = result && Array.isArray(result.results) ? result.results : [];
-        })
-        .catch(() => {
-          this.experiments = [];
-        });
+}));
 
-      const projPromise = services.ProjectService.list()
-        .then((result) => {
-          let list = [];
-          if (Array.isArray(result)) {
-            list = result;
-          } else if (result && Array.isArray(result.results)) {
-            list = result.results;
-          }
-          const map = {};
-          list.forEach((p) => {
-            const id = p.projectId || p.project_id;
-            if (id) {
-              map[id] = p;
-            }
-          });
-          this.projectsById = map;
-        })
-        .catch(() => {
-          this.projectsById = {};
-        });
+function statusBadgeClass(stateName: string | undefined): string {
+  if (!stateName) return "bg-secondary";
+  if (RUNNING_STATES.includes(stateName)) return "bg-primary";
+  if (COMPLETED_STATES.includes(stateName)) return "bg-success";
+  if (FAILED_STATES.includes(stateName)) return "bg-danger";
+  return "bg-secondary";
+}
 
-      Promise.all([expPromise, projPromise]).then(() => {
-        this.loading = false;
-        this.loadApplicationInterfaces();
-      });
-    },
-    loadApplicationInterfaces() {
-      const ids = {};
-      this.experiments.forEach((e) => {
-        if (e.execution_id) {
-          ids[e.execution_id] = true;
+function formatDate(d: Date | null | undefined): string {
+  if (!d) return "";
+  try {
+    return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  } catch (e) {
+    return String(d);
+  }
+}
+
+function projectName(projectId: string | undefined): string {
+  if (!projectId) return "";
+  const p = projectsById[projectId] as Record<string, unknown> | undefined;
+  return p ? (p.name as string) : projectId;
+}
+
+function applicationName(interfaceId: string | undefined): string {
+  if (!interfaceId) return "";
+  const ai = applicationInterfaces[interfaceId] as Record<string, unknown> | undefined;
+  if (ai && ai.application_name) return ai.application_name as string;
+  return "";
+}
+
+function viewExperimentUrl(exp: Record<string, unknown>): string {
+  return (
+    "/workspace/projects/" +
+    encodeURIComponent(exp.project_id as string) +
+    "/experiments/" +
+    encodeURIComponent(exp.experiment_id as string) +
+    "/"
+  );
+}
+
+function loadDashboard(): void {
+  loading.value = true;
+  const expPromise = services.ExperimentSearchService.list(
+    { limit: 100, offset: 0 },
+    { showSpinner: false, ignoreErrors: true },
+  )
+    .then((result: unknown) => {
+      const r = result as { results?: unknown[] } | null;
+      experiments.value = r && Array.isArray(r.results) ? r.results : [];
+    })
+    .catch(() => {
+      experiments.value = [];
+    });
+
+  const projPromise = services.ProjectService.list()
+    .then((result: unknown) => {
+      let list: Array<Record<string, unknown>> = [];
+      if (Array.isArray(result)) {
+        list = result as Array<Record<string, unknown>>;
+      } else {
+        const r = result as { results?: Array<Record<string, unknown>> } | null;
+        if (r && Array.isArray(r.results)) {
+          list = r.results;
+        }
+      }
+      list.forEach((p) => {
+        const id = (p.projectId || p.project_id) as string | undefined;
+        if (id) {
+          projectsById[id] = p;
         }
       });
-      Object.keys(ids).forEach((interfaceId) => {
-        if (interfaceId in this.applicationInterfaces) {
-          return;
-        }
-        services.ApplicationInterfaceService.retrieve(
-          { lookup: interfaceId },
-          { showSpinner: false, ignoreErrors: true },
-        )
-          .then((ai) => {
-            this.$set(this.applicationInterfaces, interfaceId, ai);
-          })
-          .catch(() => {
-            this.$set(this.applicationInterfaces, interfaceId, null);
-          });
+    })
+    .catch(() => {
+      // projectsById stays as-is
+    });
+
+  Promise.all([expPromise, projPromise]).then(() => {
+    loading.value = false;
+    loadApplicationInterfaces();
+  });
+}
+
+function loadApplicationInterfaces(): void {
+  const ids: Record<string, boolean> = {};
+  (experiments.value as Array<Record<string, unknown>>).forEach((e) => {
+    if (e.execution_id) {
+      ids[e.execution_id as string] = true;
+    }
+  });
+  Object.keys(ids).forEach((interfaceId) => {
+    if (interfaceId in applicationInterfaces) return;
+    services.ApplicationInterfaceService.retrieve(
+      { lookup: interfaceId },
+      { showSpinner: false, ignoreErrors: true },
+    )
+      .then((ai: unknown) => {
+        applicationInterfaces[interfaceId] = ai;
+      })
+      .catch(() => {
+        applicationInterfaces[interfaceId] = null;
       });
-    },
-  },
-};
+  });
+}
+
+onMounted(() => {
+  loadDashboard();
+});
 </script>

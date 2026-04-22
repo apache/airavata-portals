@@ -86,7 +86,7 @@
     <!-- Register modal -->
     <div
       id="registerComputeModal"
-      ref="registerModal"
+      ref="registerModalEl"
       class="modal fade"
       tabindex="-1"
       aria-labelledby="registerComputeModalLabel"
@@ -162,84 +162,91 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
 import { services } from "django-airavata-api";
 import { Modal } from "bootstrap";
 
-export default {
-  name: "ComputeContainer",
-  data() {
-    return {
-      loading: true,
-      computeResources: [],
-      newHostName: "",
-      newDescription: "",
-      registering: false,
-      registerError: null,
-    };
-  },
-  created() {
-    this.loadComputeResources();
-  },
-  methods: {
-    async loadComputeResources() {
-      this.loading = true;
-      try {
-        // Use the full list endpoint so the "Enabled" badge reflects the
-        // real server-side flag instead of a hardcoded default.
-        const resources = await services.ComputeResourceService.list();
-        this.computeResources = (resources || []).map((r) => ({
-          id: r.compute_resource_id,
-          name: r.host_name,
-          enabled: !!r.enabled,
-        }));
-      } catch {
-        this.computeResources = [];
-      }
-      this.loading = false;
-    },
-    showRegisterModal() {
-      this.newHostName = "";
-      this.newDescription = "";
-      this.registerError = null;
-      new Modal(this.$refs.registerModal).show();
-    },
-    async registerResource() {
-      if (!this.newHostName.trim()) {
-        return;
-      }
-      this.registering = true;
-      this.registerError = null;
-      try {
-        await services.ComputeResourceService.create({
-          data: {
-            host_name: this.newHostName.trim(),
-            resource_description: this.newDescription.trim() || undefined,
-          },
-        });
-        Modal.getInstance(this.$refs.registerModal).hide();
-        await this.loadComputeResources();
-      } catch (e) {
-        this.registerError = e?.message || "Failed to register compute resource. Please try again.";
-      }
-      this.registering = false;
-    },
-    navigateToResource(resource) {
-      window.location.href = "/resources/compute/" + resource.id;
-    },
-    async confirmDelete(resource) {
-      if (
-        !window.confirm(`Delete compute resource "${resource.name}"? This action cannot be undone.`)
-      ) {
-        return;
-      }
-      try {
-        await services.ComputeResourceService.delete({ lookup: resource.id });
-        await this.loadComputeResources();
-      } catch (e) {
-        window.alert(e?.message || "Failed to delete compute resource.");
-      }
-    },
-  },
-};
+interface ComputeResource {
+  id: string;
+  name: string;
+  enabled: boolean;
+}
+
+const loading = ref(true);
+const computeResources = ref<ComputeResource[]>([]);
+const newHostName = ref("");
+const newDescription = ref("");
+const registering = ref(false);
+const registerError = ref<string | null>(null);
+const registerModalEl = ref<HTMLElement | null>(null);
+
+async function loadComputeResources(): Promise<void> {
+  loading.value = true;
+  try {
+    // Use the full list endpoint so the "Enabled" badge reflects the
+    // real server-side flag instead of a hardcoded default.
+    const resources = await services.ComputeResourceService.list();
+    computeResources.value = ((resources as unknown as Array<Record<string, unknown>>) || []).map((r) => ({
+      id: r.compute_resource_id as string,
+      name: r.host_name as string,
+      enabled: !!r.enabled,
+    }));
+  } catch {
+    computeResources.value = [];
+  }
+  loading.value = false;
+}
+
+function showRegisterModal(): void {
+  newHostName.value = "";
+  newDescription.value = "";
+  registerError.value = null;
+  new Modal(registerModalEl.value!).show();
+}
+
+async function registerResource(): Promise<void> {
+  if (!newHostName.value.trim()) {
+    return;
+  }
+  registering.value = true;
+  registerError.value = null;
+  try {
+    await services.ComputeResourceService.create({
+      data: {
+        host_name: newHostName.value.trim(),
+        resource_description: newDescription.value.trim() || undefined,
+      },
+    });
+    Modal.getInstance(registerModalEl.value!)?.hide();
+    await loadComputeResources();
+  } catch (e) {
+    const err = e as { message?: string };
+    registerError.value = err?.message || "Failed to register compute resource. Please try again.";
+  }
+  registering.value = false;
+}
+
+function navigateToResource(resource: ComputeResource): void {
+  window.location.href = "/resources/compute/" + resource.id;
+}
+
+async function confirmDelete(resource: ComputeResource): Promise<void> {
+  if (
+    !window.confirm(`Delete compute resource "${resource.name}"? This action cannot be undone.`)
+  ) {
+    return;
+  }
+  try {
+    await services.ComputeResourceService.delete({ lookup: resource.id });
+    await loadComputeResources();
+  } catch (e) {
+    const err = e as { message?: string };
+    window.alert(err?.message || "Failed to delete compute resource.");
+  }
+}
+
+onMounted(() => {
+  loadComputeResources();
+});
 </script>

@@ -20,68 +20,60 @@
   </extended-user-profile-value-editor>
 </template>
 
-<script>
-import { mapGetters, mapMutations } from "vuex";
+<script setup lang="ts">
+import { computed, watch } from "vue";
 import { useVuelidate } from "@vuelidate/core";
+import { helpers } from "@vuelidate/validators";
 import { errors } from "django-airavata-common-ui";
+import type { ExtendedUserProfileField } from "django-airavata-common-ui/js/types/user";
 import ExtendedUserProfileValueEditor from "./ExtendedUserProfileValueEditor.vue";
+import { useUserStore } from "django-airavata-common-ui/js/stores/user";
 
-export default {
-  components: { ExtendedUserProfileValueEditor },
-  props: ["extendedUserProfileField"],
-  setup() {
-    return { v$: useVuelidate() };
+const props = defineProps<{ extendedUserProfileField: ExtendedUserProfileField }>();
+const emit = defineEmits<{ valid: []; invalid: [] }>();
+
+const userStore = useUserStore();
+
+const isRequired = computed(() => props.extendedUserProfileField.required);
+
+const value = computed<boolean>({
+  get: () => userStore.getUserAgreementValue(props.extendedUserProfileField.id!),
+  set: (val: boolean) => {
+    userStore.setUserAgreementValue({
+      value: val,
+      id: props.extendedUserProfileField.id!,
+    });
+    v$.value.value.$touch();
   },
-  computed: {
-    ...mapGetters("extendedUserProfile", ["getUserAgreementValue"]),
-    value: {
-      get() {
-        return this.getUserAgreementValue(this.extendedUserProfileField.id);
-      },
-      set(value) {
-        this.setUserAgreementValue({
-          value,
-          id: this.extendedUserProfileField.id,
-        });
-        this.v$.value.$touch();
-      },
-    },
-    valid() {
-      return !this.v$.$invalid;
-    },
-    required() {
-      return this.extendedUserProfileField.required;
-    },
+});
+
+const mustBeTrue = helpers.withParams(
+  { type: "mustBeTrue" },
+  (val: boolean) => !isRequired.value || val === true,
+);
+
+const rules = computed(() => ({
+  value: { mustBeTrue },
+}));
+
+const formState = computed(() => ({ value: value.value }));
+const v$ = useVuelidate(rules, formState);
+
+const valid = computed(() => !v$.value.$invalid);
+const validateStateErrorOnly = errors.vuelidateHelpers.validateStateErrorOnly;
+
+watch(
+  valid,
+  (isValid) => {
+    if (isValid) emit("valid");
+    else emit("invalid");
   },
-  validations() {
-    return {
-      value: {
-        mustBeTrue: this.mustBeTrue,
-      },
-    };
-  },
-  methods: {
-    ...mapMutations("extendedUserProfile", ["setUserAgreementValue"]),
-    mustBeTrue(value) {
-      if (this.required) {
-        return value === true;
-      } else {
-        return true;
-      }
-    },
-    validateState: errors.vuelidateHelpers.validateState,
-    validateStateErrorOnly: errors.vuelidateHelpers.validateStateErrorOnly,
-    touch() {
-      this.v$.$touch();
-    },
-  },
-  watch: {
-    valid: {
-      handler(valid) {
-        this.$emit(valid ? "valid" : "invalid");
-      },
-      immediate: true,
-    },
-  },
-};
+  { immediate: true },
+);
+
+function touch(): void {
+  v$.value.$touch();
+}
+
+defineExpose({ touch });
 </script>

@@ -1,0 +1,13 @@
+{
+  "extends": "@airavata/tooling/tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./static/django_airavata_workspace/js/*"]
+    }
+  },
+  "include": [
+    "static/django_airavata_workspace/js/**/*.ts",
+    "static/django_airavata_workspace/js/**/*.vue",
+    "static/django_airavata_workspace/tests/**/*.ts"
+  ]
+}

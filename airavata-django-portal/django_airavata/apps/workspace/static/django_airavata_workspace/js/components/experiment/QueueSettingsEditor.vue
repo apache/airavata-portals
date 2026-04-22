@@ -202,300 +202,343 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import { models, services } from "django-airavata-api";
-import { mixins, utils } from "django-airavata-common-ui";
+import { utils } from "django-airavata-common-ui";
 
-export default {
-  name: "QueueSettingsEditor",
-  mixins: [mixins.VModelMixin],
-  props: {
-    value: {
-      type: models.ComputationalResourceSchedulingModel,
-    },
-    appDeploymentId: {
-      type: String,
-      required: true,
-    },
-    appModuleId: {
-      type: String,
-      required: true,
-    },
-    computeResourcePolicy: {
-      type: models.ComputeResourcePolicy,
-      required: false,
-    },
-    batchQueueResourcePolicies: {
-      type: Array,
-      required: false,
-    },
+type ComputationalResourceSchedulingModel = InstanceType<typeof models.ComputationalResourceSchedulingModel>;
+type ComputeResourcePolicy = InstanceType<typeof models.ComputeResourcePolicy>;
+
+interface QueueDefault {
+  queue_name: string;
+  queue_description?: string;
+  max_processors: number;
+  max_nodes: number;
+  max_run_time: number;
+  max_memory: number;
+  default_cpu_count: number;
+  default_node_count: number;
+  default_walltime: number;
+  is_default_queue: boolean;
+  cpu_per_node: number;
+}
+
+interface BatchQueueResourcePolicy {
+  queuename: string;
+  maxAllowedCores: number;
+  maxAllowedNodes: number;
+  maxAllowedWalltime: number;
+  resourcePolicyId?: string;
+}
+
+interface ApplicationInterface {
+  show_queue_settings: boolean;
+  queue_settings_calculator_id?: string;
+}
+
+const props = defineProps<{
+  modelValue: ComputationalResourceSchedulingModel;
+  appDeploymentId: string;
+  appModuleId: string;
+  computeResourcePolicy?: ComputeResourcePolicy | null;
+  batchQueueResourcePolicies?: BatchQueueResourcePolicy[] | null;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: ComputationalResourceSchedulingModel];
+  valid: [];
+  invalid: [];
+  input: [value: ComputationalResourceSchedulingModel];
+}>();
+
+// VModelMixin inline
+function copyValue(value: ComputationalResourceSchedulingModel) {
+  return value instanceof models.BaseModel ? (value as unknown as { clone: () => ComputationalResourceSchedulingModel }).clone() : value;
+}
+
+const data = ref<ComputationalResourceSchedulingModel>(copyValue(props.modelValue));
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    data.value = copyValue(newValue);
   },
-  data() {
-    return {
-      showConfiguration: false,
-      appDeploymentQueues: null,
-      enableNodeCountToCpuCheck: true,
-      applicationInterface: null,
-    };
+  { deep: true },
+);
+
+watch(
+  data,
+  (newValue, oldValue) => {
+    if (typeof props.modelValue === "object" && newValue === oldValue) {
+      emit("update:modelValue", newValue);
+      emit("input", newValue);
+    } else if (
+      (props.modelValue === null || typeof props.modelValue !== "object") &&
+      newValue !== oldValue
+    ) {
+      emit("update:modelValue", newValue);
+      emit("input", newValue);
+    }
   },
-  computed: {
-    queueOptions: function () {
-      const queueOptions = this.queueDefaults.map((queueDefault) => {
-        return {
-          value: queueDefault.queue_name,
-          text: queueDefault.queue_name,
-        };
-      });
-      return queueOptions;
-    },
-    selectedQueueDefault: function () {
-      return this.queueDefaults.find((queue) => queue.queue_name === this.data.queue_name);
-    },
-    maxCPUCount: function () {
-      if (!this.selectedQueueDefault) {
-        return 0;
-      }
-      const batchQueueResourcePolicy = this.batchQueueResourcePolicy;
-      if (batchQueueResourcePolicy) {
-        return Math.min(
-          batchQueueResourcePolicy.maxAllowedCores,
-          this.selectedQueueDefault.max_processors,
-        );
-      }
-      return this.selectedQueueDefault.max_processors;
-    },
-    maxNodes: function () {
-      if (!this.selectedQueueDefault) {
-        return 0;
-      }
-      const batchQueueResourcePolicy = this.batchQueueResourcePolicy;
-      if (batchQueueResourcePolicy) {
-        return Math.min(
-          batchQueueResourcePolicy.maxAllowedNodes,
-          this.selectedQueueDefault.max_nodes,
-        );
-      }
-      return this.selectedQueueDefault.max_nodes;
-    },
-    maxWalltime: function () {
-      if (!this.selectedQueueDefault) {
-        return 0;
-      }
-      const batchQueueResourcePolicy = this.batchQueueResourcePolicy;
-      if (batchQueueResourcePolicy) {
-        return Math.min(
-          batchQueueResourcePolicy.maxAllowedWalltime,
-          this.selectedQueueDefault.max_run_time,
-        );
-      }
-      return this.selectedQueueDefault.max_run_time;
-    },
-    maxPhysicalMemory: function () {
-      if (!this.selectedQueueDefault) {
-        return 0;
-      }
-      return this.selectedQueueDefault.max_memory;
-    },
-    queueDefaults() {
-      return this.appDeploymentQueues
-        ? this.appDeploymentQueues
-            .filter((q) => this.isQueueInComputeResourcePolicy(q.queue_name))
-            .sort((a, b) => {
-              // Sort default first, then by alphabetically by name
-              if (a.is_default_queue) {
-                return -1;
-              } else if (b.is_default_queue) {
-                return 1;
-              } else {
-                return a.queue_name.localeCompare(b.queue_name);
-              }
-            })
-        : [];
-    },
-    defaultQueue() {
-      if (this.queueDefaults.length === 0) {
-        return null;
-      }
-      return this.queueDefaults[0];
-    },
-    batchQueueResourcePolicy() {
-      if (!this.selectedQueueDefault) {
-        return null;
-      }
-      return this.getBatchQueueResourcePolicy(this.selectedQueueDefault.queue_name);
-    },
-    queueDescription() {
-      return this.selectedQueueDefault ? this.selectedQueueDefault.queue_description : null;
-    },
-    validation() {
-      // Don't run validation if we don't have selectedQueueDefault
-      if (!this.selectedQueueDefault) {
-        return this.data.validate();
-      }
-      return this.data.validate(this.selectedQueueDefault, this.batchQueueResourcePolicy);
-    },
-    valid() {
-      return Object.keys(this.validation).length === 0;
-    },
-    showQueueSettings() {
-      return this.applicationInterface ? this.applicationInterface.show_queue_settings : false;
-    },
-    disabled() {
-      return this.applicationInterface && !!this.applicationInterface.queue_settings_calculator_id;
-    },
-  },
-  watch: {
-    enableNodeCountToCpuCheck() {
-      if (this.enableNodeCountToCpuCheck) {
-        this.nodeCountChanged();
-      }
-    },
-    appDeploymentId() {
-      this.loadAppDeploymentQueues().then(() => this.setDefaultQueue());
-    },
-    // If batch queue policy changes, apply any maximum values to current values
-    batchQueueResourcePolicy(value, oldValue) {
-      if (value && (!oldValue || value.resourcePolicyId !== oldValue.resourcePolicyId)) {
-        this.applyBatchQueueResourcePolicy();
-      }
-    },
-    computeResourcePolicy() {
-      if (!this.isQueueInComputeResourcePolicy(this.data.queue_name)) {
-        this.setDefaultQueue();
-      }
-    },
-    value: {
-      // Rerun validation whenever the queue settings change, which can from
-      // outside the component, for example when a queue settings calculator
-      // provides values
-      handler() {
-        this.validate();
-      },
-      deep: true,
-    },
-  },
-  mounted: function () {
-    this.loadAppDeploymentQueues().then(() => {
-      // For brand new queue settings (no queue_name specified) load the default
-      // queue and its default values and apply them
-      if (!this.value.queue_name) {
-        this.setDefaultQueue();
-      }
+  { deep: true },
+);
+
+const showConfiguration = ref(false);
+const appDeploymentQueues = ref<QueueDefault[] | null>(null);
+const enableNodeCountToCpuCheck = ref(true);
+const applicationInterface = ref<ApplicationInterface | null>(null);
+
+const queueOptions = computed(() =>
+  queueDefaults.value.map((queueDefault) => ({
+    value: queueDefault.queue_name,
+    text: queueDefault.queue_name,
+  })),
+);
+
+const selectedQueueDefault = computed<QueueDefault | undefined>(() =>
+  queueDefaults.value.find((queue) => queue.queue_name === data.value.queue_name),
+);
+
+const batchQueueResourcePolicyComputed = computed<BatchQueueResourcePolicy | null>(() => {
+  if (!selectedQueueDefault.value) return null;
+  return getBatchQueueResourcePolicy(selectedQueueDefault.value.queue_name);
+});
+
+const maxCPUCount = computed<number>(() => {
+  if (!selectedQueueDefault.value) return 0;
+  const bqrp = batchQueueResourcePolicyComputed.value;
+  if (bqrp) {
+    return Math.min(bqrp.maxAllowedCores, selectedQueueDefault.value.max_processors);
+  }
+  return selectedQueueDefault.value.max_processors;
+});
+
+const maxNodes = computed<number>(() => {
+  if (!selectedQueueDefault.value) return 0;
+  const bqrp = batchQueueResourcePolicyComputed.value;
+  if (bqrp) {
+    return Math.min(bqrp.maxAllowedNodes, selectedQueueDefault.value.max_nodes);
+  }
+  return selectedQueueDefault.value.max_nodes;
+});
+
+const maxWalltime = computed<number>(() => {
+  if (!selectedQueueDefault.value) return 0;
+  const bqrp = batchQueueResourcePolicyComputed.value;
+  if (bqrp) {
+    return Math.min(bqrp.maxAllowedWalltime, selectedQueueDefault.value.max_run_time);
+  }
+  return selectedQueueDefault.value.max_run_time;
+});
+
+const maxPhysicalMemory = computed<number>(() =>
+  selectedQueueDefault.value ? selectedQueueDefault.value.max_memory : 0,
+);
+
+const queueDefaults = computed<QueueDefault[]>(() => {
+  if (!appDeploymentQueues.value) return [];
+  return appDeploymentQueues.value
+    .filter((q) => isQueueInComputeResourcePolicy(q.queue_name))
+    .sort((a, b) => {
+      if (a.is_default_queue) return -1;
+      if (b.is_default_queue) return 1;
+      return a.queue_name.localeCompare(b.queue_name);
     });
-    this.$on("input", () => this.validate());
-    this.loadApplicationInterface();
-  },
-  methods: {
-    queueChanged: function (queueName) {
-      const queueDefault = this.queueDefaults.find((queue) => queue.queue_name === queueName);
-      this.data.total_cpu_count = this.getDefaultCPUCount(queueDefault);
-      this.data.node_count = this.getDefaultNodeCount(queueDefault);
-      this.data.wall_time_limit = this.getDefaultWalltime(queueDefault);
-      if (this.maxPhysicalMemory === 0) {
-        this.data.total_physical_memory = 0;
-      }
-    },
-    validate() {
-      if (!this.valid) {
-        this.$emit("invalid");
-      } else {
-        this.$emit("valid");
-      }
-    },
-    loadAppDeploymentQueues() {
-      return services.ApplicationDeploymentService.getQueues({
-        lookup: this.appDeploymentId,
-      }).then((queueDefaults) => (this.appDeploymentQueues = queueDefaults));
-    },
-    setDefaultQueue() {
-      if (this.queueDefaults.length === 0) {
-        this.data.queue_name = null;
-        return;
-      }
-      const defaultQueue = this.queueDefaults[0];
+});
 
-      this.data.queue_name = defaultQueue.queue_name;
-      this.data.total_cpu_count = this.getDefaultCPUCount(defaultQueue);
-      this.data.node_count = this.getDefaultNodeCount(defaultQueue);
-      this.data.wall_time_limit = this.getDefaultWalltime(defaultQueue);
-      if (this.maxPhysicalMemory === 0) {
-        this.data.total_physical_memory = 0;
-      }
-    },
-    isQueueInComputeResourcePolicy: function (queue_name) {
-      if (!this.computeResourcePolicy) {
-        return true;
-      }
-      return this.computeResourcePolicy.allowedBatchQueues.includes(queue_name);
-    },
-    getBatchQueueResourcePolicy: function (queueName) {
-      if (!this.batchQueueResourcePolicies || this.batchQueueResourcePolicies.length === 0) {
-        return null;
-      }
-      return this.batchQueueResourcePolicies.find((bqrp) => bqrp.queuename === queueName);
-    },
-    getDefaultCPUCount: function (queueDefault) {
-      const batchQueueResourcePolicy = this.batchQueueResourcePolicy;
-      if (batchQueueResourcePolicy) {
-        return Math.min(batchQueueResourcePolicy.maxAllowedCores, queueDefault.default_cpu_count);
-      }
-      return queueDefault.default_cpu_count;
-    },
-    getDefaultNodeCount: function (queueDefault) {
-      const batchQueueResourcePolicy = this.batchQueueResourcePolicy;
-      if (batchQueueResourcePolicy) {
-        return Math.min(batchQueueResourcePolicy.maxAllowedNodes, queueDefault.default_node_count);
-      }
-      return queueDefault.default_node_count;
-    },
-    getDefaultWalltime: function (queueDefault) {
-      const batchQueueResourcePolicy = this.batchQueueResourcePolicy;
-      if (batchQueueResourcePolicy) {
-        return Math.min(batchQueueResourcePolicy.maxAllowedWalltime, queueDefault.default_walltime);
-      }
-      return queueDefault.default_walltime;
-    },
-    getValidationFeedback: function (properties) {
-      return utils.getProperty(this.validation, properties);
-    },
-    getValidationState: function (properties, showValidState) {
-      return this.getValidationFeedback(properties) ? false : showValidState ? true : null;
-    },
-    applyBatchQueueResourcePolicy() {
-      // Apply batchQueueResourcePolicy maximums
-      if (this.selectedQueueDefault) {
-        this.data.total_cpu_count = Math.min(this.data.total_cpu_count, this.maxCPUCount);
-        this.data.node_count = Math.min(this.data.node_count, this.maxNodes);
-        this.data.wall_time_limit = Math.min(this.data.wall_time_limit, this.maxWalltime);
-      }
-    },
-    nodeCountChanged() {
-      if (this.enableNodeCountToCpuCheck && this.selectedQueueDefault.cpu_per_node > 0) {
-        const nodeCount = parseInt(this.data.node_count);
-        this.data.total_cpu_count = Math.min(
-          nodeCount * this.selectedQueueDefault.cpu_per_node,
-          this.maxCPUCount,
-        );
-      }
-    },
-    cpuCountChanged() {
-      if (this.enableNodeCountToCpuCheck && this.selectedQueueDefault.cpu_per_node > 0) {
-        const cpuCount = parseInt(this.data.total_cpu_count);
-        if (cpuCount > 0) {
-          this.data.node_count = Math.min(
-            Math.ceil(cpuCount / this.selectedQueueDefault.cpu_per_node),
-            this.maxNodes,
-          );
-        }
-      }
-    },
-    loadApplicationInterface() {
-      services.ApplicationModuleService.getApplicationInterface({
-        lookup: this.appModuleId,
-      }).then((applicationInterface) => (this.applicationInterface = applicationInterface));
-    },
+const validation = computed(() => {
+  if (!selectedQueueDefault.value) {
+    return data.value.validate();
+  }
+  return data.value.validate(selectedQueueDefault.value, batchQueueResourcePolicyComputed.value);
+});
+
+const valid = computed(() => Object.keys(validation.value).length === 0);
+
+const showQueueSettings = computed<boolean>(() =>
+  applicationInterface.value ? applicationInterface.value.show_queue_settings : false,
+);
+
+const disabled = computed<boolean>(
+  () => !!(applicationInterface.value && applicationInterface.value.queue_settings_calculator_id),
+);
+
+const queueDescription = computed<string | null>(() =>
+  selectedQueueDefault.value ? (selectedQueueDefault.value.queue_description ?? null) : null,
+);
+
+watch(enableNodeCountToCpuCheck, () => {
+  if (enableNodeCountToCpuCheck.value) {
+    nodeCountChanged();
+  }
+});
+
+watch(
+  () => props.appDeploymentId,
+  () => {
+    loadAppDeploymentQueues().then(() => setDefaultQueue());
   },
-};
+);
+
+watch(batchQueueResourcePolicyComputed, (value, oldValue) => {
+  if (value && (!oldValue || value.resourcePolicyId !== oldValue.resourcePolicyId)) {
+    applyBatchQueueResourcePolicy();
+  }
+});
+
+watch(
+  () => props.computeResourcePolicy,
+  () => {
+    if (!isQueueInComputeResourcePolicy(data.value.queue_name)) {
+      setDefaultQueue();
+    }
+  },
+);
+
+watch(
+  () => props.modelValue,
+  () => {
+    validate();
+  },
+  { deep: true },
+);
+
+onMounted(() => {
+  loadAppDeploymentQueues().then(() => {
+    if (!props.modelValue.queue_name) {
+      setDefaultQueue();
+    }
+  });
+  validate();
+  loadApplicationInterface();
+});
+
+function queueChanged(event: Event) {
+  const queueName = (event.target as HTMLSelectElement).value;
+  const queueDefault = queueDefaults.value.find((queue) => queue.queue_name === queueName);
+  if (queueDefault) {
+    data.value.total_cpu_count = getDefaultCPUCount(queueDefault);
+    data.value.node_count = getDefaultNodeCount(queueDefault);
+    data.value.wall_time_limit = getDefaultWalltime(queueDefault);
+    if (maxPhysicalMemory.value === 0) {
+      data.value.total_physical_memory = 0;
+    }
+  }
+}
+
+function validate() {
+  if (!valid.value) {
+    emit("invalid");
+  } else {
+    emit("valid");
+  }
+}
+
+function loadAppDeploymentQueues(): Promise<void> {
+  return services.ApplicationDeploymentService.getQueues({
+    lookup: props.appDeploymentId,
+  }).then((queueDefaults: unknown) => {
+    appDeploymentQueues.value = queueDefaults as QueueDefault[];
+  });
+}
+
+function setDefaultQueue() {
+  if (queueDefaults.value.length === 0) {
+    data.value.queue_name = null;
+    return;
+  }
+  const defaultQueue = queueDefaults.value[0];
+  data.value.queue_name = defaultQueue.queue_name;
+  data.value.total_cpu_count = getDefaultCPUCount(defaultQueue);
+  data.value.node_count = getDefaultNodeCount(defaultQueue);
+  data.value.wall_time_limit = getDefaultWalltime(defaultQueue);
+  if (maxPhysicalMemory.value === 0) {
+    data.value.total_physical_memory = 0;
+  }
+}
+
+function isQueueInComputeResourcePolicy(queue_name: string): boolean {
+  if (!props.computeResourcePolicy) return true;
+  return (props.computeResourcePolicy as unknown as { allowedBatchQueues: string[] }).allowedBatchQueues.includes(queue_name);
+}
+
+function getBatchQueueResourcePolicy(queueName: string): BatchQueueResourcePolicy | null {
+  if (!props.batchQueueResourcePolicies || props.batchQueueResourcePolicies.length === 0) {
+    return null;
+  }
+  return props.batchQueueResourcePolicies.find((bqrp) => bqrp.queuename === queueName) ?? null;
+}
+
+function getDefaultCPUCount(queueDefault: QueueDefault): number {
+  const bqrp = batchQueueResourcePolicyComputed.value;
+  if (bqrp) {
+    return Math.min(bqrp.maxAllowedCores, queueDefault.default_cpu_count);
+  }
+  return queueDefault.default_cpu_count;
+}
+
+function getDefaultNodeCount(queueDefault: QueueDefault): number {
+  const bqrp = batchQueueResourcePolicyComputed.value;
+  if (bqrp) {
+    return Math.min(bqrp.maxAllowedNodes, queueDefault.default_node_count);
+  }
+  return queueDefault.default_node_count;
+}
+
+function getDefaultWalltime(queueDefault: QueueDefault): number {
+  const bqrp = batchQueueResourcePolicyComputed.value;
+  if (bqrp) {
+    return Math.min(bqrp.maxAllowedWalltime, queueDefault.default_walltime);
+  }
+  return queueDefault.default_walltime;
+}
+
+function getValidationFeedback(properties: string): unknown {
+  return utils.getProperty(validation.value, properties);
+}
+
+function getValidationState(properties: string, showValidState?: boolean): boolean | null {
+  return getValidationFeedback(properties) ? false : showValidState ? true : null;
+}
+
+function applyBatchQueueResourcePolicy() {
+  if (selectedQueueDefault.value) {
+    data.value.total_cpu_count = Math.min(data.value.total_cpu_count, maxCPUCount.value);
+    data.value.node_count = Math.min(data.value.node_count, maxNodes.value);
+    data.value.wall_time_limit = Math.min(data.value.wall_time_limit, maxWalltime.value);
+  }
+}
+
+function nodeCountChanged() {
+  if (enableNodeCountToCpuCheck.value && selectedQueueDefault.value && selectedQueueDefault.value.cpu_per_node > 0) {
+    const nodeCount = parseInt(String(data.value.node_count));
+    data.value.total_cpu_count = Math.min(
+      nodeCount * selectedQueueDefault.value.cpu_per_node,
+      maxCPUCount.value,
+    );
+  }
+}
+
+function cpuCountChanged() {
+  if (enableNodeCountToCpuCheck.value && selectedQueueDefault.value && selectedQueueDefault.value.cpu_per_node > 0) {
+    const cpuCount = parseInt(String(data.value.total_cpu_count));
+    if (cpuCount > 0) {
+      data.value.node_count = Math.min(
+        Math.ceil(cpuCount / selectedQueueDefault.value.cpu_per_node),
+        maxNodes.value,
+      );
+    }
+  }
+}
+
+function loadApplicationInterface() {
+  services.ApplicationModuleService.getApplicationInterface({
+    lookup: props.appModuleId,
+  }).then((iface: unknown) => {
+    applicationInterface.value = iface as ApplicationInterface;
+  });
+}
 </script>
 
 <style></style>

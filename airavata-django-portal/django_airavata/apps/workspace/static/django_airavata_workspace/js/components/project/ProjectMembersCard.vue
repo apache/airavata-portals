@@ -67,92 +67,100 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
 import { services, session } from "django-airavata-api";
 
-export default {
-  name: "ProjectMembersCard",
-  props: { project: { type: Object, required: true } },
-  data() {
-    return { loading: true, admins: [], members: [], showAdd: false, newUserName: "" };
-  },
-  computed: {
-    currentUser() {
-      return session.Session.username;
-    },
-    canManage() {
-      const u = this.currentUser;
-      return this.project.owner === u || this.admins.includes(u);
-    },
-    memberOnly() {
-      return this.members.filter((u) => !this.admins.includes(u));
-    },
-  },
-  created() {
-    this.reload();
-  },
-  methods: {
-    async reload() {
-      this.loading = true;
-      try {
-        const resp = await services.ProjectService.members({ lookup: this.project.project_id });
-        this.admins = resp.admins || [];
-        this.members = resp.members || [];
-      } catch (e) {
-        console.error("Failed to load project members:", e);
-        this.admins = [];
-        this.members = [];
-      } finally {
-        this.loading = false;
-      }
-    },
-    async add() {
-      try {
-        await services.ProjectService.addMember({
-          lookup: this.project.project_id,
-          data: { user_name: this.newUserName },
-        });
-        this.newUserName = "";
-        this.showAdd = false;
-        await this.reload();
-      } catch (e) {
-        window.alert(e?.message || "Failed to add member.");
-      }
-    },
-    async remove(user) {
-      if (!confirm(`Remove ${user} from this project?`)) return;
-      try {
-        await services.ProjectService.removeMember({
-          lookup: this.project.project_id,
-          user_name: user,
-        });
-        await this.reload();
-      } catch (e) {
-        window.alert(e?.message || "Failed to remove member.");
-      }
-    },
-    async promote(user) {
-      try {
-        await services.ProjectService.addAdmin({
-          lookup: this.project.project_id,
-          data: { user_name: user },
-        });
-        await this.reload();
-      } catch (e) {
-        window.alert(e?.message || "Failed to promote.");
-      }
-    },
-    async demote(user) {
-      try {
-        await services.ProjectService.removeAdmin({
-          lookup: this.project.project_id,
-          user_name: user,
-        });
-        await this.reload();
-      } catch (e) {
-        window.alert(e?.message || "Failed to demote.");
-      }
-    },
-  },
-};
+interface Project {
+  project_id: string;
+  owner?: string;
+  [key: string]: unknown;
+}
+
+const props = defineProps<{
+  project: Project;
+}>();
+
+const loading = ref(true);
+const admins = ref<string[]>([]);
+const members = ref<string[]>([]);
+const showAdd = ref(false);
+const newUserName = ref("");
+
+const currentUser = computed<string>(() => session.Session.username);
+const canManage = computed(() => {
+  const u = currentUser.value;
+  return props.project.owner === u || admins.value.includes(u);
+});
+const memberOnly = computed(() => members.value.filter((u) => !admins.value.includes(u)));
+
+async function reload() {
+  loading.value = true;
+  try {
+    const resp = await services.ProjectService.members({ lookup: props.project.project_id });
+    admins.value = resp.admins || [];
+    members.value = resp.members || [];
+  } catch (e) {
+    console.error("Failed to load project members:", e);
+    admins.value = [];
+    members.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function add() {
+  try {
+    await services.ProjectService.addMember({
+      lookup: props.project.project_id,
+      data: { user_name: newUserName.value },
+    });
+    newUserName.value = "";
+    showAdd.value = false;
+    await reload();
+  } catch (e: unknown) {
+    window.alert((e as Error)?.message || "Failed to add member.");
+  }
+}
+
+async function remove(user: string) {
+  if (!confirm(`Remove ${user} from this project?`)) return;
+  try {
+    await services.ProjectService.removeMember({
+      lookup: props.project.project_id,
+      user_name: user,
+    });
+    await reload();
+  } catch (e: unknown) {
+    window.alert((e as Error)?.message || "Failed to remove member.");
+  }
+}
+
+async function promote(user: string) {
+  try {
+    await services.ProjectService.addAdmin({
+      lookup: props.project.project_id,
+      data: { user_name: user },
+    });
+    await reload();
+  } catch (e: unknown) {
+    window.alert((e as Error)?.message || "Failed to promote.");
+  }
+}
+
+async function demote(user: string) {
+  try {
+    await services.ProjectService.removeAdmin({
+      lookup: props.project.project_id,
+      data: { user_name: user },
+    });
+    await reload();
+  } catch (e: unknown) {
+    window.alert((e as Error)?.message || "Failed to demote.");
+  }
+}
+
+onMounted(() => {
+  reload();
+});
 </script>

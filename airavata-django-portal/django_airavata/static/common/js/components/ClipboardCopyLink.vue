@@ -18,38 +18,33 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import ClipboardJS from "clipboard";
 
-export default {
-  name: "ClipboardCopyLink",
-  props: {
-    text: {
-      type: String,
-      required: true,
-    },
-    linkClasses: {
-      type: Array,
-    },
-  },
-  data() {
-    return {
-      show: false,
-    };
-  },
-  mounted() {
-    let clipboard = new ClipboardJS(this.$refs.copyLink);
-    clipboard.on("success", this.onCopySuccess);
-  },
-  beforeUnmount() {
-    let clipboard = new ClipboardJS(this.$refs.copyLink);
-    clipboard.destroy();
-  },
-  methods: {
-    onCopySuccess() {
-      this.show = true;
-      setTimeout(() => (this.show = false), 2000);
-    },
-  },
-};
+defineProps<{
+  text: string;
+  linkClasses?: string[];
+}>();
+
+const copyLink = ref<HTMLElement | null>(null);
+const show = ref(false);
+let clipboard: ClipboardJS | null = null;
+
+onMounted(() => {
+  if (copyLink.value) {
+    clipboard = new ClipboardJS(copyLink.value);
+    clipboard.on("success", onCopySuccess);
+  }
+});
+
+onBeforeUnmount(() => {
+  clipboard?.destroy();
+  clipboard = null;
+});
+
+function onCopySuccess(): void {
+  show.value = true;
+  setTimeout(() => (show.value = false), 2000);
+}
 </script>

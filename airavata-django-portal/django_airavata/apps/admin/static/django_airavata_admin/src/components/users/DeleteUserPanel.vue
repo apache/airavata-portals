@@ -8,24 +8,20 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
 import { components } from "django-airavata-common-ui";
 
-export default {
-  name: "DeleteUserPanel",
-  components: {
-    "delete-button": components.DeleteButton,
-  },
-  props: {
-    username: {
-      type: String,
-      required: true,
-    },
-  },
-  methods: {
-    deleteUser() {
-      this.$emit("delete-user", this.username);
-    },
-  },
-};
+const DeleteButton = components.DeleteButton;
+
+const props = defineProps<{
+  username: string;
+}>();
+
+const emit = defineEmits<{
+  "delete-user": [username: string];
+}>();
+
+function deleteUser() {
+  emit("delete-user", props.username);
+}
 </script>

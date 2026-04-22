@@ -50,77 +50,90 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { utils } from "django-airavata-api";
 
-export default {
-  name: "SshPromptNotification",
-  data() {
-    return {
-      activePrompts: [],
-      results: [],
-    };
-  },
-  mounted() {
-    if (utils.SSEClient) {
-      utils.SSEClient.on("ssh_prompt", this.onSshPrompt);
-      utils.SSEClient.on("ssh_result", this.onSshResult);
-    }
-  },
-  beforeUnmount() {
-    if (utils.SSEClient) {
-      utils.SSEClient.off("ssh_prompt", this.onSshPrompt);
-      utils.SSEClient.off("ssh_result", this.onSshResult);
-    }
-  },
-  methods: {
-    onSshPrompt(event) {
-      const existing = this.activePrompts.find((p) => p.session_id === event.session_id);
-      if (existing) {
-        existing.prompt = event.prompt;
-        existing.echo = event.echo;
-        existing.waiting = false;
-        existing.response = "";
-      } else {
-        this.activePrompts.push({
-          session_id: event.session_id,
-          hostname: event.hostname || "",
-          prompt: event.prompt,
-          echo: event.echo,
-          response: "",
-          waiting: false,
-        });
-      }
-    },
-    onSshResult(event) {
-      this.activePrompts = this.activePrompts.filter((p) => p.session_id !== event.session_id);
-      this.results.push({
-        session_id: event.session_id,
-        success: event.success,
-        message: event.message,
-      });
-      if (event.success) {
-        setTimeout(() => {
-          this.results = this.results.filter((r) => r.session_id !== event.session_id);
-        }, 3000);
-      }
-    },
-    async submitResponse(prompt) {
-      prompt.waiting = true;
-      try {
-        await utils.FetchUtils.post("/api/ssh/respond/", {
-          session_id: prompt.session_id,
-          response: prompt.response,
-        });
-      } catch (e) {
-        prompt.waiting = false;
-      }
-    },
-    dismissResult(session_id) {
-      this.results = this.results.filter((r) => r.session_id !== session_id);
-    },
-  },
-};
+interface SshPrompt {
+  session_id: string;
+  hostname: string;
+  prompt: string;
+  echo: boolean;
+  response: string;
+  waiting: boolean;
+}
+
+interface SshResult {
+  session_id: string;
+  success: boolean;
+  message: string;
+}
+
+const activePrompts = ref<SshPrompt[]>([]);
+const results = ref<SshResult[]>([]);
+
+onMounted(() => {
+  if (utils.SSEClient) {
+    utils.SSEClient.on("ssh_prompt", onSshPrompt);
+    utils.SSEClient.on("ssh_result", onSshResult);
+  }
+});
+
+onBeforeUnmount(() => {
+  if (utils.SSEClient) {
+    utils.SSEClient.off("ssh_prompt", onSshPrompt);
+    utils.SSEClient.off("ssh_result", onSshResult);
+  }
+});
+
+function onSshPrompt(event: SshPrompt): void {
+  const existing = activePrompts.value.find((p) => p.session_id === event.session_id);
+  if (existing) {
+    existing.prompt = event.prompt;
+    existing.echo = event.echo;
+    existing.waiting = false;
+    existing.response = "";
+  } else {
+    activePrompts.value.push({
+      session_id: event.session_id,
+      hostname: event.hostname || "",
+      prompt: event.prompt,
+      echo: event.echo,
+      response: "",
+      waiting: false,
+    });
+  }
+}
+
+function onSshResult(event: SshResult): void {
+  activePrompts.value = activePrompts.value.filter((p) => p.session_id !== event.session_id);
+  results.value.push({
+    session_id: event.session_id,
+    success: event.success,
+    message: event.message,
+  });
+  if (event.success) {
+    setTimeout(() => {
+      results.value = results.value.filter((r) => r.session_id !== event.session_id);
+    }, 3000);
+  }
+}
+
+async function submitResponse(prompt: SshPrompt): Promise<void> {
+  prompt.waiting = true;
+  try {
+    await utils.FetchUtils.post("/api/ssh/respond/", {
+      session_id: prompt.session_id,
+      response: prompt.response,
+    });
+  } catch (_e) {
+    prompt.waiting = false;
+  }
+}
+
+function dismissResult(session_id: string): void {
+  results.value = results.value.filter((r) => r.session_id !== session_id);
+}
 </script>
 
 <style scoped>

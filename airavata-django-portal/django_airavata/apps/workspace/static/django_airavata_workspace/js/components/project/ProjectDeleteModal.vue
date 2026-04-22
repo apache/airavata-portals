@@ -47,50 +47,49 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, onBeforeUnmount } from "vue";
 import { Modal } from "bootstrap";
 
-export default {
-  name: "ProjectDeleteModal",
-  props: {
-    projectId: { type: String, required: true },
-    projectName: { type: String, required: true },
-  },
-  emits: ["delete"],
-  data() {
-    return {
-      confirmName: "",
-      deleting: false,
-      error: null,
-      bsModal: null,
-    };
-  },
-  beforeUnmount() {
-    if (this.bsModal) {
-      this.bsModal.dispose();
-    }
-  },
-  methods: {
-    show() {
-      this.confirmName = "";
-      this.error = null;
-      this.deleting = false;
-      if (!this.bsModal) {
-        this.bsModal = new Modal(this.$refs.modal);
-      }
-      this.bsModal.show();
-    },
-    hide() {
-      if (this.bsModal) {
-        this.bsModal.hide();
-      }
-    },
-    handleDelete() {
-      if (this.confirmName !== this.projectName || this.deleting) return;
-      this.deleting = true;
-      this.error = null;
-      this.$emit("delete", this.projectId);
-    },
-  },
-};
+const props = defineProps<{
+  projectId: string;
+  projectName: string;
+}>();
+
+const emit = defineEmits<{
+  delete: [projectId: string];
+}>();
+
+const modal = ref<HTMLElement | null>(null);
+const confirmName = ref("");
+const deleting = ref(false);
+const error = ref<string | null>(null);
+const bsModal = ref<Modal | null>(null);
+
+onBeforeUnmount(() => {
+  bsModal.value?.dispose();
+});
+
+function show() {
+  confirmName.value = "";
+  error.value = null;
+  deleting.value = false;
+  if (!bsModal.value && modal.value) {
+    bsModal.value = new Modal(modal.value);
+  }
+  bsModal.value?.show();
+}
+
+function hide() {
+  bsModal.value?.hide();
+}
+
+function handleDelete() {
+  if (confirmName.value !== props.projectName || deleting.value) return;
+  deleting.value = true;
+  error.value = null;
+  emit("delete", props.projectId);
+}
+
+defineExpose({ show, hide });
 </script>

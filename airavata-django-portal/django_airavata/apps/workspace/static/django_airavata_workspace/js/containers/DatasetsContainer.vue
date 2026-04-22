@@ -1,6 +1,6 @@
 <template>
   <div>
-    <breadcrumb-nav :crumbs="breadcrumbs" />
+    <BreadcrumbNav :crumbs="breadcrumbs" />
 
     <div class="row align-items-center mb-3">
       <div class="col">
@@ -38,17 +38,16 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
 import { components as comps } from "django-airavata-common-ui";
 
-export default {
-  name: "DatasetsContainer",
-  components: {
-    "breadcrumb-nav": comps.BreadcrumbNav,
-  },
-  props: {
-    projectId: { type: String, default: null },
-    breadcrumbs: { type: Array, default: () => [] },
-  },
-};
+const BreadcrumbNav = comps.BreadcrumbNav;
+
+withDefaults(defineProps<{
+  projectId?: string | null;
+  breadcrumbs?: unknown[];
+}>(), {
+  projectId: null,
+  breadcrumbs: () => [],
+});
 </script>

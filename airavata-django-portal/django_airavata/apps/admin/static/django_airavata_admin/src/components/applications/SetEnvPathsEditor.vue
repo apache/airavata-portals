@@ -36,42 +36,60 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, watch, nextTick } from "vue";
 import { models } from "django-airavata-api";
-import { mixins } from "django-airavata-common-ui";
 
-export default {
-  name: "SetEnvPathsEditor",
-  mixins: [mixins.VModelMixin],
-  props: {
-    value: {
-      type: Array,
-    },
-    title: {
-      type: String,
-      required: true,
-    },
-    addButtonLabel: {
-      type: String,
-      required: true,
-    },
-    readonly: {
-      type: Boolean,
-      default: false,
-    },
+type SetEnvPaths = InstanceType<typeof models.SetEnvPaths>;
+
+const props = defineProps<{
+  modelValue: SetEnvPaths[] | null;
+  title: string;
+  addButtonLabel: string;
+  readonly?: boolean;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: SetEnvPaths[]];
+}>();
+
+const nameInputs = ref<HTMLInputElement[]>([]);
+
+const data = ref<SetEnvPaths[]>(
+  props.modelValue ? props.modelValue.map((item) => item.clone() as SetEnvPaths) : [],
+);
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    data.value = newValue ? newValue.map((item) => item.clone() as SetEnvPaths) : [];
   },
-  methods: {
-    addEnvPath() {
-      if (!this.data) {
-        this.data = [];
-      }
-      this.data.push(new models.SetEnvPaths());
-      this.$nextTick(() => this.$refs.nameInputs[this.$refs.nameInputs.length - 1].focus());
-    },
-    deleteEnvPath(setEnvPath) {
-      const index = this.data.findIndex((env) => env.key === setEnvPath.key);
-      this.data.splice(index, 1);
-    },
+  { deep: true },
+);
+
+watch(
+  data,
+  (newValue) => {
+    emit("update:modelValue", newValue);
   },
-};
+  { deep: true },
+);
+
+function addEnvPath() {
+  if (!data.value) {
+    data.value = [];
+  }
+  data.value.push(new models.SetEnvPaths());
+  nextTick(() => {
+    const inputs = nameInputs.value;
+    if (inputs && inputs.length > 0) {
+      inputs[inputs.length - 1].focus();
+    }
+  });
+}
+
+function deleteEnvPath(setEnvPath: SetEnvPaths) {
+  const index = data.value.findIndex((env) => (env as SetEnvPaths).key === setEnvPath.key);
+  data.value.splice(index, 1);
+}
 </script>

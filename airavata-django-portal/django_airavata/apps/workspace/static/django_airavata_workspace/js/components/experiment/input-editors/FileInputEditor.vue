@@ -1,27 +1,27 @@
 <template>
   <div class="file-input-editor">
     <div v-if="isDataProductURI && dataProduct" class="d-flex">
-      <user-storage-link
+      <UserStorageLink
         class="me-auto"
-        :data-product-uri="dataProduct.productUri"
-        :mime-type="dataProduct.mime_type"
-        :file-name="dataProduct.productName"
+        :data-product-uri="(dataProduct as Record<string, unknown>).productUri as string"
+        :mime-type="(dataProduct as Record<string, unknown>).mime_type as string"
+        :file-name="(dataProduct as Record<string, unknown>).productName as string"
       />
-      <delete-link
-        v-if="!readOnly && dataProduct.isInputFileUpload"
+      <DeleteLink
+        v-if="!readOnly && (dataProduct as Record<string, unknown>).isInputFileUpload"
         class="ms-2"
         @delete="deleteDataProduct"
       >
         Are you sure you want to delete input file
-        <strong>{{ dataProduct.productName }}</strong
+        <strong>{{ (dataProduct as Record<string, unknown>).productName }}</strong
         >?
-      </delete-link>
+      </DeleteLink>
       <a v-else-if="!readOnly" class="ms-2 text-secondary" @click="unselect">
         Unselect
         <i class="fa fa-times" aria-hidden="true"></i>
       </a>
     </div>
-    <input-file-selector
+    <InputFileSelector
       v-if="!readOnly && (!isDataProductURI || uploading)"
       :selected-data-product-u-r-is="selectedDataProductURIs"
       @uploadstart="uploadStart"
@@ -31,127 +31,138 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import { models, services, utils } from "django-airavata-api";
-import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
 import { components } from "django-airavata-common-ui";
-import InputFileSelector from "./InputFileSelector";
-import UserStorageLink from "../../storage/storage-edit/UserStorageLink";
+import { useInputEditor } from "@/composables/useInputEditor";
+import InputFileSelector from "./InputFileSelector.vue";
+import UserStorageLink from "../../storage/storage-edit/UserStorageLink.vue";
 
-export default {
-  name: "FileInputEditor",
-  components: {
-    UserStorageLink,
-    "delete-link": components.DeleteLink,
-    InputFileSelector,
-  },
-  mixins: [InputEditorMixin],
-  data() {
-    return {
-      dataProduct: null,
-      fileContent: null,
-      uploading: false,
-    };
-  },
-  computed: {
-    isDataProductURI() {
-      // Just assume that if the value is a string then it's a data product URL
-      return (
-        this.value && typeof this.value === "string" && this.value.startsWith("airavata-dp://")
-      );
-    },
-    // When used in the MultiFileInputEditor, don't allow selecting the same
-    // file more than once. This computed property creates an array of already
-    // selected files.
-    selectedDataProductURIs() {
-      if (
-        this.experimentInput.type === models.DataType.URI_COLLECTION &&
-        this.experimentInput.value
-      ) {
-        return this.experimentInput.value.split(",");
+const DeleteLink = components.DeleteLink;
+
+type InputDataObjectType = InstanceType<typeof models.InputDataObjectType>;
+type Experiment = InstanceType<typeof models.Experiment>;
+type DataProduct = InstanceType<typeof models.DataProduct>;
+
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string | null;
+    experimentInput: InputDataObjectType;
+    experiment?: Experiment;
+    id: string;
+    readOnly?: boolean;
+  }>(),
+  { modelValue: null, experiment: undefined, readOnly: false },
+);
+
+const emit = defineEmits<{
+  "update:modelValue": [value: string | null];
+  valid: [];
+  invalid: [messages: string[]];
+  uploadstart: [];
+  uploadend: [];
+}>();
+
+const { data, valueChanged } = useInputEditor(
+  props,
+  (_, v) => emit("update:modelValue", v),
+  () => emit("valid"),
+  (msgs) => emit("invalid", msgs),
+);
+
+const dataProduct = ref<DataProduct | null>(null);
+const uploading = ref(false);
+
+const isDataProductURI = computed(
+  () =>
+    data.value && typeof data.value === "string" && data.value.startsWith("airavata-dp://"),
+);
+
+const selectedDataProductURIs = computed(() => {
+  if (
+    props.experimentInput.type === models.DataType.URI_COLLECTION &&
+    props.experimentInput.value
+  ) {
+    return props.experimentInput.value.split(",");
+  } else {
+    return [];
+  }
+});
+
+watch(data, (value, oldValue) => {
+  if (isDataProductURI.value && value !== oldValue) {
+    loadDataProduct(value as string);
+  }
+});
+
+onMounted(() => {
+  if (isDataProductURI.value) {
+    loadDataProduct(data.value as string);
+  }
+});
+
+function loadDataProduct(dataProductURI: string) {
+  services.DataProductService.retrieve({ lookup: dataProductURI })
+    .then((dp: unknown) => {
+      const product = dp as DataProduct;
+      if ((product as unknown as Record<string, unknown>).download_url === null) {
+        data.value = null;
+        valueChanged();
       } else {
-        return [];
+        dataProduct.value = product;
       }
-    },
-    isViewable() {
-      return this.dataProduct.isText;
-    },
-  },
-  watch: {
-    value(value, oldValue) {
-      if (this.isDataProductURI && value !== oldValue) {
-        this.loadDataProduct(value);
-      }
-    },
-  },
-  created() {
-    if (this.isDataProductURI) {
-      this.loadDataProduct(this.value);
-    }
-  },
-  methods: {
-    loadDataProduct(dataProductURI) {
-      services.DataProductService.retrieve({ lookup: dataProductURI })
-        .then((dataProduct) => {
-          if (dataProduct.download_url === null) {
-            // Null out this field when the file is no longer available. Force
-            // user to select or upload another file.
-            this.data = null;
-            this.valueChanged();
-          } else {
-            this.dataProduct = dataProduct;
-          }
-        })
-        .catch(() => {
-          // If we're unable to load data product, reset data to null
-          this.data = null;
-          this.valueChanged();
-        });
-    },
-    deleteDataProduct() {
-      utils.FetchUtils.delete(
-        "/api/delete-file?data-product-uri=" + encodeURIComponent(this.value),
-        { ignoreErrors: true },
-      )
-        .then(() => {
-          this.data = null;
-          this.valueChanged();
-        })
-        .catch((err) => {
-          // Ignore 404 Not Found errors, file no longer exists so assume was
-          // already deleted
-          if (err.details.status === 404) {
-            this.data = null;
-            this.valueChanged();
-          } else {
-            throw err;
-          }
-        })
-        .catch(utils.FetchUtils.reportError);
-    },
-    unselect() {
-      this.data = null;
-      this.valueChanged();
-    },
-    fileSelected(dataProductURI, dataProduct) {
-      this.data = dataProductURI;
-      if (!dataProduct) {
-        this.loadDataProduct(dataProductURI);
+    })
+    .catch(() => {
+      data.value = null;
+      valueChanged();
+    });
+}
+
+function deleteDataProduct() {
+  utils.FetchUtils.delete(
+    "/api/delete-file?data-product-uri=" + encodeURIComponent(data.value as string),
+    { ignoreErrors: true },
+  )
+    .then(() => {
+      data.value = null;
+      valueChanged();
+    })
+    .catch((err: Record<string, unknown>) => {
+      if ((err.details as Record<string, unknown>)?.status === 404) {
+        data.value = null;
+        valueChanged();
       } else {
-        this.dataProduct = dataProduct;
+        throw err;
       }
-      this.valueChanged();
-    },
-    uploadStart() {
-      this.uploading = true;
-      this.$emit("uploadstart");
-    },
-    uploadEnd() {
-      this.uploading = false;
-      this.$emit("uploadend");
-    },
-  },
-};
+    })
+    .catch((utils as unknown as Record<string, unknown>).FetchUtils as unknown as (_e: unknown) => void);
+}
+
+function unselect() {
+  data.value = null;
+  valueChanged();
+}
+
+function fileSelected(dataProductURI: string, dp?: DataProduct) {
+  data.value = dataProductURI;
+  if (!dp) {
+    loadDataProduct(dataProductURI);
+  } else {
+    dataProduct.value = dp;
+  }
+  valueChanged();
+}
+
+function uploadStart() {
+  uploading.value = true;
+  emit("uploadstart");
+}
+
+function uploadEnd() {
+  uploading.value = false;
+  emit("uploadend");
+}
 </script>
 
 <style scoped>

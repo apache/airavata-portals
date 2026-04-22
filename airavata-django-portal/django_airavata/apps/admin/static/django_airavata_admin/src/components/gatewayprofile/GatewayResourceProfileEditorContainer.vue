@@ -38,64 +38,76 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
 import { services } from "django-airavata-api";
 import GatewayResourceProfileEditor from "./GatewayResourceProfileEditor.vue";
 import StoragePreferenceList from "./StoragePreferenceList.vue";
 
-export default {
-  name: "GatewayResourceProfileEditorContainer",
-  components: {
-    GatewayResourceProfileEditor,
-    StoragePreferenceList,
-  },
-  data() {
-    return {
-      gatewayResourceProfile: null,
-      gatewayResourceProfileClone: null,
-    };
-  },
-  created() {
-    services.GatewayResourceProfileService.get().then((gwp) => {
-      this.gatewayResourceProfile = gwp;
-      this.gatewayResourceProfileClone = gwp.clone();
-    });
-  },
-  methods: {
-    save() {
-      services.GatewayResourceProfileService.update({
-        data: this.gatewayResourceProfile,
-      }).then((gwp) => {
-        this.gatewayResourceProfile = gwp;
-        this.gatewayResourceProfileClone = gwp.clone();
-      });
-    },
-    cancel() {
-      this.gatewayResourceProfile = this.gatewayResourceProfileClone.clone();
-    },
-    updatedStoragePreference(updatedStoragePreference) {
-      const index = this.gatewayResourceProfile.storage_preferences.findIndex(
-        (sp) => sp.storage_resource_id === updatedStoragePreference.storage_resource_id,
-      );
-      this.gatewayResourceProfile.storage_preferences.splice(index, 1, updatedStoragePreference);
-    },
-    addedStoragePreference(newStoragePreference) {
-      services.StoragePreferenceService.create({
-        data: newStoragePreference,
-      }).then((sp) => {
-        this.gatewayResourceProfile.storage_preferences.push(sp);
-      });
-    },
-    deleteStoragePreference(storageResourceId) {
-      services.StoragePreferenceService.delete({
-        lookup: storageResourceId,
-      }).then(() => {
-        const index = this.gatewayResourceProfile.storage_preferences.findIndex(
-          (sp) => sp.storage_resource_id === storageResourceId,
-        );
-        this.gatewayResourceProfile.storage_preferences.splice(index, 1);
-      });
-    },
-  },
-};
+interface StoragePreference {
+  storage_resource_id: string;
+  login_user_name?: string;
+  resource_specific_credential_store_token?: string | null;
+  file_system_root_location?: string;
+  clone?(): StoragePreference;
+}
+
+interface GatewayResourceProfile {
+  gateway_id: string;
+  credential_store_token?: string;
+  user_has_write_access?: boolean;
+  storage_preferences: StoragePreference[];
+  clone(): GatewayResourceProfile;
+}
+
+const gatewayResourceProfile = ref<GatewayResourceProfile | null>(null);
+const gatewayResourceProfileClone = ref<GatewayResourceProfile | null>(null);
+
+onMounted(() => {
+  services.GatewayResourceProfileService.get().then((gwp: GatewayResourceProfile) => {
+    gatewayResourceProfile.value = gwp;
+    gatewayResourceProfileClone.value = gwp.clone();
+  });
+});
+
+function save() {
+  services.GatewayResourceProfileService.update({
+    data: gatewayResourceProfile.value,
+  }).then((gwp: GatewayResourceProfile) => {
+    gatewayResourceProfile.value = gwp;
+    gatewayResourceProfileClone.value = gwp.clone();
+  });
+}
+
+function cancel() {
+  if (gatewayResourceProfileClone.value) {
+    gatewayResourceProfile.value = gatewayResourceProfileClone.value.clone();
+  }
+}
+
+function updatedStoragePreference(updatedSp: StoragePreference) {
+  const prefs = gatewayResourceProfile.value?.storage_preferences ?? [];
+  const index = prefs.findIndex(
+    (sp) => sp.storage_resource_id === updatedSp.storage_resource_id,
+  );
+  prefs.splice(index, 1, updatedSp);
+}
+
+function addedStoragePreference(newSp: StoragePreference) {
+  services.StoragePreferenceService.create({
+    data: newSp,
+  }).then((sp: StoragePreference) => {
+    gatewayResourceProfile.value?.storage_preferences.push(sp);
+  });
+}
+
+function deleteStoragePreference(storageResourceId: string) {
+  services.StoragePreferenceService.delete({
+    lookup: storageResourceId,
+  }).then(() => {
+    const prefs = gatewayResourceProfile.value?.storage_preferences ?? [];
+    const index = prefs.findIndex((sp) => sp.storage_resource_id === storageResourceId);
+    prefs.splice(index, 1);
+  });
+}
 </script>

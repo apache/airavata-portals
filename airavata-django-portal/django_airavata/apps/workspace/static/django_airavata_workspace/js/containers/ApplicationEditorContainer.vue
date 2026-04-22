@@ -46,7 +46,7 @@
           <div class="mb-3">
             <label class="form-label">Application Name <span class="text-danger">*</span></label>
             <input
-              v-model="appModule.app_module_name"
+              v-model="(appModule as Record<string, unknown>).app_module_name"
               type="text"
               class="form-control"
               :disabled="readonly"
@@ -55,7 +55,7 @@
           <div class="mb-3">
             <label class="form-label">Version</label>
             <input
-              v-model="appModule.app_module_version"
+              v-model="(appModule as Record<string, unknown>).app_module_version"
               type="text"
               class="form-control"
               :disabled="readonly"
@@ -64,7 +64,7 @@
           <div class="mb-3">
             <label class="form-label">Description</label>
             <textarea
-              v-model="appModule.app_module_description"
+              v-model="(appModule as Record<string, string>).app_module_description"
               class="form-control"
               rows="3"
               :disabled="readonly"
@@ -79,7 +79,7 @@
               </button>
             </div>
             <table
-              v-if="appInterface.application_inputs && appInterface.application_inputs.length > 0"
+              v-if="(appInterface as Record<string, unknown>).application_inputs && ((appInterface as Record<string, unknown>).application_inputs as unknown[]).length > 0"
               class="table table-sm table-borderless align-middle"
             >
               <thead>
@@ -98,7 +98,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(input, i) in appInterface.application_inputs" :key="input.key || i">
+                <tr v-for="(input, i) in ((appInterface as Record<string, unknown>).application_inputs as Array<Record<string, unknown>>)" :key="inputKey(input, i)">
                   <td>
                     <input
                       v-model="input.name"
@@ -113,8 +113,8 @@
                       class="form-select form-select-sm"
                       :disabled="readonly"
                     >
-                      <option v-for="dt in inputDataTypes" :key="dt.name" :value="dt">
-                        {{ dt.name }}
+                      <option v-for="dt in inputDataTypes" :key="(dt as Record<string, unknown>).name as string" :value="dt">
+                        {{ (dt as Record<string, unknown>).name }}
                       </option>
                     </select>
                   </td>
@@ -170,7 +170,7 @@
               </button>
             </div>
             <table
-              v-if="appInterface.application_outputs && appInterface.application_outputs.length > 0"
+              v-if="(appInterface as Record<string, unknown>).application_outputs && ((appInterface as Record<string, unknown>).application_outputs as unknown[]).length > 0"
               class="table table-sm table-borderless align-middle"
             >
               <thead>
@@ -189,7 +189,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(output, i) in appInterface.application_outputs" :key="output.key || i">
+                <tr v-for="(output, i) in ((appInterface as Record<string, unknown>).application_outputs as Array<Record<string, unknown>>)" :key="inputKey(output, i)">
                   <td>
                     <input
                       v-model="output.name"
@@ -204,8 +204,8 @@
                       class="form-select form-select-sm"
                       :disabled="readonly"
                     >
-                      <option v-for="dt in outputDataTypes" :key="dt.name" :value="dt">
-                        {{ dt.name }}
+                      <option v-for="dt in outputDataTypes" :key="(dt as Record<string, unknown>).name as string" :value="dt">
+                        {{ (dt as Record<string, unknown>).name }}
                       </option>
                     </select>
                   </td>
@@ -256,7 +256,7 @@
                 <div class="form-check mb-3">
                   <input
                     id="archive-wd"
-                    v-model="appInterface.archive_working_directory"
+                    v-model="(appInterface as Record<string, unknown>).archive_working_directory"
                     class="form-check-input"
                     type="checkbox"
                     :disabled="readonly"
@@ -273,7 +273,7 @@
                 <div class="form-check">
                   <input
                     id="show-queue"
-                    v-model="appInterface.show_queue_settings"
+                    v-model="(appInterface as Record<string, unknown>).show_queue_settings"
                     class="form-check-input"
                     type="checkbox"
                     :disabled="readonly"
@@ -313,20 +313,20 @@
               <tbody>
                 <tr
                   v-for="dep in appDeployments"
-                  :key="dep.app_deployment_id || dep.compute_host_id"
+                  :key="(dep as Record<string, unknown>).app_deployment_id as string || (dep as Record<string, unknown>).compute_host_id as string"
                 >
-                  <td>{{ getComputeResourceName(dep.compute_host_id) }}</td>
+                  <td>{{ getComputeResourceName((dep as Record<string, unknown>).compute_host_id as string) }}</td>
                   <td>
-                    <code>{{ dep.executable_path || "-" }}</code>
+                    <code>{{ (dep as Record<string, unknown>).executable_path || "-" }}</code>
                   </td>
                   <td>
-                    <button class="btn btn-sm btn-link p-0 me-2" @click="editDeployment(dep)">
+                    <button class="btn btn-sm btn-link p-0 me-2" @click="editDeployment(dep as Record<string, unknown>)">
                       <i class="fa fa-edit"></i> Edit
                     </button>
                     <button
                       class="btn btn-sm btn-link text-danger p-0"
                       :disabled="readonly"
-                      @click="confirmDeleteDeployment(dep)"
+                      @click="confirmDeleteDeployment(dep as Record<string, unknown>)"
                     >
                       <i class="fa fa-trash"></i> Delete
                     </button>
@@ -368,7 +368,7 @@
         <div v-if="editingDeployment" class="card mb-3">
           <div class="card-header d-flex align-items-center">
             <span class="me-auto">{{
-              getComputeResourceName(editingDeployment.compute_host_id)
+              getComputeResourceName((editingDeployment as Record<string, unknown>).compute_host_id as string)
             }}</span>
             <button class="btn btn-sm btn-link p-0" @click="editingDeployment = null">Close</button>
           </div>
@@ -376,7 +376,7 @@
             <div class="mb-3">
               <label class="form-label">Executable Path <span class="text-danger">*</span></label>
               <input
-                v-model="editingDeployment.executable_path"
+                v-model="(editingDeployment as Record<string, unknown>).executable_path"
                 type="text"
                 class="form-control"
                 :disabled="readonly"
@@ -390,7 +390,7 @@
             <div class="mb-3">
               <label class="form-label">Description</label>
               <textarea
-                v-model="editingDeployment.app_deployment_description"
+                v-model="(editingDeployment as Record<string, string>).app_deployment_description"
                 class="form-control"
                 rows="2"
                 :disabled="readonly"
@@ -403,7 +403,7 @@
               setup). Paste a bash script here line by line.
             </p>
             <div
-              v-for="(cmd, idx) in editingDeployment.pre_job_commands"
+              v-for="(cmd, idx) in ((editingDeployment as Record<string, unknown>).pre_job_commands as Array<Record<string, unknown>>)"
               :key="'pre-' + idx"
               class="input-group input-group-sm mb-1"
             >
@@ -416,7 +416,7 @@
               <button
                 class="btn btn-outline-danger"
                 :disabled="readonly"
-                @click="editingDeployment.pre_job_commands.splice(idx, 1)"
+                @click="((editingDeployment as Record<string, unknown>).pre_job_commands as Array<unknown>).splice(idx, 1)"
               >
                 <i class="fa fa-times"></i>
               </button>
@@ -431,7 +431,7 @@
 
             <h6 class="mt-3 mb-2">Post Job Commands</h6>
             <div
-              v-for="(cmd, idx) in editingDeployment.post_job_commands"
+              v-for="(cmd, idx) in ((editingDeployment as Record<string, unknown>).post_job_commands as Array<Record<string, unknown>>)"
               :key="'post-' + idx"
               class="input-group input-group-sm mb-1"
             >
@@ -444,7 +444,7 @@
               <button
                 class="btn btn-outline-danger"
                 :disabled="readonly"
-                @click="editingDeployment.post_job_commands.splice(idx, 1)"
+                @click="((editingDeployment as Record<string, unknown>).post_job_commands as Array<unknown>).splice(idx, 1)"
               >
                 <i class="fa fa-times"></i>
               </button>
@@ -459,7 +459,7 @@
 
             <h6 class="mt-3 mb-2">Module Load Commands</h6>
             <div
-              v-for="(cmd, idx) in editingDeployment.module_load_cmds"
+              v-for="(cmd, idx) in ((editingDeployment as Record<string, unknown>).module_load_cmds as Array<Record<string, unknown>>)"
               :key="'mod-' + idx"
               class="input-group input-group-sm mb-1"
             >
@@ -472,7 +472,7 @@
               <button
                 class="btn btn-outline-danger"
                 :disabled="readonly"
-                @click="editingDeployment.module_load_cmds.splice(idx, 1)"
+                @click="((editingDeployment as Record<string, unknown>).module_load_cmds as Array<unknown>).splice(idx, 1)"
               >
                 <i class="fa fa-times"></i>
               </button>
@@ -487,7 +487,7 @@
 
             <h6 class="mt-3 mb-2">Environment Variables</h6>
             <div
-              v-for="(env, idx) in editingDeployment.set_environment"
+              v-for="(env, idx) in ((editingDeployment as Record<string, unknown>).set_environment as Array<Record<string, unknown>>)"
               :key="'env-' + idx"
               class="input-group input-group-sm mb-1"
             >
@@ -510,7 +510,7 @@
               <button
                 class="btn btn-outline-danger"
                 :disabled="readonly"
-                @click="editingDeployment.set_environment.splice(idx, 1)"
+                @click="((editingDeployment as Record<string, unknown>).set_environment as Array<unknown>).splice(idx, 1)"
               >
                 <i class="fa fa-times"></i>
               </button>
@@ -529,48 +529,48 @@
               <div class="col-md-3">
                 <label class="form-label form-label-sm">Default Queue</label>
                 <select
-                  v-model="editingDeployment.default_queue_name"
+                  v-model="(editingDeployment as Record<string, unknown>).default_queue_name"
                   class="form-select form-select-sm"
                   :disabled="readonly"
                 >
                   <option :value="null">Select queue...</option>
                   <option
                     v-for="q in editingDeploymentQueues"
-                    :key="q.queue_name"
-                    :value="q.queue_name"
+                    :key="(q as Record<string, unknown>).queue_name as string"
+                    :value="(q as Record<string, unknown>).queue_name"
                   >
-                    {{ q.queue_name }}
+                    {{ (q as Record<string, unknown>).queue_name }}
                   </option>
                 </select>
               </div>
               <div class="col-md-3">
                 <label class="form-label form-label-sm">Default Node Count</label>
                 <input
-                  v-model.number="editingDeployment.default_node_count"
+                  v-model.number="(editingDeployment as Record<string, unknown>).default_node_count"
                   type="number"
                   class="form-control form-control-sm"
                   min="0"
-                  :disabled="readonly || !editingDeployment.default_queue_name"
+                  :disabled="readonly || !(editingDeployment as Record<string, unknown>).default_queue_name"
                 />
               </div>
               <div class="col-md-3">
                 <label class="form-label form-label-sm">Default CPU Count</label>
                 <input
-                  v-model.number="editingDeployment.default_cpu_count"
+                  v-model.number="(editingDeployment as Record<string, unknown>).default_cpu_count"
                   type="number"
                   class="form-control form-control-sm"
                   min="0"
-                  :disabled="readonly || !editingDeployment.default_queue_name"
+                  :disabled="readonly || !(editingDeployment as Record<string, unknown>).default_queue_name"
                 />
               </div>
               <div class="col-md-3">
                 <label class="form-label form-label-sm">Default Walltime (min)</label>
                 <input
-                  v-model.number="editingDeployment.default_walltime"
+                  v-model.number="(editingDeployment as Record<string, unknown>).default_walltime"
                   type="number"
                   class="form-control form-control-sm"
                   min="0"
-                  :disabled="readonly || !editingDeployment.default_queue_name"
+                  :disabled="readonly || !(editingDeployment as Record<string, unknown>).default_queue_name"
                 />
               </div>
             </div>
@@ -625,7 +625,7 @@
           <div class="modal-body">
             <p>
               Are you sure you want to delete the deployment for
-              <strong>{{ getComputeResourceName(deleteDeploymentTarget.compute_host_id) }}</strong
+              <strong>{{ getComputeResourceName((deleteDeploymentTarget as Record<string, unknown>).compute_host_id as string) }}</strong
               >?
             </p>
           </div>
@@ -654,7 +654,7 @@
           </div>
           <div class="modal-body">
             <p>
-              Are you sure you want to delete <strong>{{ appModule.app_module_name }}</strong
+              Are you sure you want to delete <strong>{{ (appModule as Record<string, unknown>).app_module_name }}</strong
               >?
             </p>
             <p class="text-muted mb-0" style="font-size: 0.8125rem">
@@ -675,412 +675,400 @@
   </div>
 </template>
 
-<script>
-import { models, services, session } from "django-airavata-api";
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
+import { models, services } from "django-airavata-api";
 
-export default {
-  name: "ApplicationEditorContainer",
-  props: {
-    appModuleId: {
-      type: String,
-      default: null,
-    },
-  },
-  data() {
-    return {
-      loading: false,
-      saving: false,
-      deleting: false,
-      activeTab: "details",
-      appModule: new models.ApplicationModule({ user_has_write_access: true }),
-      appInterface: null,
-      appDeployments: [],
-      computeResourceNames: {},
-      groupResourceProfiles: [],
-      editingDeployment: null,
-      editingDeploymentComputeResource: null,
-      newDeploymentComputeHostId: null,
-      deleteDeploymentTarget: null,
-      showDeleteAppModal: false,
-      saveMessage: null,
-      saveMessageClass: "alert-success",
-      saveError: null,
-    };
-  },
-  computed: {
-    isGatewayAdmin() {
-      return session.Session.is_gateway_admin;
-    },
-    title() {
-      if (this.appModuleId && this.appModule.app_module_name) {
-        return this.appModule.app_module_name;
+const props = withDefaults(defineProps<{
+  appModuleId?: string | null;
+}>(), {
+  appModuleId: null,
+});
+
+const loading = ref(false);
+const saving = ref(false);
+const deleting = ref(false);
+const activeTab = ref("details");
+const appModule = ref<unknown>(new models.ApplicationModule({ user_has_write_access: true }));
+const appInterface = ref<unknown>(null);
+const appDeployments = ref<unknown[]>([]);
+const computeResourceNames = ref<Record<string, string>>({});
+const groupResourceProfiles = ref<unknown[]>([]);
+const editingDeployment = ref<unknown>(null);
+const editingDeploymentComputeResource = ref<unknown>(null);
+const newDeploymentComputeHostId = ref<string | null>(null);
+const deleteDeploymentTarget = ref<unknown>(null);
+const showDeleteAppModal = ref(false);
+const saveMessage = ref<string | null>(null);
+const saveMessageClass = ref("alert-success");
+const saveError = ref<string | null>(null);
+
+const title = computed(() => {
+  const mod = appModule.value as Record<string, unknown>;
+  if (props.appModuleId && mod.app_module_name) {
+    return mod.app_module_name as string;
+  }
+  return "Create Application";
+});
+
+const readonly = computed(() => {
+  const mod = appModule.value as Record<string, unknown>;
+  return mod && mod.user_has_write_access === false;
+});
+
+const hasInterface = computed(() => {
+  const iface = appInterface.value as Record<string, unknown> | null;
+  return iface && iface.application_interface_id;
+});
+
+const hasDeployments = computed(() => appDeployments.value.length > 0);
+
+const launchUrl = computed(() => "/workspace/applications/" + props.appModuleId + "/create_experiment");
+
+const inputDataTypes = computed(() => (models.InputDataObjectType as unknown as Record<string, unknown>).VALID_DATA_TYPES as unknown[]);
+
+const outputDataTypes = computed(() => (models.DataType as unknown as Record<string, unknown>).values as unknown[]);
+
+const availableComputeResources = computed(() => {
+  const grpCompResources: Record<string, boolean> = {};
+  for (const grp of groupResourceProfiles.value as Array<Record<string, unknown>>) {
+    const prefs = grp.compute_preferences as Array<Record<string, unknown>> | undefined;
+    if (prefs) {
+      for (const pref of prefs) {
+        grpCompResources[pref.compute_resource_id as string] = true;
       }
-      return "Create Application";
-    },
-    readonly() {
-      return this.appModule && this.appModule.user_has_write_access === false;
-    },
-    hasInterface() {
-      return this.appInterface && this.appInterface.application_interface_id;
-    },
-    hasDeployments() {
-      return this.appDeployments.length > 0;
-    },
-    launchUrl() {
-      return "/workspace/applications/" + this.appModuleId + "/create_experiment";
-    },
-    inputDataTypes() {
-      return models.InputDataObjectType.VALID_DATA_TYPES;
-    },
-    outputDataTypes() {
-      return models.DataType.values;
-    },
-    availableComputeResources() {
-      // Build list of compute resources from group resource profiles
-      const grpCompResources = {};
-      for (const grp of this.groupResourceProfiles) {
-        if (grp.compute_preferences) {
-          for (const pref of grp.compute_preferences) {
-            grpCompResources[pref.compute_resource_id] = true;
-          }
-        }
+    }
+  }
+  const result: Array<{ host_id: string; host: string }> = [];
+  const existingHostIds = (appDeployments.value as Array<Record<string, unknown>>).map((d) => d.compute_host_id as string);
+  const hasGrpRestriction = Object.keys(grpCompResources).length > 0;
+  for (const [hostId, name] of Object.entries(computeResourceNames.value || {})) {
+    if (existingHostIds.includes(hostId)) continue;
+    if (hasGrpRestriction && !grpCompResources[hostId]) continue;
+    result.push({ host_id: hostId, host: name });
+  }
+  return result.sort((a, b) => a.host.localeCompare(b.host));
+});
+
+const editingDeploymentQueues = computed(() => {
+  const cr = editingDeploymentComputeResource.value as Record<string, unknown> | null;
+  if (cr && cr.batch_queues) {
+    return cr.batch_queues as unknown[];
+  }
+  return [];
+});
+
+// --- Data loading ---
+function loadModule(): Promise<void> {
+  return services.ApplicationModuleService.retrieve({
+    lookup: props.appModuleId,
+  }).then((m: unknown) => { appModule.value = m; });
+}
+
+function loadInterface(): Promise<void> {
+  return services.ApplicationModuleService.getApplicationInterface(
+    { lookup: props.appModuleId },
+    { ignoreErrors: true },
+  )
+    .then((iface: unknown) => {
+      appInterface.value = iface;
+    })
+    .catch((error: unknown) => {
+      const err = error as { details?: { status?: number } };
+      if (err.details && err.details.status === 404) {
+        const iface = new models.ApplicationInterfaceDefinition({ user_has_write_access: true });
+        (iface as unknown as { addStandardOutAndStandardErrorOutputs(): void }).addStandardOutAndStandardErrorOutputs();
+        appInterface.value = iface;
       }
-      const result = [];
-      const existingHostIds = this.appDeployments.map((d) => d.compute_host_id);
-      const hasGrpRestriction = Object.keys(grpCompResources).length > 0;
-      for (const [hostId, name] of Object.entries(this.computeResourceNames || {})) {
-        if (existingHostIds.includes(hostId)) continue;
-        // If the user has group resource profiles, restrict to those compute
-        // resources; otherwise fall back to showing all compute resources.
-        if (hasGrpRestriction && !grpCompResources[hostId]) continue;
-        result.push({ host_id: hostId, host: name });
+    });
+}
+
+function loadDeployments(): Promise<void> {
+  return services.ApplicationModuleService.getApplicationDeployments({
+    lookup: props.appModuleId,
+  }).then((deps: unknown[]) => { appDeployments.value = deps; });
+}
+
+function loadComputeResourceNames(): Promise<void> {
+  return services.ComputeResourceService.names().then(
+    (names: Record<string, string>) => { computeResourceNames.value = names; },
+  );
+}
+
+function loadGroupResourceProfiles(): Promise<void> {
+  return services.ProjectResourceProfileService.list().then(
+    (profiles: unknown[]) => { groupResourceProfiles.value = profiles; },
+  );
+}
+
+function getComputeResourceName(hostId: string): string {
+  if (computeResourceNames.value && hostId in computeResourceNames.value) {
+    return computeResourceNames.value[hostId];
+  }
+  return hostId ? hostId.substring(0, 20) + "..." : "";
+}
+
+function inputKey(field: Record<string, unknown>, idx: number): string | number {
+  return (field.key as string) || idx;
+}
+
+// --- Interface editing ---
+function addInput(): void {
+  const input = new models.InputDataObjectType();
+  const inp = input as unknown as Record<string, unknown>;
+  // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
+  if (inp.application_argument == null) {
+    inp.application_argument = "";
+  }
+  const iface = appInterface.value as Record<string, unknown>;
+  (iface.application_inputs as Array<unknown>).push(input);
+}
+
+function removeInput(idx: number): void {
+  const iface = appInterface.value as Record<string, unknown>;
+  (iface.application_inputs as Array<unknown>).splice(idx, 1);
+}
+
+function addOutput(): void {
+  const output = new models.OutputDataObjectType();
+  const out = output as unknown as Record<string, unknown>;
+  // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
+  if (out.application_argument == null) {
+    out.application_argument = "";
+  }
+  const iface = appInterface.value as Record<string, unknown>;
+  (iface.application_outputs as Array<unknown>).push(output);
+}
+
+function removeOutput(idx: number): void {
+  const iface = appInterface.value as Record<string, unknown>;
+  (iface.application_outputs as Array<unknown>).splice(idx, 1);
+}
+
+// --- Deployment editing ---
+function editDeployment(dep: Record<string, unknown>): void {
+  editingDeployment.value = dep;
+  editingDeploymentComputeResource.value = null;
+  if (dep.compute_host_id) {
+    services.ComputeResourceService.retrieve({
+      lookup: dep.compute_host_id,
+    }).then((cr: unknown) => { editingDeploymentComputeResource.value = cr; });
+  }
+}
+
+function addDeployment(): void {
+  if (!newDeploymentComputeHostId.value) return;
+  const dep = new models.ApplicationDeploymentDescription({ user_has_write_access: true });
+  const d = dep as unknown as Record<string, unknown>;
+  d.app_module_id = props.appModuleId;
+  d.compute_host_id = newDeploymentComputeHostId.value;
+  appDeployments.value.push(dep);
+  newDeploymentComputeHostId.value = null;
+  editDeployment(d);
+}
+
+function addPreJobCommand(): void {
+  const dep = editingDeployment.value as Record<string, unknown>;
+  if (!dep.pre_job_commands) dep.pre_job_commands = [];
+  (dep.pre_job_commands as Array<unknown>).push(new models.CommandObject({ command: "" }));
+}
+
+function addPostJobCommand(): void {
+  const dep = editingDeployment.value as Record<string, unknown>;
+  if (!dep.post_job_commands) dep.post_job_commands = [];
+  (dep.post_job_commands as Array<unknown>).push(new models.CommandObject({ command: "" }));
+}
+
+function addModuleLoadCommand(): void {
+  const dep = editingDeployment.value as Record<string, unknown>;
+  if (!dep.module_load_cmds) dep.module_load_cmds = [];
+  (dep.module_load_cmds as Array<unknown>).push(new models.CommandObject({ command: "" }));
+}
+
+function addEnvVar(): void {
+  const dep = editingDeployment.value as Record<string, unknown>;
+  if (!dep.set_environment) dep.set_environment = [];
+  (dep.set_environment as Array<unknown>).push(new models.SetEnvPaths({ name: "", value: "" }));
+}
+
+function confirmDeleteDeployment(dep: Record<string, unknown>): void {
+  deleteDeploymentTarget.value = dep;
+}
+
+function deleteDeployment(): void {
+  const dep = deleteDeploymentTarget.value as Record<string, unknown>;
+  deleteDeploymentTarget.value = null;
+  if (dep.app_deployment_id) {
+    services.ApplicationDeploymentService.delete({
+      lookup: dep.app_deployment_id,
+    }).then(() => {
+      appDeployments.value = (appDeployments.value as Array<Record<string, unknown>>).filter(
+        (d) => d.compute_host_id !== dep.compute_host_id,
+      );
+      const ed = editingDeployment.value as Record<string, unknown> | null;
+      if (ed && ed.compute_host_id === dep.compute_host_id) {
+        editingDeployment.value = null;
       }
-      return result.sort((a, b) => a.host.localeCompare(b.host));
-    },
-    editingDeploymentQueues() {
-      if (
-        this.editingDeploymentComputeResource &&
-        this.editingDeploymentComputeResource.batch_queues
-      ) {
-        return this.editingDeploymentComputeResource.batch_queues;
-      }
-      return [];
-    },
-  },
-  created() {
-    if (this.appModuleId) {
-      this.loading = true;
-      Promise.all([
-        this.loadModule(),
-        this.loadInterface(),
-        this.loadDeployments(),
-        this.loadComputeResourceNames(),
-        this.loadGroupResourceProfiles(),
-      ]).finally(() => {
-        this.loading = false;
+    });
+  } else {
+    appDeployments.value = (appDeployments.value as Array<Record<string, unknown>>).filter(
+      (d) => d.compute_host_id !== dep.compute_host_id,
+    );
+    const ed = editingDeployment.value as Record<string, unknown> | null;
+    if (ed && ed.compute_host_id === dep.compute_host_id) {
+      editingDeployment.value = null;
+    }
+  }
+}
+
+// --- Save all ---
+async function saveAll(): Promise<void> {
+  saving.value = true;
+  saveMessage.value = null;
+  saveError.value = null;
+
+  try {
+    // 1. Save module
+    let moduleId = props.appModuleId;
+    if (moduleId) {
+      await services.ApplicationModuleService.update({
+        lookup: moduleId,
+        data: appModule.value,
       });
     } else {
-      Promise.all([this.loadComputeResourceNames(), this.loadGroupResourceProfiles()]);
-      // Create a default interface with stdout/stderr
-      const iface = new models.ApplicationInterfaceDefinition({
-        user_has_write_access: true,
+      const created = await services.ApplicationModuleService.create({
+        data: appModule.value,
       });
-      iface.addStandardOutAndStandardErrorOutputs();
-      this.appInterface = iface;
+      appModule.value = created;
+      moduleId = (created as Record<string, unknown>).app_module_id as string;
     }
-  },
-  methods: {
-    // --- Data loading ---
-    loadModule() {
-      return services.ApplicationModuleService.retrieve({
-        lookup: this.appModuleId,
-      }).then((m) => (this.appModule = m));
-    },
-    loadInterface() {
-      return services.ApplicationModuleService.getApplicationInterface(
-        { lookup: this.appModuleId },
-        { ignoreErrors: true },
-      )
-        .then((iface) => {
-          this.appInterface = iface;
-        })
-        .catch((error) => {
-          if (error.details && error.details.status === 404) {
-            const iface = new models.ApplicationInterfaceDefinition({
-              user_has_write_access: true,
-            });
-            iface.addStandardOutAndStandardErrorOutputs();
-            this.appInterface = iface;
-          }
-        });
-    },
-    loadDeployments() {
-      return services.ApplicationModuleService.getApplicationDeployments({
-        lookup: this.appModuleId,
-      }).then((deps) => (this.appDeployments = deps));
-    },
-    loadComputeResourceNames() {
-      return services.ComputeResourceService.names().then(
-        (names) => (this.computeResourceNames = names),
-      );
-    },
-    loadGroupResourceProfiles() {
-      return services.ProjectResourceProfileService.list().then(
-        (profiles) => (this.groupResourceProfiles = profiles),
-      );
-    },
-    getComputeResourceName(hostId) {
-      if (this.computeResourceNames && hostId in this.computeResourceNames) {
-        return this.computeResourceNames[hostId];
-      }
-      return hostId ? hostId.substring(0, 20) + "..." : "";
-    },
 
-    // --- Interface editing ---
-    addInput() {
-      const input = new models.InputDataObjectType();
-      // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
-      if (input.application_argument == null) {
-        input.application_argument = "";
+    // 2. Save interface — ALWAYS ensure an interface exists for the
+    // module with at least the auto-generated stdout/stderr outputs.
+    if (!appInterface.value) {
+      const iface = new models.ApplicationInterfaceDefinition({ user_has_write_access: true });
+      (iface as unknown as { addStandardOutAndStandardErrorOutputs(): void }).addStandardOutAndStandardErrorOutputs();
+      appInterface.value = iface;
+    } else {
+      const iface = appInterface.value as Record<string, unknown>;
+      if (
+        !iface.application_outputs ||
+        (iface.application_outputs as Array<unknown>).length === 0
+      ) {
+        (appInterface.value as unknown as { addStandardOutAndStandardErrorOutputs(): void }).addStandardOutAndStandardErrorOutputs();
       }
-      this.appInterface.application_inputs.push(input);
-    },
-    removeInput(idx) {
-      this.appInterface.application_inputs.splice(idx, 1);
-    },
-    addOutput() {
-      const output = new models.OutputDataObjectType();
-      // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
-      if (output.application_argument == null) {
-        output.application_argument = "";
-      }
-      this.appInterface.application_outputs.push(output);
-    },
-    removeOutput(idx) {
-      this.appInterface.application_outputs.splice(idx, 1);
-    },
-
-    // --- Deployment editing ---
-    editDeployment(dep) {
-      this.editingDeployment = dep;
-      this.editingDeploymentComputeResource = null;
-      if (dep.compute_host_id) {
-        services.ComputeResourceService.retrieve({
-          lookup: dep.compute_host_id,
-        }).then((cr) => (this.editingDeploymentComputeResource = cr));
-      }
-    },
-    addDeployment() {
-      if (!this.newDeploymentComputeHostId) return;
-      const dep = new models.ApplicationDeploymentDescription({
-        user_has_write_access: true,
+    }
+    const ifaceObj = appInterface.value as Record<string, unknown>;
+    const mod = appModule.value as Record<string, unknown>;
+    ifaceObj.application_name = mod.app_module_name;
+    ifaceObj.application_modules = [moduleId];
+    if (ifaceObj.application_interface_id) {
+      appInterface.value = await services.ApplicationInterfaceService.update({
+        lookup: ifaceObj.application_interface_id,
+        data: appInterface.value,
       });
-      dep.app_module_id = this.appModuleId;
-      dep.compute_host_id = this.newDeploymentComputeHostId;
-      this.appDeployments.push(dep);
-      this.newDeploymentComputeHostId = null;
-      this.editDeployment(dep);
-    },
-    addPreJobCommand() {
-      if (!this.editingDeployment.pre_job_commands) {
-        this.editingDeployment.pre_job_commands = [];
-      }
-      this.editingDeployment.pre_job_commands.push(new models.CommandObject({ command: "" }));
-    },
-    addPostJobCommand() {
-      if (!this.editingDeployment.post_job_commands) {
-        this.editingDeployment.post_job_commands = [];
-      }
-      this.editingDeployment.post_job_commands.push(new models.CommandObject({ command: "" }));
-    },
-    addModuleLoadCommand() {
-      if (!this.editingDeployment.module_load_cmds) {
-        this.editingDeployment.module_load_cmds = [];
-      }
-      this.editingDeployment.module_load_cmds.push(new models.CommandObject({ command: "" }));
-    },
-    addEnvVar() {
-      if (!this.editingDeployment.set_environment) {
-        this.editingDeployment.set_environment = [];
-      }
-      this.editingDeployment.set_environment.push(new models.SetEnvPaths({ name: "", value: "" }));
-    },
-    confirmDeleteDeployment(dep) {
-      this.deleteDeploymentTarget = dep;
-    },
-    deleteDeployment() {
-      const dep = this.deleteDeploymentTarget;
-      this.deleteDeploymentTarget = null;
+    } else {
+      appInterface.value = await services.ApplicationInterfaceService.create({
+        data: appInterface.value,
+      });
+    }
+
+    // 3. Save deployments
+    for (const dep of appDeployments.value as Array<Record<string, unknown>>) {
+      dep.app_module_id = moduleId;
       if (dep.app_deployment_id) {
-        services.ApplicationDeploymentService.delete({
+        await services.ApplicationDeploymentService.update({
           lookup: dep.app_deployment_id,
-        }).then(() => {
-          this.appDeployments = this.appDeployments.filter(
-            (d) => d.compute_host_id !== dep.compute_host_id,
-          );
-          if (
-            this.editingDeployment &&
-            this.editingDeployment.compute_host_id === dep.compute_host_id
-          ) {
-            this.editingDeployment = null;
-          }
+          data: dep,
         });
       } else {
-        this.appDeployments = this.appDeployments.filter(
-          (d) => d.compute_host_id !== dep.compute_host_id,
-        );
-        if (
-          this.editingDeployment &&
-          this.editingDeployment.compute_host_id === dep.compute_host_id
-        ) {
-          this.editingDeployment = null;
-        }
+        const created = await services.ApplicationDeploymentService.create({ data: dep });
+        Object.assign(dep, created);
       }
-    },
+    }
 
-    // --- Save all ---
-    async saveAll() {
-      this.saving = true;
-      this.saveMessage = null;
-      this.saveError = null;
+    saveMessage.value = "Application saved successfully.";
+    saveMessageClass.value = "alert-success";
 
-      try {
-        // 1. Save module
-        let moduleId = this.appModuleId;
-        if (moduleId) {
-          await services.ApplicationModuleService.update({
-            lookup: moduleId,
-            data: this.appModule,
-          });
-        } else {
-          const created = await services.ApplicationModuleService.create({
-            data: this.appModule,
-          });
-          this.appModule = created;
-          moduleId = created.app_module_id;
-        }
+    // If this was a new application, navigate to the edit URL
+    if (!props.appModuleId && moduleId) {
+      window.location.href = "/workspace/applications/" + moduleId + "/";
+    }
+  } catch (error) {
+    const err = error as { details?: { message?: string; response?: unknown }; message?: string };
+    const detail = err.details
+      ? err.details.message || JSON.stringify(err.details.response || err.details)
+      : err.message || "An error occurred while saving.";
+    saveError.value = detail;
+  } finally {
+    saving.value = false;
+  }
+}
 
-        // 2. Save interface — ALWAYS ensure an interface exists for the
-        // module with at least the auto-generated stdout/stderr outputs, so
-        // experiment launch can find an interface for the module id.
-        if (!this.appInterface) {
-          const iface = new models.ApplicationInterfaceDefinition({
-            user_has_write_access: true,
-          });
-          iface.addStandardOutAndStandardErrorOutputs();
-          this.appInterface = iface;
-        } else {
-          // If somehow the interface has no outputs at all, inject the
-          // standard stdout/stderr so the experiment launch has what it needs.
-          if (
-            !this.appInterface.application_outputs ||
-            this.appInterface.application_outputs.length === 0
-          ) {
-            this.appInterface.addStandardOutAndStandardErrorOutputs();
-          }
-        }
-        this.appInterface.application_name = this.appModule.app_module_name;
-        this.appInterface.application_modules = [moduleId];
-        if (this.appInterface.application_interface_id) {
-          this.appInterface = await services.ApplicationInterfaceService.update({
-            lookup: this.appInterface.application_interface_id,
-            data: this.appInterface,
-          });
-        } else {
-          this.appInterface = await services.ApplicationInterfaceService.create({
-            data: this.appInterface,
-          });
-        }
+// --- Delete application ---
+function confirmDeleteApp(): void {
+  showDeleteAppModal.value = true;
+}
 
-        // 3. Save deployments
-        for (const dep of this.appDeployments) {
-          dep.app_module_id = moduleId;
-          if (dep.app_deployment_id) {
-            await services.ApplicationDeploymentService.update({
-              lookup: dep.app_deployment_id,
-              data: dep,
-            });
-          } else {
-            const created = await services.ApplicationDeploymentService.create({
-              data: dep,
-            });
-            // Update in place
-            Object.assign(dep, created);
-          }
-        }
+async function deleteApp(): Promise<void> {
+  deleting.value = true;
+  try {
+    const deploymentDeletes = (appDeployments.value || [])
+      .map((dep) => {
+        if (!dep) return null;
+        const d = dep as Record<string, unknown>;
+        const id = (d.app_deployment_id || d.application_deployment_id || null) as string | null;
+        if (!id) return null;
+        return services.ApplicationDeploymentService.delete({ lookup: id });
+      })
+      .filter((p): p is Promise<unknown> => p !== null);
+    await Promise.all(deploymentDeletes);
 
-        this.saveMessage = "Application saved successfully.";
-        this.saveMessageClass = "alert-success";
+    const iface = appInterface.value as Record<string, unknown> | null;
+    const interfaceId = iface &&
+      ((iface.application_interface_id || iface.applicationInterfaceId) as string | null || null);
+    if (interfaceId) {
+      await services.ApplicationInterfaceService.delete({ lookup: interfaceId });
+    }
 
-        // If this was a new application, navigate to the edit URL
-        if (!this.appModuleId && moduleId) {
-          window.location.href = "/workspace/applications/" + moduleId + "/";
-        }
-      } catch (error) {
-        const detail = error.details
-          ? error.details.message || JSON.stringify(error.details.response || error.details)
-          : error.message || "An error occurred while saving.";
-        this.saveError = detail;
-      } finally {
-        this.saving = false;
-      }
-    },
+    if (props.appModuleId) {
+      await services.ApplicationModuleService.delete({ lookup: props.appModuleId });
+    }
+    window.location.href = "/workspace/applications";
+  } catch (error) {
+    console.error("Failed to delete application", error);
+    const err = error as { message?: string; details?: unknown };
+    saveError.value =
+      "Failed to delete application: " +
+      (err && (err.message || err.details || "unknown error"));
+    showDeleteAppModal.value = false;
+  } finally {
+    deleting.value = false;
+  }
+}
 
-    // --- Delete application ---
-    confirmDeleteApp() {
-      this.showDeleteAppModal = true;
-    },
-    async deleteApp() {
-      this.deleting = true;
-      try {
-        // 1. Delete deployments in parallel. Guard against entries that
-        //    exist only locally (no server-side id yet) and against any
-        //    entries that somehow carry a differently-named id field, so a
-        //    missing id never bubbles up as `Error: id` inside Promise.all.
-        const deploymentDeletes = (this.appDeployments || [])
-          .map((dep) => {
-            if (!dep) return null;
-            const id = dep.app_deployment_id || dep.application_deployment_id || null;
-            if (!id) return null;
-            return services.ApplicationDeploymentService.delete({ lookup: id });
-          })
-          .filter((p) => p !== null);
-        await Promise.all(deploymentDeletes);
+function cancel(): void {
+  window.location.href = "/workspace/applications";
+}
 
-        // 2. Delete interface (if one was ever persisted).
-        const interfaceId =
-          this.appInterface &&
-          (this.appInterface.application_interface_id ||
-            this.appInterface.applicationInterfaceId ||
-            null);
-        if (interfaceId) {
-          await services.ApplicationInterfaceService.delete({
-            lookup: interfaceId,
-          });
-        }
-
-        // 3. Delete module.
-        if (this.appModuleId) {
-          await services.ApplicationModuleService.delete({
-            lookup: this.appModuleId,
-          });
-        }
-        window.location.href = "/workspace/applications";
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error("Failed to delete application", error);
-        this.saveError =
-          "Failed to delete application: " +
-          (error && (error.message || error.details || "unknown error"));
-        this.showDeleteAppModal = false;
-      } finally {
-        this.deleting = false;
-      }
-    },
-
-    cancel() {
-      window.location.href = "/workspace/applications";
-    },
-  },
-};
+onMounted(() => {
+  if (props.appModuleId) {
+    loading.value = true;
+    Promise.all([
+      loadModule(),
+      loadInterface(),
+      loadDeployments(),
+      loadComputeResourceNames(),
+      loadGroupResourceProfiles(),
+    ]).finally(() => {
+      loading.value = false;
+    });
+  } else {
+    Promise.all([loadComputeResourceNames(), loadGroupResourceProfiles()]);
+    // Create a default interface with stdout/stderr
+    const iface = new models.ApplicationInterfaceDefinition({ user_has_write_access: true });
+    (iface as unknown as { addStandardOutAndStandardErrorOutputs(): void }).addStandardOutAndStandardErrorOutputs();
+    appInterface.value = iface;
+  }
+});
 </script>

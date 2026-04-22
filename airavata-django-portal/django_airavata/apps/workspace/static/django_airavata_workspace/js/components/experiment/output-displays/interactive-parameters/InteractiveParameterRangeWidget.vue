@@ -16,48 +16,48 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "InteractiveParameterRangeWidget",
-  props: {
-    value: {
-      type: Number,
-      required: true,
-    },
-    parameter: {
-      type: Object,
-    },
-  },
-  data() {
-    return {
-      currentValue: parseFloat(this.value),
-    };
-  },
-  computed: {
-    disabled() {
-      return this.currentValue === this.initialValue;
-    },
-    initialValue() {
-      return parseFloat(this.value);
-    },
-    roundedValue() {
-      return this.currentValue ? this.currentValue.toFixed(2) : null;
-    },
-  },
-  methods: {
-    updateValue(newValue) {
-      this.currentValue = parseFloat(newValue);
-    },
-    submit() {
-      this.$emit("input", this.currentValue);
-    },
-    mouseUp() {
-      this.$refs.rangeInput.blur();
-      if (!this.disabled) {
-        this.submit();
-      }
-    },
-    keyUp() {},
-  },
-};
+<script setup lang="ts">
+import { ref, computed } from "vue";
+
+interface InteractiveParameter {
+  min?: number;
+  max?: number;
+  step?: number;
+  [key: string]: unknown;
+}
+
+const props = defineProps<{
+  value: number;
+  parameter: InteractiveParameter;
+}>();
+
+const emit = defineEmits<{
+  input: [value: number];
+}>();
+
+const rangeInput = ref<HTMLInputElement | null>(null);
+const currentValue = ref<number>(parseFloat(String(props.value)));
+
+const initialValue = computed(() => parseFloat(String(props.value)));
+const disabled = computed(() => currentValue.value === initialValue.value);
+const roundedValue = computed(() =>
+  currentValue.value ? currentValue.value.toFixed(2) : null,
+);
+
+function updateValue(event: Event) {
+  currentValue.value = parseFloat((event.target as HTMLInputElement).value);
+}
+
+function submit() {
+  emit("input", currentValue.value);
+}
+
+function mouseUp() {
+  rangeInput.value?.blur();
+  if (!disabled.value) {
+    submit();
+  }
+}
+
+function keyUp() {}
 </script>

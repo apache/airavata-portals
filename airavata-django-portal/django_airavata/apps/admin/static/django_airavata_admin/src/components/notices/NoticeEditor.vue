@@ -103,111 +103,126 @@
     </form>
   </div>
 </template>
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import { models } from "django-airavata-api";
-import { mixins, utils } from "django-airavata-common-ui";
+import { utils } from "django-airavata-common-ui";
 import FlatPickr from "vue-flatpickr-component";
 import { formatShort, formatUtc } from "django-airavata-common-ui/js/utils/dates.js";
 
-export default {
-  name: "NoticeEditor",
-  components: {
-    FlatPickr,
+const props = defineProps<{
+  modelValue: InstanceType<typeof models.Notification>;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: InstanceType<typeof models.Notification>];
+  userBeginsInput: [];
+  cancelNewNotice: [];
+  saveNewNotice: [];
+}>();
+
+// Local copy of the notification (VModelMixin pattern)
+const data = ref<InstanceType<typeof models.Notification>>(props.modelValue.clone());
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    data.value = newValue.clone();
   },
-  mixins: [mixins.VModelMixin],
-  props: {
-    value: {
-      type: models.Notification,
-      required: true,
-    },
+  { deep: true }
+);
+
+watch(
+  data,
+  (newValue) => {
+    emit("update:modelValue", newValue);
   },
-  data() {
-    return {
-      editNotification: false,
-      userBeginsInput: false,
-      inputPublishedTime: null,
-      inputExpirationTime: null,
-      today: formatShort(new Date()),
-      select: {
-        selected: "LOW",
-        options: [
-          { text: "LOW", value: "LOW" },
-          { text: "NORMAL", value: "NORMAL" },
-          { text: "HIGH", value: "HIGH" },
-        ],
-      },
-    };
-  },
-  computed: {
-    dateTimeConfig() {
-      return {
-        enableTime: true,
-        dateFormat: "Z",
-        altInput: true,
-        altFormat: "F j, Y h:i K",
-        minDate: this.today,
-      };
-    },
-    expirationDateConfig() {
-      return {
-        enableTime: true,
-        dateFormat: "Z",
-        altInput: true,
-        altFormat: "F j, Y h:i K",
-        minDate: this.inputPublishedTime || this.today,
-      };
-    },
-    valid: function () {
-      const validation = this.data.validate();
-      return Object.keys(validation).length === 0;
-    },
-    isSaveDisabled: function () {
-      return !this.valid;
-    },
-  },
-  watch: {
-    inputExpirationTime() {
-      this.data.expirationTime = this.inputExpirationTime;
-    },
-    inputPublishedTime() {
-      this.data.publishedTime = this.inputPublishedTime;
-    },
-  },
-  created() {
-    //checks whether the component is used for editing or updating the notificaion
-    // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
-    if (this.value.notificationId != null) {
-      this.editNotification = true;
-      this.inputPublishedTime = formatUtc(this.value.publishedTime.toISOString());
-      this.inputExpirationTime = formatUtc(this.value.expirationTime.toISOString());
-      this.data.priority = this.value.priority.name;
-      this.data.showInDashboard = this.value.showInDashboard;
-      this.today = formatShort(this.value.expirationTime.toISOString());
-    }
-  },
-  methods: {
-    onUserInput() {
-      this.userBeginsInput = true;
-      return this.$emit("userBeginsInput");
-    },
-    reset() {
-      this.userBeginsInput = false;
-    },
-    getValidationFeedback: function (properties) {
-      return utils.getProperty(this.data.validate(), properties);
-    },
-    getValidationState: function (properties) {
-      if (this.userBeginsInput === false) {
-        return null;
-      }
-      return this.getValidationFeedback(properties) ? false : true;
-    },
-    cancelNewNotice() {
-      return this.$emit("cancelNewNotice");
-    },
-    saveNewNotice() {
-      return this.$emit("saveNewNotice");
-    },
-  },
-};
+  { deep: true }
+);
+
+const editNotification = ref(false);
+const userBeginsInput = ref(false);
+const inputPublishedTime = ref<string | null>(null);
+const inputExpirationTime = ref<string | null>(null);
+const today = ref(formatShort(new Date()));
+const select = ref({
+  selected: "LOW",
+  options: [
+    { text: "LOW", value: "LOW" },
+    { text: "NORMAL", value: "NORMAL" },
+    { text: "HIGH", value: "HIGH" },
+  ],
+});
+
+watch(inputExpirationTime, (val) => {
+  data.value.expirationTime = val;
+});
+watch(inputPublishedTime, (val) => {
+  data.value.publishedTime = val;
+});
+
+const dateTimeConfig = computed(() => ({
+  enableTime: true,
+  dateFormat: "Z",
+  altInput: true,
+  altFormat: "F j, Y h:i K",
+  minDate: today.value,
+}));
+
+const expirationDateConfig = computed(() => ({
+  enableTime: true,
+  dateFormat: "Z",
+  altInput: true,
+  altFormat: "F j, Y h:i K",
+  minDate: inputPublishedTime.value || today.value,
+}));
+
+const valid = computed(() => {
+  const validation = data.value.validate();
+  return Object.keys(validation).length === 0;
+});
+
+const isSaveDisabled = computed(() => !valid.value);
+
+onMounted(() => {
+  // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
+  if (props.modelValue.notificationId != null) {
+    editNotification.value = true;
+    inputPublishedTime.value = formatUtc(props.modelValue.publishedTime.toISOString());
+    inputExpirationTime.value = formatUtc(props.modelValue.expirationTime.toISOString());
+    data.value.priority = props.modelValue.priority.name;
+    data.value.showInDashboard = props.modelValue.showInDashboard;
+    today.value = formatShort(props.modelValue.expirationTime.toISOString());
+  }
+});
+
+function onUserInput() {
+  userBeginsInput.value = true;
+  emit("userBeginsInput");
+}
+
+function reset() {
+  userBeginsInput.value = false;
+}
+
+function getValidationFeedback(properties: string) {
+  return utils.getProperty(data.value.validate(), properties);
+}
+
+function getValidationState(properties: string) {
+  if (!userBeginsInput.value) {
+    return null;
+  }
+  return getValidationFeedback(properties) ? false : true;
+}
+
+function cancelNewNotice() {
+  emit("cancelNewNotice");
+}
+
+function saveNewNotice() {
+  emit("saveNewNotice");
+}
+
+defineExpose({ reset });
 </script>

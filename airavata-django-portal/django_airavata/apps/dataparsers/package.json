@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "typecheck": "vue-tsc -p tsconfig.json",
     "lint": "eslint ./static/django_airavata_dataparsers/js",
     "format": "prettier --write ."
   },

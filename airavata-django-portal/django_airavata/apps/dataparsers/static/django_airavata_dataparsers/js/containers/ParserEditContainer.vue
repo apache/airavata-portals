@@ -7,40 +7,24 @@
   ></parser-editor>
 </template>
 
-<script>
+<script setup lang="ts">
+import { onMounted, ref } from "vue";
+import { models, services } from "django-airavata-api";
 import ParserEditor from "../parser-components/ParserEditor.vue";
 
-import { services } from "django-airavata-api";
+const props = defineProps<{ parserId: string }>();
 
-export default {
-  name: "ParserEditContainer",
-  components: {
-    ParserEditor,
-  },
-  props: {
-    parserId: {
-      type: String,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      parser: null,
-    };
-  },
-  computed: {},
-  mounted: function () {
-    services.ParserService.retrieve({ lookup: this.parserId }).then(
-      (parser) => (this.parser = parser),
-    );
-  },
-  methods: {
-    handleSaved: function () {
-      window.location.assign("/dataparsers/");
-    },
-    handleCancelled: function () {
-      window.location.assign("/dataparsers/");
-    },
-  },
-};
+const parser = ref<InstanceType<typeof models.Parser> | null>(null);
+
+onMounted(async () => {
+  parser.value = await services.ParserService.retrieve({ lookup: props.parserId });
+});
+
+function handleSaved(): void {
+  window.location.assign("/dataparsers/");
+}
+
+function handleCancelled(): void {
+  window.location.assign("/dataparsers/");
+}
 </script>

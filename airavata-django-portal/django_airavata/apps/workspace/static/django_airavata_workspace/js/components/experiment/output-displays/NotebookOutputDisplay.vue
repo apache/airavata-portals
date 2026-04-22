@@ -2,47 +2,29 @@
   <iframe :src="url"></iframe>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed } from "vue";
 import { models } from "django-airavata-api";
-export default {
-  name: "NotebookOutputDisplay",
-  props: {
-    experimentOutput: {
-      type: models.OutputDataObjectType,
-      required: true,
-    },
-    dataProducts: {
-      type: Array,
-      required: true,
-    },
-    experimentId: {
-      type: String,
-      required: true,
-    },
-    providerId: {
-      type: String,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      rawOutput: null,
-    };
-  },
-  computed: {
-    url() {
-      return (
-        "/api/notebook-output?" +
-        "experiment-id=" +
-        encodeURIComponent(this.experimentId) +
-        "&experiment-output-name=" +
-        encodeURIComponent(this.experimentOutput.name) +
-        "&provider-id=" +
-        encodeURIComponent(this.providerId)
-      );
-    },
-  },
-};
+
+type OutputDataObjectType = InstanceType<typeof models.OutputDataObjectType>;
+
+const props = defineProps<{
+  experimentOutput: OutputDataObjectType;
+  dataProducts: unknown[];
+  experimentId: string;
+  providerId: string;
+}>();
+
+const url = computed(
+  () =>
+    "/api/notebook-output?" +
+    "experiment-id=" +
+    encodeURIComponent(props.experimentId) +
+    "&experiment-output-name=" +
+    encodeURIComponent(props.experimentOutput.name as string) +
+    "&provider-id=" +
+    encodeURIComponent(props.providerId),
+);
 </script>
 
 <style scoped>

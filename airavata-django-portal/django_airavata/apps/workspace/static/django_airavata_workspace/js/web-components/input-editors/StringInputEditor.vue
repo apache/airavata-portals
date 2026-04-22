@@ -15,22 +15,59 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, getCurrentInstance } from "vue";
 import StringInputEditor from "../../components/experiment/input-editors/StringInputEditor.vue";
-import WebComponentInputEditorMixin from "./WebComponentInputEditorMixin.js";
+import { utils } from "django-airavata-common-ui";
+import { useWebComponentsStore } from "django-airavata-common-ui/js/stores/webComponents";
 
-export default {
-  components: {
-    StringInputEditor,
-  },
-  mixins: [WebComponentInputEditorMixin],
-  props: {
-    // Explicit copy props from mixin, workaround for bug, see
-    // https://github.com/vuejs/vue-web-component-wrapper/issues/30#issuecomment-427350734
-    // for more details
-    ...WebComponentInputEditorMixin.props,
-  },
-};
+interface ExperimentInput {
+  isReadOnly: boolean;
+  name: string;
+}
+
+const props = withDefaults(defineProps<{
+  modelValue?: string;
+  name?: string;
+}>(), {
+  modelValue: undefined,
+  name: undefined,
+});
+
+const emit = defineEmits<{
+  "update:modelValue": [value: string | undefined];
+}>();
+
+const webComponentsStore = useWebComponentsStore();
+
+const data = ref<string | undefined>(props.modelValue);
+
+const experimentInput = computed(() =>
+  webComponentsStore.getExperimentInputByName(props.name ?? "") as unknown as ExperimentInput | null
+);
+const readOnly = computed(() => experimentInput.value?.isReadOnly ?? false);
+const id = computed(() => utils.sanitizeHTMLId(experimentInput.value?.name ?? ""));
+
+function valueChanged(value: string | undefined) {
+  if (value !== data.value) {
+    data.value = value;
+    emit("update:modelValue", data.value);
+    const instance = getCurrentInstance();
+    const el = instance?.proxy?.$el as Element | undefined;
+    if (el) {
+      const inputEvent = new CustomEvent("input", {
+        detail: [data.value],
+        composed: true,
+        bubbles: true,
+      });
+      el.dispatchEvent(inputEvent);
+    }
+  }
+}
+
+watch(() => props.modelValue, (value) => {
+  data.value = value;
+});
 </script>
 
 <style lang="scss">

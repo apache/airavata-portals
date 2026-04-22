@@ -1,14 +1,14 @@
 <template>
   <div class="card">
     <div class="card-body">
-      <div slot="header" class="d-flex align-items-baseline">
+      <div class="d-flex align-items-baseline">
         <h6>{{ experimentOutput.name }}</h6>
-        <div v-if="showMenu" class="dropdown ms-auto" :text="currentView['name']">
+        <div v-if="showMenu" class="dropdown ms-auto" :text="currentView && currentView['name']">
           <a
             v-for="(view, index) in outputViews"
-            :key="view['provider-id']"
+            :key="view['provider-id'] as string"
             class="dropdown-item"
-            :active="view['provider-id'] === currentView['provider-id']"
+            :active="view['provider-id'] === (currentView && currentView['provider-id'])"
             @click="selectView(index)"
             >{{ view["name"] }}</a
           >
@@ -20,15 +20,14 @@
         :data-products="dataProducts"
         :experiment-output="experimentOutput"
       />
-      <interactive-parameters-panel
+      <InteractiveParametersPanel
         v-if="viewData && viewData.interactive"
         ref="interactiveParametersPanel"
-        :parameters="viewData.interactive"
+        :parameters="viewData.interactive as Record<string, unknown>[]"
         @input="parametersUpdated"
       />
       <div
         v-if="dataProducts.length > 0 || isExecuting"
-        slot="footer"
         class="d-flex justify-content-end align-items-baseline"
       >
         <template v-if="isExecuting">
@@ -39,7 +38,7 @@
           </button>
         </template>
         <template v-else-if="dataProducts.length === 1">
-          <button class="btn" size="sm" :href="dataProducts[0].download_url + '&download'">
+          <button class="btn" size="sm" :href="(dataProducts[0] as Record<string, unknown>).download_url + '&download'">
             Download
           </button>
         </template>
@@ -48,202 +47,177 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted, type Component } from "vue";
 import { models } from "django-airavata-api";
-import { components } from "django-airavata-common-ui";
-import DefaultOutputDisplay from "./DefaultOutputDisplay";
-import HtmlOutputDisplay from "./HtmlOutputDisplay";
-import ImageOutputDisplay from "./ImageOutputDisplay";
-import LinkOutputDisplay from "./LinkOutputDisplay";
-import NotebookOutputDisplay from "./NotebookOutputDisplay";
-import InteractiveParametersPanel from "./interactive-parameters/InteractiveParametersPanel";
+import DefaultOutputDisplay from "./DefaultOutputDisplay.vue";
+import HtmlOutputDisplay from "./HtmlOutputDisplay.vue";
+import ImageOutputDisplay from "./ImageOutputDisplay.vue";
+import LinkOutputDisplay from "./LinkOutputDisplay.vue";
+import NotebookOutputDisplay from "./NotebookOutputDisplay.vue";
+import InteractiveParametersPanel from "./interactive-parameters/InteractiveParametersPanel.vue";
 import OutputViewDataLoader from "./OutputViewDataLoader";
-import { mapActions, mapGetters, mapState } from "vuex";
+import { useExperimentStore } from "django-airavata-common-ui/js/stores/experiment";
 import ProcessState from "django-airavata-api/static/django_airavata_api/js/models/ProcessState";
 
-export default {
-  name: "OutputViewerContainer",
-  components: {
-    "data-product-viewer": components.DataProductViewer,
-    DefaultOutputDisplay,
-    HtmlOutputDisplay,
-    ImageOutputDisplay,
-    LinkOutputDisplay,
-    NotebookOutputDisplay,
-    InteractiveParametersPanel,
-  },
-  props: {
-    experimentOutput: {
-      type: models.OutputDataObjectType,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      currentViewIndex: 0,
-      loader: null,
-    };
-  },
-  created() {
-    // Only show the default output view while executing or if no output dataProducts
-    if (this.outputViews.length > 0 && (!this.isFinished || this.dataProducts.length === 0)) {
-      this.currentViewIndex = this.outputViews.findIndex((ov) => ov["provider-id"] === "default");
-    }
-    if (this.providerId && this.providerId !== "default") {
-      this.loader = this.createLoader();
-      this.loader.load();
-    }
-  },
-  computed: {
-    ...mapState("viewExperiment", ["fullExperiment"]),
-    ...mapGetters("viewExperiment", [
-      "outputDataProducts",
-      "experimentId",
-      "isExecuting",
-      "isJobActive",
-      "isFinished",
-      "currentlyRunningIntermediateOutputFetches",
-      "userHasWriteAccess",
-    ]),
-    outputViews() {
-      return this.fullExperiment
-        ? this.fullExperiment.output_views[this.experimentOutput.name]
-        : [];
-    },
-    dataProducts() {
-      return this.outputDataProducts[this.experimentOutput.name];
-    },
-    currentView() {
-      return this.outputViews.length > this.currentViewIndex
-        ? this.outputViews[this.currentViewIndex]
-        : null;
-    },
-    viewData() {
-      return this.loader && this.loader.data ? this.loader.data : this.outputViewData;
-    },
-    outputViewData() {
-      return this.currentView && this.currentView.data ? this.currentView.data : {};
-    },
-    displayTypeData() {
-      return {
-        default: {
-          component: "default-output-display",
-          url: null,
-        },
-        link: {
-          component: "link-output-display",
-          url: "/api/link-output/",
-        },
-        notebook: {
-          component: "notebook-output-display",
-          url: "/api/notebook-output/",
-        },
-        html: {
-          component: "html-output-display",
-          url: "/api/html-output/",
-        },
-        image: {
-          component: "image-output-display",
-          url: "/api/image-output/",
-        },
-      };
-    },
-    displayType() {
-      return this.currentView ? this.currentView["display-type"] : null;
-    },
-    outputDisplayComponentName() {
-      if (this.displayType in this.displayTypeData) {
-        return this.displayTypeData[this.displayType].component;
-      } else {
-        return null;
-      }
-    },
-    outputDataURL() {
-      if (this.displayType in this.displayTypeData) {
-        return this.displayTypeData[this.displayType].url;
-      } else {
-        return null;
-      }
-    },
-    showMenu() {
-      return this.isFinished && this.outputViews.length > 1 && this.dataProducts.length > 0;
-    },
-    providerId() {
-      return this.currentView ? this.currentView["provider-id"] : null;
-    },
-    hasInteractiveParameters() {
-      return this.viewData && this.viewData.interactive;
-    },
-    currentlyRunningIntermediateOutputFetch() {
-      return this.currentlyRunningIntermediateOutputFetches[this.experimentOutput.name];
-    },
-    canFetchIntermediateOutput() {
-      return this.isJobActive && !this.currentlyRunningIntermediateOutputFetch;
-    },
-    fetchLatestDisabled() {
-      return !this.canFetchIntermediateOutput || !this.user_has_write_access;
-    },
-    fetchIntermediateOutputStatusMessage() {
-      let msg = "";
-      if (
-        this.experimentOutput.intermediate_output &&
-        this.experimentOutput.intermediate_output.process_status &&
-        this.experimentOutput.intermediate_output.process_status.isFinished
-      ) {
-        const timestamp =
-          this.experimentOutput.intermediate_output.process_status.time_of_state_change;
-        msg +=
-          "Latest output fetched on " +
-          timestamp.toLocaleString([], {
-            dateStyle: "medium",
-            timeStyle: "short",
-          }) +
-          ". ";
-      }
-      if (
-        this.experimentOutput.intermediate_output &&
-        this.experimentOutput.intermediate_output.process_status
-      ) {
-        if (
-          this.experimentOutput.intermediate_output.process_status.state === ProcessState.FAILED
-        ) {
-          msg += "Last fetch failed, please try again.";
-        }
-      }
-      return msg;
-    },
-  },
-  methods: {
-    ...mapActions("viewExperiment", ["submitFetchIntermediateOutputs"]),
-    selectView(outputViewIndex) {
-      this.currentViewIndex = outputViewIndex;
-      if (this.outputDataURL === null) {
-        this.loader = null;
-      } else {
-        this.loader = this.createLoader();
-        this.loader.load();
-      }
-    },
-    parametersUpdated(newParams) {
-      if (this.hasInteractiveParameters && !this.$refs.interactiveParametersPanel.valid) {
-        // Don't update if we have invalid interactive parameters
-        return;
-      }
-      this.loader.load(newParams);
-    },
-    createLoader() {
-      return new OutputViewDataLoader({
-        url: this.outputDataURL,
-        experimentId: this.experimentId,
-        experimentOutputName: this.experimentOutput.name,
-        providerId: this.providerId,
-      });
-    },
-    fetchLatest() {
-      this.submitFetchIntermediateOutputs({
-        outputNames: [this.experimentOutput.name],
-      });
-    },
-  },
+type OutputDataObjectType = InstanceType<typeof models.OutputDataObjectType>;
+
+const props = defineProps<{
+  experimentOutput: OutputDataObjectType;
+}>();
+
+const experimentStore = useExperimentStore();
+
+const fullExperiment = computed(() => experimentStore.fullExperiment);
+const outputDataProducts = computed(() => experimentStore.outputDataProducts);
+const experimentId = computed(() => experimentStore.experimentId);
+const isExecuting = computed(() => experimentStore.isExecuting);
+const isJobActive = computed(() => experimentStore.isJobActive);
+const isFinished = computed(() => experimentStore.isFinished);
+const currentlyRunningIntermediateOutputFetches = computed(
+  () => experimentStore.currentlyRunningIntermediateOutputFetches,
+);
+const userHasWriteAccess = computed(() => experimentStore.userHasWriteAccess);
+
+const currentViewIndex = ref(0);
+const loaderRef = ref<OutputViewDataLoader | null>(null);
+const interactiveParametersPanel = ref<{ valid: boolean } | null>(null);
+
+const outputViews = computed<Record<string, unknown>[]>(() =>
+  fullExperiment.value
+    ? ((fullExperiment.value as Record<string, unknown>).output_views as Record<string, Record<string, unknown>[]>)?.[props.experimentOutput.name] ?? []
+    : [],
+);
+
+const dataProducts = computed<unknown[]>(() =>
+  (outputDataProducts.value as Record<string, unknown[]>)?.[props.experimentOutput.name] ?? [],
+);
+
+const currentView = computed<Record<string, unknown> | null>(() =>
+  outputViews.value.length > currentViewIndex.value
+    ? outputViews.value[currentViewIndex.value]
+    : null,
+);
+
+const viewData = computed<Record<string, unknown>>(() =>
+  loaderRef.value && loaderRef.value.data ? loaderRef.value.data : outputViewData.value,
+);
+
+const outputViewData = computed<Record<string, unknown>>(() =>
+  currentView.value && currentView.value.data
+    ? (currentView.value.data as Record<string, unknown>)
+    : {},
+);
+
+const displayTypeData: Record<string, { component: Component; url: string | null }> = {
+  default: { component: DefaultOutputDisplay, url: null },
+  link: { component: LinkOutputDisplay, url: "/api/link-output/" },
+  notebook: { component: NotebookOutputDisplay, url: "/api/notebook-output/" },
+  html: { component: HtmlOutputDisplay, url: "/api/html-output/" },
+  image: { component: ImageOutputDisplay, url: "/api/image-output/" },
 };
+
+const displayType = computed<string | null>(() =>
+  currentView.value ? (currentView.value["display-type"] as string) : null,
+);
+
+const outputDisplayComponentName = computed<Component | null>(() =>
+  displayType.value && displayType.value in displayTypeData
+    ? displayTypeData[displayType.value].component
+    : null,
+);
+
+const outputDataURL = computed<string | null>(() =>
+  displayType.value && displayType.value in displayTypeData
+    ? displayTypeData[displayType.value].url
+    : null,
+);
+
+const showMenu = computed(
+  () => isFinished.value && outputViews.value.length > 1 && dataProducts.value.length > 0,
+);
+
+const providerId = computed<string | null>(() =>
+  currentView.value ? (currentView.value["provider-id"] as string) : null,
+);
+
+const hasInteractiveParameters = computed(
+  () => viewData.value && (viewData.value as Record<string, unknown>).interactive,
+);
+
+const currentlyRunningIntermediateOutputFetch = computed(
+  () => (currentlyRunningIntermediateOutputFetches.value as Record<string, unknown>)?.[props.experimentOutput.name],
+);
+
+const canFetchIntermediateOutput = computed(
+  () => isJobActive.value && !currentlyRunningIntermediateOutputFetch.value,
+);
+
+const fetchLatestDisabled = computed(
+  () => !canFetchIntermediateOutput.value || !userHasWriteAccess.value,
+);
+
+const fetchIntermediateOutputStatusMessage = computed<string>(() => {
+  let msg = "";
+  const io = props.experimentOutput as unknown as Record<string, unknown>;
+  const intermediateOutput = io.intermediate_output as Record<string, unknown> | undefined;
+  const processStatus = intermediateOutput?.process_status as Record<string, unknown> | undefined;
+  if (intermediateOutput && processStatus?.isFinished) {
+    const timestamp = processStatus.time_of_state_change as Date;
+    msg +=
+      "Latest output fetched on " +
+      timestamp.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) +
+      ". ";
+  }
+  if (intermediateOutput && processStatus) {
+    if (processStatus.state === ProcessState.FAILED) {
+      msg += "Last fetch failed, please try again.";
+    }
+  }
+  return msg;
+});
+
+onMounted(() => {
+  // Only show the default output view while executing or if no output dataProducts
+  if (outputViews.value.length > 0 && (!isFinished.value || dataProducts.value.length === 0)) {
+    const defaultIdx = outputViews.value.findIndex((ov) => ov["provider-id"] === "default");
+    if (defaultIdx >= 0) currentViewIndex.value = defaultIdx;
+  }
+  if (providerId.value && providerId.value !== "default") {
+    loaderRef.value = createLoader();
+    loaderRef.value.load();
+  }
+});
+
+function selectView(outputViewIndex: number) {
+  currentViewIndex.value = outputViewIndex;
+  if (outputDataURL.value === null) {
+    loaderRef.value = null;
+  } else {
+    loaderRef.value = createLoader();
+    loaderRef.value.load();
+  }
+}
+
+function parametersUpdated(newParams: unknown) {
+  if (hasInteractiveParameters.value && interactiveParametersPanel.value && !interactiveParametersPanel.value.valid) {
+    return;
+  }
+  loaderRef.value?.load(newParams as Record<string, unknown>);
+}
+
+function createLoader() {
+  return new OutputViewDataLoader({
+    url: outputDataURL.value,
+    experimentId: experimentId.value,
+    experimentOutputName: props.experimentOutput.name,
+    providerId: providerId.value,
+  });
+}
+
+function fetchLatest() {
+  experimentStore.submitFetchIntermediateOutputs({
+    outputNames: [props.experimentOutput.name],
+  });
+}
 </script>

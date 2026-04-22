@@ -17,78 +17,74 @@
   </div>
 </template>
 
-<script>
-import store from "./store";
-import { mapGetters } from "vuex";
+<script setup lang="ts">
+import { ref, computed, watch, getCurrentInstance } from "vue";
+import { useWebComponentsStore } from "django-airavata-common-ui/js/stores/webComponents";
 
-export default {
-  name: "ComputeResourceSelector",
-  props: {
-    value: {
-      // compute resource host id
-      type: String,
-      default: null,
-    },
-    includedComputeResources: {
-      type: Array,
-      default: null,
-    },
-    disabled: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  store: store,
-  data() {
-    return {
-      resourceHostId: this.value,
-    };
-  },
-  created() {
-    this.$store.dispatch("loadComputeResourceNames");
-  },
-  computed: {
-    computeResourceOptions: function () {
-      const computeResourceIds = Object.keys(this.computeResourceNames).filter((crid) => {
-        if (this.includedComputeResources) {
-          return this.includedComputeResources.includes(crid);
-        } else {
-          return true;
-        }
-      });
-      const computeResourceOptions = computeResourceIds.map((computeHostId) => {
-        return {
-          value: computeHostId,
-          text:
-            computeHostId in this.computeResourceNames
-              ? this.computeResourceNames[computeHostId]
-              : "",
-        };
-      });
-      computeResourceOptions.sort((a, b) => a.text.localeCompare(b.text));
-      return computeResourceOptions;
-    },
-    ...mapGetters(["computeResourceNames"]),
-  },
-  methods: {
-    computeResourceChanged() {
-      this.emitValueChanged();
-    },
-    emitValueChanged: function () {
-      const inputEvent = new CustomEvent("input", {
-        detail: [this.resourceHostId],
-        composed: true,
-        bubbles: true,
-      });
-      this.$el.dispatchEvent(inputEvent);
-    },
-  },
-  watch: {
-    value() {
-      this.resourceHostId = this.value;
-    },
-  },
-};
+interface ComputeResourceOption {
+  value: string;
+  text: string;
+}
+
+const props = withDefaults(defineProps<{
+  value?: string | null;
+  includedComputeResources?: string[] | null;
+  disabled?: boolean;
+}>(), {
+  value: null,
+  includedComputeResources: null,
+  disabled: false,
+});
+
+const webComponentsStore = useWebComponentsStore();
+
+const resourceHostId = ref<string | null>(props.value ?? null);
+
+const computeResourceNames = computed(() =>
+  webComponentsStore.computeResourceNames as unknown as Record<string, string>
+);
+
+const computeResourceOptions = computed<ComputeResourceOption[]>(() => {
+  const computeResourceIds = Object.keys(computeResourceNames.value).filter((crid) => {
+    if (props.includedComputeResources) {
+      return props.includedComputeResources.includes(crid);
+    } else {
+      return true;
+    }
+  });
+  const options = computeResourceIds.map((computeHostId) => ({
+    value: computeHostId,
+    text:
+      computeHostId in computeResourceNames.value
+        ? computeResourceNames.value[computeHostId]
+        : "",
+  }));
+  options.sort((a, b) => a.text.localeCompare(b.text));
+  return options;
+});
+
+function emitValueChanged() {
+  const instance = getCurrentInstance();
+  const el = instance?.proxy?.$el as Element | undefined;
+  if (el) {
+    const inputEvent = new CustomEvent("input", {
+      detail: [resourceHostId.value],
+      composed: true,
+      bubbles: true,
+    });
+    el.dispatchEvent(inputEvent);
+  }
+}
+
+function computeResourceChanged() {
+  emitValueChanged();
+}
+
+watch(() => props.value, () => {
+  resourceHostId.value = props.value ?? null;
+});
+
+webComponentsStore.loadComputeResourceNames();
 </script>
 
 <style lang="scss">

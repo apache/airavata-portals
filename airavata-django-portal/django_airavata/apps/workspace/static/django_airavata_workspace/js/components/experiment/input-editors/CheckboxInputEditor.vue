@@ -10,7 +10,7 @@
         :value="opt.value"
         :checked="selectedOptions.indexOf(opt.value) !== -1"
         :disabled="readOnly"
-        @change="onCheckboxChange(opt.value, $event.target.checked)"
+        @change="onCheckboxChange(opt.value, ($event.target as HTMLInputElement).checked)"
         @change.stop
       />
       <label class="form-check-label" :for="id + '-' + opt.value">
@@ -20,54 +20,72 @@
   </div>
 </template>
 
-<script>
-import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
+<script setup lang="ts">
+import { computed } from "vue";
+import { models } from "django-airavata-api";
+import { useInputEditor } from "@/composables/useInputEditor";
+
+type InputDataObjectType = InstanceType<typeof models.InputDataObjectType>;
+type Experiment = InstanceType<typeof models.Experiment>;
+
+interface ConfigOption {
+  text: string;
+  value: string;
+  [key: string]: unknown;
+}
 
 const CONFIG_OPTION_TEXT_KEY = "text";
 const CONFIG_OPTION_VALUE_KEY = "value";
 
-export default {
-  name: "CheckboxInputEditor",
-  mixins: [InputEditorMixin],
-  props: {
-    value: {
-      type: String,
-    },
-    options: {
-      type: Array,
-      default: null,
-    },
-  },
-  computed: {
-    checkboxOptions: function () {
-      // passed in options take precedence over options in input metadata
-      const options = this.options || this.editorConfig.options || [];
-      return options.map((option) => {
-        return {
-          text: option[CONFIG_OPTION_TEXT_KEY],
-          value: option[CONFIG_OPTION_VALUE_KEY],
-        };
-      });
-    },
-    selectedOptions() {
-      return this.data ? this.data.split(",") : [];
-    },
-  },
-  methods: {
-    selectionsChanged(values) {
-      this.data = values && values.length > 0 ? values.join(",") : null;
-      this.valueChanged();
-    },
-    onCheckboxChange(value, checked) {
-      const current = this.selectedOptions.slice();
-      const idx = current.indexOf(value);
-      if (checked && idx === -1) {
-        current.push(value);
-      } else if (!checked && idx !== -1) {
-        current.splice(idx, 1);
-      }
-      this.selectionsChanged(current);
-    },
-  },
-};
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string | null;
+    experimentInput: InputDataObjectType;
+    experiment?: Experiment;
+    id: string;
+    readOnly?: boolean;
+    options?: ConfigOption[] | null;
+  }>(),
+  { modelValue: null, experiment: undefined, readOnly: false, options: null },
+);
+
+const emit = defineEmits<{
+  "update:modelValue": [value: string | null];
+  valid: [];
+  invalid: [messages: string[]];
+}>();
+
+const { data, editorConfig, valueChanged } = useInputEditor(
+  props,
+  (_, v) => emit("update:modelValue", v),
+  () => emit("valid"),
+  (msgs) => emit("invalid", msgs),
+);
+
+const checkboxOptions = computed(() => {
+  // passed in options take precedence over options in input metadata
+  const options: ConfigOption[] = props.options || editorConfig.value.options || [];
+  return options.map((option) => ({
+    text: option[CONFIG_OPTION_TEXT_KEY] as string,
+    value: option[CONFIG_OPTION_VALUE_KEY] as string,
+  }));
+});
+
+const selectedOptions = computed(() => (data.value ? data.value.split(",") : []));
+
+function selectionsChanged(values: string[]) {
+  data.value = values && values.length > 0 ? values.join(",") : null;
+  valueChanged();
+}
+
+function onCheckboxChange(value: string, checked: boolean) {
+  const current = selectedOptions.value.slice();
+  const idx = current.indexOf(value);
+  if (checked && idx === -1) {
+    current.push(value);
+  } else if (!checked && idx !== -1) {
+    current.splice(idx, 1);
+  }
+  selectionsChanged(current);
+}
 </script>

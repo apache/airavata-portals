@@ -85,66 +85,76 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import { models } from "django-airavata-api";
-import { mixins } from "django-airavata-common-ui";
-import JSONEditor from "./JSONEditor.vue";
-export default {
-  name: "ApplicationOutputFieldEditor",
-  components: {
-    "json-editor": JSONEditor,
+import JsonEditor from "./JSONEditor.vue";
+
+type OutputDataObjectType = InstanceType<typeof models.OutputDataObjectType>;
+
+const props = defineProps<{
+  modelValue: OutputDataObjectType;
+  focus?: boolean;
+  readonly?: boolean;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: OutputDataObjectType];
+  delete: [];
+}>();
+
+const nameInput = ref<HTMLInputElement | null>(null);
+
+const data = ref<OutputDataObjectType>(
+  props.modelValue.clone() as OutputDataObjectType,
+);
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    data.value = newValue.clone() as OutputDataObjectType;
   },
-  mixins: [mixins.VModelMixin],
-  props: {
-    value: {
-      type: models.OutputDataObjectType,
-    },
-    focus: {
-      type: Boolean,
-    },
-    readonly: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  computed: {
-    outputTypeOptions() {
-      return models.OutputDataObjectType.VALID_DATA_TYPES.map((dataType) => {
-        return {
-          value: dataType,
-          text: dataType.name,
-        };
-      });
-    },
-    trueFalseOptions() {
-      return [
-        { text: "True", value: true },
-        { text: "False", value: false },
-      ];
-    },
-    id() {
-      return "id-" + this.data.key;
-    },
-  },
-  mounted() {
-    if (this.focus) {
-      this.doFocus();
+  { deep: true },
+);
+
+watch(
+  data,
+  (newValue, oldValue) => {
+    if (newValue === oldValue) {
+      emit("update:modelValue", newValue);
     }
   },
-  methods: {
-    doFocus() {
-      this.$refs.nameInput.focus();
-      this.$el.scrollIntoView({ behavior: "smooth" });
-    },
-    deleteApplicationOutput() {
-      this.$emit("delete");
-    },
-    setPlainText() {
-      const metadata = this.data.metaData || {};
-      metadata["file-metadata"] = { "mime-type": "text/plain" };
-      // Clone so that JSONEditor updates with new value
-      this.data.metaData = JSON.parse(JSON.stringify(metadata));
-    },
-  },
-};
+  { deep: true },
+);
+
+const outputTypeOptions = computed(() =>
+  (models.OutputDataObjectType.VALID_DATA_TYPES as Array<{ name: string }>).map((dataType) => ({
+    value: dataType,
+    text: dataType.name,
+  })),
+);
+
+const trueFalseOptions = computed(() => [
+  { text: "True", value: true },
+  { text: "False", value: false },
+]);
+
+const id = computed(() => "id-" + (data.value as { key: string }).key);
+
+onMounted(() => {
+  if (props.focus) {
+    nameInput.value?.focus();
+  }
+});
+
+function deleteApplicationOutput() {
+  emit("delete");
+}
+
+function setPlainText() {
+  const metadata = ((data.value as { metaData?: Record<string, unknown> }).metaData || {}) as Record<string, unknown>;
+  metadata["file-metadata"] = { "mime-type": "text/plain" };
+  // Clone so that JSONEditor updates with new value
+  (data.value as { metaData: Record<string, unknown> }).metaData = JSON.parse(JSON.stringify(metadata)) as Record<string, unknown>;
+}
 </script>

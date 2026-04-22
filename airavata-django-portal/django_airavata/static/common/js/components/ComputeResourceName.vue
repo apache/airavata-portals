@@ -1,48 +1,40 @@
 <template>
   <span :class="{ 'font-italic': notAvailable }">{{ name }}</span>
 </template>
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import { services } from "django-airavata-api";
-export default {
-  name: "ComputeResourceName",
-  props: {
-    computeResourceId: {
-      type: String,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      computeResource: null,
-      notAvailable: false,
-    };
-  },
-  computed: {
-    name() {
-      if (this.notAvailable) {
-        return "N/A";
-      } else {
-        return this.computeResource ? this.computeResource.host_name : "";
-      }
-    },
-  },
-  watch: {
-    computeResourceId() {
-      this.loadComputeResource();
-    },
-  },
-  created() {
-    this.loadComputeResource();
-  },
-  methods: {
-    loadComputeResource() {
-      services.ComputeResourceService.retrieve(
-        { lookup: this.computeResourceId },
-        { ignoreErrors: true, cache: true },
-      )
-        .then((computeResource) => (this.computeResource = computeResource))
-        .catch(() => (this.notAvailable = true));
-    },
-  },
-};
+
+const props = defineProps<{
+  computeResourceId: string;
+}>();
+
+const computeResource = ref<{ host_name: string } | null>(null);
+const notAvailable = ref(false);
+
+const name = computed(() => {
+  if (notAvailable.value) {
+    return "N/A";
+  } else {
+    return computeResource.value ? computeResource.value.host_name : "";
+  }
+});
+
+watch(
+  () => props.computeResourceId,
+  () => loadComputeResource(),
+);
+
+onMounted(() => {
+  loadComputeResource();
+});
+
+function loadComputeResource(): void {
+  services.ComputeResourceService.retrieve(
+    { lookup: props.computeResourceId },
+    { ignoreErrors: true, cache: true },
+  )
+    .then((cr: { host_name: string }) => (computeResource.value = cr))
+    .catch(() => (notAvailable.value = true));
+}
 </script>

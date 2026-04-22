@@ -36,14 +36,14 @@
           class="form-select"
           :value="selectedQueueName"
           required
-          @change="queueChanged($event.target.value)"
+          @change="queueChanged(($event.target as HTMLInputElement).value)"
           @input.stop
         >
           <option v-for="opt in queueOptions" :key="opt.value" :value="opt.value">
             {{ opt.text }}
           </option>
         </select>
-        <div slot="description">{{ queueDescription }}</div>
+        <div class="form-text text-muted">{{ queueDescription }}</div>
       </div>
       <div class="d-flex flex-row">
         <div class="flex-fill">
@@ -58,7 +58,7 @@
               required
               @input.stop="updateNodeCount"
             />
-            <div slot="description">
+            <div class="form-text text-muted">
               <i class="fa fa-info-circle" aria-hidden="true"></i>
               Max Allowed Nodes = {{ maxAllowedNodes }}
             </div>
@@ -74,16 +74,16 @@
               required
               @input.stop="updateTotalCPUCount"
             />
-            <div slot="description">
+            <div class="form-text text-muted">
               <i class="fa fa-info-circle" aria-hidden="true"></i>
               Max Allowed Cores = {{ maxAllowedCores
-              }}<template v-if="queue && queue.cpuPerNode > 0"
-                >. There are {{ queue.cpuPerNode }} cores per node.
+              }}<template v-if="queue && (queue as any).cpuPerNode > 0"
+                >. There are {{ (queue as any).cpuPerNode }} cores per node.
               </template>
             </div>
           </div>
         </div>
-        <div v-if="queue && queue.cpuPerNode > 0" class="d-flex flex-column">
+        <div v-if="queue && (queue as any).cpuPerNode > 0" class="d-flex flex-column">
           <div
             class="flex-fill"
             style="
@@ -128,7 +128,7 @@
             @input.stop="updateWallTimeLimit"
           />
         </div>
-        <div slot="description">
+        <div class="form-text text-muted">
           <i class="fa fa-info-circle" aria-hidden="true"></i>
           Max Allowed Wall Time = {{ maxAllowedWalltime }} minutes
         </div>
@@ -149,7 +149,7 @@
             @input.stop="updateTotalPhysicalMemory"
           />
         </div>
-        <div slot="description">
+        <div class="form-text text-muted">
           <i class="fa fa-info-circle" aria-hidden="true"></i>
           Max Physical Memory = {{ maxMemory }} MB
         </div>
@@ -164,172 +164,173 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, getCurrentInstance } from "vue";
 import { utils } from "django-airavata-api";
+import { useWebComponentsStore } from "django-airavata-common-ui/js/stores/webComponents";
 
-import store from "./store";
-import { mapGetters } from "vuex";
+// Vue maps kebab-case HTML attribute "total-cpu-count" → camelCase prop "totalCpuCount"
+const props = withDefaults(defineProps<{
+  queueName?: string;
+  nodeCount?: string;
+  wallTimeLimit?: string;
+  totalPhysicalMemory?: string;
+  totalCpuCount?: string;
+}>(), {
+  queueName: undefined,
+  nodeCount: undefined,
+  wallTimeLimit: undefined,
+  totalPhysicalMemory: undefined,
+  totalCpuCount: undefined,
+});
 
-export default {
-  store: store,
-  props: {
-    queueName: {
-      type: String,
-    },
-    nodeCount: {
-      type: String,
-    },
-    "total-cpu-count": {
-      type: String,
-    },
-    wallTimeLimit: {
-      type: String,
-    },
-    totalPhysicalMemory: {
-      type: String,
-    },
-  },
-  data() {
-    return {
-      showConfiguration: false,
-      enableNodeCountToCpuCheck: true,
-    };
-  },
-  created() {
-    this.$store.dispatch("initializeQueueSettings", {
-      queueName: this.queueName,
-      nodeCount: this.nodeCount,
-      totalCPUCount: this.totalCPUCount,
-      wallTimeLimit: this.wallTimeLimit,
-      totalPhysicalMemory: this.totalPhysicalMemory,
+const webComponentsStore = useWebComponentsStore();
+
+const showConfiguration = ref(false);
+const enableNodeCountToCpuCheck = ref(true);
+
+const queue = computed(() => webComponentsStore.queue);
+const queues = computed(() => webComponentsStore.queues as unknown as Array<{ queueName: string; queueDescription?: string }> | null);
+const maxAllowedCores = computed(() => webComponentsStore.maxAllowedCores);
+const maxAllowedNodes = computed(() => webComponentsStore.maxAllowedNodes);
+const maxAllowedWalltime = computed(() => webComponentsStore.maxAllowedWalltime);
+const maxMemory = computed(() => webComponentsStore.maxMemory);
+const selectedQueueName = computed(() => webComponentsStore.queueName);
+const getTotalCPUCount = computed(() => webComponentsStore.totalCPUCount);
+const getNodeCount = computed(() => webComponentsStore.nodeCount);
+const getWallTimeLimit = computed(() => webComponentsStore.wallTimeLimit);
+const getTotalPhysicalMemory = computed(() => webComponentsStore.totalPhysicalMemory);
+const showQueueSettings = computed(() => webComponentsStore.showQueueSettings);
+
+const totalCPUCountPropValue = computed(() => props.totalCpuCount);
+
+const queueOptions = computed(() => {
+  if (!queues.value) {
+    return [];
+  }
+  const options = queues.value.map((q) => ({
+    value: q.queueName,
+    text: q.queueName,
+  }));
+  utils.StringUtils.sortIgnoreCase(options, (q: { text: string }) => q.text);
+  return options;
+});
+
+const queueDescription = computed(() => {
+  const q = queue.value as unknown as { queueDescription?: string } | null;
+  return q ? q.queueDescription : null;
+});
+
+const currentQueueSettings = computed(() => ({
+  queueName: selectedQueueName.value,
+  totalCPUCount: getTotalCPUCount.value,
+  nodeCount: getNodeCount.value,
+  wallTimeLimit: getWallTimeLimit.value,
+  totalPhysicalMemory: getTotalPhysicalMemory.value,
+}));
+
+function emitValueChanged() {
+  const instance = getCurrentInstance();
+  const el = instance?.proxy?.$el as Element | undefined;
+  if (el) {
+    const inputEvent = new CustomEvent("input", {
+      detail: [currentQueueSettings.value],
+      composed: true,
+      bubbles: true,
     });
-  },
-  computed: {
-    ...mapGetters({
-      queue: "queue",
-      queues: "queues",
-      maxAllowedCores: "maxAllowedCores",
-      maxAllowedNodes: "maxAllowedNodes",
-      maxAllowedWalltime: "maxAllowedWalltime",
-      maxMemory: "maxMemory",
-      selectedQueueName: "queueName",
-      getTotalCPUCount: "totalCPUCount",
-      getNodeCount: "nodeCount",
-      getWallTimeLimit: "wallTimeLimit",
-      getTotalPhysicalMemory: "totalPhysicalMemory",
-      showQueueSettings: "showQueueSettings",
-    }),
-    totalCPUCount() {
-      return this.totalCpuCount;
-    },
-    queueOptions() {
-      if (!this.queues) {
-        return [];
-      }
-      const queueOptions = this.queues.map((q) => {
-        return {
-          value: q.queueName,
-          text: q.queueName,
-        };
-      });
-      utils.StringUtils.sortIgnoreCase(queueOptions, (q) => q.text);
-      return queueOptions;
-    },
-    queueDescription() {
-      return this.queue ? this.queue.queueDescription : null;
-    },
-    currentQueueSettings() {
-      return {
-        queueName: this.selectedQueueName,
-        totalCPUCount: this.getTotalCPUCount,
-        nodeCount: this.getNodeCount,
-        wallTimeLimit: this.getWallTimeLimit,
-        totalPhysicalMemory: this.getTotalPhysicalMemory,
-      };
-    },
-  },
-  methods: {
-    queueChanged(queueName) {
-      this.$store.dispatch("updateQueueName", { queueName });
-    },
-    updateNodeCount(event) {
-      this.$store.dispatch("updateNodeCount", {
-        nodeCount: event.target.value,
-        enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck,
-      });
-    },
-    updateTotalCPUCount(event) {
-      this.$store.dispatch("updateTotalCPUCount", {
-        totalCPUCount: event.target.value,
-        enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck,
-      });
-    },
-    updateWallTimeLimit(event) {
-      this.$store.dispatch("updateWallTimeLimit", {
-        wallTimeLimit: event.target.value,
-      });
-    },
-    updateTotalPhysicalMemory(event) {
-      this.$store.dispatch("updateTotalPhysicalMemory", {
-        totalPhysicalMemory: event.target.value,
-      });
-    },
-    emitValueChanged: function () {
-      const inputEvent = new CustomEvent("input", {
-        detail: [this.currentQueueSettings],
-        composed: true,
-        bubbles: true,
-      });
-      this.$el.dispatchEvent(inputEvent);
-    },
-  },
-  watch: {
-    enableNodeCountToCpuCheck() {
-      if (this.enableNodeCountToCpuCheck) {
-        this.$store.dispatch("updateNodeCount", {
-          nodeCount: this.getNodeCount,
-          enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck,
-        });
-      }
-    },
-    queueName(value) {
-      if (value && this.selectedQueueName !== value) {
-        this.queueChanged(value);
-      }
-    },
-    nodeCount(value) {
-      if (value && this.getNodeCount !== value) {
-        this.$store.dispatch("updateNodeCount", {
-          nodeCount: value,
-          enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck,
-        });
-      }
-    },
-    totalCPUCount(value) {
-      if (value && this.getTotalCPUCount !== value) {
-        this.$store.dispatch("updateTotalCPUCount", {
-          totalCPUCount: value,
-          enableNodeCountToCpuCheck: this.enableNodeCountToCpuCheck,
-        });
-      }
-    },
-    wallTimeLimit(value) {
-      if (value && this.getWallTimeLimit !== value) {
-        this.$store.dispatch("updateWallTimeLimit", { wallTimeLimit: value });
-      }
-    },
-    totalPhysicalMemory(value) {
-      if (value && this.getTotalPhysicalMemory !== value) {
-        this.$store.dispatch("updateTotalPhysicalMemory", {
-          totalPhysicalMemory: value,
-        });
-      }
-    },
-    currentQueueSettings() {
-      this.emitValueChanged();
-    },
-  },
-};
+    el.dispatchEvent(inputEvent);
+  }
+}
+
+function queueChanged(newQueueName: string) {
+  webComponentsStore.updateQueueName({ queueName: newQueueName });
+}
+
+function updateNodeCount(event: Event) {
+  webComponentsStore.updateNodeCount({
+    nodeCount: Number((event.target as HTMLInputElement).value),
+    enableNodeCountToCpuCheck: enableNodeCountToCpuCheck.value,
+  });
+}
+
+function updateTotalCPUCount(event: Event) {
+  webComponentsStore.updateTotalCPUCount({
+    totalCPUCount: Number((event.target as HTMLInputElement).value),
+    enableNodeCountToCpuCheck: enableNodeCountToCpuCheck.value,
+  });
+}
+
+function updateWallTimeLimit(event: Event) {
+  webComponentsStore.updateWallTimeLimit({
+    wallTimeLimit: Number((event.target as HTMLInputElement).value),
+  });
+}
+
+function updateTotalPhysicalMemory(event: Event) {
+  webComponentsStore.updateTotalPhysicalMemory({
+    totalPhysicalMemory: Number((event.target as HTMLInputElement).value),
+  });
+}
+
+watch(enableNodeCountToCpuCheck, () => {
+  if (enableNodeCountToCpuCheck.value) {
+    webComponentsStore.updateNodeCount({
+      nodeCount: getNodeCount.value ?? 0,
+      enableNodeCountToCpuCheck: enableNodeCountToCpuCheck.value,
+    });
+  }
+});
+
+watch(() => props.queueName, (value) => {
+  if (value && selectedQueueName.value !== value) {
+    queueChanged(value);
+  }
+});
+
+watch(() => props.nodeCount, (value) => {
+  if (value && getNodeCount.value !== Number(value)) {
+    webComponentsStore.updateNodeCount({
+      nodeCount: Number(value),
+      enableNodeCountToCpuCheck: enableNodeCountToCpuCheck.value,
+    });
+  }
+});
+
+watch(totalCPUCountPropValue, (value) => {
+  if (value && getTotalCPUCount.value !== Number(value)) {
+    webComponentsStore.updateTotalCPUCount({
+      totalCPUCount: Number(value),
+      enableNodeCountToCpuCheck: enableNodeCountToCpuCheck.value,
+    });
+  }
+});
+
+watch(() => props.wallTimeLimit, (value) => {
+  if (value && getWallTimeLimit.value !== Number(value)) {
+    webComponentsStore.updateWallTimeLimit({ wallTimeLimit: Number(value) });
+  }
+});
+
+watch(() => props.totalPhysicalMemory, (value) => {
+  if (value && getTotalPhysicalMemory.value !== Number(value)) {
+    webComponentsStore.updateTotalPhysicalMemory({
+      totalPhysicalMemory: Number(value),
+    });
+  }
+});
+
+watch(currentQueueSettings, () => {
+  emitValueChanged();
+});
+
+// Initialize
+webComponentsStore.initializeQueueSettings({
+  queueName: props.queueName ?? "",
+  nodeCount: Number(props.nodeCount ?? 0),
+  totalCPUCount: Number(totalCPUCountPropValue.value ?? 0),
+  wallTimeLimit: Number(props.wallTimeLimit ?? 0),
+  totalPhysicalMemory: Number(props.totalPhysicalMemory ?? 0),
+});
 </script>
 
 <style lang="scss">

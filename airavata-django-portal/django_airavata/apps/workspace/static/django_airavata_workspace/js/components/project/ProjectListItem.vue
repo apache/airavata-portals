@@ -9,7 +9,7 @@
       <span v-if="isCurrentUser" class="badge bg-secondary ms-1">You</span>
       <span v-else-if="isAdmin" class="badge bg-primary ms-1">Admin</span>
     </td>
-    <td class="text-nowrap" :title="project.creation_time">{{ creationTime }}</td>
+    <td class="text-nowrap" :title="project.creation_time != null ? String(project.creation_time) : undefined">{{ creationTime }}</td>
     <td class="text-nowrap" style="width: 1%" @click.stop>
       <div class="d-flex gap-2 justify-content-end flex-nowrap">
         <button
@@ -24,40 +24,49 @@
   </tr>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed } from "vue";
 import urls from "../../utils/urls";
-import { relativeTime } from "django-airavata-common-ui/js/utils/dates.js";
+import { relativeTime } from "django-airavata-common-ui/js/utils/dates";
 import { session } from "django-airavata-api";
 
-export default {
-  name: "ProjectListItem",
-  props: ["project"],
-  emits: ["delete"],
-  computed: {
-    creationTime: function () {
-      var dt = new Date(this.project.creation_time);
-      return relativeTime(dt);
-    },
-    overviewLink() {
-      return urls.projectOverview(this.project);
-    },
-    ownerUsername() {
-      const owner = this.project.owner || "";
-      const lastAt = owner.lastIndexOf("@");
-      return lastAt > 0 ? owner.substring(0, lastAt) : owner;
-    },
-    isCurrentUser() {
-      return this.ownerUsername === session.Session.username;
-    },
-    isAdmin() {
-      const name = this.ownerUsername;
-      return name === "default-admin" || name === "admin";
-    },
-  },
-  methods: {
-    navigate() {
-      window.location.href = this.overviewLink;
-    },
-  },
-};
+interface Project {
+  project_id: string;
+  name: string;
+  owner?: string;
+  creation_time?: string | Date;
+  [key: string]: unknown;
+}
+
+const props = defineProps<{
+  project: Project;
+}>();
+
+defineEmits<{
+  delete: [project: Project];
+}>();
+
+const creationTime = computed(() => {
+  const dt = new Date(props.project.creation_time as string);
+  return relativeTime(dt);
+});
+
+const overviewLink = computed(() => urls.projectOverview(props.project));
+
+const ownerUsername = computed(() => {
+  const owner = (props.project.owner as string) || "";
+  const lastAt = owner.lastIndexOf("@");
+  return lastAt > 0 ? owner.substring(0, lastAt) : owner;
+});
+
+const isCurrentUser = computed(() => ownerUsername.value === session.Session.username);
+
+const isAdmin = computed(() => {
+  const name = ownerUsername.value;
+  return name === "default-admin" || name === "admin";
+});
+
+function navigate() {
+  window.location.href = overviewLink.value;
+}
 </script>

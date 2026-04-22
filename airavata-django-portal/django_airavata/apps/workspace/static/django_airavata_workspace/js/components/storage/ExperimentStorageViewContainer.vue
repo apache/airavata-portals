@@ -22,7 +22,7 @@
       ></experiment-storage-path-viewer>
 
       <div v-else-if="archived" class="alert alert-warning">
-        This experiment was archived on {{ experimentArchive.created_date }}.
+        This experiment was archived on {{ experimentArchive?.created_date }}.
       </div>
       <div v-else-if="experimentDataDirNotFound" class="alert alert-warning">
         Experiment Data Directory does not exist in storage.
@@ -36,73 +36,81 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
 import { errors, services, utils } from "django-airavata-api";
 import ExperimentStoragePathViewer from "./ExperimentStoragePathViewer.vue";
 
-export default {
-  name: "ExperimentStorageViewContainer",
-  components: {
-    ExperimentStoragePathViewer,
-  },
-  props: {
-    experimentId: {
-      type: String,
-      required: true,
+interface StorageDirectory {
+  name: string;
+  path: string;
+  hidden?: boolean;
+  modified_time: Date;
+  size: number;
+}
+
+interface StorageFile {
+  name: string;
+  mime_type?: string;
+  data_product_uri?: string;
+  download_url?: string;
+  modified_time: Date;
+  size: number;
+}
+
+interface ExperimentStoragePath {
+  parts: string[];
+  directories: StorageDirectory[];
+  files: StorageFile[];
+}
+
+const props = defineProps<{
+  experimentId: string;
+}>();
+
+const experimentStoragePath = ref<ExperimentStoragePath | null>(null);
+const experimentDataDirNotFound = ref(false);
+const experimentArchive = ref<{ archived?: boolean; max_age?: number; created_date?: string } | null>(null);
+
+const canDownloadDataDirectory = computed(
+  () => experimentStoragePath.value !== null && experimentStoragePath.value !== undefined && !experimentDataDirNotFound.value,
+);
+const archived = computed(() => experimentArchive.value?.archived);
+
+function loadExperimentStoragePath(path: string) {
+  return services.ExperimentStoragePathService.get(
+    {
+      // ExperimentStoragePathService doesn't encode path parameters so must
+      // explicitly encode experiment id
+      experimentId: encodeURIComponent(props.experimentId),
+      path,
     },
-  },
-  data() {
-    return {
-      experimentStoragePath: null,
-      experimentDataDirNotFound: false,
-      experimentArchive: null,
-    };
-  },
-  computed: {
-    canDownloadDataDirectory() {
-      return this.experimentStoragePath && !this.experimentDataDirNotFound;
-    },
-    archived() {
-      return this.experimentArchive?.archived;
-    },
-    archiveMaxAge() {
-      return this.experimentArchive?.max_age;
-    },
-  },
-  created() {
-    this.loadExperimentArchive();
-    return this.loadExperimentStoragePath("");
-  },
-  methods: {
-    loadExperimentStoragePath(path) {
-      return services.ExperimentStoragePathService.get(
-        {
-          // ExperimentStoragePathService doesn't encode path parameters so must
-          // explicitly encode experiment id
-          experimentId: encodeURIComponent(this.experimentId),
-          path,
-        },
-        { ignoreErrors: true },
-      )
-        .then((result) => (this.experimentStoragePath = result))
-        .catch((error) => {
-          if (errors.ErrorUtils.isAPIException(error) && error.details.status === 404) {
-            this.experimentDataDirNotFound = true;
-          } else {
-            throw error;
-          }
-        })
-        .catch(utils.FetchUtils.reportError);
-    },
-    directorySelected(path) {
-      return this.loadExperimentStoragePath(path);
-    },
-    async loadExperimentArchive() {
-      const experimentArchive = await services.ExperimentArchiveService.get({
-        experimentId: this.experimentId,
-      });
-      this.experimentArchive = experimentArchive;
-    },
-  },
-};
+    { ignoreErrors: true },
+  )
+    .then((result: ExperimentStoragePath) => (experimentStoragePath.value = result))
+    .catch((error: unknown) => {
+      if (errors.ErrorUtils.isAPIException(error) && (error as { details: { status: number } }).details.status === 404) {
+        experimentDataDirNotFound.value = true;
+      } else {
+        throw error;
+      }
+    })
+    .catch(utils.FetchUtils.reportError);
+}
+
+function directorySelected(path: string) {
+  return loadExperimentStoragePath(path);
+}
+
+async function loadExperimentArchive() {
+  const result = await services.ExperimentArchiveService.get({
+    experimentId: props.experimentId,
+  });
+  experimentArchive.value = result;
+}
+
+onMounted(() => {
+  loadExperimentArchive();
+  loadExperimentStoragePath("");
+});
 </script>

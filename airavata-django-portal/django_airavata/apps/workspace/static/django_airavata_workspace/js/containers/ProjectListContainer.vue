@@ -8,7 +8,7 @@
         </p>
       </div>
       <div class="col-auto">
-        <project-button-new @new-project="onNewProject" />
+        <ProjectButtonNew @new-project="onNewProject" />
       </div>
     </div>
     <div class="row">
@@ -36,35 +36,36 @@
                     </div>
                   </td>
                 </tr>
-                <project-list-item
-                  v-for="project in projects || []"
+                <ProjectListItem
+                  v-for="project in (projects || []) as Project[]"
                   :key="project.project_id"
                   :project="project"
                   @delete="onDeleteProject"
                 />
               </tbody>
             </table>
-            <pager
-              v-if="projects && projects.length > 0"
+            <Pager
+              v-if="projects && projects.length > 0 && projectsPaginator"
               :paginator="projectsPaginator"
               @next="nextProjects"
               @previous="previousProjects"
-            ></pager>
+            />
           </div>
         </div>
       </div>
     </div>
-    <project-delete-modal
+    <ProjectDeleteModal
       v-if="deleteTarget"
       ref="deleteModal"
-      :project-id="deleteTarget.project_id"
-      :project-name="deleteTarget.name"
+      :project-id="(deleteTarget as any).project_id"
+      :project-name="(deleteTarget as any).name"
       @delete="confirmDelete"
     />
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onBeforeMount, nextTick } from "vue";
 import ProjectButtonNew from "../components/project/ProjectButtonNew.vue";
 import ProjectListItem from "../components/project/ProjectListItem.vue";
 import ProjectDeleteModal from "../components/project/ProjectDeleteModal.vue";
@@ -72,56 +73,62 @@ import ProjectDeleteModal from "../components/project/ProjectDeleteModal.vue";
 import { services } from "django-airavata-api";
 import { components as comps } from "django-airavata-common-ui";
 
-export default {
-  name: "ProjectListContainer",
-  components: {
-    "project-list-item": ProjectListItem,
-    "project-button-new": ProjectButtonNew,
-    "project-delete-modal": ProjectDeleteModal,
-    pager: comps.Pager,
-  },
-  props: ["initialProjectsData"],
-  data() {
-    return {
-      projectsPaginator: null,
-      deleteTarget: null,
-    };
-  },
-  computed: {
-    projects: function () {
-      return this.projectsPaginator ? this.projectsPaginator.results : null;
-    },
-  },
-  beforeMount: function () {
-    services.ProjectService.list({
-      initialData: this.initialProjectsData,
-    }).then((result) => (this.projectsPaginator = result));
-  },
-  methods: {
-    nextProjects: function () {
-      this.projectsPaginator.next();
-    },
-    previousProjects: function () {
-      this.projectsPaginator.previous();
-    },
-    onNewProject: function () {
-      services.ProjectService.list().then((result) => (this.projectsPaginator = result));
-    },
-    onDeleteProject(project) {
-      this.deleteTarget = project;
-      this.$nextTick(() => {
-        this.$refs.deleteModal.show();
-      });
-    },
-    async confirmDelete(projectId) {
-      try {
-        await services.ProjectService.delete({ lookup: projectId });
-        this.deleteTarget = null;
-        this.onNewProject(); // Reload list
-      } catch (err) {
-        console.error("Failed to delete project:", err);
-      }
-    },
-  },
-};
+interface Project {
+  project_id: string;
+  name: string;
+  owner?: string;
+  creation_time?: string | Date;
+  [key: string]: unknown;
+}
+
+const Pager = comps.Pager;
+
+const props = withDefaults(defineProps<{
+  initialProjectsData?: unknown | null;
+}>(), {
+  initialProjectsData: undefined,
+});
+
+const projectsPaginator = ref<unknown>(null);
+const deleteTarget = ref<unknown | null>(null);
+const deleteModal = ref<{ show(): void } | null>(null);
+
+const projects = computed<unknown[] | null>(() =>
+  projectsPaginator.value ? (projectsPaginator.value as { results: unknown[] }).results : null,
+);
+
+function nextProjects() {
+  (projectsPaginator.value as { next(): void }).next();
+}
+
+function previousProjects() {
+  (projectsPaginator.value as { previous(): void }).previous();
+}
+
+function onNewProject() {
+  services.ProjectService.list().then((result: unknown) => (projectsPaginator.value = result));
+}
+
+function onDeleteProject(project: unknown) {
+  deleteTarget.value = project;
+  nextTick(() => {
+    deleteModal.value?.show();
+  });
+}
+
+async function confirmDelete(projectId: string) {
+  try {
+    await services.ProjectService.delete({ lookup: projectId });
+    deleteTarget.value = null;
+    onNewProject();
+  } catch (err) {
+    console.error("Failed to delete project:", err);
+  }
+}
+
+onBeforeMount(() => {
+  services.ProjectService.list({
+    initialData: props.initialProjectsData,
+  }).then((result: unknown) => (projectsPaginator.value = result));
+});
 </script>

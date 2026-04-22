@@ -4,9 +4,6 @@
   </aside>
 </template>
 
-<script>
+<script setup lang="ts">
 /* eslint-disable vue/multi-word-component-names */
-export default {
-  name: "Sidebar",
-};
 </script>

@@ -20,51 +20,44 @@
     </template>
   </list-layout>
 </template>
-<script>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { layouts, components as comps } from "django-airavata-common-ui";
+import { services, utils } from "django-airavata-api";
 
-import { services, session, utils } from "django-airavata-api";
+const ListLayout = layouts.ListLayout;
+const ApplicationCard = comps.ApplicationCard;
 
-export default {
-  components: {
-    "application-card": comps.ApplicationCard,
-    "list-layout": layouts.ListLayout,
-  },
-  data() {
-    return {
-      appModules: [],
-    };
-  },
-  computed: {
-    sortedModules() {
-      if (this.appModules) {
-        return utils.StringUtils.sortIgnoreCase(this.appModules.slice(), (a) => a.app_module_name);
-      } else {
-        return [];
-      }
-    },
-    isGatewayAdmin() {
-      return session.Session.is_gateway_admin;
-    },
-  },
-  created() {
-    this.loadApplications();
-  },
-  methods: {
-    clickHandler(item) {
-      this.$router.push({
-        name: "application_module",
-        params: { id: item.app_module_id },
-      });
-    },
-    newApplicationHandler() {
-      this.$router.push({ name: "new_application_module" });
-    },
-    loadApplications() {
-      services.ApplicationModuleService.listAll().then(
-        (appModules) => (this.appModules = appModules),
-      );
-    },
-  },
-};
+const router = useRouter();
+const appModules = ref<unknown[]>([]);
+
+const sortedModules = computed(() => {
+  if (appModules.value) {
+    return utils.StringUtils.sortIgnoreCase(
+      appModules.value.slice(),
+      (a: { app_module_name: string }) => a.app_module_name,
+    );
+  } else {
+    return [];
+  }
+});
+
+onMounted(() => {
+  services.ApplicationModuleService.listAll().then(
+    (mods: unknown[]) => (appModules.value = mods),
+  );
+});
+
+function clickHandler(item: { app_module_id: string }) {
+  router.push({
+    name: "application_module",
+    params: { id: item.app_module_id },
+  });
+}
+
+function newApplicationHandler() {
+  router.push({ name: "new_application_module" });
+}
 </script>

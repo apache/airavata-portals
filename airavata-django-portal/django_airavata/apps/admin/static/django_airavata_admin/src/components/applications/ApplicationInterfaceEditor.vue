@@ -82,11 +82,11 @@
           <application-input-field-editor
             v-for="input in data.applicationInputs"
             :key="input.key"
-            :value="input"
+            :model-value="input"
             :focus="input.key === focusApplicationInputKey"
             :collapse="collapseApplicationInputs"
             :readonly="readonly"
-            @input="updatedInput"
+            @update:model-value="updatedInput"
             @delete="deleteInput(input)"
           />
         </draggable>
@@ -105,10 +105,10 @@
         <application-output-field-editor
           v-for="output in data.applicationOutputs"
           :key="output.key"
-          :value="output"
+          :model-value="output"
           :focus="output.key === focusApplicationOutputKey"
           :readonly="readonly"
-          @input="updatedOutput"
+          @update:model-value="updatedOutput"
           @delete="deleteOutput(output)"
         />
       </div>
@@ -123,107 +123,119 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import { models, services } from "django-airavata-api";
-import { mixins } from "django-airavata-common-ui";
 import ApplicationInputFieldEditor from "./ApplicationInputFieldEditor.vue";
 import ApplicationOutputFieldEditor from "./ApplicationOutputFieldEditor.vue";
-
 import draggable from "vuedraggable";
 
-export default {
-  name: "ApplicationInterfaceEditor",
-  components: {
-    ApplicationInputFieldEditor,
-    ApplicationOutputFieldEditor,
-    draggable,
+type AppInterface = InstanceType<typeof models.ApplicationInterfaceDefinition>;
+
+const props = defineProps<{
+  modelValue: AppInterface;
+  readonly?: boolean;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: AppInterface];
+}>();
+
+const focusApplicationInputKey = ref<string | null>(null);
+const focusApplicationOutputKey = ref<string | null>(null);
+const dragOptions = { handle: ".drag-handle" };
+const collapseApplicationInputs = ref(false);
+const queueSettingsCalculators = ref<Array<{ id: string; name: string }> | null>(null);
+
+const data = ref<AppInterface>(
+  props.modelValue.clone() as AppInterface,
+);
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    data.value = newValue.clone() as AppInterface;
   },
-  mixins: [mixins.VModelMixin],
-  props: {
-    value: {
-      type: models.ApplicationInterfaceDefinition,
-    },
-    readonly: {
-      type: Boolean,
-      default: false,
-    },
+  { deep: true },
+);
+
+watch(
+  data,
+  (newValue, oldValue) => {
+    if (newValue === oldValue) {
+      emit("update:modelValue", newValue);
+    }
   },
-  data() {
-    return {
-      focusApplicationInputKey: null,
-      focusApplicationOutputKey: null,
-      dragOptions: {
-        handle: ".drag-handle",
-      },
-      collapseApplicationInputs: false,
-      queueSettingsCalculators: null,
-    };
-  },
-  computed: {
-    trueFalseOptions() {
-      return [
-        { text: "True", value: true },
-        { text: "False", value: false },
-      ];
-    },
-    queueSettingsCalculatorOptions() {
-      if (this.queueSettingsCalculators) {
-        return this.queueSettingsCalculators.map((qsc) => {
-          return {
-            text: qsc.name,
-            value: qsc.id,
-          };
-        });
-      } else {
-        return [];
-      }
-    },
-  },
-  created() {
-    this.loadQueueSettingsCalculators();
-  },
-  methods: {
-    save() {
-      this.$emit("save");
-    },
-    cancel() {
-      this.$emit("cancel");
-    },
-    updatedInput(newValue) {
-      const input = this.data.applicationInputs.find((input) => input.key === newValue.key);
-      Object.assign(input, newValue);
-    },
-    addApplicationInput() {
-      const appInput = new models.InputDataObjectType();
-      this.data.applicationInputs.push(appInput);
-      this.focusApplicationInputKey = appInput.key;
-    },
-    deleteInput(input) {
-      const inputIndex = this.data.applicationInputs.findIndex((inp) => inp.key === input.key);
-      this.data.applicationInputs.splice(inputIndex, 1);
-    },
-    updatedOutput(newValue) {
-      const output = this.data.applicationOutputs.find((o) => o.key === newValue.key);
-      Object.assign(output, newValue);
-    },
-    addApplicationOutput() {
-      const newOutput = new models.OutputDataObjectType();
-      this.data.applicationOutputs.push(newOutput);
-      this.focusApplicationOutputKey = newOutput.key;
-    },
-    deleteOutput(output) {
-      const outputIndex = this.data.applicationOutputs.findIndex((o) => o.key === output.key);
-      this.data.applicationOutputs.splice(outputIndex, 1);
-    },
-    onDragStart() {
-      this.collapseApplicationInputs = true;
-    },
-    onDragEnd() {
-      this.collapseApplicationInputs = false;
-    },
-    async loadQueueSettingsCalculators() {
-      this.queueSettingsCalculators = await services.QueueSettingsCalculatorService.list();
-    },
-  },
-};
+  { deep: true },
+);
+
+const trueFalseOptions = computed(() => [
+  { text: "True", value: true },
+  { text: "False", value: false },
+]);
+
+const queueSettingsCalculatorOptions = computed(() => {
+  if (queueSettingsCalculators.value) {
+    return queueSettingsCalculators.value.map((qsc) => ({
+      text: qsc.name,
+      value: qsc.id,
+    }));
+  } else {
+    return [];
+  }
+});
+
+onMounted(async () => {
+  queueSettingsCalculators.value = await services.QueueSettingsCalculatorService.list() as Array<{ id: string; name: string }>;
+});
+
+function updatedInput(newValue: unknown) {
+  const inputField = newValue as { key: string };
+  const input = (data.value as { applicationInputs: Array<{ key: string }> }).applicationInputs.find(
+    (inp) => inp.key === inputField.key,
+  );
+  if (input) Object.assign(input, newValue);
+}
+
+function addApplicationInput() {
+  const appInput = new models.InputDataObjectType();
+  (data.value as { applicationInputs: unknown[] }).applicationInputs.push(appInput);
+  focusApplicationInputKey.value = (appInput as { key: string }).key;
+}
+
+function deleteInput(input: unknown) {
+  const inputKey = (input as { key: string }).key;
+  const inputsArr = (data.value as { applicationInputs: Array<{ key: string }> }).applicationInputs;
+  const inputIndex = inputsArr.findIndex((inp) => inp.key === inputKey);
+  inputsArr.splice(inputIndex, 1);
+}
+
+function updatedOutput(newValue: unknown) {
+  const outputField = newValue as { key: string };
+  const output = (data.value as { applicationOutputs: Array<{ key: string }> }).applicationOutputs.find(
+    (o) => o.key === outputField.key,
+  );
+  if (output) Object.assign(output, newValue);
+}
+
+function addApplicationOutput() {
+  const newOutput = new models.OutputDataObjectType();
+  (data.value as { applicationOutputs: unknown[] }).applicationOutputs.push(newOutput);
+  focusApplicationOutputKey.value = (newOutput as { key: string }).key;
+}
+
+function deleteOutput(output: unknown) {
+  const outputKey = (output as { key: string }).key;
+  const outputsArr = (data.value as { applicationOutputs: Array<{ key: string }> }).applicationOutputs;
+  const outputIndex = outputsArr.findIndex((o) => o.key === outputKey);
+  outputsArr.splice(outputIndex, 1);
+}
+
+function onDragStart() {
+  collapseApplicationInputs.value = true;
+}
+
+function onDragEnd() {
+  collapseApplicationInputs.value = false;
+}
 </script>

@@ -10,19 +10,16 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "ActivateUserPanel",
-  props: {
-    username: {
-      type: String,
-      required: true,
-    },
-  },
-  methods: {
-    activate() {
-      this.$emit("activate-user", this.username);
-    },
-  },
-};
+<script setup lang="ts">
+const props = defineProps<{
+  username: string;
+}>();
+
+const emit = defineEmits<{
+  "activate-user": [username: string];
+}>();
+
+function activate() {
+  emit("activate-user", props.username);
+}
 </script>

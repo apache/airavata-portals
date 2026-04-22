@@ -71,111 +71,51 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
 import { models, services, session } from "django-airavata-api";
-import { components, layouts } from "django-airavata-common-ui";
-import NoticeEditor from "./NoticeEditor";
+import NoticeEditor from "./NoticeEditor.vue";
 
-export default {
-  name: "NoticeManagementContainer",
-  components: {
-    "human-date": components.HumanDate,
-    "delete-link": components.DeleteLink,
-    "list-layout": layouts.ListLayout,
-    NoticeEditor,
-  },
-  data() {
-    return {
-      notices: null,
-      isUserBeginInput: true,
-      showNewItemEditor: false,
-      showingDetails: {},
-    };
-  },
-  computed: {
-    fields() {
-      return [
-        {
-          label: "Notice",
-          key: "title",
-        },
-        {
-          label: "Message",
-          key: "notificationMessage",
-        },
-        {
-          label: "Publish Date",
-          key: "publishedTime",
-        },
-        {
-          label: "Expiry Date",
-          key: "expirationTime",
-        },
-        {
-          label: "Priority",
-          key: "priority.name",
-        },
-        {
-          label: "Show In Dashboard",
-          key: "showInDashboard",
-        },
-        {
-          label: "Action",
-          key: "action",
-        },
-      ];
-    },
-    items() {
-      return this.notices ? this.notices : [];
-    },
-    isGatewayAdmin() {
-      return session.Session.is_gateway_admin;
-    },
-  },
-  created() {
-    services.ManageNotificationService.list().then((notices) => (this.notices = notices));
-  },
-  methods: {
-    saveNewNotice() {
-      services.ManageNotificationService.create({ data: this.newNotice }).then((sp) => {
-        this.notices.push(sp);
-      });
-      this.showNewItemEditor = true;
-    },
-    updateNotice() {
-      const validation = this.updatedNotice.validate();
-      if (Object.keys(validation).length === 0) {
-        const index = this.notices.findIndex(
-          (sp) => sp.notificationId === this.updatedNotice.notificationId,
-        );
-        services.ManageNotificationService.update({
-          lookup: this.updatedNotice.notificationId,
-          data: this.updatedNotice,
-        }).then((sp) => {
-          this.notices.splice(index, 1, sp);
-        });
-      }
-    },
-    cancelNewNotice() {
-      this.showNewItemEditor = false;
-    },
-    addNewNotice() {
-      this.newNotice = new models.Notification();
-      this.showNewItemEditor = true;
-    },
-    deleteNotice(notificationId) {
-      services.ManageNotificationService.delete({
-        lookup: notificationId,
-      }).then(() => {
-        const index = this.notices.findIndex((sp) => sp.notificationId === notificationId);
-        this.notices.splice(index, 1);
-      });
-    },
-    toggleDetails(row) {
-      ((this.updatedNotice = new models.Notification()), (this.updatedNotice = row.item));
-      row.toggleDetails();
-      this.showingDetails[row.item.notificationId] = !this.showingDetails[row.item.notificationId];
-    },
-  },
-};
+const notices = ref<InstanceType<typeof models.Notification>[] | null>(null);
+const showNewItemEditor = ref(false);
+const newNotice = ref<InstanceType<typeof models.Notification>>(new models.Notification());
+
+const items = computed(() => notices.value ?? []);
+const isGatewayAdmin = computed(() => session.Session.is_gateway_admin);
+
+onMounted(() => {
+  services.ManageNotificationService.list().then(
+    (n: InstanceType<typeof models.Notification>[]) => (notices.value = n)
+  );
+});
+
+function saveNewNotice() {
+  services.ManageNotificationService.create({ data: newNotice.value }).then(
+    (sp: InstanceType<typeof models.Notification>) => {
+      notices.value!.push(sp);
+    }
+  );
+  showNewItemEditor.value = false;
+}
+
+function cancelNewNotice() {
+  showNewItemEditor.value = false;
+}
+
+function addNewNotice() {
+  newNotice.value = new models.Notification();
+  showNewItemEditor.value = true;
+}
+
+function deleteNotice(notificationId: string) {
+  services.ManageNotificationService.delete({ lookup: notificationId }).then(() => {
+    const index = notices.value!.findIndex((sp) => sp.notificationId === notificationId);
+    notices.value!.splice(index, 1);
+  });
+}
+
+function editNotice(item: InstanceType<typeof models.Notification>) {
+  newNotice.value = item;
+  showNewItemEditor.value = true;
+}
 </script>

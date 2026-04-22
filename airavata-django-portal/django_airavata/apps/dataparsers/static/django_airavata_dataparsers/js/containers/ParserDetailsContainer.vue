@@ -17,26 +17,15 @@
   </div>
 </template>
 
-<script>
-import { services } from "django-airavata-api";
+<script setup lang="ts">
+import { onMounted, ref } from "vue";
+import { models, services } from "django-airavata-api";
 
-export default {
-  name: "ParserDetailsContainer",
-  props: {
-    parserId: {
-      type: String,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      parser: null,
-    };
-  },
-  created() {
-    services.ParserService.retrieve({
-      lookup: this.parserId,
-    }).then((parser) => (this.parser = parser));
-  },
-};
+const props = defineProps<{ parserId: string }>();
+
+const parser = ref<InstanceType<typeof models.Parser> | null>(null);
+
+onMounted(async () => {
+  parser.value = await services.ParserService.retrieve({ lookup: props.parserId });
+});
 </script>

@@ -1,40 +1,34 @@
 <template>
   <div class="confirmation-button">
-    <button :class="['btn', 'btn-' + variant]" :disabled="disabled" @click="$refs.modal.show()">
+    <button :class="['btn', 'btn-' + variant]" :disabled="disabled" @click="modal?.show()">
       {{ label }}
     </button>
-    <confirmation-dialog ref="modal" :title="dialogTitle" @ok="$emit('confirmed')">
+    <confirmation-dialog ref="modal" :title="dialogTitle" @ok="emit('confirmed')">
       <slot></slot>
     </confirmation-dialog>
   </div>
 </template>
-<script>
+<script setup lang="ts">
+import { ref } from "vue";
 import ConfirmationDialog from "./ConfirmationDialog.vue";
 
-export default {
-  name: "ConfirmationButton",
-  components: {
-    ConfirmationDialog,
-  },
-  props: {
-    dialogTitle: {
-      type: String,
-      default: "Please confirm",
-    },
-    disabled: {
-      type: Boolean,
-      default: false,
-    },
-    label: {
-      type: String,
-      default: "Update",
-    },
-    variant: {
-      type: String,
-      default: "danger",
-    },
-  },
-};
+withDefaults(defineProps<{
+  dialogTitle?: string;
+  disabled?: boolean;
+  label?: string;
+  variant?: string;
+}>(), {
+  dialogTitle: "Please confirm",
+  disabled: false,
+  label: "Update",
+  variant: "danger",
+});
+
+const emit = defineEmits<{
+  confirmed: [];
+}>();
+
+const modal = ref<InstanceType<typeof ConfirmationDialog> | null>(null);
 </script>
 
 <style scoped>

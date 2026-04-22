@@ -43,83 +43,64 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed, onMounted, reactive, watch } from "vue";
+import { storeToRefs } from "pinia";
 import { errors } from "django-airavata-common-ui";
 import { useVuelidate } from "@vuelidate/core";
-import { email, required } from "@vuelidate/validators";
-import { mapGetters, mapMutations } from "vuex";
+import { email as emailValidator, required } from "@vuelidate/validators";
+import { useUserStore } from "django-airavata-common-ui/js/stores/user";
 
-export default {
-  name: "UserProfileEditor",
-  props: {
-    disabled: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  setup() {
-    return { v$: useVuelidate() };
-  },
-  data() {
-    return {};
-  },
-  created() {
-    if (!this.disabled) {
-      this.v$.$touch();
+const props = withDefaults(defineProps<{ disabled?: boolean }>(), { disabled: false });
+const emit = defineEmits<{ save: []; "resend-email-verification": [] }>();
+
+const userStore = useUserStore();
+const { user } = storeToRefs(userStore);
+
+// Local reactive state keeps vuelidate $model writes in sync with the store.
+const formState = reactive({ first_name: "", last_name: "", email: "" });
+
+// Sync store → local state whenever user changes
+watch(
+  user,
+  (u) => {
+    if (u) {
+      formState.first_name = u.first_name;
+      formState.last_name = u.last_name;
+      formState.email = u.email;
     }
   },
-  computed: {
-    ...mapGetters("userProfile", ["user"]),
-    first_name: {
-      get() {
-        return this.user.first_name;
-      },
-      set(first_name) {
-        this.setFirstName({ first_name });
-      },
-    },
-    last_name: {
-      get() {
-        return this.user.last_name;
-      },
-      set(last_name) {
-        this.setLastName({ last_name });
-      },
-    },
-    email: {
-      get() {
-        return this.user.email;
-      },
-      set(email) {
-        this.setEmail({ email });
-      },
-    },
-    valid() {
-      return !this.v$.$invalid;
-    },
-  },
-  validations() {
-    return {
-      first_name: {
-        required,
-      },
-      last_name: {
-        required,
-      },
-      email: {
-        required,
-        email,
-      },
-    };
-  },
-  methods: {
-    ...mapMutations("userProfile", ["setFirstName", "setLastName", "setEmail"]),
-    save() {
-      this.$emit("save");
-    },
-    validateState: errors.vuelidateHelpers.validateState,
-  },
+  { immediate: true },
+);
+
+// Sync local state writes → store (called by vuelidate $model setter via the watch below)
+watch(() => formState.first_name, (first_name) => userStore.setUserFirstName({ first_name }));
+watch(() => formState.last_name, (last_name) => userStore.setUserLastName({ last_name }));
+watch(() => formState.email, (email) => userStore.setUserEmail({ email }));
+
+const rules = {
+  first_name: { required },
+  last_name: { required },
+  email: { required, email: emailValidator },
 };
+
+const v$ = useVuelidate(rules, formState);
+
+onMounted(() => {
+  if (!props.disabled) {
+    v$.value.$touch();
+  }
+});
+
+const valid = computed(() => !v$.value.$invalid);
+const email = computed(() => formState.email);
+const validateState = errors.vuelidateHelpers.validateState;
+
+function save(): void {
+  emit("save");
+}
+
+defineExpose({ valid });
 </script>
 
 <style></style>

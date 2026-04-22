@@ -46,13 +46,17 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "DatasetsListContainer",
-  data() {
-    return {
-      datasets: [],
-    };
-  },
-};
+<script setup lang="ts">
+import { ref } from "vue";
+
+interface Dataset {
+  id: string;
+  name: string;
+  owner: string;
+  isYou: boolean;
+  isAdmin: boolean;
+  created: string;
+}
+
+const datasets = ref<Dataset[]>([]);
 </script>

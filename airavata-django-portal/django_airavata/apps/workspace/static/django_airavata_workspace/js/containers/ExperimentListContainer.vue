@@ -1,6 +1,6 @@
 <template>
   <div>
-    <breadcrumb-nav :crumbs="breadcrumbs" />
+    <BreadcrumbNav :crumbs="breadcrumbs" />
     <div class="row align-items-center mb-3">
       <div class="col">
         <h1 class="h4 mb-0">Experiments</h1>
@@ -99,26 +99,26 @@
                 </div>
               </td>
             </tr>
-            <tr v-for="experiment in experiments || []" :key="experiment.experiment_id">
+            <tr v-for="experiment in experiments || []" :key="(experiment as any).experiment_id">
               <td>
-                <a :href="viewLink(experiment)">{{ experiment.name }}</a>
+                <a :href="viewLink(experiment)">{{ (experiment as any).name }}</a>
               </td>
               <td v-if="applicationName(experiment)">{{ applicationName(experiment) }}</td>
               <td v-else class="text-muted">N/A</td>
-              <td>{{ experiment.user_name }}</td>
+              <td>{{ (experiment as any).user_name }}</td>
               <td>
-                <span :title="experiment.creation_time">{{
-                  fromNow(experiment.creation_time)
+                <span :title="(experiment as any).creation_time">{{
+                  fromNow((experiment as any).creation_time)
                 }}</span>
               </td>
-              <td><experiment-status-badge :status-name="experiment.experiment_status.name" /></td>
+              <td><ExperimentStatusBadge :status-name="(experiment as any).experiment_status.name" /></td>
               <td class="text-nowrap" style="width: 1%">
                 <div
                   v-if="applicationName(experiment)"
                   class="d-flex gap-2 justify-content-end flex-nowrap"
                 >
                   <a
-                    v-if="experiment.isEditable"
+                    v-if="(experiment as any).isEditable"
                     :href="editLink(experiment)"
                     class="btn btn-sm btn-outline-primary"
                     ><i class="fa fa-edit me-1"></i>Edit</a
@@ -136,19 +136,20 @@
             </tr>
           </tbody>
         </table>
-        <pager
-          v-if="experiments && experiments.length > 0"
+        <Pager
+          v-if="experiments && experiments.length > 0 && experimentsPaginator"
           :paginator="experimentsPaginator"
           @next="nextExperiments"
           @previous="previousExperiments"
-        ></pager>
+        />
       </div>
     </div>
   </div>
 </template>
 
-<script>
-import { errors, models, services, utils } from "django-airavata-api";
+<script setup lang="ts">
+import { ref, computed, onBeforeMount, reactive } from "vue";
+import { errors, services, utils } from "django-airavata-api";
 import { components as comps } from "django-airavata-common-ui";
 import flatPickr from "vue-flatpickr-component";
 import "flatpickr/dist/flatpickr.css";
@@ -156,186 +157,188 @@ import "flatpickr/dist/flatpickr.css";
 import { relativeTime } from "django-airavata-common-ui/js/utils/dates.js";
 import urls from "../utils/urls";
 
-export default {
-  name: "ExperimentListContainer",
-  components: {
-    pager: comps.Pager,
-    "experiment-status-badge": comps.ExperimentStatusBadge,
-    "breadcrumb-nav": comps.BreadcrumbNav,
-    flatPickr,
-  },
-  props: {
-    initialExperimentsData: { default: null },
-    projectId: { type: String, default: null },
-    breadcrumbs: { type: Array, default: () => [] },
-  },
-  data() {
-    return {
-      experimentsPaginator: null,
-      applicationInterfaces: {},
-      search: null,
-      applicationSelect: null,
-      dateSelect: null,
-      experimentAttributeSelect: null,
-      experimentStatusSelect: null,
-      appInterfaces: null,
-      fromDate: null,
-      toDate: null,
-      applicationSelected: false,
-      defaultOptionSelected: true,
-      dateConfig: {
-        mode: "range",
-        wrap: true,
-        dateFormat: "Y-m-d",
-        maxDate: new Date(Date.now() + 86400000),
-      },
-    };
-  },
-  computed: {
-    experiments: function () {
-      return this.experimentsPaginator ? this.experimentsPaginator.results : null;
-    },
-    applicationNameOptions() {
-      if (this.appInterfaces) {
-        const options = this.appInterfaces.map((appInterface) => {
-          return {
-            value: appInterface.application_interface_id,
-            text: appInterface.application_name,
-          };
-        });
-        return utils.StringUtils.sortIgnoreCase(options, (o) => o.text);
-      } else {
-        return [];
-      }
-    },
-  },
-  beforeMount: function () {
-    this.loadApplicationInterfaces();
-    services.ExperimentSearchService.list({
-      initialData: this.initialExperimentsData,
-    }).then((result) => (this.experimentsPaginator = result));
-  },
-  methods: {
-    searchExperiments: function () {
-      this.experimentsPaginator = null;
-      this.reloadExperiments();
-    },
-    resetSearch: function () {
-      this.experimentsPaginator = null;
-      this.search = null;
-      this.experimentAttributeSelect = null;
-      this.experimentStatusSelect = null;
-      this.applicationSelect = null;
-      this.dateSelect = null;
-      this.toDate = null;
-      this.fromDate = null;
-      this.checkSearchOptions();
-      this.reloadExperiments();
-    },
-    reloadExperiments: function () {
-      const searchParams = {};
-      if (this.projectId) {
-        searchParams["PROJECT_ID"] = this.projectId;
-      }
-      if (this.experimentAttributeSelect) {
-        if (this.experimentAttributeSelect === "APPLICATION_ID" && this.applicationSelect) {
-          searchParams["APPLICATION_ID"] = this.applicationSelect;
-        } else if (this.search) {
-          searchParams[this.experimentAttributeSelect] = this.search;
-        }
-      }
-      if (this.experimentStatusSelect) {
-        if (this.experimentStatusSelect !== "ALL") {
-          searchParams["STATUS"] = this.experimentStatusSelect;
-        }
-      }
-      if (this.fromDate && this.toDate) {
-        searchParams["FROM_DATE"] = this.fromDate.getTime();
-        searchParams["TO_DATE"] = this.toDate.getTime();
-      }
+const BreadcrumbNav = comps.BreadcrumbNav;
+const Pager = comps.Pager;
+const ExperimentStatusBadge = comps.ExperimentStatusBadge;
 
-      services.ExperimentSearchService.list(searchParams).then(
-        (result) => (this.experimentsPaginator = result),
-      );
-    },
-    checkSearchOptions: function () {
-      this.applicationSelected = false;
-      this.defaultOptionSelected = false;
-      if (this.experimentAttributeSelect === "APPLICATION_ID") {
-        this.applicationSelected = true;
-      } else {
-        this.defaultOptionSelected = true;
-      }
-    },
-    loadApplicationInterfaces: function () {
-      return services.ApplicationInterfaceService.list().then(
-        (appInterfaces) => (this.appInterfaces = appInterfaces),
-      );
-    },
-    dateRangeChanged: function (selectedDates) {
-      [this.fromDate, this.toDate] = selectedDates;
-      if (this.fromDate && this.toDate) {
-        this.reloadExperiments();
-      }
-    },
-    nextExperiments: function () {
-      this.experimentsPaginator.next();
-    },
-    previousExperiments: function () {
-      this.experimentsPaginator.previous();
-    },
-    fromNow: function (date) {
-      return relativeTime(date);
-    },
-    editLink: function (experiment) {
-      return urls.editExperiment(this.projectId, experiment);
-    },
-    viewLink: function (experiment) {
-      return urls.viewExperiment(this.projectId, experiment);
-    },
-    applicationName: function (experiment) {
-      if (experiment.execution_id in this.applicationInterfaces) {
-        if (
-          this.applicationInterfaces[experiment.execution_id] instanceof
-          models.ApplicationInterfaceDefinition
-        ) {
-          return this.applicationInterfaces[experiment.execution_id].application_name;
-        } else if (this.applicationInterfaces[experiment.execution_id] === null) {
-          return null;
-        }
-      } else {
-        const request = services.ApplicationInterfaceService.retrieve(
-          {
-            lookup: experiment.execution_id,
-          },
-          {
-            ignoreErrors: true,
-          },
-        )
-          .then((result) => {
-            this.$set(this.applicationInterfaces, experiment.execution_id, result);
-          })
-          .catch((error) => {
-            if (errors.ErrorUtils.isNotFoundError(error)) {
-              this.$set(this.applicationInterfaces, experiment.execution_id, null);
-            } else {
-              throw error;
-            }
-          })
-          .catch(utils.FetchUtils.reportError);
-        this.$set(this.applicationInterfaces, experiment.execution_id, request);
-      }
-      return "...";
-    },
-    clone(experiment) {
-      services.ExperimentService.clone({
-        lookup: experiment.experiment_id,
-      }).then((clonedExperiment) => {
-        urls.navigateToEditExperiment(this.projectId, clonedExperiment);
-      });
-    },
-  },
+const props = withDefaults(defineProps<{
+  initialExperimentsData?: unknown | null;
+  projectId?: string | null;
+  breadcrumbs?: unknown[];
+}>(), {
+  initialExperimentsData: undefined,
+  projectId: null,
+  breadcrumbs: () => [],
+});
+
+const experimentsPaginator = ref<unknown>(null);
+const applicationInterfaces = reactive<Record<string, unknown>>({});
+const search = ref<string | null>(null);
+const applicationSelect = ref<string | null>(null);
+const dateSelect = ref<string | null>(null);
+const experimentAttributeSelect = ref<string | null>(null);
+const experimentStatusSelect = ref<string | null>(null);
+const appInterfaces = ref<unknown[] | null>(null);
+const fromDate = ref<Date | null>(null);
+const toDate = ref<Date | null>(null);
+const applicationSelected = ref(false);
+const defaultOptionSelected = ref(true);
+const dateConfig = {
+  mode: "range" as const,
+  wrap: true,
+  dateFormat: "Y-m-d",
+  maxDate: new Date(Date.now() + 86400000),
 };
+
+const experiments = computed<unknown[] | null>(() =>
+  experimentsPaginator.value ? (experimentsPaginator.value as { results: unknown[] }).results : null,
+);
+
+const applicationNameOptions = computed(() => {
+  if (appInterfaces.value) {
+    const options = (appInterfaces.value as Array<{ application_interface_id: string; application_name: string }>).map((appIface) => ({
+      value: appIface.application_interface_id,
+      text: appIface.application_name,
+    }));
+    return utils.StringUtils.sortIgnoreCase(options, (o: { text: string }) => o.text);
+  } else {
+    return [];
+  }
+});
+
+function searchExperiments() {
+  experimentsPaginator.value = null;
+  reloadExperiments();
+}
+
+function resetSearch() {
+  experimentsPaginator.value = null;
+  search.value = null;
+  experimentAttributeSelect.value = null;
+  experimentStatusSelect.value = null;
+  applicationSelect.value = null;
+  dateSelect.value = null;
+  toDate.value = null;
+  fromDate.value = null;
+  checkSearchOptions();
+  reloadExperiments();
+}
+
+function reloadExperiments() {
+  const searchParams: Record<string, unknown> = {};
+  if (props.projectId) {
+    searchParams["PROJECT_ID"] = props.projectId;
+  }
+  if (experimentAttributeSelect.value) {
+    if (experimentAttributeSelect.value === "APPLICATION_ID" && applicationSelect.value) {
+      searchParams["APPLICATION_ID"] = applicationSelect.value;
+    } else if (search.value) {
+      searchParams[experimentAttributeSelect.value] = search.value;
+    }
+  }
+  if (experimentStatusSelect.value) {
+    if (experimentStatusSelect.value !== "ALL") {
+      searchParams["STATUS"] = experimentStatusSelect.value;
+    }
+  }
+  if (fromDate.value && toDate.value) {
+    searchParams["FROM_DATE"] = fromDate.value.getTime();
+    searchParams["TO_DATE"] = toDate.value.getTime();
+  }
+
+  services.ExperimentSearchService.list(searchParams).then(
+    (result: unknown) => (experimentsPaginator.value = result),
+  );
+}
+
+function checkSearchOptions() {
+  applicationSelected.value = false;
+  defaultOptionSelected.value = false;
+  if (experimentAttributeSelect.value === "APPLICATION_ID") {
+    applicationSelected.value = true;
+  } else {
+    defaultOptionSelected.value = true;
+  }
+}
+
+function loadApplicationInterfaces() {
+  return services.ApplicationInterfaceService.list().then(
+    (ifaces: unknown) => (appInterfaces.value = ifaces as unknown[]),
+  );
+}
+
+function dateRangeChanged(selectedDates: Date[]) {
+  [fromDate.value, toDate.value] = selectedDates;
+  if (fromDate.value && toDate.value) {
+    reloadExperiments();
+  }
+}
+
+function nextExperiments() {
+  (experimentsPaginator.value as { next(): void }).next();
+}
+
+function previousExperiments() {
+  (experimentsPaginator.value as { previous(): void }).previous();
+}
+
+function fromNow(date: unknown): string {
+  return relativeTime(date as string | number | Date);
+}
+
+function editLink(experiment: unknown): string {
+  return urls.editExperiment(props.projectId ?? "", experiment as { experiment_id: string });
+}
+
+function viewLink(experiment: unknown): string {
+  return urls.viewExperiment(props.projectId ?? "", experiment as { experiment_id: string });
+}
+
+function applicationName(experiment: unknown): string | null {
+  const exp = experiment as { execution_id: string; experiment_id: string };
+  if (exp.execution_id in applicationInterfaces) {
+    const iface = applicationInterfaces[exp.execution_id];
+    if (iface instanceof Object && "application_name" in iface) {
+      return (iface as { application_name: string }).application_name;
+    } else if (iface === null) {
+      return null;
+    }
+  } else {
+    const request = services.ApplicationInterfaceService.retrieve(
+      { lookup: exp.execution_id },
+      { ignoreErrors: true },
+    )
+      .then((result: unknown) => {
+        applicationInterfaces[exp.execution_id] = result;
+      })
+      .catch((error: unknown) => {
+        if (errors.ErrorUtils.isNotFoundError(error)) {
+          applicationInterfaces[exp.execution_id] = null;
+        } else {
+          throw error;
+        }
+      })
+      .catch(utils.FetchUtils.reportError);
+    applicationInterfaces[exp.execution_id] = request;
+  }
+  return "...";
+}
+
+function clone(experiment: unknown) {
+  const exp = experiment as { experiment_id: string };
+  services.ExperimentService.clone({
+    lookup: exp.experiment_id,
+  }).then((clonedExperiment: unknown) => {
+    urls.navigateToEditExperiment(props.projectId ?? "", clonedExperiment as { experiment_id: string });
+  });
+}
+
+onBeforeMount(() => {
+  loadApplicationInterfaces();
+  services.ExperimentSearchService.list({
+    initialData: props.initialExperimentsData,
+  }).then((result: unknown) => (experimentsPaginator.value = result));
+});
 </script>
 
 <style></style>

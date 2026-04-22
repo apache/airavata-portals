@@ -59,54 +59,44 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed } from "vue";
 import { components, errors } from "django-airavata-common-ui";
 import { useVuelidate } from "@vuelidate/core";
 import { helpers, or, required, sameAs } from "@vuelidate/validators";
-export default {
-  name: "ChangeUsernamePanel",
-  components: {
-    "confirmation-button": components.ConfirmationButton,
+
+const ConfirmationButton = components.ConfirmationButton;
+
+const props = defineProps<{
+  username: string;
+  email: string;
+  airavataUserProfileExists?: boolean;
+}>();
+
+const emit = defineEmits<{
+  "update-username": [pair: [string, string]];
+}>();
+
+const newUsername = ref<string>(props.username);
+
+const usernameRegex = helpers.regex(/^[a-z0-9_-]+$/);
+const emailOrMatchesRegex = or(usernameRegex, sameAs(computed(() => props.email)));
+
+const rules = computed(() => ({
+  newUsername: {
+    required,
+    emailOrMatchesRegex,
   },
-  props: {
-    username: {
-      type: String,
-      required: true,
-    },
-    email: {
-      type: String,
-      required: true,
-    },
-    airavataUserProfileExists: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  setup() {
-    return { v$: useVuelidate() };
-  },
-  data() {
-    return {
-      newUsername: this.username,
-    };
-  },
-  validations() {
-    const usernameRegex = helpers.regex(/^[a-z0-9_-]+$/);
-    const emailOrMatchesRegex = or(usernameRegex, sameAs(this.email));
-    return {
-      newUsername: {
-        required,
-        emailOrMatchesRegex,
-      },
-    };
-  },
-  methods: {
-    updateUsername() {
-      if (!this.v$.$invalid) {
-        this.$emit("update-username", [this.username, this.newUsername]);
-      }
-    },
-    validateState: errors.vuelidateHelpers.validateState,
-  },
-};
+}));
+
+const state = computed(() => ({ newUsername: newUsername.value }));
+const v$ = useVuelidate(rules, state);
+
+const validateState = errors.vuelidateHelpers.validateState;
+
+function updateUsername() {
+  if (!v$.value.$invalid) {
+    emit("update-username", [props.username, newUsername.value]);
+  }
+}
 </script>

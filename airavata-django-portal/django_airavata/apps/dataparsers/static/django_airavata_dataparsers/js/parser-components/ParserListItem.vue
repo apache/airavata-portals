@@ -11,25 +11,10 @@
   </tr>
 </template>
 
-<script>
-export default {
-  name: "ParserListItem",
-  props: ["parser"],
-  data() {
-    return {
-      show: false,
-      deleteButtonVariant: "link",
-      yesButtonVariant: "danger",
-      noButtonVariant: "secondary",
-      headerBgVariant: "danger",
-      bodyBgVariant: "light",
-      headerTextVariant: "light",
-      deleting: false,
-    };
-  },
-  computed: {},
-  methods: {},
-};
+<script setup lang="ts">
+import { models } from "django-airavata-api";
+
+defineProps<{ parser: InstanceType<typeof models.Parser> }>();
 </script>
 
 <style></style>

@@ -8,23 +8,17 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "EnableUserPanel",
-  props: {
-    username: {
-      type: String,
-      required: true,
-    },
-    email: {
-      type: String,
-      required: true,
-    },
-  },
-  methods: {
-    enable() {
-      this.$emit("enable-user", this.username);
-    },
-  },
-};
+<script setup lang="ts">
+const props = defineProps<{
+  username: string;
+  email: string;
+}>();
+
+const emit = defineEmits<{
+  "enable-user": [username: string];
+}>();
+
+function enable() {
+  emit("enable-user", props.username);
+}
 </script>

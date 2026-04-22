@@ -1,11 +1,11 @@
 <template>
   <div>
-    <user-storage-edit-viewer
+    <UserStorageEditViewer
       v-if="userStoragePath && isFile"
       :file-name="file.name"
       :data-product-uri="file.data_product_uri"
       :mime-type="file.mime_type"
-      @file-content-changed="(fileContent) => $emit('file-content-changed', fileContent)"
+      @file-content-changed="(fileContent) => emit('file-content-changed', fileContent)"
     />
 
     <div v-if="userStoragePath && isDir" class="card">
@@ -20,18 +20,18 @@
                 class="breadcrumb-item"
                 :class="{ active: item.active }"
                 :style="item.active ? '' : 'cursor:pointer;'"
-                @click="!item.active && $emit('directory-selected', item.path)"
+                @click="!item.active && emit('directory-selected', item.path)"
               >
                 <i v-if="item.isHome" class="fa fa-home me-1"></i>{{ item.text }}
               </li>
             </ol>
           </nav>
-          <user-storage-create-view
+          <UserStorageCreateView
             v-if="includeCreateFileAction"
             :user-storage-path="userStoragePath"
             :storage-path="storagePath"
-            @upload-finished="$emit('upload-finished')"
-            @add-directory="(dirName) => $emit('add-directory', dirName)"
+            @upload-finished="emit('upload-finished')"
+            @add-directory="(dirName) => emit('add-directory', dirName)"
           />
         </div>
 
@@ -65,7 +65,7 @@
                 </a>
                 <span v-else>
                   <i class="fa fa-file me-1 text-muted"></i>
-                  <user-storage-link
+                  <UserStorageLink
                     :data-product-uri="item.data_product_uri"
                     :mime-type="item.mime_type"
                     :file-name="item.name"
@@ -74,13 +74,13 @@
                 </span>
               </td>
               <td>{{ getFormattedSize(item.size) }}</td>
-              <td><human-date :date="item.modified_time" /></td>
+              <td><HumanDate :date="item.modified_time" /></td>
               <td>
                 <button
                   v-if="includeSelectFileAction && item.type === 'file'"
                   class="btn btn-primary btn-sm me-1"
                   :disabled="isAlreadySelected(item)"
-                  @click="$emit('file-selected', item)"
+                  @click="emit('file-selected', item)"
                 >
                   Select
                 </button>
@@ -96,13 +96,13 @@
                   :href="`/sdk/download-dir/?path=${item.path}`"
                   ><i class="fa fa-file-archive"></i> Zip</a
                 >
-                <delete-link
+                <DeleteLink
                   v-if="includeDeleteAction && item.user_has_write_access && !item.is_shared_dir"
                   @delete="deleteItem(item)"
                 >
                   Are you sure you want to delete <strong>{{ item.name }}</strong
                   >?
-                </delete-link>
+                </DeleteLink>
               </td>
             </tr>
           </tbody>
@@ -111,198 +111,199 @@
     </div>
   </div>
 </template>
-<script>
+
+<script setup lang="ts">
+import { computed } from "vue";
 import { components } from "django-airavata-common-ui";
-import UserStorageCreateView from "./UserStorageCreateView";
-import UserStorageEditViewer from "./storage-edit/UserStorageEditViewer";
-import UserStorageLink from "./storage-edit/UserStorageLink";
+import UserStorageCreateView from "./UserStorageCreateView.vue";
+import UserStorageEditViewer from "./storage-edit/UserStorageEditViewer.vue";
+import UserStorageLink from "./storage-edit/UserStorageLink.vue";
 
-export default {
-  name: "UserStoragePathViewer",
-  components: {
-    UserStorageLink,
-    "delete-link": components.DeleteLink,
-    "human-date": components.HumanDate,
-    UserStorageCreateView,
-    UserStorageEditViewer,
-  },
-  props: {
-    allowPreview: {
-      default: true,
-      required: false,
-    },
-    userStoragePath: {
-      required: true,
-    },
-    storagePath: {
-      required: true,
-    },
-    includeDeleteAction: {
-      type: Boolean,
-      default: true,
-    },
-    includeSelectFileAction: {
-      type: Boolean,
-      default: false,
-    },
-    includeCreateFileAction: {
-      type: Boolean,
-      default: true,
-    },
-    includeDownloadAction: {
-      type: Boolean,
-      default: true,
-    },
-    downloadInNewWindow: {
-      type: Boolean,
-      default: false,
-    },
-    selectedDataProductUris: {
-      type: Array,
-      default: () => [],
-    },
-  },
-  computed: {
-    isDir() {
-      return this.userStoragePath.is_dir;
-    },
-    isFile() {
-      return !this.userStoragePath.is_dir;
-    },
+const DeleteLink = components.DeleteLink;
+const HumanDate = components.HumanDate;
 
-    // Return the first file available. This is assuming the path is a file.
-    file() {
-      return this.userStoragePath.files[0];
-    },
+interface StorageDirectory {
+  name: string;
+  path: string;
+  hidden?: boolean;
+  modified_time?: Date;
+  size: number;
+  user_has_write_access: boolean;
+  is_shared_dir?: boolean;
+}
 
-    breadcrumbItems() {
-      const parts = this.userStoragePath.parts || [];
-      const subparts = [];
-      const items = parts.map((part, index) => {
-        subparts.push(part);
-        return {
-          text: part,
-          path: subparts.join("/"),
-          active: index === parts.length - 1,
-          isHome: false,
-        };
-      });
-      return [{ text: "Home", path: "", active: parts.length === 0, isHome: true }].concat(items);
-    },
-    fields() {
-      return [
-        {
-          label: "Name",
-          key: "name",
-          sortable: true,
-        },
-        {
-          label: "Size",
-          key: "size",
-          sortable: true,
-          formatter: (value) => this.getFormattedSize(value),
-        },
-        {
-          label: "Last Modified",
-          key: "modifiedTimestamp",
-          sortable: true,
-        },
-        {
-          label: "Actions",
-          key: "actions",
-        },
-      ];
-    },
-    items() {
-      if (this.userStoragePath) {
-        const dirs = this.userStoragePath.directories
-          .filter((d) => !d.hidden)
-          .map((d) => {
-            return {
-              name: d.name,
-              path: d.path,
-              type: "dir",
-              modifiedTime: d.modified_time,
-              modifiedTimestamp: d.modified_time ? d.modified_time.getTime() : 0,
-              size: d.size,
-              userHasWriteAccess: d.user_has_write_access,
-              isSharedDir: d.is_shared_dir,
-            };
-          });
-        const files = this.userStoragePath.files.map((f) => {
-          return {
-            name: f.name,
-            mimeType: f.mime_type,
-            type: "file",
-            dataProductURI: f.data_product_uri,
-            downloadURL: f.download_url,
-            modifiedTime: f.modified_time,
-            modifiedTimestamp: f.modified_time ? f.modified_time.getTime() : 0,
-            size: f.size,
-            userHasWriteAccess: f.user_has_write_access,
-          };
-        });
-        return dirs.concat(files);
-      } else {
-        return [];
-      }
-    },
-    downloadTarget() {
-      return this.downloadInNewWindow ? "_blank" : "_self";
-    },
-    userHasWriteAccess() {
-      return this.userStoragePath.user_has_write_access;
-    },
+interface StorageFile {
+  name: string;
+  mime_type: string;
+  data_product_uri: string;
+  download_url?: string;
+  modified_time?: Date;
+  size: number;
+  user_has_write_access: boolean;
+}
+
+interface UserStoragePathData {
+  is_dir: boolean;
+  parts?: string[];
+  directories: StorageDirectory[];
+  files: StorageFile[];
+  user_has_write_access: boolean;
+}
+
+interface DirItem {
+  name: string;
+  path: string;
+  type: "dir";
+  modified_time?: Date;
+  size: number;
+  user_has_write_access: boolean;
+  is_shared_dir?: boolean;
+  data_product_uri: string;
+  mime_type: string;
+  download_url?: string;
+}
+
+interface FileItem {
+  name: string;
+  mime_type: string;
+  type: "file";
+  data_product_uri: string;
+  download_url?: string;
+  modified_time?: Date;
+  size: number;
+  user_has_write_access: boolean;
+  is_shared_dir: boolean;
+  path: string;
+}
+
+type StorageItem = DirItem | FileItem;
+
+interface BreadcrumbItem {
+  text: string;
+  path: string;
+  active: boolean;
+  isHome: boolean;
+}
+
+const props = withDefaults(
+  defineProps<{
+    allowPreview?: boolean;
+    userStoragePath: UserStoragePathData;
+    storagePath: string;
+    includeDeleteAction?: boolean;
+    includeSelectFileAction?: boolean;
+    includeCreateFileAction?: boolean;
+    includeDownloadAction?: boolean;
+    downloadInNewWindow?: boolean;
+    selectedDataProductUris?: string[];
+  }>(),
+  {
+    allowPreview: true,
+    includeDeleteAction: true,
+    includeSelectFileAction: false,
+    includeCreateFileAction: true,
+    includeDownloadAction: true,
+    downloadInNewWindow: false,
+    selectedDataProductUris: () => [],
   },
-  methods: {
-    getFormattedSize(size) {
-      if (size > Math.pow(2, 30)) {
-        return Math.round(size / Math.pow(2, 30)) + " GB";
-      } else if (size > Math.pow(2, 20)) {
-        return Math.round(size / Math.pow(2, 20)) + " MB";
-      } else if (size > Math.pow(2, 10)) {
-        return Math.round(size / Math.pow(2, 10)) + " KB";
-      } else {
-        return size + " bytes";
-      }
-    },
-    deleteItem(item) {
-      if (item.type === "dir") {
-        this.$emit("delete-dir", item.path);
-      } else if (item.type === "file") {
-        this.$emit("delete-file", item.data_product_uri);
-      }
-    },
-    directorySelected(item) {
-      this.$emit("directory-selected", item.path);
-    },
-    isAlreadySelected(item) {
-      return (
-        this.selectedDataProductUris.find(
-          (uri) => item.type === "file" && uri === item.data_product_uri,
-        ) !== undefined
-      );
-    },
-    sortCompare(aRow, bRow, key) {
-      if (key === "name") {
-        // Sort the shared directory first
-        if (aRow.is_shared_dir) {
-          return -1;
-        }
-        if (bRow.is_shared_dir) {
-          return 1;
-        }
-        const a = aRow[key];
-        const b = bRow[key];
-        return a.localeCompare(b);
-      } else {
-        // Use default logic for all other fields
-        return null;
-      }
-    },
-  },
-};
+);
+
+const emit = defineEmits<{
+  "file-selected": [item: StorageItem];
+  "directory-selected": [path: string];
+  "delete-dir": [path: string];
+  "delete-file": [dataProductUri: string];
+  "upload-finished": [];
+  "add-directory": [dirName: string];
+  "file-content-changed": [fileContent: string];
+}>();
+
+const isDir = computed(() => props.userStoragePath.is_dir);
+const isFile = computed(() => !props.userStoragePath.is_dir);
+
+const file = computed(() => props.userStoragePath.files[0] as StorageFile);
+
+const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
+  const parts = props.userStoragePath.parts ?? [];
+  const subparts: string[] = [];
+  const items = parts.map((part, index) => {
+    subparts.push(part);
+    return {
+      text: part,
+      path: subparts.join("/"),
+      active: index === parts.length - 1,
+      isHome: false,
+    };
+  });
+  return [{ text: "Home", path: "", active: parts.length === 0, isHome: true }].concat(items);
+});
+
+const items = computed<StorageItem[]>(() => {
+  if (props.userStoragePath) {
+    const dirs: DirItem[] = props.userStoragePath.directories
+      .filter((d) => !d.hidden)
+      .map((d) => ({
+        name: d.name,
+        path: d.path,
+        type: "dir" as const,
+        modified_time: d.modified_time,
+        size: d.size,
+        user_has_write_access: d.user_has_write_access,
+        is_shared_dir: d.is_shared_dir,
+        data_product_uri: "",
+        mime_type: "",
+      }));
+    const files: FileItem[] = props.userStoragePath.files.map((f) => ({
+      name: f.name,
+      mime_type: f.mime_type,
+      type: "file" as const,
+      data_product_uri: f.data_product_uri,
+      download_url: f.download_url,
+      modified_time: f.modified_time,
+      size: f.size,
+      user_has_write_access: f.user_has_write_access,
+      is_shared_dir: false,
+      path: "",
+    }));
+    return (dirs as StorageItem[]).concat(files as StorageItem[]);
+  } else {
+    return [];
+  }
+});
+
+function getFormattedSize(size: number) {
+  if (size > Math.pow(2, 30)) {
+    return Math.round(size / Math.pow(2, 30)) + " GB";
+  } else if (size > Math.pow(2, 20)) {
+    return Math.round(size / Math.pow(2, 20)) + " MB";
+  } else if (size > Math.pow(2, 10)) {
+    return Math.round(size / Math.pow(2, 10)) + " KB";
+  } else {
+    return size + " bytes";
+  }
+}
+
+function deleteItem(item: StorageItem) {
+  if (item.type === "dir") {
+    emit("delete-dir", item.path);
+  } else if (item.type === "file") {
+    emit("delete-file", item.data_product_uri);
+  }
+}
+
+function directorySelected(item: StorageItem) {
+  emit("directory-selected", item.path ?? "");
+}
+
+function isAlreadySelected(item: StorageItem) {
+  return (
+    props.selectedDataProductUris.find(
+      (uri) => item.type === "file" && uri === item.data_product_uri,
+    ) !== undefined
+  );
+}
 </script>
+
 <style scoped>
 .action-link + .delete-link {
   margin-left: 0.25rem;

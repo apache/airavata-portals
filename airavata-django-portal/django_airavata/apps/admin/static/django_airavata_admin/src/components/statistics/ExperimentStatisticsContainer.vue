@@ -15,13 +15,13 @@
                   v-model.trim="experimentId"
                   class="form-control"
                   placeholder="Experiment ID"
-                  @keydown.enter="experimentId && showExperimentDetails(experimentId)"
+                  @keydown.enter="experimentId && showExperimentDetails(experimentId!)"
                 />
                 <span class="input-group-text">
                   <button
                     class="btn"
                     :disabled="!experimentId"
-                    @click="showExperimentDetails(experimentId)"
+                    @click="experimentId && showExperimentDetails(experimentId!)"
                   >
                     Load
                   </button>
@@ -38,13 +38,13 @@
                   v-model.trim="jobId"
                   class="form-control"
                   placeholder="Job ID"
-                  @keydown.enter="jobId && showExperimentDetailsForJobId(jobId)"
+                  @keydown.enter="jobId && showExperimentDetailsForJobId(jobId!)"
                 />
                 <span class="input-group-text">
                   <button
                     class="btn"
                     :disabled="!jobId"
-                    @click="showExperimentDetailsForJobId(jobId)"
+                    @click="jobId && showExperimentDetailsForJobId(jobId!)"
                   >
                     Load
                   </button>
@@ -117,9 +117,7 @@
                     :options="applicationNameOptions"
                     @input="loadStatistics"
                   >
-                    <template slot="first">
-                      <option :value="null" disabled>Select an application to filter on</option>
-                    </template>
+                    <option :value="null" disabled>Select an application to filter on</option>
                   </select>
                   <span class="input-group-text">
                     <button class="btn" @click="removeApplicationNameFilter">
@@ -135,9 +133,7 @@
                     :options="hostnameOptions"
                     @input="loadStatistics"
                   >
-                    <template slot="first">
-                      <option :value="null" disabled>Select compute resource to filter on</option>
-                    </template>
+                    <option :value="null" disabled>Select compute resource to filter on</option>
                   </select>
                   <span class="input-group-text">
                     <button class="btn" @click="removeHostnameFilter">
@@ -146,11 +142,9 @@
                     </button>
                   </span>
                 </div>
-                <template slot="footer">
-                  <div class="d-flex justify-content-end">
-                    <button class="btn ms-auto" @click="loadStatistics">Get Statistics</button>
-                  </div>
-                </template>
+                <div class="d-flex justify-content-end">
+                  <button class="btn ms-auto" @click="loadStatistics">Get Statistics</button>
+                </div>
               </div>
             </div>
           </div>
@@ -262,10 +256,10 @@
                 </div>
               </div>
               <pager
-                v-if="experimentStatistics.allExperimentCount > 0"
+                v-if="experimentStatistics.allExperimentCount && experimentStatistics.allExperimentCount > 0"
                 :paginator="experimentStatisticsPaginator"
-                @next="experimentStatisticsPaginator.next()"
-                @previous="experimentStatisticsPaginator.previous()"
+                @next="experimentStatisticsPaginator?.next()"
+                @previous="experimentStatisticsPaginator?.previous()"
               ></pager>
             </div>
           </div>
@@ -275,7 +269,7 @@
           :key="experimentTab.experiment.experiment_id"
           class="nav-item"
         >
-          <template slot="title">
+          <span class="nav-link">
             {{ experimentTab.tabTitle }}
             <a
               class="text-secondary"
@@ -284,349 +278,309 @@
               <i class="fas fa-times"></i>
               <span class="visually-hidden">Close experiment tab</span>
             </a>
-          </template>
+          </span>
           <experiment-details-view :experiment="experimentTab.experiment" />
         </li>
       </ul>
     </div>
   </div>
 </template>
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
 import { errors, models, services, utils } from "django-airavata-api";
-import { components, notifications } from "django-airavata-common-ui";
-import ExperimentStatisticsCard from "./ExperimentStatisticsCard";
-import ExperimentDetailsView from "./ExperimentDetailsView";
-
+import { notifications } from "django-airavata-common-ui";
 import { formatDate, formatIsoDate } from "django-airavata-common-ui/js/utils/dates.js";
+import ExperimentStatisticsCard from "./ExperimentStatisticsCard.vue";
+import ExperimentDetailsView from "./ExperimentDetailsView.vue";
 
-export default {
-  name: "ExperimentStatisticsContainer",
-  components: {
-    ExperimentDetailsView,
-    ExperimentStatisticsCard,
-    "application-name": components.ApplicationName,
-    "compute-resource-name": components.ComputeResourceName,
-    "human-date": components.HumanDate,
-    "experiment-status-badge": components.ExperimentStatusBadge,
-    pager: components.Pager,
-  },
-  data() {
-    //fp_incr sets the time of the date to midnight.
-    //Calculating from today midnight to tomorrow midnight.
-    const fromTime = new Date().fp_incr(0);
-    const toTime = new Date().fp_incr(1);
-    return {
-      experimentStatisticsPaginator: null,
-      selectedExperimentSummariesKey: null,
-      fromTime: fromTime,
-      toTime: toTime,
-      dateRange: [fromTime, toTime],
-      dateConfig: {
-        mode: "range",
-        wrap: true,
-        dateFormat: "Y-m-d",
-        maxDate: new Date().fp_incr(1),
-      },
-      usernameFilterEnabled: false,
-      usernameFilter: null,
-      applicationNameFilterEnabled: false,
-      applicationNameFilter: null,
-      hostnameFilterEnabled: false,
-      hostnameFilter: null,
-      appInterfaces: null,
-      computeResourceNames: null,
-      experimentDetailTabs: [],
-      experimentId: null,
-      jobId: null,
-      activeTabIndex: 0,
-    };
-  },
-  computed: {
-    experimentStatistics() {
-      return this.experimentStatisticsPaginator ? this.experimentStatisticsPaginator.results : {};
-    },
-    createdStates() {
-      // TODO: moved to ExperimentStatistics model
-      return [models.ExperimentState.CREATED, models.ExperimentState.VALIDATED];
-    },
-    runningStates() {
-      return [
-        models.ExperimentState.SCHEDULED,
-        models.ExperimentState.LAUNCHED,
-        models.ExperimentState.EXECUTING,
-      ];
-    },
-    completedStates() {
-      return [models.ExperimentState.COMPLETED];
-    },
-    canceledStates() {
-      return [models.ExperimentState.CANCELING, models.ExperimentState.CANCELED];
-    },
-    failedStates() {
-      return [models.ExperimentState.FAILED];
-    },
-    fields() {
-      return [
-        {
-          key: "name",
-          label: "Name",
-        },
-        {
-          key: "user_name",
-          label: "Owner",
-        },
-        {
-          key: "execution_id",
-          label: "Application",
-        },
-        {
-          key: "resource_host_id",
-          label: "Resource",
-        },
-        {
-          key: "creation_time",
-          label: "Creation Time",
-        },
-        {
-          key: "experiment_status",
-          label: "Status",
-        },
-        {
-          key: "actions",
-          label: "Actions",
-        },
-      ];
-    },
-    items() {
-      if (this.selectedExperimentSummaries) {
-        return this.selectedExperimentSummaries;
-      } else {
-        return [];
-      }
-    },
-    fromTimeDisplay() {
-      return formatDate(this.fromTime);
-    },
-    toTimeDisplay() {
-      return formatDate(this.toTime);
-    },
-    selectedExperimentSummaries() {
-      if (
-        this.selectedExperimentSummariesKey &&
-        this.experimentStatistics &&
-        this.selectedExperimentSummariesKey in this.experimentStatistics
-      ) {
-        return this.experimentStatistics[this.selectedExperimentSummariesKey];
-      } else {
-        return [];
-      }
-    },
-    applicationNameOptions() {
-      if (this.appInterfaces) {
-        const options = this.appInterfaces.map((appInterface) => {
-          return {
-            value: appInterface.application_interface_id,
-            text: appInterface.application_name,
-          };
-        });
-        return utils.StringUtils.sortIgnoreCase(options, (o) => o.text);
-      } else {
-        return [];
-      }
-    },
-    hostnameOptions() {
-      if (!this.computeResourceNames) {
-        return [];
-      }
-      const options = this.computeResourceNames.map((name) => ({
-        value: name.host_id,
-        text: name.host,
-      }));
-      return utils.StringUtils.sortIgnoreCase(options, (o) => o.text);
-    },
-    selectedExperimentsTabTitle() {
-      if (this.selectedExperimentSummariesKey === "allExperiments") {
-        return "All Experiments";
-      } else if (this.selectedExperimentSummariesKey === "createdExperiments") {
-        return "Created Experiments";
-      } else if (this.selectedExperimentSummariesKey === "runningExperiments") {
-        return "Running Experiments";
-      } else if (this.selectedExperimentSummariesKey === "completedExperiments") {
-        return "Completed Experiments";
-      } else if (this.selectedExperimentSummariesKey === "cancelledExperiments") {
-        return "Cancelled Experiments";
-      } else if (this.selectedExperimentSummariesKey === "failedExperiments") {
-        return "Failed Experiments";
-      } else {
-        return "Experiments";
-      }
-    },
-  },
-  created() {
-    this.loadStatistics();
-    this.loadApplicationInterfaces();
-    this.loadComputeResources();
-  },
-  methods: {
-    dateRangeChanged(selectedDates) {
-      [this.fromTime, this.toTime] = selectedDates;
-      if (this.fromTime && this.toTime) {
-        this.loadStatistics();
-      }
-    },
-    loadApplicationInterfaces() {
-      return services.ApplicationInterfaceService.list().then(
-        (appInterfaces) => (this.appInterfaces = appInterfaces),
+// fp_incr sets the time of the date to midnight.
+// Calculating from today midnight to tomorrow midnight.
+const _fromTime = (new Date() as unknown as { fp_incr: (_n: number) => Date }).fp_incr(0);
+const _toTime = (new Date() as unknown as { fp_incr: (_n: number) => Date }).fp_incr(1);
+
+type ExperimentSummary = {
+  experiment_id: string;
+  execution_id: string;
+  resource_host_id: string;
+  creation_time: Date | string;
+  experiment_status: { name: string };
+  [key: string]: unknown;
+};
+type ExperimentStatisticsResults = {
+  allExperimentCount?: number;
+  createdExperimentCount?: number;
+  runningExperimentCount?: number;
+  completedExperimentCount?: number;
+  cancelledExperimentCount?: number;
+  failedExperimentCount?: number;
+  allExperiments?: ExperimentSummary[];
+  createdExperiments?: ExperimentSummary[];
+  runningExperiments?: ExperimentSummary[];
+  completedExperiments?: ExperimentSummary[];
+  cancelledExperiments?: ExperimentSummary[];
+  failedExperiments?: ExperimentSummary[];
+  [key: string]: unknown;
+};
+const experimentStatisticsPaginator = ref<{
+  results: ExperimentStatisticsResults;
+  offset: number;
+  next: () => void;
+  previous: () => void;
+} | null>(null);
+const selectedExperimentSummariesKey = ref<string | null>(null);
+const fromTime = ref<Date>(_fromTime);
+const toTime = ref<Date>(_toTime);
+const dateRange = ref<(Date | string)[]>([_fromTime, _toTime]);
+const dateConfig = ref({
+  mode: "range",
+  wrap: true,
+  dateFormat: "Y-m-d",
+  maxDate: (new Date() as unknown as { fp_incr: (_n: number) => Date }).fp_incr(1),
+});
+const usernameFilterEnabled = ref(false);
+const usernameFilter = ref<string | null>(null);
+const applicationNameFilterEnabled = ref(false);
+const applicationNameFilter = ref<string | null>(null);
+const hostnameFilterEnabled = ref(false);
+const hostnameFilter = ref<string | null>(null);
+const appInterfaces = ref<{ application_interface_id: string; application_name: string }[] | null>(null);
+const computeResourceNames = ref<{ host_id: string; host: string }[] | null>(null);
+const experimentDetailTabs = ref<{ tabTitle: string; experiment: { experiment_id: string; experiment_name: string } }[]>([]);
+const experimentId = ref<string | null>(null);
+const jobId = ref<string | null>(null);
+const activeTabIndex = ref(0);
+const tabs = ref<HTMLElement | null>(null);
+
+const experimentStatistics = computed<ExperimentStatisticsResults>(() =>
+  experimentStatisticsPaginator.value ? experimentStatisticsPaginator.value.results : {}
+);
+
+const createdStates = computed(() => [models.ExperimentState.CREATED, models.ExperimentState.VALIDATED]);
+const runningStates = computed(() => [
+  models.ExperimentState.SCHEDULED,
+  models.ExperimentState.LAUNCHED,
+  models.ExperimentState.EXECUTING,
+]);
+const completedStates = computed(() => [models.ExperimentState.COMPLETED]);
+const canceledStates = computed(() => [models.ExperimentState.CANCELING, models.ExperimentState.CANCELED]);
+const failedStates = computed(() => [models.ExperimentState.FAILED]);
+
+const fromTimeDisplay = computed(() => formatDate(fromTime.value));
+const toTimeDisplay = computed(() => formatDate(toTime.value));
+
+const selectedExperimentSummaries = computed<ExperimentSummary[]>(() => {
+  if (
+    selectedExperimentSummariesKey.value &&
+    experimentStatistics.value &&
+    selectedExperimentSummariesKey.value in experimentStatistics.value
+  ) {
+    return (experimentStatistics.value[selectedExperimentSummariesKey.value] as ExperimentSummary[]) ?? [];
+  }
+  return [];
+});
+
+const items = computed(() => selectedExperimentSummaries.value ?? []);
+
+const applicationNameOptions = computed(() => {
+  if (appInterfaces.value) {
+    const options = appInterfaces.value.map((appInterface) => ({
+      value: appInterface.application_interface_id,
+      text: appInterface.application_name,
+    }));
+    return utils.StringUtils.sortIgnoreCase(options, (o: { text: string }) => o.text);
+  }
+  return [];
+});
+
+const hostnameOptions = computed(() => {
+  if (!computeResourceNames.value) return [];
+  const options = computeResourceNames.value.map((name) => ({
+    value: name.host_id,
+    text: name.host,
+  }));
+  return utils.StringUtils.sortIgnoreCase(options, (o: { text: string }) => o.text);
+});
+
+const selectedExperimentsTabTitle = computed(() => {
+  const map: Record<string, string> = {
+    allExperiments: "All Experiments",
+    createdExperiments: "Created Experiments",
+    runningExperiments: "Running Experiments",
+    completedExperiments: "Completed Experiments",
+    cancelledExperiments: "Cancelled Experiments",
+    failedExperiments: "Failed Experiments",
+  };
+  return selectedExperimentSummariesKey.value
+    ? (map[selectedExperimentSummariesKey.value] ?? "Experiments")
+    : "Experiments";
+});
+
+function dateRangeChanged(selectedDates: Date[]) {
+  [fromTime.value, toTime.value] = selectedDates;
+  if (fromTime.value && toTime.value) {
+    loadStatistics();
+  }
+}
+
+function loadApplicationInterfaces() {
+  return services.ApplicationInterfaceService.list().then(
+    (appIfaces: typeof appInterfaces.value) => (appInterfaces.value = appIfaces)
+  );
+}
+
+function loadComputeResources() {
+  return services.ComputeResourceService.namesList().then(
+    (names: typeof computeResourceNames.value) => (computeResourceNames.value = names)
+  );
+}
+
+function loadStatistics() {
+  const requestData: Record<string, string> = {
+    fromTime: fromTime.value.toJSON(),
+    toTime: toTime.value.toJSON(),
+  };
+  if (usernameFilterEnabled.value && usernameFilter.value) {
+    requestData["user_name"] = usernameFilter.value;
+  }
+  if (applicationNameFilterEnabled.value && applicationNameFilter.value) {
+    requestData["application_name"] = applicationNameFilter.value;
+  }
+  if (hostnameFilterEnabled.value && hostnameFilter.value) {
+    requestData["resource_host_name"] = hostnameFilter.value;
+  }
+  return services.ExperimentStatisticsService.get(requestData).then((stats: typeof experimentStatisticsPaginator.value) => {
+    experimentStatisticsPaginator.value = stats;
+  });
+}
+
+function getPast24Hours() {
+  fromTime.value = (new Date() as unknown as { fp_incr: (_n: number) => Date }).fp_incr(0);
+  toTime.value = (new Date() as unknown as { fp_incr: (_n: number) => Date }).fp_incr(1);
+  updateDateRange();
+}
+
+function getPastWeek() {
+  fromTime.value = (new Date() as unknown as { fp_incr: (_n: number) => Date }).fp_incr(-7);
+  toTime.value = (new Date() as unknown as { fp_incr: (_n: number) => Date }).fp_incr(1);
+  updateDateRange();
+}
+
+function updateDateRange() {
+  dateRange.value = [formatIsoDate(fromTime.value), formatIsoDate(toTime.value)];
+}
+
+function removeUsernameFilter() {
+  usernameFilter.value = null;
+  usernameFilterEnabled.value = false;
+  loadStatistics();
+}
+
+function removeApplicationNameFilter() {
+  applicationNameFilter.value = null;
+  applicationNameFilterEnabled.value = false;
+  loadStatistics();
+}
+
+function removeHostnameFilter() {
+  hostnameFilter.value = null;
+  hostnameFilterEnabled.value = false;
+  loadStatistics();
+}
+
+async function showExperimentDetails(expId: string, tabTitle: string | null = null) {
+  const expDetailsIndex = getExperimentDetailTabsIndex(expId);
+  if (expDetailsIndex >= 0) {
+    if (tabTitle) {
+      experimentDetailTabs.value[expDetailsIndex].tabTitle = tabTitle;
+    }
+    selectExperimentDetailsTab(expId);
+  } else {
+    try {
+      const exp = await services.ExperimentService.retrieve(
+        { lookup: expId },
+        { ignoreErrors: true }
       );
-    },
-    loadComputeResources() {
-      return services.ComputeResourceService.namesList().then(
-        (names) => (this.computeResourceNames = names),
-      );
-    },
-    loadStatistics() {
-      const requestData = {
-        fromTime: this.fromTime.toJSON(),
-        toTime: this.toTime.toJSON(),
-      };
-      if (this.usernameFilterEnabled && this.usernameFilter) {
-        requestData["user_name"] = this.usernameFilter;
-      }
-      if (this.applicationNameFilterEnabled && this.applicationNameFilter) {
-        requestData["application_name"] = this.applicationNameFilter;
-      }
-      if (this.hostnameFilterEnabled && this.hostnameFilter) {
-        requestData["resource_host_name"] = this.hostnameFilter;
-      }
-      return services.ExperimentStatisticsService.get(requestData).then((stats) => {
-        this.experimentStatisticsPaginator = stats;
+      experimentDetailTabs.value.push({
+        tabTitle: tabTitle || exp.experiment_name,
+        experiment: exp,
       });
-    },
-    getPast24Hours() {
-      this.fromTime = new Date().fp_incr(0);
-      //this.fromTime = new Date(this.fromTime.setHours(0,0,0));
-      this.toTime = new Date().fp_incr(1);
-      this.updateDateRange();
-    },
-    getPastWeek() {
-      this.fromTime = new Date().fp_incr(-7);
-      this.toTime = new Date().fp_incr(1);
-      this.updateDateRange();
-    },
-    updateDateRange() {
-      this.dateRange = [
-        formatIsoDate(this.fromTime),
-        formatIsoDate(this.toTime),
-      ];
-    },
-    daysAgo(days) {
-      return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    },
-    removeUsernameFilter() {
-      this.usernameFilter = null;
-      this.usernameFilterEnabled = false;
-      this.loadStatistics();
-    },
-    removeApplicationNameFilter() {
-      this.applicationNameFilter = null;
-      this.applicationNameFilterEnabled = false;
-      this.loadStatistics();
-    },
-    removeHostnameFilter() {
-      this.hostnameFilter = null;
-      this.hostnameFilterEnabled = false;
-      this.loadStatistics();
-    },
-    async showExperimentDetails(experimentId, tabTitle = null) {
-      const expDetailsIndex = this.getExperimentDetailTabsIndex(experimentId);
-      if (expDetailsIndex >= 0) {
-        // Update tab title in case it is now loaded from a job id and we want
-        // to get the job id in the title
-        if (tabTitle) {
-          this.experimentDetailTabs[expDetailsIndex].tabTitle = tabTitle;
-        }
-        this.selectExperimentDetailsTab(experimentId);
-      } else {
-        try {
-          const exp = await services.ExperimentService.retrieve(
-            {
-              lookup: experimentId,
-            },
-            { ignoreErrors: true },
-          );
-          this.experimentDetailTabs.push({
-            tabTitle: tabTitle || exp.experiment_name,
-            experiment: exp,
-          });
-          this.selectExperimentDetailsTab(experimentId);
-          this.scrollTabsIntoView();
-        } catch (error) {
-          if (errors.ErrorUtils.isNotFoundError(error)) {
-            notifications.NotificationList.add(
-              new notifications.Notification({
-                type: "WARNING",
-                message: `No experiment exists with experiment id ${experimentId}`,
-                duration: 5,
-              }),
-            );
-          } else {
-            utils.FetchUtils.reportError(error);
-          }
-        }
-      }
-    },
-    async showExperimentDetailsForJobId(jobId) {
-      const searchResults = await services.ExperimentSearchService.list({
-        [models.ExperimentSearchFields.JOB_ID.name]: jobId,
-      });
-      if (searchResults.results.length === 0) {
+      selectExperimentDetailsTab(expId);
+      scrollTabsIntoView();
+    } catch (error) {
+      if (errors.ErrorUtils.isNotFoundError(error)) {
         notifications.NotificationList.add(
           new notifications.Notification({
             type: "WARNING",
-            message: `No experiment exists with job id ${jobId}`,
+            message: `No experiment exists with experiment id ${expId}`,
             duration: 5,
-          }),
+          })
         );
       } else {
-        if (searchResults.results.length > 1) {
-          notifications.NotificationList.add(
-            new notifications.Notification({
-              type: "WARNING",
-              message: `More than one experiment matches job id ${jobId}, showing the latest one`,
-              duration: 5,
-            }),
-          );
-        }
-        this.showExperimentDetails(searchResults.results[0].experiment_id, `Job ${jobId}`);
+        utils.FetchUtils.reportError(error);
       }
-    },
-    selectExperimentDetailsTab(experimentId) {
-      const expDetailsIndex = this.getExperimentDetailTabsIndex(experimentId);
-      // Note: running this in $nextTick doesn't work, but setTimeout does
-      // (see also https://github.com/bootstrap-vue/bootstrap-vue/issues/1378#issuecomment-345689470)
-      setTimeout(() => {
-        // Add 1 to the index because the first tab has the overall statistics
-        this.activeTabIndex = expDetailsIndex + 1;
-      }, 1);
-    },
-    getExperimentDetailTabsIndex(experimentId) {
-      return this.experimentDetailTabs.findIndex(
-        (tab) => tab.experiment.experiment_id === experimentId,
+    }
+  }
+}
+
+async function showExperimentDetailsForJobId(jId: string) {
+  const searchResults = await services.ExperimentSearchService.list({
+    [models.ExperimentSearchFields.JOB_ID.name]: jId,
+  });
+  if (searchResults.results.length === 0) {
+    notifications.NotificationList.add(
+      new notifications.Notification({
+        type: "WARNING",
+        message: `No experiment exists with job id ${jId}`,
+        duration: 5,
+      })
+    );
+  } else {
+    if (searchResults.results.length > 1) {
+      notifications.NotificationList.add(
+        new notifications.Notification({
+          type: "WARNING",
+          message: `More than one experiment matches job id ${jId}, showing the latest one`,
+          duration: 5,
+        })
       );
-    },
-    removeExperimentDetailTab(experimentId) {
-      const index = this.getExperimentDetailTabsIndex(experimentId);
-      this.experimentDetailTabs.splice(index, 1);
-    },
-    scrollTabsIntoView() {
-      this.$refs.tabs.$el.scrollIntoView({ behavior: "smooth" });
-    },
-    selectExperiments(experimentSummariesKey) {
-      if (this.experimentStatisticsPaginator && this.experimentStatisticsPaginator.offset > 0) {
-        this.loadStatistics();
-      }
-      this.selectedExperimentSummariesKey = experimentSummariesKey;
-    },
-  },
-};
+    }
+    showExperimentDetails(searchResults.results[0].experiment_id, `Job ${jId}`);
+  }
+}
+
+function selectExperimentDetailsTab(expId: string) {
+  const expDetailsIndex = getExperimentDetailTabsIndex(expId);
+  // Note: running this in nextTick doesn't work, but setTimeout does
+  setTimeout(() => {
+    activeTabIndex.value = expDetailsIndex + 1;
+  }, 1);
+}
+
+function getExperimentDetailTabsIndex(expId: string) {
+  return experimentDetailTabs.value.findIndex(
+    (tab) => tab.experiment.experiment_id === expId
+  );
+}
+
+function removeExperimentDetailTab(expId: string) {
+  const index = getExperimentDetailTabsIndex(expId);
+  experimentDetailTabs.value.splice(index, 1);
+}
+
+function scrollTabsIntoView() {
+  tabs.value?.scrollIntoView({ behavior: "smooth" });
+}
+
+function selectExperiments(experimentSummariesKey: string) {
+  if (experimentStatisticsPaginator.value && experimentStatisticsPaginator.value.offset > 0) {
+    loadStatistics();
+  }
+  selectedExperimentSummariesKey.value = experimentSummariesKey;
+}
+
+onMounted(() => {
+  loadStatistics();
+  loadApplicationInterfaces();
+  loadComputeResources();
+});
 </script>

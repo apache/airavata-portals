@@ -22,39 +22,16 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { onBeforeMount, ref } from "vue";
+import { models, services } from "django-airavata-api";
 import ParserList from "../parser-components/ParserList.vue";
 
-import { services } from "django-airavata-api";
+const parsers = ref<InstanceType<typeof models.Parser>[] | null>(null);
 
-export default {
-  name: "ParsersManageContainer",
-  components: {
-    "parser-list": ParserList,
-  },
-  props: [],
-  data() {
-    return {
-      parsers: null,
-    };
-  },
-  computed: {
-    // parsers: function() {
-    //     return this.parserPaginator ? this.parserPaginator.results : null;
-    // },
-  },
-  beforeMount: function () {
-    services.ParserService.list().then((result) => (this.parsers = result));
-  },
-  methods: {
-    nextParsers: function () {
-      this.parserPaginator.next();
-    },
-    previousParsers: function () {
-      this.parserPaginator.previous();
-    },
-  },
-};
+onBeforeMount(async () => {
+  parsers.value = await services.ParserService.list();
+});
 </script>
 
 <style>

@@ -10,45 +10,49 @@
   />
 </template>
 
-<script>
-export default {
-  name: "JsonEditor",
-  props: {
-    value: {
-      type: Object,
-    },
-    id: String,
-    rows: Number,
-    disabled: Boolean,
+<script setup lang="ts">
+import { ref, watch } from "vue";
+
+const props = defineProps<{
+  modelValue?: Record<string, unknown> | null;
+  id?: string;
+  rows?: number;
+  disabled?: boolean;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: Record<string, unknown> | null];
+}>();
+
+const state = ref<boolean | null>(null);
+
+function formatJSON(value: Record<string, unknown>) {
+  return JSON.stringify(value, null, 4);
+}
+
+const jsonString = ref<string | null>(
+  props.modelValue ? formatJSON(props.modelValue) : null,
+);
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    jsonString.value = newValue ? formatJSON(newValue) : null;
   },
-  data() {
-    return {
-      jsonString: this.value ? this.formatJSON(this.value) : null,
-      state: null,
-    };
-  },
-  watch: {
-    value(newValue) {
-      this.jsonString = newValue ? this.formatJSON(newValue) : null;
-    },
-  },
-  methods: {
-    formatJSON(value) {
-      return JSON.stringify(value, null, 4);
-    },
-    valueChanged(newValue) {
-      try {
-        if (newValue) {
-          const parsedValue = JSON.parse(newValue);
-          this.$emit("input", parsedValue);
-        } else {
-          this.$emit("input", null);
-        }
-        this.state = true;
-      } catch (e) {
-        this.state = false;
-      }
-    },
-  },
-};
+);
+
+function valueChanged(event: Event) {
+  const newValue = (event.target as HTMLTextAreaElement).value;
+  try {
+    if (newValue) {
+      const parsedValue = JSON.parse(newValue) as Record<string, unknown>;
+      emit("update:modelValue", parsedValue);
+    } else {
+      emit("update:modelValue", null);
+    }
+    state.value = true;
+  } catch (e) {
+    state.value = false;
+  }
+}
 </script>

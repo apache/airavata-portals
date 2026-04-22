@@ -9,12 +9,11 @@
       </div>
     </div>
     <transition-group name="fade">
-      <div v-for="field in extendedUserProfileFields" :key="field.key" class="row">
+      <div v-for="field in extendedUserProfileFields" :key="field.id ?? field.name" class="row">
         <div class="col">
           <extended-user-profile-field-editor
             ref="extendedUserProfileFieldEditors"
             :extended-user-profile-field="field"
-            :disabled="!field.user_has_write_access"
             @valid="recordValidChildComponent(field)"
             @invalid="recordInvalidChildComponent(field)"
           />
@@ -41,84 +40,54 @@
   </div>
 </template>
 
-<script>
-import { mapActions, mapGetters } from "vuex";
-import ExtendedUserProfileFieldEditor from "./field-editors/ExtendedUserProfileFieldEditor.vue";
-import { mixins } from "django-airavata-common-ui";
+<script setup lang="ts">
+import { ref, computed, nextTick, onMounted } from "vue";
 import { session } from "django-airavata-api";
-export default {
-  components: { ExtendedUserProfileFieldEditor },
-  mixins: [mixins.ValidationParent],
-  data() {
-    return {};
-  },
-  created() {
-    this.loadExtendedUserProfileFields();
-  },
-  methods: {
-    ...mapActions("extendedUserProfile", [
-      "loadExtendedUserProfileFields",
-      "saveExtendedUserProfileFields",
-      "addExtendedUserProfileField",
-    ]),
-    addField(field_type) {
-      this.addExtendedUserProfileField({ field_type });
-      this.$nextTick(() => {
-        this.$refs.bottom.scrollIntoView();
-      });
-    },
-    addOption(field) {
-      if (!field.options) {
-        field.options = [];
-      }
-      field.options.push({ id: null, name: "" });
-    },
-    deleteOption(field, option) {
-      const i = field.options.indexOf(option);
-      field.options.splice(i, 1);
-    },
-    addLink(field) {
-      if (!field.links) {
-        field.links = [];
-      }
-      field.links.push({
-        id: null,
-        url: "",
-        title: "",
-        display_link: true,
-        display_inline: false,
-      });
-    },
-    addConditional(field) {
-      if (!field.conditional) {
-        field.conditional = {
-          id: null,
-          conditions: [],
-          require_when: true,
-          show_when: true,
-        };
-      }
-    },
-    deleteLink(field, link) {
-      const i = field.links.indexOf(link);
-      field.links.splice(i, 1);
-    },
-    save() {
-      if (this.valid) {
-        this.saveExtendedUserProfileFields();
-      } else {
-        this.$refs.extendedUserProfileFieldEditors.forEach((c) => c.touch());
-      }
-    },
-  },
-  computed: {
-    ...mapGetters("extendedUserProfile", ["extendedUserProfileFields"]),
-    valid() {
-      return this.childComponentsAreValid;
-    },
-    isGatewayAdmin() {
-      return session.Session.is_gateway_admin;
-    },
-  },
-};
+import { useUserStore } from "django-airavata-common-ui/js/stores/user";
+import type { ExtendedUserProfileField } from "django-airavata-common-ui/js/types/user";
+import ExtendedUserProfileFieldEditor from "./field-editors/ExtendedUserProfileFieldEditor.vue";
+
+const userStore = useUserStore();
+
+// ValidationParent logic inlined — tracks invalid fields by object reference
+const invalidChildComponents = ref<ExtendedUserProfileField[]>([]);
+const childComponentsAreValid = computed(() => invalidChildComponents.value.length === 0);
+
+function recordValidChildComponent(field: ExtendedUserProfileField) {
+  const index = invalidChildComponents.value.indexOf(field);
+  if (index >= 0) {
+    invalidChildComponents.value.splice(index, 1);
+  }
+}
+
+function recordInvalidChildComponent(field: ExtendedUserProfileField) {
+  if (!invalidChildComponents.value.includes(field)) {
+    invalidChildComponents.value.push(field);
+  }
+}
+
+const bottom = ref<HTMLElement | null>(null);
+const extendedUserProfileFieldEditors = ref<{ touch: () => void }[]>([]);
+
+const extendedUserProfileFields = computed(() => userStore.extendedUserProfileFields);
+const valid = computed(() => childComponentsAreValid.value);
+const isGatewayAdmin = computed(() => session.Session.is_gateway_admin);
+
+onMounted(() => {
+  userStore.loadExtendedUserProfileFields();
+});
+
+async function addField(field_type: string) {
+  userStore.addExtendedUserProfileField({ field_type });
+  await nextTick();
+  bottom.value?.scrollIntoView();
+}
+
+function save() {
+  if (valid.value) {
+    userStore.saveExtendedUserProfileFields();
+  } else {
+    extendedUserProfileFieldEditors.value.forEach((c) => c.touch());
+  }
+}
 </script>

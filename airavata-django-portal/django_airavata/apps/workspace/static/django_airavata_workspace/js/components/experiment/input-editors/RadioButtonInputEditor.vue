@@ -21,40 +21,59 @@
   </div>
 </template>
 
-<script>
-import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
+<script setup lang="ts">
+import { computed } from "vue";
+import { models } from "django-airavata-api";
+import { useInputEditor } from "@/composables/useInputEditor";
+
+type InputDataObjectType = InstanceType<typeof models.InputDataObjectType>;
+type Experiment = InstanceType<typeof models.Experiment>;
+
+interface ConfigOption {
+  text: string;
+  value: string;
+  [key: string]: unknown;
+}
 
 const CONFIG_OPTION_TEXT_KEY = "text";
 const CONFIG_OPTION_VALUE_KEY = "value";
 
-export default {
-  name: "RadioButtonInputEditor",
-  mixins: [InputEditorMixin],
-  props: {
-    value: {
-      type: String,
-    },
-    options: {
-      type: Array,
-    },
-  },
-  computed: {
-    radioOptions: function () {
-      // passed in options take precedence over options in input metadata
-      const options = this.options || this.editorConfig.options || [];
-      return options.map((option) => {
-        return {
-          text: option[CONFIG_OPTION_TEXT_KEY],
-          value: option[CONFIG_OPTION_VALUE_KEY],
-        };
-      });
-    },
-  },
-  methods: {
-    onRadioChange(value) {
-      this.data = value;
-      this.valueChanged();
-    },
-  },
-};
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string | null;
+    experimentInput: InputDataObjectType;
+    experiment?: Experiment;
+    id: string;
+    readOnly?: boolean;
+    options?: ConfigOption[];
+  }>(),
+  { modelValue: null, experiment: undefined, options: undefined, readOnly: false },
+);
+
+const emit = defineEmits<{
+  "update:modelValue": [value: string | null];
+  valid: [];
+  invalid: [messages: string[]];
+}>();
+
+const { data, editorConfig, valueChanged } = useInputEditor(
+  props,
+  (_, v) => emit("update:modelValue", v),
+  () => emit("valid"),
+  (msgs) => emit("invalid", msgs),
+);
+
+const radioOptions = computed(() => {
+  // passed in options take precedence over options in input metadata
+  const options: ConfigOption[] = props.options || editorConfig.value.options || [];
+  return options.map((option) => ({
+    text: option[CONFIG_OPTION_TEXT_KEY] as string,
+    value: option[CONFIG_OPTION_VALUE_KEY] as string,
+  }));
+});
+
+function onRadioChange(value: string) {
+  data.value = value;
+  valueChanged();
+}
 </script>

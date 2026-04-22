@@ -38,73 +38,91 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import { models } from "django-airavata-api";
-import { mixins } from "django-airavata-common-ui";
 
-export default {
-  name: "ProjectEditor",
-  mixins: [mixins.VModelMixin],
-  props: {
-    modelValue: {
-      type: models.Project,
-      required: true,
-    },
+type Project = InstanceType<typeof models.Project>;
+
+const props = defineProps<{
+  modelValue: Project;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: Project];
+  valid: [];
+  invalid: [];
+  save: [];
+}>();
+
+// VModelMixin pattern: local copy, emits on change, updates when prop changes
+const data = ref<Project>(props.modelValue.clone());
+
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    data.value = newVal.clone();
+    validate();
   },
-  data() {
-    return {
-      userBeginsInput: false,
-    };
+  { deep: true },
+);
+
+watch(
+  data,
+  (newVal, oldVal) => {
+    // Only emit for objects when deep property changes (same ref)
+    if (newVal === oldVal) {
+      emit("update:modelValue", newVal);
+    }
+    validate();
   },
-  computed: {
-    nameFeedback() {
-      if (this.userBeginsInput && this.validation.name) {
-        return this.validation.name.join("; ");
-      }
-      return null;
-    },
-    nameState() {
-      if (this.validation.name) {
-        return this.userBeginsInput ? false : null;
-      }
-      return true;
-    },
-    validation() {
-      const v = this.data.validate();
-      return v ? v : {};
-    },
-  },
-  watch: {
-    data: {
-      handler() {
-        this.validate();
-      },
-      deep: true,
-    },
-    modelValue() {
-      this.validate();
-    },
-  },
-  mounted() {
-    this.validate();
-  },
-  methods: {
-    validate() {
-      if (Object.keys(this.validation).length > 0) {
-        this.$emit("invalid");
-      } else {
-        this.$emit("valid");
-      }
-    },
-    onUserInput() {
-      this.userBeginsInput = true;
-    },
-    onSubmit() {
-      this.$emit("save");
-    },
-    reset() {
-      this.userBeginsInput = false;
-    },
-  },
-};
+  { deep: true },
+);
+
+const userBeginsInput = ref(false);
+
+const validation = computed(() => {
+  const v = (data.value as unknown as { validate(): Record<string, string[]> }).validate();
+  return v ? v : {};
+});
+
+const nameFeedback = computed(() => {
+  if (userBeginsInput.value && validation.value.name) {
+    return validation.value.name.join("; ");
+  }
+  return null;
+});
+
+const nameState = computed<boolean | null>(() => {
+  if (validation.value.name) {
+    return userBeginsInput.value ? false : null;
+  }
+  return true;
+});
+
+function validate() {
+  if (Object.keys(validation.value).length > 0) {
+    emit("invalid");
+  } else {
+    emit("valid");
+  }
+}
+
+function onUserInput() {
+  userBeginsInput.value = true;
+}
+
+function onSubmit() {
+  emit("save");
+}
+
+function reset() {
+  userBeginsInput.value = false;
+}
+
+onMounted(() => {
+  validate();
+});
+
+defineExpose({ reset });
 </script>

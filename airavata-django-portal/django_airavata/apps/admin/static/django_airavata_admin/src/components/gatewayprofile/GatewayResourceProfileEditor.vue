@@ -19,15 +19,35 @@
   </div>
 </template>
 
-<script>
-import { mixins } from "django-airavata-common-ui";
-import SSHCredentialSelector from "../credentials/SSHCredentialSelector.vue";
+<script setup lang="ts">
+import { ref, watch } from "vue";
+import SshCredentialSelector from "../credentials/SSHCredentialSelector.vue";
 
-export default {
-  name: "GatewayResourceProfileEditor",
-  components: {
-    "ssh-credential-selector": SSHCredentialSelector,
+const props = defineProps<{
+  modelValue: Record<string, unknown>;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: Record<string, unknown>];
+}>();
+
+const data = ref<Record<string, unknown>>({ ...props.modelValue });
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    data.value = { ...newValue };
   },
-  mixins: [mixins.VModelMixin],
-};
+  { deep: true },
+);
+
+watch(
+  data,
+  (newValue, oldValue) => {
+    if (newValue === oldValue) {
+      emit("update:modelValue", newValue);
+    }
+  },
+  { deep: true },
+);
 </script>

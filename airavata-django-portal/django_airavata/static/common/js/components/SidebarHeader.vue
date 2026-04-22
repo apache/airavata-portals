@@ -5,17 +5,12 @@
   </header>
 </template>
 
-<script>
-export default {
-  name: "SidebarHeader",
-  props: {
-    title: {
-      type: String,
-      default: "Recent Activity",
-    },
-    viewAllUrl: {
-      type: String,
-    },
-  },
-};
+<script setup lang="ts">
+withDefaults(defineProps<{
+  title?: string;
+  viewAllUrl?: string;
+}>(), {
+  title: "Recent Activity",
+  viewAllUrl: undefined,
+});
 </script>

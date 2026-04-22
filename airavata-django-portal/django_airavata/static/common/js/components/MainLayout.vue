@@ -40,89 +40,88 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted, onBeforeUnmount, useSlots } from "vue";
 import NotificationsDisplay from "./NotificationsDisplay.vue";
 import NotificationsPanel from "./NotificationsPanel.vue";
 import SshPromptNotification from "./SshPromptNotification.vue";
 import { utils } from "django-airavata-api";
 
-export default {
-  name: "MainLayout",
-  components: {
-    NotificationsDisplay,
-    NotificationsPanel,
-    SshPromptNotification,
-  },
-  data() {
-    return {
-      collapsed: false,
-      activePanel: "content",
-      notices: [],
-      unreadCount: 0,
-    };
-  },
-  computed: {
-    hasSidebarSlot() {
-      return !!this.$slots.sidebar;
-    },
-    showSidebar() {
-      return this.hasSidebarSlot || this.notices.length > 0;
-    },
-  },
-  created() {
-    // Load notices from the DOM data attribute (set in base.html)
-    const el = document.getElementById("gateway-notices");
-    if (el) {
-      this.unreadCount = parseInt(el.dataset.unreadCount || "0");
-      this.notices = JSON.parse(el.dataset.notices || "[]");
-    }
+const slots = useSlots();
 
-    // Default to content panel if sidebar slot exists, otherwise notifications
-    this.activePanel = this.hasSidebarSlot ? "content" : "notifications";
+const collapsed = ref(false);
+const activePanel = ref("content");
+interface Notice {
+  notificationId: string | number;
+  [key: string]: unknown;
+}
 
-    // Restore collapsed state
-    this.collapsed = localStorage.getItem("rightSidebarCollapsed") === "true";
+const notices = ref<Notice[]>([]);
+const unreadCount = ref(0);
 
-    // Listen for footer bar toggle events
-    window.addEventListener("sidebar:toggle", this.handleToggle);
-    window.addEventListener("sidebar:show", this.handleShow);
+const hasSidebarSlot = computed(() => !!slots.sidebar);
+const showSidebar = computed(() => hasSidebarSlot.value || notices.value.length > 0);
 
-    // Connect SSE client for real-time events
-    if (utils.SSEClient) {
-      utils.SSEClient.connect();
-    }
-  },
-  beforeUnmount() {
-    window.removeEventListener("sidebar:toggle", this.handleToggle);
-    window.removeEventListener("sidebar:show", this.handleShow);
-    if (utils.SSEClient) {
-      utils.SSEClient.disconnect();
-    }
-  },
-  methods: {
-    switchPanel(panel) {
-      if (this.activePanel === panel && !this.collapsed) {
-        // Clicking the active tab collapses
-        this.collapsed = true;
-      } else {
-        this.activePanel = panel;
-        this.collapsed = false;
-      }
-      this.persistState();
-    },
-    handleToggle() {
-      this.collapsed = !this.collapsed;
-      this.persistState();
-    },
-    handleShow(e) {
-      const panel = e.detail;
-      if (panel) {
-        this.switchPanel(panel);
-      }
-    },
-    persistState() {
-      localStorage.setItem("rightSidebarCollapsed", this.collapsed);
-    },
-  },
-};
+onMounted(() => {
+  // Load notices from the DOM data attribute (set in base.html)
+  const el = document.getElementById("gateway-notices");
+  if (el) {
+    unreadCount.value = parseInt(el.dataset["unreadCount"] || "0");
+    notices.value = JSON.parse(el.dataset["notices"] || "[]") as Notice[];
+  }
+
+  // Default to content panel if sidebar slot exists, otherwise notifications
+  activePanel.value = hasSidebarSlot.value ? "content" : "notifications";
+
+  // Restore collapsed state
+  collapsed.value = localStorage.getItem("rightSidebarCollapsed") === "true";
+
+  // Listen for footer bar toggle events
+  window.addEventListener("sidebar:toggle", handleToggle);
+  window.addEventListener("sidebar:show", handleShowEvent);
+
+  // Connect SSE client for real-time events
+  if (utils.SSEClient) {
+    utils.SSEClient.connect();
+  }
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("sidebar:toggle", handleToggle);
+  window.removeEventListener("sidebar:show", handleShowEvent);
+  if (utils.SSEClient) {
+    utils.SSEClient.disconnect();
+  }
+});
+
+function switchPanel(panel: string): void {
+  if (activePanel.value === panel && !collapsed.value) {
+    // Clicking the active tab collapses
+    collapsed.value = true;
+  } else {
+    activePanel.value = panel;
+    collapsed.value = false;
+  }
+  persistState();
+}
+
+function handleToggle(): void {
+  collapsed.value = !collapsed.value;
+  persistState();
+}
+
+function handleShowEvent(e: Event): void {
+  handleShow(e as CustomEvent);
+}
+
+function handleShow(e: CustomEvent): void {
+  const panel = e.detail;
+  if (panel) {
+    switchPanel(panel);
+  }
+}
+
+function persistState(): void {
+  localStorage.setItem("rightSidebarCollapsed", String(collapsed.value));
+}
 </script>

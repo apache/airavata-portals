@@ -24,10 +24,10 @@
   </div>
 </template>
 
-<script>
-export default {
-  props: ["extendedUserProfileField"],
-};
+<script setup lang="ts">
+import type { ExtendedUserProfileField } from "django-airavata-common-ui/js/types/user";
+
+defineProps<{ extendedUserProfileField: ExtendedUserProfileField }>();
 </script>
 
 <style scoped>

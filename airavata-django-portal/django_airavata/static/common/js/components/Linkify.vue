@@ -1,33 +1,34 @@
-<script>
+<script setup lang="ts">
 /* eslint-disable vue/multi-word-component-names */
+// Linkify is a renderless component that processes slot content.
+// The render function must live in the Options API block below.
+</script>
+
+<script lang="ts">
+import { h, type VNode } from "vue";
 import * as linkify from "linkifyjs";
 
-export default {
-  name: "Linkify",
-  methods: {
-    clickHandler(e) {
-      // stop click event from bubbling up
-      e.stopPropagation();
-    },
-  },
+function clickHandler(e: Event): void {
+  // stop click event from bubbling up
+  e.stopPropagation();
+}
 
-  render: function (createElement) {
+export default {
+  render() {
     // Find top level text nodes and run linkify on the text, converting them
     // into an array of links and text nodes
-    const children = (this.$slots.default || [])
-      .map((node) => {
-        if (node.text) {
-          const tokens = linkify.tokenize(node.text);
+    const defaultSlot: VNode[] = this.$slots.default ? this.$slots.default() : [];
+    const children = defaultSlot
+      .flatMap((node) => {
+        // In Vue 3, text VNodes have children as a string
+        const text = typeof node.children === "string" ? node.children : null;
+        if (text) {
+          const tokens = linkify.tokenize(text);
           return tokens.map((t) => {
             if (t.isLink) {
-              return createElement(
+              return h(
                 "a",
-                {
-                  attrs: { href: t.toHref("https"), target: "_blank" },
-                  on: {
-                    click: this.clickHandler,
-                  },
-                },
+                { href: t.toHref("https"), target: "_blank", onClick: clickHandler },
                 t.toString(),
               );
             } else {
@@ -35,12 +36,10 @@ export default {
             }
           });
         } else {
-          return node;
+          return [node];
         }
-      })
-      // Flatten array since text nodes are mapped to arrays
-      .flat();
-    return createElement("span", null, children);
+      });
+    return h("span", {}, children);
   },
 };
 </script>

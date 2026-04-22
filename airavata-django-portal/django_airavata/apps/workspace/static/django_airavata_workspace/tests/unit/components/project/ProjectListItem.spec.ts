@@ -4,7 +4,7 @@ import ProjectListItem from "@/components/project/ProjectListItem.vue";
 
 describe("ProjectListItem", () => {
   const project = {
-    projectID: "proj-1",
+    project_id: "proj-1",
     name: "My Project",
     description: "Sample project",
     creation_time: new Date(Date.now() - 3 * 3600_000).toISOString(),

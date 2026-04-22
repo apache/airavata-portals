@@ -33,7 +33,7 @@
               </li>
             </ol>
           </nav>
-          <div v-if="userStoragePath && userStoragePath.user_has_write_access" class="d-flex gap-2">
+          <div v-if="userStoragePath && (userStoragePath as Record<string, unknown>).user_has_write_access" class="d-flex gap-2">
             <div class="input-group input-group-sm" style="max-width: 240px">
               <input
                 v-model="newDirName"
@@ -131,130 +131,148 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { services } from "django-airavata-api";
 
-export default {
-  name: "StorageTreeContainer",
-  props: {
-    storageResourceId: { type: String, required: true },
-    initialPath: { type: String, default: "" },
-  },
-  data() {
-    return {
-      loading: true,
-      currentPath: this.initialPath || "",
-      userStoragePath: null,
-      newDirName: null,
-    };
-  },
-  computed: {
-    pathParts() {
-      return this.currentPath ? this.currentPath.split("/").filter(Boolean) : [];
-    },
-    items() {
-      if (!this.userStoragePath || !this.userStoragePath.is_dir) return [];
-      const dirs = (this.userStoragePath.directories || [])
-        .filter((d) => !d.hidden)
-        .map((d) => ({
-          name: d.name,
-          path: this.cleanPath(d.path || this.currentPath + "/" + d.name),
-          type: "dir",
-          size: d.size,
-          modifiedTime: d.modified_time,
-          userHasWriteAccess: d.user_has_write_access,
-        }));
-      const files = (this.userStoragePath.files || []).map((f) => ({
-        name: f.name,
-        path: f.path,
-        type: "file",
-        size: f.size,
-        modifiedTime: f.modified_time,
-        downloadURL: f.download_url,
-        dataProductURI: f.data_product_uri,
-        userHasWriteAccess: f.user_has_write_access,
-      }));
-      return dirs.concat(files);
-    },
-  },
-  created() {
-    this.loadPath();
-    window.addEventListener("popstate", this.onPopState);
-  },
-  beforeUnmount() {
-    window.removeEventListener("popstate", this.onPopState);
-  },
-  methods: {
-    cleanPath(p) {
-      return (p || "").replace(/^\/+|\/+$/g, "").replace(/\/\/+/g, "/");
-    },
-    treeUrl(path) {
-      const clean = this.cleanPath(path);
-      return "/resources/storage/" + this.storageResourceId + "/tree" + (clean ? "/" + clean : "");
-    },
-    navigateTo(path) {
-      this.currentPath = this.cleanPath(path);
-      // Update browser URL without reload
-      window.history.pushState(null, "", this.treeUrl(this.currentPath));
-      this.loadPath();
-    },
-    async loadPath() {
-      this.loading = true;
-      this.userStoragePath = null;
-      try {
-        const apiPath = this.currentPath ? "~/" + this.currentPath + "/" : "~/";
-        const result = await services.UserStoragePathService.get(
-          { path: apiPath },
-          { ignoreErrors: true },
-        );
-        this.userStoragePath = result;
-      } catch {
-        this.userStoragePath = { is_dir: true, directories: [], files: [] };
-      }
-      this.loading = false;
-    },
-    async addDirectory() {
-      if (!this.newDirName) return;
-      try {
-        const apiPath = this.currentPath
-          ? "~/" + this.currentPath + "/" + this.newDirName
-          : "~/" + this.newDirName;
-        await services.UserStoragePathService.create({ data: {}, path: apiPath });
-        this.newDirName = null;
-        await this.loadPath();
-      } catch (e) {
-        console.error("Failed to create directory", e);
-      }
-    },
-    async deleteItem(item) {
-      const label = item.type === "dir" ? "directory" : "file";
-      if (!confirm(`Delete ${label} "${item.name}"? This cannot be undone.`)) return;
-      try {
-        const apiPath = "~/" + item.path;
-        await services.UserStoragePathService.delete({ path: apiPath });
-        await this.loadPath();
-      } catch (e) {
-        console.error("Failed to delete " + label, e);
-      }
-    },
-    formatSize(bytes) {
-      // eslint-disable-next-line eqeqeq -- intentionally loose (null/undefined match)
-      if (bytes == null) return "-";
-      if (bytes < 1024) return bytes + " B";
-      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
-      if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + " MB";
-      return (bytes / 1073741824).toFixed(2) + " GB";
-    },
-    formatDate(ts) {
-      if (!ts) return "-";
-      return new Date(ts).toLocaleString();
-    },
-    onPopState() {
-      // Handle browser back/forward
-      const match = window.location.pathname.match(/\/tree(?:\/(.*))?$/);
-      this.currentPath = match ? this.cleanPath(match[1] || "") : "";
-      this.loadPath();
-    },
-  },
-};
+interface FileItem {
+  name: string;
+  path: string;
+  type: "dir" | "file";
+  size: number | null;
+  modifiedTime: unknown;
+  downloadURL?: string;
+  dataProductURI?: string;
+  userHasWriteAccess: boolean;
+}
+
+const props = withDefaults(defineProps<{
+  storageResourceId: string;
+  initialPath?: string;
+}>(), {
+  initialPath: "",
+});
+
+const loading = ref(true);
+const currentPath = ref(props.initialPath || "");
+const userStoragePath = ref<unknown>(null);
+const newDirName = ref<string | null>(null);
+
+const pathParts = computed<string[]>(() =>
+  currentPath.value ? currentPath.value.split("/").filter(Boolean) : [],
+);
+
+const items = computed<FileItem[]>(() => {
+  if (!userStoragePath.value) return [];
+  const usp = userStoragePath.value as Record<string, unknown>;
+  if (!usp.is_dir) return [];
+  const dirs = ((usp.directories as Array<Record<string, unknown>>) || [])
+    .filter((d) => !d.hidden)
+    .map((d): FileItem => ({
+      name: d.name as string,
+      path: cleanPath((d.path as string) || currentPath.value + "/" + (d.name as string)),
+      type: "dir",
+      size: d.size as number | null,
+      modifiedTime: d.modified_time,
+      userHasWriteAccess: d.user_has_write_access as boolean,
+    }));
+  const files = ((usp.files as Array<Record<string, unknown>>) || []).map((f): FileItem => ({
+    name: f.name as string,
+    path: f.path as string,
+    type: "file",
+    size: f.size as number | null,
+    modifiedTime: f.modified_time,
+    downloadURL: f.download_url as string | undefined,
+    dataProductURI: f.data_product_uri as string | undefined,
+    userHasWriteAccess: f.user_has_write_access as boolean,
+  }));
+  return dirs.concat(files);
+});
+
+function cleanPath(p: string): string {
+  return (p || "").replace(/^\/+|\/+$/g, "").replace(/\/\/+/g, "/");
+}
+
+function treeUrl(path: string): string {
+  const clean = cleanPath(path);
+  return "/resources/storage/" + props.storageResourceId + "/tree" + (clean ? "/" + clean : "");
+}
+
+function navigateTo(path: string): void {
+  currentPath.value = cleanPath(path);
+  // Update browser URL without reload
+  window.history.pushState(null, "", treeUrl(currentPath.value));
+  loadPath();
+}
+
+async function loadPath(): Promise<void> {
+  loading.value = true;
+  userStoragePath.value = null;
+  try {
+    const apiPath = currentPath.value ? "~/" + currentPath.value + "/" : "~/";
+    const result = await services.UserStoragePathService.get(
+      { path: apiPath },
+      { ignoreErrors: true },
+    );
+    userStoragePath.value = result;
+  } catch {
+    userStoragePath.value = { is_dir: true, directories: [], files: [] };
+  }
+  loading.value = false;
+}
+
+async function addDirectory(): Promise<void> {
+  if (!newDirName.value) return;
+  try {
+    const apiPath = currentPath.value
+      ? "~/" + currentPath.value + "/" + newDirName.value
+      : "~/" + newDirName.value;
+    await services.UserStoragePathService.create({ data: {}, path: apiPath });
+    newDirName.value = null;
+    await loadPath();
+  } catch (e) {
+    console.error("Failed to create directory", e);
+  }
+}
+
+async function deleteItem(item: FileItem): Promise<void> {
+  const label = item.type === "dir" ? "directory" : "file";
+  if (!confirm(`Delete ${label} "${item.name}"? This cannot be undone.`)) return;
+  try {
+    const apiPath = "~/" + item.path;
+    await services.UserStoragePathService.delete({ path: apiPath });
+    await loadPath();
+  } catch (e) {
+    console.error("Failed to delete " + label, e);
+  }
+}
+
+function formatSize(bytes: number | null): string {
+  if (bytes === null || bytes === undefined) return "-";
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + " MB";
+  return (bytes / 1073741824).toFixed(2) + " GB";
+}
+
+function formatDate(ts: unknown): string {
+  if (!ts) return "-";
+  return new Date(ts as string | number).toLocaleString();
+}
+
+function onPopState(): void {
+  // Handle browser back/forward
+  const match = window.location.pathname.match(/\/tree(?:\/(.*))?$/);
+  currentPath.value = match ? cleanPath(match[1] || "") : "";
+  loadPath();
+}
+
+onMounted(() => {
+  loadPath();
+  window.addEventListener("popstate", onPopState);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("popstate", onPopState);
+});
 </script>

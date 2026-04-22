@@ -9,72 +9,61 @@
   </div>
 </template>
 
-<script>
-import store from "./store";
-import { mapGetters } from "vuex";
+<script setup lang="ts">
+import { computed, watch, getCurrentInstance } from "vue";
 import ComputeResourceSelector from "./ComputeResourceSelector.vue";
+import { useWebComponentsStore } from "django-airavata-common-ui/js/stores/webComponents";
 
-export default {
-  name: "ExperimentComputeResourceSelector",
-  components: {
-    ComputeResourceSelector,
-  },
-  props: {
-    value: {
-      type: String,
-      default: null,
-    },
-    applicationModuleId: {
-      type: String,
-      required: true,
-    },
-    disabled: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  created() {
-    this.$store.dispatch("initializeComputeResources", {
-      applicationModuleId: this.applicationModuleId,
-      resourceHostId: this.value,
+const props = withDefaults(defineProps<{
+  value?: string | null;
+  applicationModuleId: string;
+  disabled?: boolean;
+}>(), {
+  value: null,
+  disabled: false,
+});
+
+const webComponentsStore = useWebComponentsStore();
+
+const computeResources = computed(() => webComponentsStore.computeResources as unknown as string[] | null);
+const resourceHostId = computed(() => webComponentsStore.resourceHostId as unknown as string | null);
+
+function emitValueChanged(hostId: string | null) {
+  const instance = getCurrentInstance();
+  const el = instance?.proxy?.$el as Element | undefined;
+  if (el) {
+    const inputEvent = new CustomEvent("input", {
+      detail: [hostId],
+      composed: true,
+      bubbles: true,
     });
-  },
-  store: store,
-  computed: {
-    ...mapGetters([
-      // compute resources for the current set of application deployments
-      "computeResources",
-      "resourceHostId",
-      "groupResourceProfileId",
-    ]),
-  },
-  methods: {
-    computeResourceChanged(event) {
-      const [resourceHostId] = event.detail;
-      this.$store.dispatch("updateComputeResourceHostId", {
-        resourceHostId,
-      });
-      this.emitValueChanged(resourceHostId);
-    },
-    emitValueChanged(resourceHostId) {
-      const inputEvent = new CustomEvent("input", {
-        detail: [resourceHostId],
-        composed: true,
-        bubbles: true,
-      });
-      this.$el.dispatchEvent(inputEvent);
-    },
-  },
-  watch: {
-    value(value) {
-      if (value && value !== this.resourceHostId) {
-        this.$store.dispatch("updateComputeResourceHostId", {
-          resourceHostId: value,
-        });
-      }
-    },
-  },
-};
+    el.dispatchEvent(inputEvent);
+  }
+}
+
+function computeResourceChanged(event: CustomEvent) {
+  const [newResourceHostId] = event.detail as [string | null];
+  if (newResourceHostId) {
+    webComponentsStore.updateComputeResourceHostId({
+      resourceHostId: newResourceHostId,
+    });
+  }
+  emitValueChanged(newResourceHostId);
+}
+
+watch(() => props.value, (value) => {
+  if (value && value !== resourceHostId.value) {
+    webComponentsStore.updateComputeResourceHostId({
+      resourceHostId: value ?? "",
+    });
+  }
+});
+
+// Initialize
+webComponentsStore.initializeComputeResources({
+  applicationModuleId: props.applicationModuleId,
+  resourceHostId: props.value,
+});
 </script>
 
 <style lang="scss">

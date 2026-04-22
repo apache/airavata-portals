@@ -40,7 +40,7 @@
           </div>
           <div class="col-md-6">
             <label class="form-label">SSH Credential</label>
-            <ssh-credential-selector v-model="resourceSpecificCredentialStoreToken" />
+            <SSHCredentialSelector v-model="resourceSpecificCredentialStoreToken" />
           </div>
           <div class="col-md-6">
             <label class="form-label">Login Username</label>
@@ -116,132 +116,123 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
 import { services, utils } from "django-airavata-api";
-import SSHCredentialSelector from "../../../../../admin/static/django_airavata_admin/src/components/credentials/SSHCredentialSelector.vue";
+import SSHCredentialSelector from "../../../../admin/static/django_airavata_admin/src/components/credentials/SSHCredentialSelector.vue";
 
-export default {
-  name: "GatewaySettingsContainer",
-  components: {
-    "ssh-credential-selector": SSHCredentialSelector,
-  },
-  data() {
-    return {
-      saving: false,
-      gatewayId: "",
-      portalTitle: "",
-      storageResources: {},
-      gatewayResourceProfile: null,
-      // Storage preference fields
-      storageResourceId: null,
-      fileSystemRootLocation: "",
-      loginUserName: "",
-      resourceSpecificCredentialStoreToken: null,
-      // Advanced settings (settings_local.py editor)
-      isGatewayAdmin: false,
-      localSettingsContent: "",
-      localSettingsLoading: false,
-      localSettingsSaving: false,
-      localSettingsMessage: "",
-      localSettingsError: false,
+const saving = ref(false);
+const gatewayId = ref("");
+const portalTitle = ref("");
+const storageResources = ref<Record<string, string>>({});
+const gatewayResourceProfile = ref<unknown>(null);
+const storageResourceId = ref<string | null>(null);
+const fileSystemRootLocation = ref("");
+const loginUserName = ref("");
+const resourceSpecificCredentialStoreToken = ref<string | null>(null);
+const isGatewayAdmin = ref(false);
+const localSettingsContent = ref("");
+const localSettingsLoading = ref(false);
+const localSettingsSaving = ref(false);
+const localSettingsMessage = ref("");
+const localSettingsError = ref(false);
+
+async function loadSettings() {
+  const el = document.getElementById("gateway-settings");
+  if (el) {
+    gatewayId.value = el.dataset.gatewayId || "";
+    portalTitle.value = el.dataset.portalTitle || "";
+    isGatewayAdmin.value = el.dataset.isGatewayAdmin === "true";
+  }
+  if (isGatewayAdmin.value) {
+    loadLocalSettings();
+  }
+
+  try {
+    storageResources.value = await services.StorageResourceService.names() as Record<string, string>;
+  } catch {
+    storageResources.value = {};
+  }
+
+  try {
+    const profile = await utils.FetchUtils.get("/api/gateway-resource-profile/");
+    gatewayResourceProfile.value = profile;
+    const p = profile as Record<string, unknown>;
+    if (!gatewayId.value && p?.gateway_id) {
+      gatewayId.value = p.gateway_id as string;
+    }
+    const prefs = p?.storage_preferences as Array<Record<string, unknown>> | undefined;
+    const pref = prefs && prefs.length > 0 ? prefs[0] : null;
+    if (pref) {
+      storageResourceId.value = (pref.storage_resource_id as string) || null;
+      fileSystemRootLocation.value = (pref.file_system_root_location as string) || "";
+      loginUserName.value = (pref.login_user_name as string) || "";
+      resourceSpecificCredentialStoreToken.value =
+        (pref.resource_specific_credential_store_token as string) || null;
+    }
+  } catch {
+    gatewayResourceProfile.value = null;
+  }
+}
+
+async function saveSettings() {
+  saving.value = true;
+  try {
+    const updatedPref = {
+      storage_resource_id: storageResourceId.value,
+      file_system_root_location: fileSystemRootLocation.value,
+      login_user_name: loginUserName.value,
+      resource_specific_credential_store_token: resourceSpecificCredentialStoreToken.value,
     };
-  },
-  created() {
-    this.loadSettings();
-  },
-  methods: {
-    async loadSettings() {
-      const el = document.getElementById("gateway-settings");
-      if (el) {
-        this.gatewayId = el.dataset.gatewayId || "";
-        this.portalTitle = el.dataset.portalTitle || "";
-        this.isGatewayAdmin = el.dataset.isGatewayAdmin === "true";
-      }
-      if (this.isGatewayAdmin) {
-        this.loadLocalSettings();
-      }
+    const profile = gatewayResourceProfile.value as Record<string, unknown> | null;
+    const existingPrefs = profile?.storage_preferences
+      ? (profile.storage_preferences as unknown[]).slice(1)
+      : [];
+    const updatedProfile = Object.assign({}, profile, {
+      storage_preferences: [updatedPref, ...existingPrefs],
+    });
+    await utils.FetchUtils.put("/api/gateway-resource-profile/", updatedProfile);
+    gatewayResourceProfile.value = updatedProfile;
+  } finally {
+    saving.value = false;
+  }
+}
 
-      try {
-        this.storageResources = await services.StorageResourceService.names();
-      } catch {
-        this.storageResources = {};
-      }
+async function loadLocalSettings() {
+  localSettingsLoading.value = true;
+  localSettingsMessage.value = "";
+  localSettingsError.value = false;
+  try {
+    const data = await utils.FetchUtils.get("/api/settings/local/") as Record<string, string> | null;
+    localSettingsContent.value = data?.content ?? "";
+  } catch (e) {
+    localSettingsError.value = true;
+    localSettingsMessage.value =
+      "Failed to load settings_local.py: " + (e instanceof Error ? e.message : String(e));
+  } finally {
+    localSettingsLoading.value = false;
+  }
+}
 
-      try {
-        const profile = await utils.FetchUtils.get("/api/gateway-resource-profile/");
-        this.gatewayResourceProfile = profile;
-        if (!this.gatewayId && profile && profile.gateway_id) {
-          this.gatewayId = profile.gateway_id;
-        }
-        const pref =
-          profile.storage_preferences && profile.storage_preferences.length > 0
-            ? profile.storage_preferences[0]
-            : null;
-        if (pref) {
-          this.storageResourceId = pref.storage_resource_id || null;
-          this.fileSystemRootLocation = pref.file_system_root_location || "";
-          this.loginUserName = pref.login_user_name || "";
-          this.resourceSpecificCredentialStoreToken =
-            pref.resource_specific_credential_store_token || null;
-        }
-      } catch {
-        this.gatewayResourceProfile = null;
-      }
-    },
-    async saveSettings() {
-      this.saving = true;
-      try {
-        const updatedPref = {
-          storage_resource_id: this.storageResourceId,
-          file_system_root_location: this.fileSystemRootLocation,
-          login_user_name: this.loginUserName,
-          resource_specific_credential_store_token: this.resourceSpecificCredentialStoreToken,
-        };
-        const existingPrefs =
-          this.gatewayResourceProfile && this.gatewayResourceProfile.storage_preferences
-            ? this.gatewayResourceProfile.storage_preferences.slice(1)
-            : [];
-        const updatedProfile = Object.assign({}, this.gatewayResourceProfile, {
-          storage_preferences: [updatedPref, ...existingPrefs],
-        });
-        await utils.FetchUtils.put("/api/gateway-resource-profile/", updatedProfile);
-        this.gatewayResourceProfile = updatedProfile;
-      } finally {
-        this.saving = false;
-      }
-    },
-    async loadLocalSettings() {
-      this.localSettingsLoading = true;
-      this.localSettingsMessage = "";
-      this.localSettingsError = false;
-      try {
-        const data = await utils.FetchUtils.get("/api/settings/local/");
-        this.localSettingsContent = data && data.content ? data.content : "";
-      } catch (e) {
-        this.localSettingsError = true;
-        this.localSettingsMessage =
-          "Failed to load settings_local.py: " + (e && e.message ? e.message : e);
-      } finally {
-        this.localSettingsLoading = false;
-      }
-    },
-    async saveLocalSettings() {
-      this.localSettingsSaving = true;
-      this.localSettingsMessage = "";
-      this.localSettingsError = false;
-      try {
-        await utils.FetchUtils.post("/api/settings/local/", {
-          content: this.localSettingsContent,
-        });
-        this.localSettingsMessage = "Saved! Restart the portal for changes to take effect.";
-      } catch (e) {
-        this.localSettingsError = true;
-        this.localSettingsMessage =
-          "Failed to save settings_local.py: " + (e && e.message ? e.message : e);
-      } finally {
-        this.localSettingsSaving = false;
-      }
-    },
-  },
-};
+async function saveLocalSettings() {
+  localSettingsSaving.value = true;
+  localSettingsMessage.value = "";
+  localSettingsError.value = false;
+  try {
+    await utils.FetchUtils.post("/api/settings/local/", {
+      content: localSettingsContent.value,
+    });
+    localSettingsMessage.value = "Saved! Restart the portal for changes to take effect.";
+  } catch (e) {
+    localSettingsError.value = true;
+    localSettingsMessage.value =
+      "Failed to save settings_local.py: " + (e instanceof Error ? e.message : String(e));
+  } finally {
+    localSettingsSaving.value = false;
+  }
+}
+
+onMounted(() => {
+  loadSettings();
+});
 </script>

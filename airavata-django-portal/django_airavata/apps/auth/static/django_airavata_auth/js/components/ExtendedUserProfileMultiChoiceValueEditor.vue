@@ -42,121 +42,121 @@
   </extended-user-profile-value-editor>
 </template>
 
-<script>
-import { mapGetters, mapMutations } from "vuex";
+<script setup lang="ts">
+import { computed, ref, watch } from "vue";
 import { useVuelidate } from "@vuelidate/core";
 import { required, requiredIf } from "@vuelidate/validators";
 import { errors } from "django-airavata-common-ui";
+import type { ExtendedUserProfileField } from "django-airavata-common-ui/js/types/user";
 import ExtendedUserProfileValueEditor from "./ExtendedUserProfileValueEditor.vue";
+import { useUserStore } from "django-airavata-common-ui/js/stores/user";
+
 const OTHER_OPTION = new Object(); // sentinel value
-export default {
-  components: { ExtendedUserProfileValueEditor },
-  props: ["extendedUserProfileField"],
-  setup() {
-    return { v$: useVuelidate() };
+
+const props = defineProps<{ extendedUserProfileField: ExtendedUserProfileField }>();
+const emit = defineEmits<{ valid: []; invalid: [] }>();
+
+const userStore = useUserStore();
+const otherOptionSelected = ref(false);
+
+const isRequired = computed(() => props.extendedUserProfileField.required);
+const otherOptionValue = OTHER_OPTION;
+
+const other = computed<string | null>({
+  get: () => userStore.getMultiChoiceOther(props.extendedUserProfileField.id!),
+  set: (val) => {
+    userStore.setMultiChoiceOther({
+      value: val ?? "",
+      id: props.extendedUserProfileField.id!,
+    });
+    v$.value.other.$touch();
   },
-  data() {
-    return {
-      otherOptionSelected: false,
-    };
-  },
-  computed: {
-    ...mapGetters("extendedUserProfile", ["getMultiChoiceValue", "getMultiChoiceOther"]),
-    value: {
-      get() {
-        const copy = this.getMultiChoiceValue(this.extendedUserProfileField.id).slice();
-        if (this.showOther) {
-          copy.push(this.otherOptionValue);
-        }
-        return copy;
-      },
-      set(value) {
-        const values = value.filter((v) => v !== this.otherOptionValue);
-        this.setMultiChoiceValue({
-          value: values,
-          id: this.extendedUserProfileField.id,
-        });
-        this.v$.value.$touch();
-      },
-    },
-    other: {
-      get() {
-        return this.getMultiChoiceOther(this.extendedUserProfileField.id);
-      },
-      set(value) {
-        this.setMultiChoiceOther({
-          value,
-          id: this.extendedUserProfileField.id,
-        });
-        this.v$.other.$touch();
-      },
-    },
-    showOther() {
-      return this.other || this.otherOptionSelected;
-    },
-    options() {
-      return this.extendedUserProfileField && this.extendedUserProfileField.choices
-        ? this.extendedUserProfileField.choices.map((choice) => {
-            return {
-              value: choice.id,
-              text: choice.display_text,
-            };
-          })
-        : [];
-    },
-    otherOptionValue() {
-      return OTHER_OPTION;
-    },
-    valid() {
-      return !this.v$.$invalid;
-    },
-    required() {
-      return this.extendedUserProfileField.required;
-    },
-  },
-  validations() {
-    const validations = {
-      value: {
-        required: requiredIf(() => this.required),
-      },
-      other: {},
-    };
-    if (this.showOther) {
-      validations.other = { required };
+});
+
+const showOther = computed(() => !!other.value || otherOptionSelected.value);
+
+const value = computed<Array<string | object>>({
+  get: () => {
+    const copy: Array<string | object> = userStore
+      .getMultiChoiceValue(props.extendedUserProfileField.id!)
+      .slice();
+    if (showOther.value) {
+      copy.push(otherOptionValue);
     }
-    return validations;
+    return copy;
   },
-  methods: {
-    ...mapMutations("extendedUserProfile", ["setMultiChoiceValue", "setMultiChoiceOther"]),
-    onChange(event) {
-      const checked = event.target.checked;
-      const val = event.target.value;
-      // handle other option toggle
-      if (val === String(this.otherOptionValue)) {
-        this.otherOptionSelected = checked;
-        if (!checked) {
-          this.other = "";
-        }
-      }
-    },
-    onInput() {
-      this.otherOptionSelected = true;
-    },
-    validateState: errors.vuelidateHelpers.validateState,
-    validateStateErrorOnly: errors.vuelidateHelpers.validateStateErrorOnly,
-    touch() {
-      this.v$.$touch();
-    },
+  set: (val) => {
+    const values = (val as Array<string | object>).filter((v) => v !== otherOptionValue) as string[];
+    userStore.setMultiChoiceValue({
+      value: values,
+      id: props.extendedUserProfileField.id!,
+    });
+    v$.value.value.$touch();
   },
-  watch: {
-    valid: {
-      handler(valid) {
-        this.$emit(valid ? "valid" : "invalid");
-      },
-      immediate: true,
-    },
+});
+
+const options = computed(() =>
+  props.extendedUserProfileField?.choices
+    ? props.extendedUserProfileField.choices.map((choice) => ({
+        value: choice.id,
+        text: choice.display_text,
+      }))
+    : [],
+);
+
+const rules = computed(() => {
+  const validations: Record<string, object> = {
+    value: { required: requiredIf(() => isRequired.value) },
+    other: {},
+  };
+  if (showOther.value) {
+    validations.other = { required };
+  }
+  return validations;
+});
+
+const formState = computed(() => ({
+  value: value.value,
+  other: other.value,
+}));
+
+const v$ = useVuelidate(rules, formState);
+
+const valid = computed(() => !v$.value.$invalid);
+const validateState = errors.vuelidateHelpers.validateState;
+const validateStateErrorOnly = errors.vuelidateHelpers.validateStateErrorOnly;
+
+watch(
+  valid,
+  (isValid) => {
+    if (isValid) emit("valid");
+    else emit("invalid");
   },
-};
+  { immediate: true },
+);
+
+function onChange(event: Event): void {
+  const target = event.target as HTMLInputElement;
+  const checked = target.checked;
+  const val = target.value;
+  // handle other option toggle
+  if (val === String(otherOptionValue)) {
+    otherOptionSelected.value = checked;
+    if (!checked) {
+      other.value = "";
+    }
+  }
+}
+
+function onInput(): void {
+  otherOptionSelected.value = true;
+}
+
+function touch(): void {
+  v$.value.$touch();
+}
+
+defineExpose({ touch });
 </script>
 
 <style></style>
