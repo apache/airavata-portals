@@ -16,3 +16,8 @@ site/
 .tox/
 yarn-error.log
 .venv/
+
+# Playwright (Track Pre-A)
+tests/e2e/.auth/
+playwright-report/
+test-results/
