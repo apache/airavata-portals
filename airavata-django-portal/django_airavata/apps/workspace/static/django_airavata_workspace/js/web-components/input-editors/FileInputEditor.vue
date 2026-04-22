@@ -35,8 +35,6 @@ export default {
 @import "~@uppy/core/dist/style.min.css";
 @import "~@uppy/status-bar/dist/style.min.css";
 @import "~@uppy/drag-drop/dist/style.min.css";
-@import "~codemirror/lib/codemirror.css";
-@import "~codemirror/theme/abcdef.css";
 :host {
   display: block;
 }

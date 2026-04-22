@@ -153,7 +153,7 @@ import { components as comps } from "django-airavata-common-ui";
 import flatPickr from "vue-flatpickr-component";
 import "flatpickr/dist/flatpickr.css";
 
-import moment from "moment";
+import { relativeTime } from "django-airavata-common-ui/js/utils/dates.js";
 import urls from "../utils/urls";
 
 export default {
@@ -285,7 +285,7 @@ export default {
       this.experimentsPaginator.previous();
     },
     fromNow: function (date) {
-      return moment(date).fromNow();
+      return relativeTime(date);
     },
     editLink: function (experiment) {
       return urls.editExperiment(this.projectId, experiment);

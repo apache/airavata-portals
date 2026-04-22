@@ -26,7 +26,7 @@
 
 <script>
 import urls from "../../utils/urls";
-import moment from "moment";
+import { relativeTime } from "django-airavata-common-ui/js/utils/dates.js";
 import { session } from "django-airavata-api";
 
 export default {
@@ -36,7 +36,7 @@ export default {
   computed: {
     creationTime: function () {
       var dt = new Date(this.project.creation_time);
-      return moment(dt).fromNow();
+      return relativeTime(dt);
     },
     overviewLink() {
       return urls.projectOverview(this.project);

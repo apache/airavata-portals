@@ -17,7 +17,7 @@
         </button>
       </div>
     </div>
-    <div v-if="editAvailable" ref="editor" style="width: 100%"></div>
+    <CodeEditor v-if="editAvailable" v-model="currentContent" :line-numbers="true" />
     <div v-else class="user-storage-file-edit-viewer-no-preview">
       Inline edit not available. Click the <strong>Download</strong> button to download the file.
     </div>
@@ -25,10 +25,8 @@
 </template>
 
 <script>
-import CodeMirror from "codemirror";
-import "codemirror/lib/codemirror.css";
-import "codemirror/theme/abcdef.css";
 import { services, utils } from "django-airavata-api";
+import CodeEditor from "django-airavata-common-ui/js/components/CodeEditor.vue";
 import UserStorageDownloadButton from "./UserStorageDownloadButton";
 
 const MAX_EDIT_FILESIZE = 1024 * 1024;
@@ -36,6 +34,7 @@ const MAX_EDIT_FILESIZE = 1024 * 1024;
 export default {
   name: "UserStorageFileEditViewer",
   components: {
+    CodeEditor,
     UserStorageDownloadButton: UserStorageDownloadButton,
   },
   props: {
@@ -54,10 +53,10 @@ export default {
   },
   data() {
     return {
-      fileContent: "",
+      currentContent: "",
       saved: true,
-      editor: null,
       dataProduct: null,
+      contentLoaded: false,
     };
   },
   computed: {
@@ -71,24 +70,23 @@ export default {
       return !this.user_has_write_access;
     },
   },
+  watch: {
+    currentContent() {
+      if (this.contentLoaded) {
+        this.saved = false;
+      }
+    },
+  },
   mounted() {
     this.setFileContent();
   },
-  unmounted() {
-    // this.editor is created only when the file is small enough to be
-    // previewed/edited in browser
-    if (this.editor) {
-      this.editor.getWrapperElement().remove();
-    }
-  },
   methods: {
     fileContentChanged() {
-      const changedFileContent = this.editor.getDoc().getValue();
-      if (changedFileContent) {
+      if (this.currentContent) {
         utils.FetchUtils.put(`/api/data-products?product-uri=${this.dataProductUri}`, {
-          fileContentText: changedFileContent,
+          fileContentText: this.currentContent,
         }).then(() => {
-          this.$emit("file-content-changed", changedFileContent);
+          this.$emit("file-content-changed", this.currentContent);
         });
       }
 
@@ -110,34 +108,14 @@ export default {
             showSpinner: true,
             responseType: "text",
           }).then((res) => {
-            this.fileContent = res;
-            this.setFileContentEditor(this.fileContent);
+            this.contentLoaded = false;
+            this.currentContent = res;
+            this.saved = true;
+            this.contentLoaded = true;
           });
         }
-      });
-    },
-    setFileContentEditor(value = "") {
-      this.editor = CodeMirror(this.$refs.editor, {
-        theme: "abcdef",
-        mode: "text/plain",
-        lineNumbers: true,
-        lineWrapping: true,
-        scrollbarStyle: "native",
-        extraKeys: { "Ctrl-Space": "autocomplete" },
-        value: value,
-        readOnly: this.readOnly,
-      });
-      this.editor.on("change", () => {
-        this.saved = false;
       });
     },
   },
 };
 </script>
-
-<style>
-.CodeMirror {
-  height: auto;
-  min-height: 600px;
-}
-</style>
