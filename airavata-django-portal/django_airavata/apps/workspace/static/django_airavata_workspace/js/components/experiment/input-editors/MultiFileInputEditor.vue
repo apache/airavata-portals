@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-for="dataProductURI in selectedDataProductURIs" :key="dataProductURI" class="mb-2">
-      <file-input-editor
+      <FileInputEditor
         :id="dataProductURI"
         :value="dataProductURI"
         :experiment="experiment"
@@ -10,69 +10,81 @@
         @input="updatedFile($event, dataProductURI)"
       />
     </div>
-    <input-file-selector
+    <InputFileSelector
       v-if="!readOnly"
       :selected-data-product-u-r-is="selectedDataProductURIs"
       multiple
       @selected="fileSelected"
-      @uploadstart="$emit('uploadstart')"
-      @uploadend="$emit('uploadend')"
+      @uploadstart="emit('uploadstart')"
+      @uploadend="emit('uploadend')"
     />
   </div>
 </template>
 
-<script>
-import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
+<script setup lang="ts">
+import { computed } from "vue";
+import { models } from "django-airavata-api";
+import { useInputEditor } from "@/composables/useInputEditor";
 import FileInputEditor from "./FileInputEditor.vue";
-import InputFileSelector from "./InputFileSelector";
+import InputFileSelector from "./InputFileSelector.vue";
 
-export default {
-  name: "MultiFileInputEditor",
-  components: {
-    FileInputEditor,
-    InputFileSelector,
-  },
-  mixins: [InputEditorMixin],
-  props: {
-    value: {
-      type: String,
-    },
-  },
-  data() {
-    return {};
-  },
-  computed: {
-    selectedDataProductURIs() {
-      return this.createValueArray(this.value);
-    },
-  },
-  methods: {
-    updatedFile(newValue, dataProductURI) {
-      // Only remove is handled here, input-file-selector handles adding
-      if (!newValue) {
-        this.removeFile(dataProductURI);
-      }
-    },
-    removeFile(dataProductURI) {
-      const index = this.selectedDataProductURIs.findIndex((u) => u === dataProductURI);
-      const copyDataProductURIs = this.selectedDataProductURIs.slice();
-      copyDataProductURIs.splice(index, 1);
-      this.data = copyDataProductURIs.join(",");
-      this.valueChanged();
-    },
-    createValueArray(value) {
-      if (value && typeof value === "string") {
-        return value.split(",");
-      } else {
-        return [];
-      }
-    },
-    fileSelected(dataProductURI) {
-      const values = this.createValueArray(this.value);
-      values.push(dataProductURI);
-      this.data = values.join(",");
-      this.valueChanged();
-    },
-  },
-};
+type InputDataObjectType = InstanceType<typeof models.InputDataObjectType>;
+type Experiment = InstanceType<typeof models.Experiment>;
+
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string | null;
+    experimentInput: InputDataObjectType;
+    experiment?: Experiment;
+    id: string;
+    readOnly?: boolean;
+  }>(),
+  { modelValue: null, experiment: undefined, readOnly: false },
+);
+
+const emit = defineEmits<{
+  "update:modelValue": [value: string | null];
+  valid: [];
+  invalid: [messages: string[]];
+  uploadstart: [];
+  uploadend: [];
+}>();
+
+const { data, valueChanged } = useInputEditor(
+  props,
+  (_, v) => emit("update:modelValue", v),
+  () => emit("valid"),
+  (msgs) => emit("invalid", msgs),
+);
+
+const selectedDataProductURIs = computed(() => createValueArray(data.value));
+
+function updatedFile(newValue: string | null, dataProductURI: string) {
+  if (!newValue) {
+    removeFile(dataProductURI);
+  }
+}
+
+function removeFile(dataProductURI: string) {
+  const index = selectedDataProductURIs.value.findIndex((u) => u === dataProductURI);
+  const copyDataProductURIs = selectedDataProductURIs.value.slice();
+  copyDataProductURIs.splice(index, 1);
+  data.value = copyDataProductURIs.join(",");
+  valueChanged();
+}
+
+function createValueArray(value: string | null): string[] {
+  if (value && typeof value === "string") {
+    return value.split(",");
+  } else {
+    return [];
+  }
+}
+
+function fileSelected(dataProductURI: string) {
+  const values = createValueArray(data.value);
+  values.push(dataProductURI);
+  data.value = values.join(",");
+  valueChanged();
+}
 </script>

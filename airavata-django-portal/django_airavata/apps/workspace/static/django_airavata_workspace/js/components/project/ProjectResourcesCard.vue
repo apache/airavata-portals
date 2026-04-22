@@ -36,71 +36,81 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
 import { services, session } from "django-airavata-api";
 
-export default {
-  name: "ProjectResourcesCard",
-  props: { project: { type: Object, required: true } },
-  data() {
-    return {
-      loading: true,
-      profile: { default_credential_store_token: "" },
-      editing: false,
-      draft: {},
-      saving: false,
-    };
-  },
-  computed: {
-    currentUser() {
-      return session.Session.username;
-    },
-    canEdit() {
-      if (!this.project) return false;
-      if (this.project.owner === this.currentUser) return true;
-      const admins = this.project.admins || [];
-      return admins.includes(this.currentUser);
-    },
-  },
-  created() {
-    this.reload();
-  },
-  methods: {
-    async reload() {
-      this.loading = true;
-      try {
-        this.profile = await services.ProjectService.resourceProfile({
-          lookup: this.project.project_id,
-        });
-      } catch (e) {
-        this.profile = { default_credential_store_token: "" };
-      } finally {
-        this.loading = false;
-      }
-    },
-    edit() {
-      this.draft = { ...this.profile };
-      this.editing = true;
-    },
-    cancel() {
-      this.draft = {};
-      this.editing = false;
-    },
-    async save() {
-      this.saving = true;
-      try {
-        await services.ProjectService.updateResourceProfile({
-          lookup: this.project.project_id,
-          data: this.draft,
-        });
-        this.editing = false;
-        await this.reload();
-      } catch (e) {
-        window.alert(e?.message || "Failed to save resource profile.");
-      } finally {
-        this.saving = false;
-      }
-    },
-  },
-};
+interface Project {
+  project_id: string;
+  owner?: string;
+  admins?: string[];
+  [key: string]: unknown;
+}
+
+interface ResourceProfile {
+  default_credential_store_token?: string;
+  project_resource_profile_name?: string;
+  [key: string]: unknown;
+}
+
+const props = defineProps<{
+  project: Project;
+}>();
+
+const loading = ref(true);
+const profile = ref<ResourceProfile>({ default_credential_store_token: "" });
+const editing = ref(false);
+const draft = ref<ResourceProfile>({});
+const saving = ref(false);
+
+const currentUser = computed<string>(() => session.Session.username);
+const canEdit = computed(() => {
+  if (!props.project) return false;
+  if (props.project.owner === currentUser.value) return true;
+  const projectAdmins = props.project.admins || [];
+  return projectAdmins.includes(currentUser.value);
+});
+
+async function reload() {
+  loading.value = true;
+  try {
+    profile.value = await services.ProjectService.resourceProfile({
+      lookup: props.project.project_id,
+    });
+  } catch {
+    profile.value = { default_credential_store_token: "" };
+  } finally {
+    loading.value = false;
+  }
+}
+
+function edit() {
+  draft.value = { ...profile.value };
+  editing.value = true;
+}
+
+function cancel() {
+  draft.value = {};
+  editing.value = false;
+}
+
+async function save() {
+  saving.value = true;
+  try {
+    await services.ProjectService.updateResourceProfile({
+      lookup: props.project.project_id,
+      data: draft.value,
+    });
+    editing.value = false;
+    await reload();
+  } catch (e: unknown) {
+    window.alert((e as Error)?.message || "Failed to save resource profile.");
+  } finally {
+    saving.value = false;
+  }
+}
+
+onMounted(() => {
+  reload();
+});
 </script>

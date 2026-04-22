@@ -4,7 +4,7 @@
       ref="textInput"
       class="form-control"
       :value="value"
-      @input="currentValue = $event"
+      @input="currentValue = ($event.target as HTMLInputElement).value"
       @keydown.enter="enterKeyPressed"
     />
     <span class="input-group-text">
@@ -13,35 +13,30 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "InteractiveParameterTextInputWidget",
-  props: {
-    value: {
-      type: String,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      currentValue: this.value,
-    };
-  },
-  computed: {
-    disabled() {
-      return this.currentValue === this.value;
-    },
-  },
-  methods: {
-    submit() {
-      this.$emit("input", this.currentValue);
-    },
-    enterKeyPressed() {
-      if (!this.disabled) {
-        this.$refs.textInput.blur();
-        this.submit();
-      }
-    },
-  },
-};
+<script setup lang="ts">
+import { ref, computed } from "vue";
+
+const props = defineProps<{
+  value: string;
+}>();
+
+const emit = defineEmits<{
+  input: [value: string];
+}>();
+
+const textInput = ref<HTMLInputElement | null>(null);
+const currentValue = ref<string>(props.value);
+
+const disabled = computed(() => currentValue.value === props.value);
+
+function submit() {
+  emit("input", currentValue.value);
+}
+
+function enterKeyPressed() {
+  if (!disabled.value) {
+    textInput.value?.blur();
+    submit();
+  }
+}
 </script>

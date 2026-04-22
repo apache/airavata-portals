@@ -90,7 +90,7 @@
     </div>
 
     <!-- Register Modal -->
-    <div ref="registerModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div ref="registerModalEl" class="modal fade" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-sm">
         <div class="modal-content">
           <div class="modal-header">
@@ -123,65 +123,69 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
 import { Modal } from "bootstrap";
 import { services } from "django-airavata-api";
 
-export default {
-  name: "UserStorageContainer",
-  data() {
-    return {
-      loading: true,
-      storageList: [],
-      newHostName: "",
-    };
-  },
-  created() {
-    this.loadStorageResources();
-  },
-  methods: {
-    navigateToStorage(storage) {
-      window.location.href = "/resources/storage/" + storage.id + "/";
-    },
-    showRegisterModal() {
-      this.newHostName = "";
-      new Modal(this.$refs.registerModal).show();
-    },
-    async registerStorage() {
-      try {
-        await services.StorageResourceService.create({
-          data: { hostName: this.newHostName, storageResourceDescription: "", enabled: true },
-        });
-        Modal.getInstance(this.$refs.registerModal).hide();
-        await this.loadStorageResources();
-      } catch (e) {
-        console.error("Failed to register storage resource", e);
-      }
-    },
-    async confirmDeleteStorage(storage) {
-      if (!confirm('Delete storage resource "' + storage.name + '"? This cannot be undone.'))
-        return;
-      try {
-        await services.StorageResourceService.delete({ lookup: storage.id });
-        await this.loadStorageResources();
-      } catch (e) {
-        console.error("Failed to delete storage resource", e);
-      }
-    },
-    async loadStorageResources() {
-      this.loading = true;
-      try {
-        const resources = await services.StorageResourceService.list();
-        this.storageList = (resources || []).map((r) => ({
-          id: r.storage_resource_id,
-          name: r.host_name,
-          enabled: !!r.enabled,
-        }));
-      } catch {
-        this.storageList = [];
-      }
-      this.loading = false;
-    },
-  },
-};
+interface StorageItem {
+  id: string;
+  name: string;
+  enabled: boolean;
+}
+
+const loading = ref(true);
+const storageList = ref<StorageItem[]>([]);
+const newHostName = ref("");
+const registerModalEl = ref<HTMLElement | null>(null);
+
+function navigateToStorage(storage: StorageItem): void {
+  window.location.href = "/resources/storage/" + storage.id + "/";
+}
+
+function showRegisterModal(): void {
+  newHostName.value = "";
+  new Modal(registerModalEl.value!).show();
+}
+
+async function registerStorage(): Promise<void> {
+  try {
+    await services.StorageResourceService.create({
+      data: { hostName: newHostName.value, storageResourceDescription: "", enabled: true },
+    });
+    Modal.getInstance(registerModalEl.value!)?.hide();
+    await loadStorageResources();
+  } catch (e) {
+    console.error("Failed to register storage resource", e);
+  }
+}
+
+async function confirmDeleteStorage(storage: StorageItem): Promise<void> {
+  if (!confirm('Delete storage resource "' + storage.name + '"? This cannot be undone.')) return;
+  try {
+    await services.StorageResourceService.delete({ lookup: storage.id });
+    await loadStorageResources();
+  } catch (e) {
+    console.error("Failed to delete storage resource", e);
+  }
+}
+
+async function loadStorageResources(): Promise<void> {
+  loading.value = true;
+  try {
+    const resources = await services.StorageResourceService.list();
+    storageList.value = ((resources as unknown as Array<Record<string, unknown>>) || []).map((r) => ({
+      id: r.storage_resource_id as string,
+      name: r.host_name as string,
+      enabled: !!r.enabled,
+    }));
+  } catch {
+    storageList.value = [];
+  }
+  loading.value = false;
+}
+
+onMounted(() => {
+  loadStorageResources();
+});
 </script>

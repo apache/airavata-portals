@@ -24,54 +24,27 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed } from "vue";
 import { models } from "django-airavata-api";
-export default {
-  props: {
-    iamUserProfile: {
-      type: models.IAMUserProfile,
-      required: true,
-    },
-  },
-  computed: {
-    fields() {
-      return ["name", "value"];
-    },
-    items() {
-      if (!this.iamUserProfile) {
-        return [];
-      } else {
-        return [
-          {
-            name: "Username",
-            value: this.iamUserProfile.user_id,
-            valid: this.isValid("username"),
-          },
-          {
-            name: "Email",
-            value: this.iamUserProfile.email,
-            valid: this.isValid("email"),
-          },
-          {
-            name: "First Name",
-            value: this.iamUserProfile.first_name,
-            valid: this.isValid("first_name"),
-          },
-          {
-            name: "Last Name",
-            value: this.iamUserProfile.last_name,
-            valid: this.isValid("last_name"),
-          },
-        ];
-      }
-    },
-  },
-  methods: {
-    isValid(fieldName) {
-      return this.iamUserProfile.user_profile_invalid_fields.indexOf(fieldName) < 0;
-    },
-  },
-};
+
+const props = defineProps<{
+  iamUserProfile: InstanceType<typeof models.IAMUserProfile>;
+}>();
+
+function isValid(fieldName: string) {
+  return props.iamUserProfile.user_profile_invalid_fields.indexOf(fieldName) < 0;
+}
+
+const items = computed(() => {
+  if (!props.iamUserProfile) return [];
+  return [
+    { name: "Username", value: props.iamUserProfile.user_id, valid: isValid("username") },
+    { name: "Email", value: props.iamUserProfile.email, valid: isValid("email") },
+    { name: "First Name", value: props.iamUserProfile.first_name, valid: isValid("first_name") },
+    { name: "Last Name", value: props.iamUserProfile.last_name, valid: isValid("last_name") },
+  ];
+});
 </script>
 
 <style></style>

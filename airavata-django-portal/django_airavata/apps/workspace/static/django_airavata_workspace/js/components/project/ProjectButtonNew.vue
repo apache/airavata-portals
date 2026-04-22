@@ -48,38 +48,42 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, nextTick } from "vue";
 import { models, services } from "django-airavata-api";
 import { Modal } from "bootstrap";
 
-export default {
-  name: "ProjectButtonNew",
-  data() {
-    return {
-      projectName: "",
-      projectDescription: "",
-    };
-  },
-  methods: {
-    showModal() {
-      this.projectName = "";
-      this.projectDescription = "";
-      new Modal(this.$refs.modal).show();
-      this.$nextTick(() => {
-        if (this.$refs.nameInput) this.$refs.nameInput.focus();
-      });
-    },
-    onCreateProject() {
-      if (!this.projectName || !this.projectName.trim()) return;
-      const newProject = new models.Project({
-        name: this.projectName.trim(),
-        description: this.projectDescription,
-      });
-      services.ProjectService.create({ data: newProject }).then(() => {
-        Modal.getInstance(this.$refs.modal).hide();
-        this.$emit("new-project");
-      });
-    },
-  },
-};
+const emit = defineEmits<{
+  "new-project": [];
+}>();
+
+const modal = ref<HTMLElement | null>(null);
+const nameInput = ref<HTMLInputElement | null>(null);
+const projectName = ref("");
+const projectDescription = ref("");
+
+function showModal() {
+  projectName.value = "";
+  projectDescription.value = "";
+  if (modal.value) {
+    new Modal(modal.value).show();
+  }
+  nextTick(() => {
+    nameInput.value?.focus();
+  });
+}
+
+function onCreateProject() {
+  if (!projectName.value || !projectName.value.trim()) return;
+  const newProject = new models.Project({
+    name: projectName.value.trim(),
+    description: projectDescription.value,
+  });
+  services.ProjectService.create({ data: newProject }).then(() => {
+    if (modal.value) {
+      Modal.getInstance(modal.value)?.hide();
+    }
+    emit("new-project");
+  });
+}
 </script>

@@ -1,15 +1,15 @@
 <template>
   <div v-if="project">
-    <project-editor
+    <ProjectEditor
       v-model="project"
       @save="saveProject"
       @valid="valid = true"
       @invalid="valid = false"
     >
       <template #buttons>
-        <share-button :entity-id="projectId" />
+        <ShareButton :entity-id="projectId" />
       </template>
-    </project-editor>
+    </ProjectEditor>
     <div class="d-flex justify-content-end">
       <button class="btn btn-primary btn-sm" :disabled="!valid" @click="saveProject">Save</button>
       <button class="btn btn-secondary btn-sm" @click="cancel">Cancel</button>
@@ -17,52 +17,44 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
 import { services } from "django-airavata-api";
 import { components } from "django-airavata-common-ui";
 import urls from "../utils/urls";
 import ProjectEditor from "../components/project/ProjectEditor.vue";
 
-export default {
-  name: "EditProjectContainer",
-  components: {
-    ProjectEditor,
-    "share-button": components.ShareButton,
-  },
-  props: {
-    projectId: {
-      type: String,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      project: null,
-      valid: false,
-    };
-  },
-  created() {
-    services.ProjectService.retrieve({ lookup: this.projectId }).then(
-      (project) => (this.project = project),
-    );
-  },
-  methods: {
-    saveProject() {
-      if (this.valid) {
-        services.ProjectService.update({
-          lookup: this.projectId,
-          data: this.project,
-        }).then(() => {
-          urls.navigateToProjectsList();
-        });
-      }
-    },
-    cancel() {
+const ShareButton = components.ShareButton;
+
+const props = defineProps<{
+  projectId: string;
+}>();
+
+const project = ref<unknown>(null);
+const valid = ref(false);
+
+onMounted(() => {
+  services.ProjectService.retrieve({ lookup: props.projectId }).then(
+    (p: unknown) => (project.value = p),
+  );
+});
+
+function saveProject() {
+  if (valid.value) {
+    services.ProjectService.update({
+      lookup: props.projectId,
+      data: project.value,
+    }).then(() => {
       urls.navigateToProjectsList();
-    },
-  },
-};
+    });
+  }
+}
+
+function cancel() {
+  urls.navigateToProjectsList();
+}
 </script>
+
 <style>
 /* style the containing div, in base.html template */
 .main-content-wrapper {

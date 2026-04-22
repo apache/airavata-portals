@@ -28,46 +28,60 @@
         ></a>
       </div>
       <div class="notification-item__body">{{ notice.notificationMessage }}</div>
-      <div class="notification-item__time">{{ fromNow(notice.publishedTime) }}</div>
+      <div class="notification-item__time">{{ notice.publishedTime ? fromNow(notice.publishedTime) : '' }}</div>
     </div>
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
 import { utils } from "django-airavata-api";
 
-export default {
-  name: "NotificationsPanel",
-  props: {
-    notices: { type: Array, default: () => [] },
-    unreadCount: { type: Number, default: 0 },
-  },
-  emits: ["update:unread"],
-  methods: {
-    markRead(notice) {
-      utils.FetchUtils.get(notice.url).then(() => {
-        notice.is_read = true;
-        this.$emit("update:unread", this.unreadCount - 1);
-      });
-    },
-    fromNow(date) {
-      const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-      const diffMs = new Date(date) - Date.now();
-      const diffSecs = Math.round(diffMs / 1000);
-      const diffMins = Math.round(diffSecs / 60);
-      const diffHours = Math.round(diffMins / 60);
-      const diffDays = Math.round(diffHours / 24);
-      if (Math.abs(diffSecs) < 60) return rtf.format(diffSecs, "second");
-      if (Math.abs(diffMins) < 60) return rtf.format(diffMins, "minute");
-      if (Math.abs(diffHours) < 24) return rtf.format(diffHours, "hour");
-      return rtf.format(diffDays, "day");
-    },
-    textColor(notice) {
-      if (notice.priority === 0) return "text-primary";
-      if (notice.priority === 1) return "text-warning";
-      if (notice.priority === 2) return "text-danger";
-      return "";
-    },
-  },
-};
+interface Notice {
+  notificationId: string | number;
+  title?: string;
+  notificationMessage?: string;
+  is_read?: boolean;
+  url?: string;
+  priority?: number;
+  publishedTime?: string | number | Date;
+}
+
+const props = withDefaults(defineProps<{
+  notices?: Notice[];
+  unreadCount?: number;
+}>(), {
+  notices: () => [],
+  unreadCount: 0,
+});
+
+const emit = defineEmits<{
+  "update:unread": [count: number];
+}>();
+
+function markRead(notice: Notice): void {
+  utils.FetchUtils.get(notice.url).then(() => {
+    notice.is_read = true;
+    emit("update:unread", (props.unreadCount ?? 0) - 1);
+  });
+}
+
+function fromNow(date: string | number | Date): string {
+  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const diffMs = new Date(date).getTime() - Date.now();
+  const diffSecs = Math.round(diffMs / 1000);
+  const diffMins = Math.round(diffSecs / 60);
+  const diffHours = Math.round(diffMins / 60);
+  const diffDays = Math.round(diffHours / 24);
+  if (Math.abs(diffSecs) < 60) return rtf.format(diffSecs, "second");
+  if (Math.abs(diffMins) < 60) return rtf.format(diffMins, "minute");
+  if (Math.abs(diffHours) < 24) return rtf.format(diffHours, "hour");
+  return rtf.format(diffDays, "day");
+}
+
+function textColor(notice: Notice): string {
+  if (notice.priority === 0) return "text-primary";
+  if (notice.priority === 1) return "text-warning";
+  if (notice.priority === 2) return "text-danger";
+  return "";
+}
 </script>

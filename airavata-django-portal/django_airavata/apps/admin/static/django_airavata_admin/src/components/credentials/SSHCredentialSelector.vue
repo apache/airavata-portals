@@ -41,110 +41,120 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import { services } from "django-airavata-api";
-import { mixins } from "django-airavata-common-ui";
 import NewSSHCredentialModal from "../credentials/NewSSHCredentialModal.vue";
 
-export default {
-  // TODO: disable if the 'value' is not in the list of loaded credentials?
-  // Because it would mean that the user doesn't have access to this credential.
-  // Maybe display 'You don't have access to this credential'.
-  name: "SshCredentialSelector",
-  components: {
-    "new-ssh-credential-modal": NewSSHCredentialModal,
+// TODO: disable if the 'value' is not in the list of loaded credentials?
+// Because it would mean that the user doesn't have access to this credential.
+// Maybe display 'You don't have access to this credential'.
+
+interface CredentialSummary {
+  token: string;
+  username: string;
+  description?: string;
+  public_key?: string;
+}
+
+const props = defineProps<{
+  modelValue: string | null;
+  nullOption?: boolean;
+  // This is the default credential token that will be used if the null option is selected
+  nullOptionDefaultCredentialToken?: string;
+  nullOptionDisabled?: boolean;
+  readonly?: boolean;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: string | null];
+}>();
+
+const newSSHCredentialModal = ref<InstanceType<typeof NewSSHCredentialModal> | null>(null);
+const credentials = ref<CredentialSummary[] | null>(null);
+const data = ref<string | null>(props.modelValue);
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    data.value = newValue;
   },
-  mixins: [mixins.VModelMixin],
-  props: {
-    nullOption: {
-      type: Boolean,
-      default: true,
+);
+
+watch(data, (newValue) => {
+  emit("update:modelValue", newValue);
+});
+
+const credentialStoreTokenOptions = computed(() => {
+  const options = credentials.value
+    ? credentials.value.map((summary) => ({
+        value: summary.token,
+        text: createCredentialDescription(summary),
+      }))
+    : [];
+  options.sort((a, b) => a.text.toLowerCase().localeCompare(b.text.toLowerCase()));
+  return options;
+});
+
+const selectedCredential = computed(() =>
+  credentials.value ? credentials.value.find((cred) => cred.token === data.value) : null,
+);
+
+const defaultCredentialSummary = computed(() =>
+  props.nullOptionDefaultCredentialToken && credentials.value
+    ? credentials.value.find((cred) => cred.token === props.nullOptionDefaultCredentialToken)
+    : null,
+);
+
+const copySSHPublicKeyText = computed(() =>
+  selectedCredential.value
+    ? selectedCredential.value.public_key?.trim() ?? null
+    : defaultCredentialSummary.value
+      ? defaultCredentialSummary.value.public_key?.trim() ?? null
+      : null,
+);
+
+onMounted(() => {
+  if (!credentials.value) {
+    services.CredentialSummaryService.allSSHCredentials().then(
+      (creds: CredentialSummary[]) => (credentials.value = creds),
+    );
+  }
+});
+
+function showNewSSHCredentialModal() {
+  newSSHCredentialModal.value?.show();
+}
+
+async function copyPublicKey() {
+  if (!copySSHPublicKeyText.value) return;
+  try {
+    await navigator.clipboard.writeText(copySSHPublicKeyText.value);
+  } catch (e) {
+    // Fallback
+    const ta = document.createElement("textarea");
+    ta.value = copySSHPublicKeyText.value;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  }
+}
+
+function createSSHCredential(credData: { description: string }) {
+  services.CredentialSummaryService.createSSH({ data: credData }).then(
+    (cred: CredentialSummary) => {
+      credentials.value?.push(cred);
+      data.value = cred.token;
     },
-    // This is the default credential token that will be used if the null option is selected
-    nullOptionDefaultCredentialToken: {
-      type: String,
-    },
-    nullOptionDisabled: {
-      type: Boolean,
-      default: false,
-    },
-    readonly: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  data() {
-    return {
-      credentials: null,
-    };
-  },
-  computed: {
-    credentialStoreTokenOptions() {
-      const options = this.credentials
-        ? this.credentials.map((summary) => {
-            return {
-              value: summary.token,
-              text: this.createCredentialDescription(summary),
-            };
-          })
-        : [];
-      options.sort((a, b) => a.text.toLowerCase().localeCompare(b.text.toLowerCase()));
-      return options;
-    },
-    selectedCredential() {
-      return this.credentials ? this.credentials.find((cred) => cred.token === this.data) : null;
-    },
-    defaultCredentialSummary() {
-      return this.nullOptionDefaultCredentialToken && this.credentials
-        ? this.credentials.find((cred) => cred.token === this.nullOptionDefaultCredentialToken)
-        : null;
-    },
-    copySSHPublicKeyText() {
-      return this.selectedCredential
-        ? this.selectedCredential.public_key.trim()
-        : this.defaultCredentialSummary
-          ? this.defaultCredentialSummary.public_key.trim()
-          : null;
-    },
-  },
-  created() {
-    if (!this.credentials) {
-      services.CredentialSummaryService.allSSHCredentials().then(
-        (creds) => (this.credentials = creds),
-      );
-    }
-  },
-  methods: {
-    showNewSSHCredentialModal() {
-      this.$refs.newSSHCredentialModal.show();
-    },
-    async copyPublicKey() {
-      if (!this.copySSHPublicKeyText) return;
-      try {
-        await navigator.clipboard.writeText(this.copySSHPublicKeyText);
-      } catch (e) {
-        // Fallback
-        const ta = document.createElement("textarea");
-        ta.value = this.copySSHPublicKeyText;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-      }
-    },
-    createSSHCredential(data) {
-      services.CredentialSummaryService.createSSH({ data: data }).then((cred) => {
-        this.credentials.push(cred);
-        this.data = cred.token;
-      });
-    },
-    createCredentialDescription(summary) {
-      return (
-        summary.username +
-        " - " +
-        (summary.description ? summary.description : `No description (${summary.token})`)
-      );
-    },
-  },
-};
+  );
+}
+
+function createCredentialDescription(summary: CredentialSummary) {
+  return (
+    summary.username +
+    " - " +
+    (summary.description ? summary.description : `No description (${summary.token})`)
+  );
+}
 </script>

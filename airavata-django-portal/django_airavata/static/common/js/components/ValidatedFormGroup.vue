@@ -19,25 +19,11 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "ValidatedFormGroup",
-  props: {
-    label: {
-      type: String,
-      required: true,
-    },
-    description: {
-      type: String,
-    },
-    valid: {
-      type: Boolean,
-      required: true,
-    },
-    feedbackMessages: {
-      type: Array,
-      required: true,
-    },
-  },
-};
+<script setup lang="ts">
+defineProps<{
+  label: string;
+  description?: string;
+  valid: boolean;
+  feedbackMessages: string[];
+}>();
 </script>

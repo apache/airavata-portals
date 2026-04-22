@@ -2,37 +2,30 @@
   <span :class="['badge', 'bg-' + badgeVariant]">{{ statusName }}</span>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed } from "vue";
 import { models } from "django-airavata-api";
 
-export default {
-  name: "ExperimentStatusBadge",
-  props: {
-    statusName: {
-      type: String,
-      required: true,
-    },
-  },
-  computed: {
-    experimentState: function () {
-      return models.ExperimentState.byName(this.statusName);
-    },
-    badgeVariant: function () {
-      if (this.experimentState.isProgressing) {
-        return "secondary";
-      } else if (this.experimentState === models.ExperimentState.COMPLETED) {
-        return "success";
-      } else if (
-        this.experimentState === models.ExperimentState.CANCELING ||
-        this.experimentState === models.ExperimentState.CANCELED
-      ) {
-        return "warning";
-      } else if (this.experimentState === models.ExperimentState.FAILED) {
-        return "danger";
-      } else {
-        return "info";
-      }
-    },
-  },
-};
+const props = defineProps<{
+  statusName: string;
+}>();
+
+const experimentState = computed(() => models.ExperimentState.byName(props.statusName));
+
+const badgeVariant = computed(() => {
+  if (experimentState.value.isProgressing) {
+    return "secondary";
+  } else if (experimentState.value === models.ExperimentState.COMPLETED) {
+    return "success";
+  } else if (
+    experimentState.value === models.ExperimentState.CANCELING ||
+    experimentState.value === models.ExperimentState.CANCELED
+  ) {
+    return "warning";
+  } else if (experimentState.value === models.ExperimentState.FAILED) {
+    return "danger";
+  } else {
+    return "info";
+  }
+});
 </script>

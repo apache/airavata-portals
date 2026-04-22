@@ -12,114 +12,106 @@
   />
 </template>
 
-<script>
-import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
+import { models } from "django-airavata-api";
+import { useInputEditor } from "@/composables/useInputEditor";
 import VueSlider from "vue-slider-component";
 
-export default {
-  name: "SliderInputEditor",
-  components: {
-    VueSlider,
-  },
-  mixins: [InputEditorMixin],
-  props: {
-    value: {
-      type: String,
-    },
-    min: Number,
-    max: Number,
-    step: Number,
-    valueFormat: {
-      type: String,
-      validator(value) {
-        return ["percentage"].indexOf(value) !== -1;
-      },
-    },
-    displayFormat: {
-      type: String,
-      validator(value) {
-        return ["percentage"].indexOf(value) !== -1;
-      },
-    },
-  },
-  data() {
-    return {
-      sliderValue: null,
-    };
-  },
-  computed: {
-    sliderMin: function () {
-      return typeof this.min !== "undefined"
-        ? this.min
-        : "min" in this.editorConfig
-          ? this.editorConfig.min
-          : 0;
-    },
-    sliderMax: function () {
-      return typeof this.max !== "undefined"
-        ? this.max
-        : "max" in this.editorConfig
-          ? this.editorConfig.max
-          : 100;
-    },
-    sliderStep: function () {
-      return typeof this.step !== "undefined"
-        ? this.step
-        : "step" in this.editorConfig
-          ? this.editorConfig.step
-          : 1;
-    },
-  },
-  watch: {
-    data() {
-      this.initializeSliderValue();
-    },
-  },
-  created() {
-    this.initializeSliderValue();
-  },
-  methods: {
-    initializeSliderValue() {
-      this.sliderValue = this.parseValue(this.data);
-      // If parsing the value resulted in it changing (failed to parse so
-      // initialized to the 'sliderMin'), update the value
-      if (this.data !== this.formatValue(this.sliderValue)) {
-        this.onChange(this.sliderValue);
-      }
-    },
-    parseValue(value) {
-      // Just remove any percentage signs
-      const result = value ? parseFloat(value.replaceAll("%", "")) : NaN;
-      return !isNaN(result) ? result : this.sliderMin;
-    },
-    onChange(value) {
-      this.data = this.formatValue(value);
-      this.valueChanged();
-    },
-    tooltipFormatter(value) {
-      if (this.displayFormat) {
-        if (this.displayFormat === "percentage") {
-          return `${value}%`;
-        }
-      } else if ("displayFormat" in this.editorConfig) {
-        if (this.editorConfig.displayFormat.percentage) {
-          return `${value}%`;
-        }
-      }
-      return value;
-    },
-    formatValue(value) {
-      if (this.valueFormat) {
-        if (this.valueFormat === "percentage") {
-          return `${value}%`;
-        }
-      } else if ("valueFormat" in this.editorConfig) {
-        if (this.editorConfig.valueFormat.percentage) {
-          return `${value}%`;
-        }
-      }
-      return String(value);
-    },
-  },
-};
+type InputDataObjectType = InstanceType<typeof models.InputDataObjectType>;
+type Experiment = InstanceType<typeof models.Experiment>;
+
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string | null;
+    experimentInput: InputDataObjectType;
+    experiment?: Experiment;
+    id: string;
+    readOnly?: boolean;
+    min?: number;
+    max?: number;
+    step?: number;
+    valueFormat?: string;
+    displayFormat?: string;
+  }>(),
+  { modelValue: null, experiment: undefined, readOnly: false, min: undefined, max: undefined, step: undefined, valueFormat: undefined, displayFormat: undefined },
+);
+
+const emit = defineEmits<{
+  "update:modelValue": [value: string | null];
+  valid: [];
+  invalid: [messages: string[]];
+}>();
+
+const { data, componentValidState, editorConfig, valueChanged } = useInputEditor(
+  props,
+  (_, v) => emit("update:modelValue", v),
+  () => emit("valid"),
+  (msgs) => emit("invalid", msgs),
+);
+
+const sliderValue = ref<number | undefined>(undefined);
+
+const sliderMin = computed(() =>
+  typeof props.min !== "undefined"
+    ? props.min
+    : "min" in editorConfig.value
+      ? (editorConfig.value.min as number)
+      : 0,
+);
+const sliderMax = computed(() =>
+  typeof props.max !== "undefined"
+    ? props.max
+    : "max" in editorConfig.value
+      ? (editorConfig.value.max as number)
+      : 100,
+);
+const sliderStep = computed(() =>
+  typeof props.step !== "undefined"
+    ? props.step
+    : "step" in editorConfig.value
+      ? (editorConfig.value.step as number)
+      : 1,
+);
+
+watch(data, () => { initializeSliderValue(); });
+
+onMounted(() => { initializeSliderValue(); });
+
+function parseValue(value: string | null): number {
+  const result = value ? parseFloat(value.replaceAll("%", "")) : NaN;
+  return !isNaN(result) ? result : sliderMin.value;
+}
+
+function tooltipFormatter(value: number): string {
+  if (props.displayFormat) {
+    if (props.displayFormat === "percentage") return `${value}%`;
+  } else if ("displayFormat" in editorConfig.value) {
+    if ((editorConfig.value.displayFormat as { percentage?: boolean }).percentage) return `${value}%`;
+  }
+  return String(value);
+}
+
+function formatValue(value: number): string {
+  if (props.valueFormat) {
+    if (props.valueFormat === "percentage") return `${value}%`;
+  } else if ("valueFormat" in editorConfig.value) {
+    if ((editorConfig.value.valueFormat as { percentage?: boolean }).percentage) return `${value}%`;
+  }
+  return String(value);
+}
+
+function onChange(value: number) {
+  data.value = formatValue(value);
+  valueChanged();
+}
+
+function initializeSliderValue() {
+  sliderValue.value = parseValue(data.value);
+  // If parsing the value resulted in it changing (failed to parse so
+  // initialized to the 'sliderMin'), update the value
+  if (data.value !== formatValue(sliderValue.value)) {
+    onChange(sliderValue.value);
+  }
+}
 </script>

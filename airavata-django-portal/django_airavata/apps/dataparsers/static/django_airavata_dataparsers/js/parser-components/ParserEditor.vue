@@ -130,92 +130,55 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed, reactive } from "vue";
 import { models, services } from "django-airavata-api";
 import { layouts } from "django-airavata-common-ui";
 
-export default {
-  components: {
-    "list-layout": layouts.ListLayout,
-  },
-  props: {
-    parser: {
-      type: models.Parser,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      localParser: this.parser.clone(),
-      service: services.ServiceFactory.service("Parsers"),
-      showDismissibleAlert: {
-        variant: "success",
-        message: "no data",
-        dismissable: false,
-      },
-      parserInputFields: [
-        {
-          label: "Name",
-          key: "name",
-        },
-        {
-          label: "Required",
-          key: "requiredInput",
-        },
-        {
-          label: "Type",
-          key: "type",
-          formatter: (value) => value.name,
-        },
-      ],
-      parserOutputFields: [
-        {
-          label: "Name",
-          key: "name",
-        },
-        {
-          label: "Required",
-          key: "requiredOutput",
-        },
-        {
-          label: "Type",
-          key: "type",
-          formatter: (value) => value.name,
-        },
-      ],
-    };
-  },
-  computed: {
-    title: function () {
-      return this.parser ? this.parser.id : "New Parser";
-    },
-  },
-  methods: {
-    submitForm() {},
-    createInput: function () {},
-    createOutput: function () {},
-    saveParser: function () {
-      var persist = null;
-      if (this.parser) {
-        persist = this.service.update({
-          data: this.localParser,
-          lookup: this.parser.id,
-        });
-      } else {
-        //persist = this.service.create({ data: this.localParser }).then(data => {
-        // Merge sharing settings with default sharing settings created when
-        // Group Resource Profile was created
-        //const savedPArserId = data.id;
-        // });
-      }
-      persist.then(() => {
-        this.$emit("saved");
-      });
-    },
-    removeParser: function () {},
-    cancel: function () {
-      this.$emit("cancelled");
-    },
-  },
-};
+const ListLayout = layouts.ListLayout;
+
+const props = defineProps<{ parser: InstanceType<typeof models.Parser> }>();
+const emit = defineEmits<{ saved: []; cancelled: [] }>();
+
+const localParser = reactive(props.parser.clone());
+const service = services.ServiceFactory.service("Parsers");
+
+const showDismissibleAlert = reactive({
+  variant: "success",
+  message: "no data",
+  dismissable: false,
+});
+
+const parserInputFields = [
+  { label: "Name", key: "name" },
+  { label: "Required", key: "requiredInput" },
+  { label: "Type", key: "type", formatter: (value: { name: string }) => value.name },
+];
+
+const parserOutputFields = [
+  { label: "Name", key: "name" },
+  { label: "Required", key: "requiredOutput" },
+  { label: "Type", key: "type", formatter: (value: { name: string }) => value.name },
+];
+
+const title = computed(() => (props.parser ? props.parser.id : "New Parser"));
+
+function createInput(): void {}
+function createOutput(): void {}
+
+function saveParser(): void {
+  const persist = service.update({
+    data: localParser,
+    lookup: props.parser.id,
+  });
+  persist.then(() => {
+    emit("saved");
+  });
+}
+
+function removeParser(): void {}
+
+function cancel(): void {
+  emit("cancelled");
+}
 </script>

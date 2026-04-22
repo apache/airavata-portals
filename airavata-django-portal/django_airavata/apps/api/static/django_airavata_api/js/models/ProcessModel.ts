@@ -1,0 +1,95 @@
+import BaseModel from "./BaseModel";
+import ProcessStatus from "./ProcessStatus";
+import InputDataObjectType from "./InputDataObjectType";
+import OutputDataObjectType from "./OutputDataObjectType";
+import ComputationalResourceSchedulingModel from "./ComputationalResourceSchedulingModel";
+import Task from "./Task";
+import ErrorModel from "./ErrorModel";
+import ProcessWorkflow from "./ProcessWorkflow";
+
+const FIELDS = [
+  "process_id",
+  "experiment_id",
+  {
+    name: "creation_time",
+    type: Date,
+  },
+  {
+    name: "last_update_time",
+    type: Date,
+  },
+  {
+    name: "process_statuses",
+    type: ProcessStatus,
+    list: true,
+  },
+  "process_detail",
+  "application_interface_id",
+  "application_deployment_id",
+  "compute_resource_id",
+  {
+    name: "process_inputs",
+    type: InputDataObjectType,
+    list: true,
+  },
+  {
+    name: "process_outputs",
+    type: OutputDataObjectType,
+    list: true,
+  },
+  {
+    name: "process_resource_schedule",
+    type: ComputationalResourceSchedulingModel,
+  },
+  {
+    name: "tasks",
+    type: Task,
+    list: true,
+  },
+  "task_dag",
+  {
+    name: "process_errors",
+    type: ErrorModel,
+    list: true,
+  },
+  "gateway_execution_id",
+  "enable_email_notification",
+  "email_addresses",
+  "input_storage_resource_id",
+  "output_storage_resource_id",
+  "user_dn",
+  "generate_cert",
+  "experiment_data_dir",
+  "user_name",
+  "use_user_cr_pref",
+  "group_resource_profile_id",
+  {
+    name: "process_workflows",
+    type: ProcessWorkflow,
+    list: true,
+  },
+];
+
+export default class ProcessModel extends BaseModel {
+  [key: string]: unknown;
+  constructor(data: Record<string, unknown> = {}) {
+    super(FIELDS, data);
+  }
+
+  /**
+   * Return tasks sorted by task DAG order.
+   */
+  get sortedTasks() {
+    const tasksArrCopy = (this.tasks as Task[]).slice();
+    tasksArrCopy.sort((a, b) => {
+      const aIndex = this.task_dag_array.findIndex((t) => t === a.task_id);
+      const bIndex = this.task_dag_array.findIndex((t) => t === b.task_id);
+      return aIndex - bIndex;
+    });
+    return tasksArrCopy;
+  }
+
+  get task_dag_array() {
+    return this.task_dag ? (this.task_dag as string).split(",") : [];
+  }
+}

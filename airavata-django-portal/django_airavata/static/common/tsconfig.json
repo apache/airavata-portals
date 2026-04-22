@@ -1,0 +1,4 @@
+{
+  "extends": "@airavata/tooling/tsconfig.base.json",
+  "include": ["js/**/*.ts", "js/**/*.vue"]
+}

@@ -15,7 +15,7 @@
             required
             :state="getValidationState('resource_host_id')"
             :disabled="!computeResourceOptions || computeResourceOptions.length === 0"
-            @change="computeResourceChanged($event.target.value)"
+            @change="computeResourceChanged(($event.target as HTMLSelectElement).value)"
           >
             <option :value="null" disabled>Select a Compute Resource</option>
             <option v-for="opt in computeResourceOptions" :key="opt.value" :value="opt.value">
@@ -27,7 +27,7 @@
     </div>
     <div class="row">
       <div class="col">
-        <queue-settings-editor
+        <QueueSettingsEditor
           v-if="appDeploymentId"
           v-model="data"
           :app-module-id="appModuleId"
@@ -38,235 +38,259 @@
           @valid="queueSettingsValidityChanged(true)"
           @invalid="queueSettingsValidityChanged(false)"
         >
-        </queue-settings-editor>
+        </QueueSettingsEditor>
       </div>
     </div>
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import QueueSettingsEditor from "./QueueSettingsEditor.vue";
 import { errors, models, services, utils as apiUtils } from "django-airavata-api";
-import { mixins, utils } from "django-airavata-common-ui";
+import { utils } from "django-airavata-common-ui";
 
-export default {
-  name: "ComputationalResourceSchedulingEditor",
-  components: {
-    QueueSettingsEditor,
+type ComputationalResourceSchedulingModel = InstanceType<typeof models.ComputationalResourceSchedulingModel>;
+
+interface ComputeResourceOption {
+  value: string;
+  text: string;
+}
+
+interface WorkspacePreferences {
+  most_recent_compute_resource_id?: string | null;
+}
+
+interface GroupResourceProfileData {
+  group_resource_profile_id: string;
+  compute_resource_policies: Array<{ compute_resource_id: string; [key: string]: unknown }>;
+  batch_queue_resource_policies: Array<{ compute_resource_id: string; [key: string]: unknown }>;
+}
+
+interface ApplicationDeployment {
+  compute_host_id: string;
+  app_deployment_id: string;
+}
+
+const props = defineProps<{
+  modelValue: ComputationalResourceSchedulingModel;
+  appModuleId: string;
+  groupResourceProfileId: string;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: ComputationalResourceSchedulingModel];
+  input: [value: ComputationalResourceSchedulingModel];
+  valid: [];
+  invalid: [];
+}>();
+
+// VModelMixin inline
+function copyValue(value: ComputationalResourceSchedulingModel) {
+  return value instanceof models.BaseModel
+    ? (value as unknown as { clone: () => ComputationalResourceSchedulingModel }).clone()
+    : value;
+}
+
+const data = ref<ComputationalResourceSchedulingModel>(copyValue(props.modelValue));
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    data.value = copyValue(newValue);
   },
-  mixins: [mixins.VModelMixin],
-  props: {
-    value: {
-      type: models.ComputationalResourceSchedulingModel,
-    },
-    appModuleId: {
-      type: String,
-      required: true,
-    },
-    groupResourceProfileId: {
-      type: String,
-      required: true,
-    },
+  { deep: true },
+);
+
+watch(
+  data,
+  (newValue, oldValue) => {
+    if (typeof props.modelValue === "object" && newValue === oldValue) {
+      emit("update:modelValue", newValue);
+      emit("input", newValue);
+    } else if (
+      (props.modelValue === null || typeof props.modelValue !== "object") &&
+      newValue !== oldValue
+    ) {
+      emit("update:modelValue", newValue);
+      emit("input", newValue);
+    }
   },
-  data() {
-    return {
-      computeResources: {},
-      applicationDeployments: [],
-      selectedGroupResourceProfileData: null,
-      resource_host_id: this.value.resource_host_id,
-      invalidQueueSettings: false,
-      workspacePreferences: null,
-    };
+  { deep: true },
+);
+
+const computeResources = ref<Record<string, string>>({});
+const applicationDeployments = ref<ApplicationDeployment[]>([]);
+const selectedGroupResourceProfileData = ref<GroupResourceProfileData | null>(null);
+const resource_host_id = ref<string | null>(props.modelValue.resource_host_id ?? null);
+const invalidQueueSettings = ref(false);
+const workspacePreferences = ref<WorkspacePreferences | null>(null);
+
+const localComputationalResourceScheduling = computed(() => data.value);
+
+const computeResourceOptions = computed<ComputeResourceOption[]>(() => {
+  const options = applicationDeployments.value.map((dep) => ({
+    value: dep.compute_host_id,
+    text: dep.compute_host_id in computeResources.value ? computeResources.value[dep.compute_host_id] : "",
+  }));
+  options.sort((a, b) => a.text.localeCompare(b.text));
+  return options;
+});
+
+const selectedComputeResourcePolicy = computed(() => {
+  if (selectedGroupResourceProfileData.value === null) return null;
+  return selectedGroupResourceProfileData.value.compute_resource_policies.find(
+    (crp) => crp.compute_resource_id === localComputationalResourceScheduling.value.resource_host_id,
+  ) ?? null;
+});
+
+interface BatchQueueResourcePolicyLike {
+  compute_resource_id: string;
+  queuename: string;
+  maxAllowedCores: number;
+  maxAllowedNodes: number;
+  maxAllowedWalltime: number;
+  resourcePolicyId?: string;
+  [key: string]: unknown;
+}
+
+const batchQueueResourcePolicies = computed<BatchQueueResourcePolicyLike[] | null>(() => {
+  if (selectedGroupResourceProfileData.value === null) return null;
+  return selectedGroupResourceProfileData.value.batch_queue_resource_policies.filter(
+    (bqrp) => bqrp.compute_resource_id === localComputationalResourceScheduling.value.resource_host_id,
+  ) as BatchQueueResourcePolicyLike[];
+});
+
+const appDeploymentId = computed<string | null>(() => {
+  if (!resource_host_id.value || applicationDeployments.value.length === 0) return null;
+  const selectedDep = applicationDeployments.value.find(
+    (dep) => dep.compute_host_id === resource_host_id.value,
+  );
+  if (!selectedDep) {
+    throw new Error("Failed to find application deployment!");
+  }
+  return selectedDep.app_deployment_id;
+});
+
+const validation = computed(() => {
+  const queueInfo = {};
+  return localComputationalResourceScheduling.value.validate(queueInfo);
+});
+
+const valid = computed(() => !invalidQueueSettings.value && Object.keys(validation.value).length === 0);
+
+watch(computeResourceOptions, (newOptions) => {
+  if (resource_host_id.value !== null && !newOptions.find((opt) => opt.value === resource_host_id.value)) {
+    resource_host_id.value = null;
+  }
+  if (
+    resource_host_id.value === null &&
+    workspacePreferences.value?.most_recent_compute_resource_id &&
+    newOptions.find((opt) => opt.value === workspacePreferences.value!.most_recent_compute_resource_id)
+  ) {
+    resource_host_id.value = workspacePreferences.value.most_recent_compute_resource_id;
+  }
+  if (resource_host_id.value === null && newOptions.length > 0) {
+    resource_host_id.value = newOptions[0].value;
+  }
+  computeResourceChanged(resource_host_id.value);
+});
+
+watch(
+  () => props.groupResourceProfileId,
+  (newGroupResourceProfileId) => {
+    loadApplicationDeployments(props.appModuleId, newGroupResourceProfileId);
+    if (
+      selectedGroupResourceProfileData.value &&
+      selectedGroupResourceProfileData.value.group_resource_profile_id !== newGroupResourceProfileId
+    ) {
+      loadGroupResourceProfile();
+    }
   },
-  computed: {
-    localComputationalResourceScheduling() {
-      return this.data;
-    },
-    computeResourceOptions: function () {
-      const computeResourceOptions = this.applicationDeployments.map((dep) => {
-        return {
-          value: dep.compute_host_id,
-          text:
-            dep.compute_host_id in this.computeResources
-              ? this.computeResources[dep.compute_host_id]
-              : "",
-        };
-      });
-      computeResourceOptions.sort((a, b) => a.text.localeCompare(b.text));
-      return computeResourceOptions;
-    },
-    selectedComputeResourcePolicy: function () {
-      if (this.selectedGroupResourceProfileData === null) {
-        return null;
+);
+
+onMounted(() => {
+  loadWorkspacePreferences().then(() => {
+    loadApplicationDeployments(props.appModuleId, props.groupResourceProfileId);
+  });
+  loadComputeResourceNames();
+  loadGroupResourceProfile();
+  validate();
+});
+
+function computeResourceChanged(selectedComputeResourceId: string | null) {
+  data.value.resource_host_id = selectedComputeResourceId;
+}
+
+function loadApplicationDeployments(appModuleId: string, groupResourceProfileId: string) {
+  services.ApplicationDeploymentService.list(
+    { app_module_id: appModuleId, group_resource_profile_id: groupResourceProfileId },
+    { ignoreErrors: true },
+  )
+    .then((deps: unknown) => {
+      applicationDeployments.value = deps as ApplicationDeployment[];
+    })
+    .catch((error: unknown) => {
+      if (!errors.ErrorUtils.isUnauthorizedError(error)) {
+        return Promise.reject(error);
       }
-      return this.selectedGroupResourceProfileData.compute_resource_policies.find((crp) => {
-        return (
-          crp.compute_resource_id === this.localComputationalResourceScheduling.resource_host_id
-        );
-      });
-    },
-    batchQueueResourcePolicies: function () {
-      if (this.selectedGroupResourceProfileData === null) {
-        return null;
+    })
+    .catch(apiUtils.FetchUtils.reportError);
+}
+
+function loadGroupResourceProfile() {
+  services.ProjectResourceProfileService.retrieve(
+    { lookup: props.groupResourceProfileId },
+    { ignoreErrors: true },
+  )
+    .then((grp: unknown) => {
+      selectedGroupResourceProfileData.value = grp as GroupResourceProfileData;
+    })
+    .catch((error: unknown) => {
+      if (!errors.ErrorUtils.isUnauthorizedError(error)) {
+        return Promise.reject(error);
       }
-      return this.selectedGroupResourceProfileData.batch_queue_resource_policies.filter((bqrp) => {
-        return (
-          bqrp.compute_resource_id === this.localComputationalResourceScheduling.resource_host_id
-        );
-      });
-    },
-    appDeploymentId: function () {
-      // We'll only be able to figure out the appDeploymentId when a
-      // resource_host_id is selected and the application deployments are
-      // loaded
-      if (!this.resource_host_id || this.applicationDeployments.length === 0) {
-        return null;
-      }
-      // Find application deployment that corresponds to this compute resource
-      let selectedApplicationDeployment = this.applicationDeployments.find(
-        (dep) => dep.compute_host_id === this.resource_host_id,
-      );
-      if (!selectedApplicationDeployment) {
-        throw new Error("Failed to find application deployment!");
-      }
-      return selectedApplicationDeployment.app_deployment_id;
-    },
-    validation() {
-      const queueInfo = {}; // QueueSettingsEditor will validate queue information
-      return this.localComputationalResourceScheduling.validate(queueInfo);
-    },
-    valid() {
-      return !this.invalidQueueSettings && Object.keys(this.validation).length === 0;
-    },
-  },
-  watch: {
-    computeResourceOptions: function (newOptions) {
-      // If the selected resource_host_id is not in the new list of
-      // computeResourceOptions, reset it to null
-      if (
-        this.resource_host_id !== null &&
-        !newOptions.find((opt) => opt.value === this.resource_host_id)
-      ) {
-        this.resource_host_id = null;
-      }
-      // Apply preferred (most recently used) compute resource
-      if (
-        this.resource_host_id === null &&
-        this.workspacePreferences.most_recent_compute_resource_id &&
-        newOptions.find(
-          (opt) => opt.value === this.workspacePreferences.most_recent_compute_resource_id,
-        )
-      ) {
-        this.resource_host_id = this.workspacePreferences.most_recent_compute_resource_id;
-      }
-      // If none selected, just pick the first one
-      if (this.resource_host_id === null && newOptions.length > 0) {
-        this.resource_host_id = newOptions[0].value;
-      }
-      this.computeResourceChanged(this.resource_host_id);
-    },
-    groupResourceProfileId: function (newGroupResourceProfileId) {
-      this.loadApplicationDeployments(this.appModuleId, newGroupResourceProfileId);
-      if (
-        this.selectedGroupResourceProfileData &&
-        this.selectedGroupResourceProfileData.group_resource_profile_id !==
-          newGroupResourceProfileId
-      ) {
-        this.loadGroupResourceProfile();
-      }
-    },
-  },
-  mounted: function () {
-    this.loadWorkspacePreferences().then(() => {
-      this.loadApplicationDeployments(this.appModuleId, this.groupResourceProfileId);
-    });
-    this.loadComputeResourceNames();
-    this.loadGroupResourceProfile();
-    this.validate();
-    this.$on("input", () => this.validate());
-  },
-  methods: {
-    computeResourceChanged: function (selectedComputeResourceId) {
-      this.data.resource_host_id = selectedComputeResourceId;
-    },
-    loadApplicationDeployments: function (appModuleId, groupResourceProfileId) {
-      services.ApplicationDeploymentService.list(
-        {
-          app_module_id: appModuleId,
-          group_resource_profile_id: groupResourceProfileId,
-        },
-        { ignoreErrors: true },
-      )
-        .then((applicationDeployments) => {
-          this.applicationDeployments = applicationDeployments;
-        })
-        .catch((error) => {
-          // Ignore unauthorized errors, force user to pick another GroupResourceProfile
-          if (!errors.ErrorUtils.isUnauthorizedError(error)) {
-            return Promise.reject(error);
-          }
-        })
-        // Report all other error types
-        .catch(apiUtils.FetchUtils.reportError);
-    },
-    loadGroupResourceProfile: function () {
-      services.ProjectResourceProfileService.retrieve(
-        { lookup: this.groupResourceProfileId },
-        { ignoreErrors: true },
-      )
-        .then((groupResourceProfile) => {
-          this.selectedGroupResourceProfileData = groupResourceProfile;
-        })
-        .catch((error) => {
-          // Ignore unauthorized errors, force user to pick a different GroupResourceProfile
-          if (!errors.ErrorUtils.isUnauthorizedError(error)) {
-            return Promise.reject(error);
-          }
-        })
-        // Report all other error types
-        .catch(apiUtils.FetchUtils.reportError);
-    },
-    loadComputeResourceNames: function () {
-      services.ComputeResourceService.names().then(
-        (computeResourceNames) => (this.computeResources = computeResourceNames),
-      );
-    },
-    loadWorkspacePreferences() {
-      return services.WorkspacePreferencesService.get().then(
-        (workspacePreferences) => (this.workspacePreferences = workspacePreferences),
-      );
-    },
-    queueSettingsChanged: function () {
-      // QueueSettingsEditor updates the full
-      // ComputationalResourceSchedulingModel instance but doesn't know
-      // the resource_host_id so we need to copy it back into the instance
-      // whenever it changes
-      this.localComputationalResourceScheduling.resource_host_id = this.resource_host_id;
-      this.$emit("input", this.data);
-    },
-    queueSettingsValidityChanged(valid) {
-      this.invalidQueueSettings = !valid;
-      this.validate();
-    },
-    validate() {
-      if (!this.valid) {
-        this.$emit("invalid");
-      } else {
-        this.$emit("valid");
-      }
-    },
-    emitValueChanged: function () {
-      this.validate();
-      this.$emit("input", this.localComputationalResourceScheduling);
-    },
-    getValidationFeedback: function (properties) {
-      return utils.getProperty(this.validation, properties);
-    },
-    getValidationState: function (properties) {
-      return this.getValidationFeedback(properties) ? false : null;
-    },
-  },
-};
+    })
+    .catch(apiUtils.FetchUtils.reportError);
+}
+
+function loadComputeResourceNames() {
+  services.ComputeResourceService.names().then(
+    (names: unknown) => (computeResources.value = names as Record<string, string>),
+  );
+}
+
+function loadWorkspacePreferences(): Promise<void> {
+  return services.WorkspacePreferencesService.get().then(
+    (prefs: unknown) => (workspacePreferences.value = prefs as WorkspacePreferences),
+  );
+}
+
+function queueSettingsChanged() {
+  localComputationalResourceScheduling.value.resource_host_id = resource_host_id.value;
+  emit("input", data.value);
+}
+
+function queueSettingsValidityChanged(validValue: boolean) {
+  invalidQueueSettings.value = !validValue;
+  validate();
+}
+
+function validate() {
+  if (!valid.value) {
+    emit("invalid");
+  } else {
+    emit("valid");
+  }
+}
+
+function getValidationFeedback(properties: string): unknown {
+  return utils.getProperty(validation.value, properties);
+}
+
+function getValidationState(properties: string): boolean | null {
+  return getValidationFeedback(properties) ? false : null;
+}
 </script>
 
 <style></style>

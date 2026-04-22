@@ -14,14 +14,13 @@
   </nav>
 </template>
 
-<script>
-export default {
-  name: "BreadcrumbNav",
-  props: {
-    crumbs: {
-      type: Array,
-      required: true,
-    },
-  },
-};
+<script setup lang="ts">
+interface Crumb {
+  url?: string;
+  label: string;
+}
+
+defineProps<{
+  crumbs: Crumb[];
+}>();
 </script>

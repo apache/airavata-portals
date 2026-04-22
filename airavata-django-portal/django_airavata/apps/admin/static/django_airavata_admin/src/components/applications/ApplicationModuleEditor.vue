@@ -42,40 +42,47 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch } from "vue";
 import { models } from "django-airavata-api";
-import { errors, mixins } from "django-airavata-common-ui";
+import { errors } from "django-airavata-common-ui";
 
-export default {
-  name: "ApplicationModuleEditor",
-  mixins: [mixins.VModelMixin],
-  props: {
-    value: {
-      type: models.ApplicationModule,
-    },
-    readonly: {
-      type: Boolean,
-      default: false,
-    },
-    validationErrors: {
-      type: Object,
-    },
+type ApplicationModule = InstanceType<typeof models.ApplicationModule>;
+
+const props = defineProps<{
+  modelValue: ApplicationModule;
+  readonly?: boolean;
+  validationErrors?: Record<string, unknown> | null;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: ApplicationModule];
+}>();
+
+const data = ref<ApplicationModule>(
+  props.modelValue.clone() as ApplicationModule,
+);
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    data.value = newValue.clone() as ApplicationModule;
   },
-  computed: {
-    validationFeedback() {
-      return errors.ValidationErrors.createValidationFeedback(this.data, this.validationErrors);
-    },
+  { deep: true },
+);
+
+watch(
+  data,
+  (newValue, oldValue) => {
+    if (newValue === oldValue) {
+      emit("update:modelValue", newValue);
+    }
   },
-  methods: {
-    save() {
-      this.$emit("save");
-    },
-    cancel() {
-      this.$emit("cancel");
-    },
-    deleteApplicationModule() {
-      this.$emit("delete", this.data);
-    },
-  },
-};
+  { deep: true },
+);
+
+const validationFeedback = computed(() =>
+  errors.ValidationErrors.createValidationFeedback(data.value, props.validationErrors),
+);
+
 </script>

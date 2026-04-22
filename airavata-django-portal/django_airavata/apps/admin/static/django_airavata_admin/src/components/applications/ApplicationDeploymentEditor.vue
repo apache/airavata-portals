@@ -6,7 +6,7 @@
           {{ name }}
         </h1>
         <p v-if="owner" class="mb-2 text-muted">
-          Created by <span :title="ownerTitle">{{ ownerUserId }}</span>
+          Created by <span :title="ownerTitle ?? ''">{{ ownerUserId }}</span>
         </p>
         <share-button
           v-if="localSharedEntity"
@@ -134,162 +134,171 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import { models, services } from "django-airavata-api";
+import { components } from "django-airavata-common-ui";
 import CommandObjectsEditor from "./CommandObjectsEditor.vue";
 import SetEnvPathsEditor from "./SetEnvPathsEditor.vue";
-import { components, mixins } from "django-airavata-common-ui";
 
-export default {
-  name: "ApplicationDeploymentEditor",
-  components: {
-    CommandObjectsEditor,
-    SetEnvPathsEditor,
-    "share-button": components.ShareButton,
+const ShareButton = components.ShareButton;
+
+type AppDeployment = InstanceType<typeof models.ApplicationDeploymentDescription>;
+type SharedEntity = InstanceType<typeof models.SharedEntity>;
+
+interface BatchQueue {
+  queue_name: string;
+  max_nodes: number;
+  max_processors: number;
+  max_run_time: number;
+  cpu_per_node: number;
+  default_node_count: number;
+  default_cpu_count: number;
+  default_walltime: number;
+}
+
+interface ComputeResource {
+  host_name: string;
+  batch_queues: BatchQueue[];
+}
+
+const props = defineProps<{
+  modelValue: AppDeployment;
+  readonly?: boolean;
+  sharedEntity: SharedEntity;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: AppDeployment];
+  "sharing-changed": [sharedEntity: SharedEntity, data: AppDeployment, dirty: boolean];
+}>();
+
+const computeResource = ref<ComputeResource | null>(null);
+const localSharedEntity = ref<SharedEntity | null>(
+  props.sharedEntity ? (props.sharedEntity.clone() as SharedEntity) : null,
+);
+const dirty = ref(false);
+
+const data = ref<AppDeployment>(
+  props.modelValue.clone() as AppDeployment,
+);
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    data.value = newValue.clone() as AppDeployment;
+    dirty.value = true;
   },
-  mixins: [mixins.VModelMixin],
-  props: {
-    value: {
-      type: models.ApplicationDescriptionDefinition,
-    },
-    readonly: {
-      type: Boolean,
-      default: false,
-    },
-    sharedEntity: {
-      type: models.SharedEntity,
-      required: true,
-    },
+  { deep: true },
+);
+
+watch(
+  data,
+  (newValue, oldValue) => {
+    if (newValue === oldValue) {
+      emit("update:modelValue", newValue);
+    }
   },
-  data() {
-    return {
-      computeResource: null,
-      localSharedEntity: this.sharedEntity ? this.sharedEntity.clone() : null,
-      dirty: false,
-    };
+  { deep: true },
+);
+
+watch(
+  () => props.sharedEntity,
+  (newValue) => {
+    localSharedEntity.value = newValue.clone() as SharedEntity;
   },
-  computed: {
-    name() {
-      if (this.computeResource) {
-        return this.computeResource.host_name;
-      } else {
-        return this.data.computeHostId.substring(0, 10) + "...";
-      }
-    },
-    parallelismTypeOptions() {
-      return models.ParallelismType.values.map((parType) => {
-        return {
-          value: parType,
-          text: parType.name,
-        };
-      });
-    },
-    queueNameOptions() {
-      if (!this.computeResource) {
-        return [];
-      }
-      return this.computeResource.batch_queues.map((queue) => {
-        return {
-          value: queue.queue_name,
-          text: queue.queue_name,
-        };
-      });
-    },
-    maxNodes() {
-      const queue = this.computeResource
-        ? this.computeResource.batch_queues.find((q) => q.queue_name === this.data.defaultQueueName)
-        : null;
-      return queue ? queue.max_nodes : 0;
-    },
-    maxCPUCount() {
-      const queue = this.computeResource
-        ? this.computeResource.batch_queues.find((q) => q.queue_name === this.data.defaultQueueName)
-        : null;
-      return queue ? queue.max_processors : 0;
-    },
-    maxWalltime() {
-      const queue = this.computeResource
-        ? this.computeResource.batch_queues.find((q) => q.queue_name === this.data.defaultQueueName)
-        : null;
-      return queue ? queue.max_run_time : 0;
-    },
-    cpuPerNode() {
-      const queue = this.computeResource
-        ? this.computeResource.batch_queues.find((q) => q.queue_name === this.data.defaultQueueName)
-        : null;
-      return queue ? queue.cpu_per_node : 0;
-    },
-    defaultQueueAttributesDisabled() {
-      return !this.data.defaultQueueName || this.readonly;
-    },
-    owner() {
-      return this.localSharedEntity && this.localSharedEntity.owner
-        ? this.localSharedEntity.owner
-        : null;
-    },
-    ownerUserId() {
-      return this.owner ? this.owner.user_id : null;
-    },
-    ownerTitle() {
-      return this.owner
-        ? this.owner.first_name + " " + this.owner.last_name + " (" + this.owner.email + ")"
-        : null;
-    },
-  },
-  watch: {
-    sharedEntity(newValue) {
-      this.localSharedEntity = newValue.clone();
-    },
-  },
-  mounted() {
-    this.$on("input", () => {
-      this.dirty = true;
-    });
-  },
-  unmounted() {
-    // Vue 3 removed the $off() instance method and `destroyed()` hook.
-    // Listeners attached via `this.$on("input", ...)` would need to track
-    // their own cleanup; leaving this as a renamed stub is a no-op under
-    // Vue 3, matching the pre-fix behaviour (destroyed was silently
-    // ignored).
-  },
-  created() {
-    services.ComputeResourceService.retrieve({
-      lookup: this.data.computeHostId,
-    }).then((computeResource) => {
-      this.computeResource = computeResource;
-    });
-  },
-  methods: {
-    save() {
-      // FIXME: if the save operation fails then this form should still be
-      // dirty. But this editor doesn't know if the save fails.
-      this.dirty = false;
-      this.$emit("save");
-    },
-    cancel() {
-      this.dirty = false;
-      this.$emit("cancel");
-    },
-    defaultQueueChanged(queueName) {
-      if (queueName) {
-        const queue = this.computeResource.batch_queues.find((q) => q.queue_name === queueName);
-        this.data.defaultNodeCount = queue.default_node_count;
-        this.data.defaultCPUCount = queue.default_cpu_count;
-        this.data.defaultWalltime = queue.default_walltime;
-      } else {
-        this.data.defaultNodeCount = null;
-        this.data.defaultCPUCount = null;
-        this.data.defaultWalltime = null;
-      }
-    },
-    savedSharedEntity(newSharedEntity) {
-      this.$emit("sharing-changed", newSharedEntity, this.data, false);
-    },
-    unsavedSharedEntity(newSharedEntity) {
-      this.dirty = true;
-      this.$emit("sharing-changed", newSharedEntity, this.data, true);
-    },
-  },
-};
+);
+
+onMounted(() => {
+  services.ComputeResourceService.retrieve({
+    lookup: (data.value as { computeHostId: string }).computeHostId,
+  }).then((cr: unknown) => {
+    computeResource.value = cr as ComputeResource;
+  });
+});
+
+const name = computed(() => {
+  if (computeResource.value) {
+    return computeResource.value.host_name;
+  } else {
+    return String((data.value as { computeHostId: string }).computeHostId).substring(0, 10) + "...";
+  }
+});
+
+const parallelismTypeOptions = computed(() =>
+  (models.ParallelismType.values as Array<{ name: string }>).map((parType) => ({
+    value: parType,
+    text: parType.name,
+  })),
+);
+
+const queueNameOptions = computed(() => {
+  if (!computeResource.value) {
+    return [];
+  }
+  return computeResource.value.batch_queues.map((queue) => ({
+    value: queue.queue_name,
+    text: queue.queue_name,
+  }));
+});
+
+function findQueue(): BatchQueue | null {
+  if (!computeResource.value) return null;
+  return computeResource.value.batch_queues.find(
+    (q) => q.queue_name === (data.value as { defaultQueueName: string }).defaultQueueName,
+  ) ?? null;
+}
+
+const maxNodes = computed(() => findQueue()?.max_nodes ?? 0);
+const maxCPUCount = computed(() => findQueue()?.max_processors ?? 0);
+const maxWalltime = computed(() => findQueue()?.max_run_time ?? 0);
+const cpuPerNode = computed(() => findQueue()?.cpu_per_node ?? 0);
+
+const defaultQueueAttributesDisabled = computed(
+  () => !(data.value as { defaultQueueName?: string | null }).defaultQueueName || props.readonly,
+);
+
+const owner = computed(() =>
+  localSharedEntity.value && (localSharedEntity.value as { owner?: unknown }).owner
+    ? (localSharedEntity.value as { owner: Record<string, string> }).owner
+    : null,
+);
+
+const ownerUserId = computed(() => owner.value?.user_id ?? null);
+
+const ownerTitle = computed(() =>
+  owner.value
+    ? owner.value.first_name + " " + owner.value.last_name + " (" + owner.value.email + ")"
+    : null,
+);
+
+function defaultQueueChanged(event: Event) {
+  const queueName = (event.target as HTMLSelectElement).value;
+  const dep = data.value as {
+    defaultNodeCount: number | null;
+    defaultCPUCount: number | null;
+    defaultWalltime: number | null;
+  };
+  if (queueName) {
+    const queue = computeResource.value?.batch_queues.find((q) => q.queue_name === queueName);
+    if (queue) {
+      dep.defaultNodeCount = queue.default_node_count;
+      dep.defaultCPUCount = queue.default_cpu_count;
+      dep.defaultWalltime = queue.default_walltime;
+    }
+  } else {
+    dep.defaultNodeCount = null;
+    dep.defaultCPUCount = null;
+    dep.defaultWalltime = null;
+  }
+}
+
+function savedSharedEntity(newSharedEntity: SharedEntity) {
+  emit("sharing-changed", newSharedEntity, data.value, false);
+}
+
+function unsavedSharedEntity(newSharedEntity: SharedEntity) {
+  dirty.value = true;
+  emit("sharing-changed", newSharedEntity, data.value, true);
+}
 </script>

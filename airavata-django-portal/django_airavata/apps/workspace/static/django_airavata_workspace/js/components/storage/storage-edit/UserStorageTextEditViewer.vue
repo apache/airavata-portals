@@ -6,7 +6,7 @@
         <span v-if="editAvailable && !readOnly && !saved">Changes are not saved.</span>
       </div>
       <div class="user-storage-file-edit-viewer-status-actions">
-        <user-storage-download-button :data-product-uri="dataProductUri" :file-name="fileName" />
+        <UserStorageDownloadButton :data-product-uri="dataProductUri" :file-name="fileName" />
         <button
           v-if="editAvailable && !readOnly"
           class="btn"
@@ -24,98 +24,86 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import { services, utils } from "django-airavata-api";
 import CodeEditor from "django-airavata-common-ui/js/components/CodeEditor.vue";
-import UserStorageDownloadButton from "./UserStorageDownloadButton";
+import UserStorageDownloadButton from "./UserStorageDownloadButton.vue";
 
 const MAX_EDIT_FILESIZE = 1024 * 1024;
 
-export default {
-  name: "UserStorageFileEditViewer",
-  components: {
-    CodeEditor,
-    UserStorageDownloadButton: UserStorageDownloadButton,
-  },
-  props: {
-    fileName: {
-      required: true,
-    },
-    dataProductUri: {
-      required: true,
-    },
-    mimeType: {
-      required: true,
-    },
-    downloadUrl: {
-      required: true,
-    },
-  },
-  data() {
-    return {
-      currentContent: "",
-      saved: true,
-      dataProduct: null,
-      contentLoaded: false,
-    };
-  },
-  computed: {
-    editAvailable() {
-      return !this.dataProduct || this.dataProduct.filesize < MAX_EDIT_FILESIZE;
-    },
-    userHasWriteAccess() {
-      return this.dataProduct && this.dataProduct.user_has_write_access;
-    },
-    readOnly() {
-      return !this.user_has_write_access;
-    },
-  },
-  watch: {
-    currentContent() {
-      if (this.contentLoaded) {
-        this.saved = false;
-      }
-    },
-  },
-  mounted() {
-    this.setFileContent();
-  },
-  methods: {
-    fileContentChanged() {
-      if (this.currentContent) {
-        utils.FetchUtils.put(`/api/data-products?product-uri=${this.dataProductUri}`, {
-          fileContentText: this.currentContent,
-        }).then(() => {
-          this.$emit("file-content-changed", this.currentContent);
-        });
-      }
+const props = defineProps<{
+  fileName: string;
+  dataProductUri: string;
+  mimeType: string;
+  downloadUrl: string;
+}>();
 
-      this.saved = true;
-    },
-    loadDataProduct() {
-      return services.DataProductService.retrieve({
-        lookup: this.dataProductUri,
-      }).then((dataProduct) => {
-        this.dataProduct = dataProduct;
-        return dataProduct;
+const emit = defineEmits<{
+  "file-content-changed": [fileContent: string];
+}>();
+
+const currentContent = ref("");
+const saved = ref(true);
+interface DataProductLike {
+  filesize: number;
+  user_has_write_access: boolean;
+}
+const dataProduct = ref<DataProductLike | null>(null);
+const contentLoaded = ref(false);
+
+const editAvailable = computed(
+  () => !dataProduct.value || dataProduct.value.filesize < MAX_EDIT_FILESIZE,
+);
+const userHasWriteAccess = computed(
+  () => dataProduct.value && dataProduct.value.user_has_write_access,
+);
+const readOnly = computed(() => !userHasWriteAccess.value);
+
+watch(currentContent, () => {
+  if (contentLoaded.value) {
+    saved.value = false;
+  }
+});
+
+function fileContentChanged() {
+  if (currentContent.value) {
+    utils.FetchUtils.put(`/api/data-products?product-uri=${props.dataProductUri}`, {
+      fileContentText: currentContent.value,
+    }).then(() => {
+      emit("file-content-changed", currentContent.value);
+    });
+  }
+  saved.value = true;
+}
+
+function loadDataProduct() {
+  return services.DataProductService.retrieve({
+    lookup: props.dataProductUri,
+  }).then((dp: unknown) => {
+    dataProduct.value = dp as DataProductLike;
+    return dp;
+  });
+}
+
+function setFileContent() {
+  loadDataProduct().then(() => {
+    if (editAvailable.value) {
+      utils.FetchUtils.get(props.downloadUrl, "", {
+        ignoreErrors: false,
+        showSpinner: true,
+        responseType: "text",
+      }).then((res: string) => {
+        contentLoaded.value = false;
+        currentContent.value = res;
+        saved.value = true;
+        contentLoaded.value = true;
       });
-    },
-    setFileContent() {
-      this.loadDataProduct().then(() => {
-        if (this.editAvailable) {
-          utils.FetchUtils.get(this.downloadUrl, "", {
-            ignoreErrors: false,
-            showSpinner: true,
-            responseType: "text",
-          }).then((res) => {
-            this.contentLoaded = false;
-            this.currentContent = res;
-            this.saved = true;
-            this.contentLoaded = true;
-          });
-        }
-      });
-    },
-  },
-};
+    }
+  });
+}
+
+onMounted(() => {
+  setFileContent();
+});
 </script>

@@ -14,30 +14,28 @@
   </li>
 </template>
 
-<script>
-import { relativeTime } from "../utils/dates.js";
+<script setup lang="ts">
+import { computed } from "vue";
+import { relativeTime } from "../utils/dates";
 
-export default {
-  name: "SidebarFeedItem",
-  props: {
-    /**
-     * feedItem properties are
-     * - type (String, Optional) the type of feed item (e.g. for Experiments this is the application name)
-     * - url (String, Optional) url to link to the full item details
-     * - title (String, Required) title of the feed item
-     * - timestamp (Date, Optional) timestamp of when feed item was created/updated
-     * - description (String, Optional) description of feed item. Displayed when no slot is provided.
-     */
-    feedItem: Object,
-  },
-  computed: {
-    timestamp() {
-      if (this.feedItem.timestamp) {
-        return relativeTime(this.feedItem.timestamp);
-      } else {
-        return null;
-      }
-    },
-  },
-};
+interface FeedItem {
+  type?: string;
+  url?: string;
+  title: string;
+  timestamp?: string | number | Date;
+  description?: string;
+  id?: string | number;
+}
+
+const props = defineProps<{
+  feedItem: FeedItem;
+}>();
+
+const timestamp = computed(() => {
+  if (props.feedItem.timestamp) {
+    return relativeTime(props.feedItem.timestamp);
+  } else {
+    return null;
+  }
+});
 </script>

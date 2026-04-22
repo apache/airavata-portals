@@ -124,73 +124,81 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import { models } from "django-airavata-api";
-import { mixins } from "django-airavata-common-ui";
-import JSONEditor from "./JSONEditor.vue";
+import JsonEditor from "./JSONEditor.vue";
 
-export default {
-  name: "ApplicationInputFieldEditor",
-  components: {
-    "json-editor": JSONEditor,
+type InputDataObjectType = InstanceType<typeof models.InputDataObjectType>;
+
+const props = defineProps<{
+  modelValue: InputDataObjectType;
+  // Whether to put focus on the name field when mounting component
+  focus?: boolean;
+  collapse?: boolean;
+  readonly?: boolean;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: InputDataObjectType];
+  delete: [];
+}>();
+
+const nameInput = ref<HTMLInputElement | null>(null);
+
+const data = ref<InputDataObjectType>(
+  props.modelValue.clone() as InputDataObjectType,
+);
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    data.value = newValue.clone() as InputDataObjectType;
   },
-  mixins: [mixins.VModelMixin],
-  props: {
-    value: {
-      type: models.InputDataObjectType,
-    },
-    // Whether to put focus on the name field when mounting component
-    focus: {
-      type: Boolean,
-    },
-    collapse: {
-      type: Boolean,
-    },
-    readonly: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  computed: {
-    inputTypeOptions() {
-      return models.InputDataObjectType.VALID_DATA_TYPES.map((dataType) => {
-        return {
-          value: dataType,
-          text: dataType.name,
-        };
-      });
-    },
-    trueFalseOptions() {
-      return [
-        { text: "True", value: true },
-        { text: "False", value: false },
-      ];
-    },
-    id() {
-      return "id-" + this.data.key;
-    },
-    showValueField() {
-      return this.data.type.isSimpleValueType;
-    },
-    showOverrideFilenameField() {
-      return this.data.type === models.DataType.URI;
-    },
-  },
-  mounted() {
-    if (this.focus) {
-      this.doFocus();
+  { deep: true },
+);
+
+watch(
+  data,
+  (newValue, oldValue) => {
+    if (newValue === oldValue) {
+      emit("update:modelValue", newValue);
     }
   },
-  methods: {
-    doFocus() {
-      this.$refs.nameInput.focus();
-      this.$el.scrollIntoView({ behavior: "smooth" });
-    },
-    deleteApplicationInput() {
-      this.$emit("delete");
-    },
-  },
-};
+  { deep: true },
+);
+
+const inputTypeOptions = computed(() =>
+  (models.InputDataObjectType.VALID_DATA_TYPES as Array<{ name: string }>).map((dataType) => ({
+    value: dataType,
+    text: dataType.name,
+  })),
+);
+
+const trueFalseOptions = computed(() => [
+  { text: "True", value: true },
+  { text: "False", value: false },
+]);
+
+const id = computed(() => "id-" + (data.value as { key: string }).key);
+
+const showValueField = computed(() =>
+  (data.value as { type?: { isSimpleValueType?: boolean } }).type?.isSimpleValueType,
+);
+
+const showOverrideFilenameField = computed(
+  () => (data.value as { type?: unknown }).type === models.DataType?.URI,
+);
+
+onMounted(() => {
+  if (props.focus) {
+    nameInput.value?.focus();
+  }
+});
+
+function deleteApplicationInput() {
+  emit("delete");
+}
 </script>
 
 <style scoped>

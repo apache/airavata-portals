@@ -5,19 +5,17 @@
   </button>
 </template>
 
-<script>
-export default {
-  name: "GatewayNoticesContainer",
-  props: ["notices", "unreadCount"],
-  data() {
-    return {
-      localUnreadCount: this.unreadCount,
-    };
-  },
-  methods: {
-    showNotifications() {
-      window.dispatchEvent(new CustomEvent("sidebar:show", { detail: "notifications" }));
-    },
-  },
-};
+<script setup lang="ts">
+import { ref } from "vue";
+
+const props = defineProps<{
+  notices?: unknown[];
+  unreadCount?: number;
+}>();
+
+const localUnreadCount = ref(props.unreadCount ?? 0);
+
+function showNotifications(): void {
+  window.dispatchEvent(new CustomEvent("sidebar:show", { detail: "notifications" }));
+}
 </script>

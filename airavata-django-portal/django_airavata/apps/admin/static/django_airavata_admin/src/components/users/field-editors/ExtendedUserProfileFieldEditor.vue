@@ -6,9 +6,9 @@
         <label class="form-label">Name</label>
         <input
           v-model="name"
-          :class="['form-control', validateState(v$.name) === false ? 'is-invalid' : '']"
+          :class="['form-control', validateState(v$.nameState) === false ? 'is-invalid' : '']"
         />
-        <div v-if="v$.name.$dirty && v$.name.$error" class="invalid-feedback">
+        <div v-if="v$.nameState.$dirty && v$.nameState.$error" class="invalid-feedback">
           This field is required.
         </div>
       </div>
@@ -19,10 +19,10 @@
       >
         <input
           v-model="checkbox_label"
-          :class="['form-control', validateState(v$.checkbox_label) === false ? 'is-invalid' : '']"
+          :class="['form-control', validateState(v$.checkboxLabelState) === false ? 'is-invalid' : '']"
           placeholder="E.g. I accept the Terms of Service listed above"
         />
-        <div v-if="v$.checkbox_label.$dirty && v$.checkbox_label.$error" class="invalid-feedback">
+        <div v-if="v$.checkboxLabelState.$dirty && v$.checkboxLabelState.$error" class="invalid-feedback">
           This field is required.
         </div>
       </form-group>
@@ -32,7 +32,7 @@
       </div>
       <div class="mb-3">
         <div class="form-check">
-          <input id="required-check" v-model="required" class="form-check-input" type="checkbox" />
+          <input id="required-check" v-model="fieldRequired" class="form-check-input" type="checkbox" />
           <label class="form-check-label" for="required-check">Required</label>
         </div>
       </div>
@@ -107,7 +107,7 @@
           <div class="mb-3">
             <button
               class="btn btn-sm btn-secondary"
-              @click="addChoice({ field: extendedUserProfileField })"
+              @click="userStore.addFieldChoice({ field: extendedUserProfileField })"
             >
               Add Option
             </button>
@@ -125,7 +125,7 @@
 
       <template v-if="links && links.length > 0">
         <transition-group name="fade">
-          <div v-for="(link, linkIdx) in links" :key="link.key" class="card mb-2">
+          <div v-for="(link, linkIdx) in links" :key="link.id ?? link.label" class="card mb-2">
             <div class="card-header">Link: {{ link.label }}</div>
             <div class="card-body">
               <div class="mb-3">
@@ -154,7 +154,7 @@
                       class="form-check-input"
                       type="checkbox"
                       :checked="link.display_link"
-                      @change="handleLinkDisplayLinkChanged(link, $event.target.checked)"
+                      @change="handleLinkDisplayLinkChanged(link, ($event.target as HTMLInputElement).checked)"
                     />
                     <label class="form-check-label" :for="`display-link-${linkIdx}`"
                       >Show as link?</label
@@ -168,7 +168,7 @@
                       class="form-check-input"
                       type="checkbox"
                       :checked="link.display_inline"
-                      @change="handleLinkDisplayInlineChanged(link, $event.target.checked)"
+                      @change="handleLinkDisplayInlineChanged(link, ($event.target as HTMLInputElement).checked)"
                     />
                     <label class="form-check-label" :for="`display-inline-${linkIdx}`"
                       >Show inline?</label
@@ -191,13 +191,13 @@
         <button
           class="btn btn-sm btn-secondary"
           :disabled="disabled"
-          @click="addLink({ field: extendedUserProfileField })"
+          @click="userStore.addFieldLink({ field: extendedUserProfileField })"
         >
           Add Link
         </button>
         <button
           class="btn btn-sm btn-secondary"
-          :disabled="disabled || extendedUserProfileFields.indexOf(extendedUserProfileField) === 0"
+          :disabled="disabled || (extendedUserProfileFields ?? []).indexOf(extendedUserProfileField) === 0"
           @click="handleMoveUp({ field: extendedUserProfileField })"
         >
           Move Up
@@ -206,8 +206,8 @@
           class="btn btn-sm btn-secondary"
           :disabled="
             disabled ||
-            extendedUserProfileFields.indexOf(extendedUserProfileField) ===
-              extendedUserProfileFields.length - 1
+            (extendedUserProfileFields ?? []).indexOf(extendedUserProfileField) ===
+              (extendedUserProfileFields ?? []).length - 1
           "
           @click="handleMoveDown({ field: extendedUserProfileField })"
         >
@@ -221,168 +221,179 @@
   </div>
 </template>
 
-<script>
-import { mapGetters, mapMutations } from "vuex";
+<script setup lang="ts">
+import { computed, watch } from "vue";
 import { useVuelidate } from "@vuelidate/core";
 import { required, requiredIf } from "@vuelidate/validators";
 import { errors } from "django-airavata-common-ui";
-export default {
-  props: ["extendedUserProfileField", "disabled"],
-  setup() {
-    return { v$: useVuelidate() };
+import { useUserStore } from "django-airavata-common-ui/js/stores/user";
+import type {
+  ExtendedUserProfileField,
+  ExtendedUserProfileFieldChoice,
+  ExtendedUserProfileFieldLink,
+} from "django-airavata-common-ui/js/types/user";
+
+const props = defineProps<{
+  extendedUserProfileField: ExtendedUserProfileField;
+  disabled?: boolean;
+}>();
+
+const emit = defineEmits<{
+  valid: [];
+  invalid: [];
+}>();
+
+const userStore = useUserStore();
+
+const extendedUserProfileFields = computed(() => userStore.extendedUserProfileFields);
+
+const checkboxLabelIsRequired = computed(
+  () => props.extendedUserProfileField.field_type === "user_agreement"
+);
+
+// Computed state for vuelidate — read from store, write back to store
+const nameState = computed(() => props.extendedUserProfileField.name);
+const checkboxLabelState = computed(() => props.extendedUserProfileField.checkbox_label ?? "");
+
+const rules = computed(() => ({
+  nameState: { required },
+  checkboxLabelState: {
+    required: requiredIf(() => checkboxLabelIsRequired.value),
   },
-  computed: {
-    ...mapGetters("extendedUserProfile", ["extendedUserProfileFields"]),
-    name: {
-      get() {
-        return this.extendedUserProfileField.name;
-      },
-      set(value) {
-        this.setName({ value, field: this.extendedUserProfileField });
-        this.v$.name.$touch();
-      },
-    },
-    checkbox_label: {
-      get() {
-        return this.extendedUserProfileField.checkbox_label;
-      },
-      set(value) {
-        this.setCheckboxLabel({ value, field: this.extendedUserProfileField });
-        this.v$.checkbox_label.$touch();
-      },
-    },
-    help_text: {
-      get() {
-        return this.extendedUserProfileField.help_text;
-      },
-      set(value) {
-        this.setHelpText({ value, field: this.extendedUserProfileField });
-      },
-    },
-    required: {
-      get() {
-        return this.extendedUserProfileField.required;
-      },
-      set(value) {
-        this.setRequired({ value, field: this.extendedUserProfileField });
-      },
-    },
-    other: {
-      get() {
-        return this.extendedUserProfileField.other;
-      },
-      set(value) {
-        this.setOther({ value, field: this.extendedUserProfileField });
-      },
-    },
-    title() {
-      const fieldTypes = {
-        text: "Text",
-        single_choice: "Single Choice",
-        multi_choice: "Multi Choice",
-        user_agreement: "User Agreement",
-      };
-      return `${fieldTypes[this.extendedUserProfileField.field_type]}: ${this.name}`;
-    },
-    choices() {
-      return this.extendedUserProfileField.choices;
-    },
-    links() {
-      return this.extendedUserProfileField.links;
-    },
-    valid() {
-      return !this.v$.$invalid;
-    },
-    checkboxLabelIsRequired() {
-      return this.extendedUserProfileField.field_type === "user_agreement";
-    },
+}));
+
+const v$ = useVuelidate(rules, { nameState, checkboxLabelState });
+
+// Two-way computed for v-model bindings (touch vuelidate after store update)
+const name = computed({
+  get: () => props.extendedUserProfileField.name,
+  set: (value: string) => {
+    userStore.setFieldName({ value, field: props.extendedUserProfileField });
+    v$.value.nameState.$touch();
   },
-  validations() {
-    return {
-      name: { required },
-      checkbox_label: {
-        required: requiredIf(() => this.checkboxLabelIsRequired),
-      },
-    };
+});
+
+const checkbox_label = computed({
+  get: () => props.extendedUserProfileField.checkbox_label ?? "",
+  set: (value: string) => {
+    userStore.setFieldCheckboxLabel({ value, field: props.extendedUserProfileField });
+    v$.value.checkboxLabelState.$touch();
   },
-  methods: {
-    ...mapMutations("extendedUserProfile", [
-      "setName",
-      "setCheckboxLabel",
-      "setHelpText",
-      "setRequired",
-      "setOther",
-      "addChoice",
-      "updateChoiceDisplayText",
-      "deleteChoice",
-      "updateChoiceIndex",
-      "addLink",
-      "updateLinkLabel",
-      "updateLinkURL",
-      "updateLinkDisplayLink",
-      "updateLinkDisplayInline",
-      "deleteLink",
-      "updateFieldIndex",
-      "deleteField",
-    ]),
-    handleChoiceDisplayTextChanged(choice, event) {
-      this.updateChoiceDisplayText({ choice, display_text: event.target.value });
-    },
-    handleChoiceDeleted(choice) {
-      this.deleteChoice({ field: this.extendedUserProfileField, choice });
-    },
-    handleChoiceMoveUp(choice) {
-      let index = this.extendedUserProfileField.choices.indexOf(choice);
-      index--;
-      this.updateChoiceIndex({ field: this.extendedUserProfileField, choice, index });
-    },
-    handleChoiceMoveDown(choice) {
-      let index = this.extendedUserProfileField.choices.indexOf(choice);
-      index++;
-      this.updateChoiceIndex({ field: this.extendedUserProfileField, choice, index });
-    },
-    handleLinkLabelChanged(link, event) {
-      this.updateLinkLabel({ link, label: event.target.value });
-    },
-    handleLinkURLChanged(link, event) {
-      this.updateLinkURL({ link, url: event.target.value });
-    },
-    handleLinkDisplayLinkChanged(link, display_link) {
-      this.updateLinkDisplayLink({ link, display_link });
-    },
-    handleLinkDisplayInlineChanged(link, display_inline) {
-      this.updateLinkDisplayInline({ link, display_inline });
-    },
-    handleLinkDeleted(link) {
-      this.deleteLink({ field: this.extendedUserProfileField, link });
-    },
-    handleMoveUp({ field }) {
-      let index = this.extendedUserProfileFields.indexOf(field);
-      index--;
-      this.updateFieldIndex({ field, index });
-    },
-    handleMoveDown({ field }) {
-      let index = this.extendedUserProfileFields.indexOf(field);
-      index++;
-      this.updateFieldIndex({ field, index });
-    },
-    handleDelete() {
-      this.deleteField({ field: this.extendedUserProfileField });
-    },
-    validateState: errors.vuelidateHelpers.validateState,
-    touch() {
-      this.v$.$touch();
-    },
+});
+
+const help_text = computed({
+  get: () => props.extendedUserProfileField.help_text ?? "",
+  set: (value: string) => {
+    userStore.setFieldHelpText({ value, field: props.extendedUserProfileField });
   },
-  watch: {
-    valid: {
-      handler(valid) {
-        this.$emit(valid ? "valid" : "invalid");
-      },
-      immediate: true,
-    },
+});
+
+const fieldRequired = computed({
+  get: () => props.extendedUserProfileField.required ?? false,
+  set: (value: boolean) => {
+    userStore.setFieldRequired({ value, field: props.extendedUserProfileField });
   },
+});
+
+const other = computed({
+  get: () => props.extendedUserProfileField.other ?? false,
+  set: (value: boolean) => {
+    userStore.setFieldOther({ value, field: props.extendedUserProfileField });
+  },
+});
+
+const fieldTypeLabels: Record<string, string> = {
+  text: "Text",
+  single_choice: "Single Choice",
+  multi_choice: "Multi Choice",
+  user_agreement: "User Agreement",
 };
+
+const title = computed(
+  () => `${fieldTypeLabels[props.extendedUserProfileField.field_type]}: ${name.value}`
+);
+
+const links = computed(() => props.extendedUserProfileField.links);
+const valid = computed(() => !v$.value.$invalid);
+
+const validateState = errors.vuelidateHelpers.validateState;
+
+watch(
+  valid,
+  (isValid) => {
+    if (isValid) {
+      emit("valid");
+    } else {
+      emit("invalid");
+    }
+  },
+  { immediate: true }
+);
+
+function handleChoiceDisplayTextChanged(choice: ExtendedUserProfileFieldChoice, event: Event) {
+  userStore.updateFieldChoiceDisplayText({
+    choice,
+    display_text: (event.target as HTMLInputElement).value,
+  });
+}
+
+function handleChoiceDeleted(choice: ExtendedUserProfileFieldChoice) {
+  userStore.deleteFieldChoice({ field: props.extendedUserProfileField, choice });
+}
+
+function handleChoiceMoveUp(choice: ExtendedUserProfileFieldChoice) {
+  let index = props.extendedUserProfileField.choices.indexOf(choice);
+  index--;
+  userStore.updateFieldChoiceIndex({ field: props.extendedUserProfileField, choice, index });
+}
+
+function handleChoiceMoveDown(choice: ExtendedUserProfileFieldChoice) {
+  let index = props.extendedUserProfileField.choices.indexOf(choice);
+  index++;
+  userStore.updateFieldChoiceIndex({ field: props.extendedUserProfileField, choice, index });
+}
+
+function handleLinkLabelChanged(link: ExtendedUserProfileFieldLink, event: Event) {
+  userStore.updateFieldLinkLabel({ link, label: (event.target as HTMLInputElement).value });
+}
+
+function handleLinkURLChanged(link: ExtendedUserProfileFieldLink, event: Event) {
+  userStore.updateFieldLinkURL({ link, url: (event.target as HTMLInputElement).value });
+}
+
+function handleLinkDisplayLinkChanged(link: ExtendedUserProfileFieldLink, display_link: boolean) {
+  userStore.updateFieldLinkDisplayLink({ link, display_link });
+}
+
+function handleLinkDisplayInlineChanged(link: ExtendedUserProfileFieldLink, display_inline: boolean) {
+  userStore.updateFieldLinkDisplayInline({ link, display_inline });
+}
+
+function handleLinkDeleted(link: ExtendedUserProfileFieldLink) {
+  userStore.deleteFieldLink({ field: props.extendedUserProfileField, link });
+}
+
+function handleMoveUp({ field }: { field: ExtendedUserProfileField }) {
+  let index = (extendedUserProfileFields.value ?? []).indexOf(field);
+  index--;
+  userStore.updateFieldIndex({ field, index });
+}
+
+function handleMoveDown({ field }: { field: ExtendedUserProfileField }) {
+  let index = (extendedUserProfileFields.value ?? []).indexOf(field);
+  index++;
+  userStore.updateFieldIndex({ field, index });
+}
+
+function handleDelete() {
+  userStore.deleteExtendedUserProfileField({ field: props.extendedUserProfileField });
+}
+
+function touch() {
+  v$.value.$touch();
+}
+
+defineExpose({ touch });
 </script>
 
 <style></style>

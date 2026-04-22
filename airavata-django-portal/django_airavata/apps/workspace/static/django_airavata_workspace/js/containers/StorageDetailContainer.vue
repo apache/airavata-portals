@@ -15,8 +15,8 @@
       <div class="row align-items-center mb-3">
         <div class="col">
           <h1 class="h4 mb-0">
-            {{ resource.host_name }}
-            <span v-if="resource.enabled" class="badge bg-success ms-2" style="font-size: 0.75rem"
+            {{ (resource as Record<string, unknown>).host_name }}
+            <span v-if="(resource as Record<string, unknown>).enabled" class="badge bg-success ms-2" style="font-size: 0.75rem"
               >Enabled</span
             >
             <span v-else class="badge bg-secondary ms-2" style="font-size: 0.75rem">Disabled</span>
@@ -71,7 +71,7 @@
             <div class="col-md-6">
               <label class="form-label">Host Name <span class="text-danger">*</span></label>
               <input
-                v-model="resource.host_name"
+                v-model="(resource as Record<string, unknown>).host_name"
                 type="text"
                 class="form-control form-control-sm"
               />
@@ -79,7 +79,7 @@
             <div class="col-md-6">
               <label class="form-label">Description</label>
               <input
-                v-model="resource.storage_resource_description"
+                v-model="(resource as Record<string, unknown>).storage_resource_description"
                 type="text"
                 class="form-control form-control-sm"
                 placeholder="Optional description"
@@ -89,7 +89,7 @@
               <div class="form-check form-switch">
                 <input
                   id="enabledToggle"
-                  v-model="resource.enabled"
+                  v-model="(resource as Record<string, unknown>).enabled"
                   class="form-check-input"
                   type="checkbox"
                 />
@@ -117,7 +117,7 @@
       <div class="d-flex justify-content-end">
         <button
           class="btn btn-primary btn-sm"
-          :disabled="saving || !resource.host_name"
+          :disabled="saving || !(resource as Record<string, unknown>).host_name"
           @click="save"
         >
           <span v-if="saving"><i class="fa fa-spinner fa-spin me-1"></i>Saving...</span>
@@ -130,109 +130,119 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { services, utils } from "django-airavata-api";
-import SSHCredentialSelector from "../../../../../admin/static/django_airavata_admin/src/components/credentials/SSHCredentialSelector.vue";
+import SshCredentialSelector from "../../../../../admin/static/django_airavata_admin/src/components/credentials/SSHCredentialSelector.vue";
 
-export default {
-  name: "StorageDetailContainer",
-  components: {
-    "ssh-credential-selector": SSHCredentialSelector,
-  },
-  props: {
-    storageResourceId: {
-      type: String,
-      default: null,
-    },
-  },
-  data() {
-    return {
-      loading: true,
-      resource: null,
-      credentialToken: null,
-      saving: false,
-      testing: false,
-      testStatus: null,
-      sseUnsubscribers: [],
+interface TestStatus {
+  success: boolean;
+  message: string;
+}
+
+interface SshResultEvent {
+  success: boolean;
+  message: string;
+}
+
+const props = withDefaults(defineProps<{
+  storageResourceId?: string | null;
+}>(), {
+  storageResourceId: null,
+});
+
+const loading = ref(true);
+const resource = ref<unknown>(null);
+const credentialToken = ref<string | null>(null);
+const saving = ref(false);
+const testing = ref(false);
+const testStatus = ref<TestStatus | null>(null);
+
+function onSshResult(event: SshResultEvent): void {
+  testing.value = false;
+  testStatus.value = {
+    success: event.success,
+    message: event.message,
+  };
+}
+
+async function loadResource(): Promise<void> {
+  loading.value = true;
+  try {
+    resource.value = await services.StorageResourceService.retrieve({
+      lookup: props.storageResourceId,
+    });
+  } catch {
+    resource.value = null;
+  }
+  loading.value = false;
+}
+
+async function save(): Promise<void> {
+  const res = resource.value as Record<string, unknown>;
+  if (!res.host_name) return;
+  saving.value = true;
+  try {
+    await services.StorageResourceService.update({
+      lookup: props.storageResourceId,
+      data: resource.value,
+    });
+  } catch (e) {
+    const err = e as { message?: string };
+    window.alert(err?.message || "Failed to save storage resource.");
+  }
+  saving.value = false;
+}
+
+async function testConnection(): Promise<void> {
+  testing.value = true;
+  testStatus.value = null;
+  try {
+    await (utils.FetchUtils as unknown as { post(_url: string, _data: unknown): Promise<unknown> }).post("/api/ssh/test/", {
+      resource_id: props.storageResourceId,
+      credential_token: credentialToken.value,
+    });
+  } catch (e) {
+    testing.value = false;
+    const err = e as { message?: string };
+    testStatus.value = {
+      success: false,
+      message: err?.message || "Failed to initiate connection test.",
     };
-  },
-  created() {
-    if (this.storageResourceId) {
-      this.loadResource();
-    } else {
-      this.loading = false;
-    }
-    if (utils.SSEClient) {
-      utils.SSEClient.on("ssh_result", this.onSshResult);
-    }
-  },
-  beforeUnmount() {
-    if (utils.SSEClient) {
-      utils.SSEClient.off("ssh_result", this.onSshResult);
-    }
-  },
-  methods: {
-    async loadResource() {
-      this.loading = true;
-      try {
-        this.resource = await services.StorageResourceService.retrieve({
-          lookup: this.storageResourceId,
-        });
-      } catch {
-        this.resource = null;
-      }
-      this.loading = false;
-    },
-    async save() {
-      if (!this.resource.host_name) return;
-      this.saving = true;
-      try {
-        await services.StorageResourceService.update({
-          lookup: this.storageResourceId,
-          data: this.resource,
-        });
-      } catch (e) {
-        window.alert(e?.message || "Failed to save storage resource.");
-      }
-      this.saving = false;
-    },
-    async testConnection() {
-      this.testing = true;
-      this.testStatus = null;
-      try {
-        await utils.FetchUtils.post("/api/ssh/test/", {
-          resource_id: this.storageResourceId,
-          credential_token: this.credentialToken,
-        });
-      } catch (e) {
-        this.testing = false;
-        this.testStatus = {
-          success: false,
-          message: e?.message || "Failed to initiate connection test.",
-        };
-      }
-    },
-    onSshResult(event) {
-      this.testing = false;
-      this.testStatus = {
-        success: event.success,
-        message: event.message,
-      };
-    },
-    async confirmDelete() {
-      if (
-        !window.confirm(
-          `Delete storage resource "${this.resource.host_name}"? This action cannot be undone.`,
-        )
-      )
-        return;
-      try {
-        await services.StorageResourceService.delete({ lookup: this.storageResourceId });
-        window.location.href = "/resources/storage";
-      } catch (e) {
-        window.alert(e?.message || "Failed to delete storage resource.");
-      }
-    },
-  },
-};
+  }
+}
+
+async function confirmDelete(): Promise<void> {
+  const res = resource.value as Record<string, unknown>;
+  if (
+    !window.confirm(
+      `Delete storage resource "${res.host_name}"? This action cannot be undone.`,
+    )
+  )
+    return;
+  try {
+    await services.StorageResourceService.delete({ lookup: props.storageResourceId });
+    window.location.href = "/resources/storage";
+  } catch (e) {
+    const err = e as { message?: string };
+    window.alert(err?.message || "Failed to delete storage resource.");
+  }
+}
+
+onMounted(() => {
+  if (props.storageResourceId) {
+    loadResource();
+  } else {
+    loading.value = false;
+  }
+  if ((utils as unknown as Record<string, unknown>).SSEClient) {
+    (utils as unknown as { SSEClient: { on(_event: string, _handler: (_e: SshResultEvent) => void): void } }).SSEClient.on("ssh_result", onSshResult);
+  }
+});
+
+onBeforeUnmount(() => {
+  if ((utils as unknown as Record<string, unknown>).SSEClient) {
+    (utils as unknown as { SSEClient: { off(_event: string, _handler: (_e: SshResultEvent) => void): void } }).SSEClient.off("ssh_result", onSshResult);
+  }
+});
 </script>

@@ -36,113 +36,110 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch } from "vue";
 import { errors, services } from "django-airavata-api";
 import NotificationList from "../notifications/NotificationList";
+import type Notification from "../notifications/Notification";
 
-export default {
-  name: "NotificationsDisplay",
-  data() {
-    return {
-      notifications: NotificationList.list,
-      unhandledErrors: errors.UnhandledErrorDisplayList.list,
-      apiServerBackUp: null,
-      apiServerBackUpTimestamp: null,
-      pollingDelay: 10000,
-    };
-  },
-  computed: {
-    apiServerDown() {
-      // Return true if any notifications indicate that the API Server is down,
-      // but excludes notifications that came before the timestamp of the last
-      // API server status check
-      const notificationsApiServerDown = this.notifications
-        ? this.notifications
-            .filter((n) => {
-              if (this.apiServerBackUpTimestamp) {
-                return n.createdDate.getTime() - this.apiServerBackUpTimestamp > 0;
-              } else {
-                return true;
-              }
-            })
-            .some((n) => n.details && n.details.response && n.details.response.apiServerDown)
-        : false;
-      const unhandledErrorsApiServerDown = this.unhandledErrors
-        ? this.unhandledErrors
-            .filter((n) => {
-              if (this.apiServerBackUpTimestamp) {
-                return n.createdDate.getTime() - this.apiServerBackUpTimestamp > 0;
-              } else {
-                return true;
-              }
-            })
-            .some((e) => e.details && e.details.response && e.details.response.apiServerDown)
-        : false;
-      return notificationsApiServerDown || unhandledErrorsApiServerDown;
-    },
-    loginLinkWithNext() {
-      return errors.ErrorUtils.buildLoginUrl();
-    },
-    loginLink() {
-      return errors.ErrorUtils.buildLoginUrl(false);
-    },
-  },
-  watch: {
-    /*
-     * Whenever notifications indicate that the API server is down, start
-     * polling the API server status so we can let the user know when it is
-     * back up.
-     */
-    apiServerDown(newValue) {
-      if (newValue) {
-        this.apiServerBackUp = false;
-        this.initPollingAPIServerStatus();
-      }
-    },
-  },
-  methods: {
-    dismissNotification: function (notification) {
-      NotificationList.remove(notification);
-    },
-    dismissUnhandledError: function (unhandledError) {
-      errors.UnhandledErrorDisplayList.remove(unhandledError);
-    },
-    variant: function (notification) {
-      if (notification.type === "SUCCESS") {
-        return "success";
-      } else if (notification.type === "ERROR") {
-        return "danger";
-      } else if (notification.type === "WARNING") {
-        return "warning";
-      } else {
-        return "secondary";
-      }
-    },
-    loadAPIServerStatus() {
-      return services.APIServerStatusCheckService.get(
-        {},
-        { ignoreErrors: true, showSpinner: false },
-      ).then((status) => {
-        if (status.apiServerUp === true) {
-          this.apiServerBackUp = true;
-          this.apiServerBackUpTimestamp = Date.now();
-        }
-      });
-    },
-    initPollingAPIServerStatus: function () {
-      const pollAPIServerStatus = function () {
-        if (!this.apiServerBackUp) {
-          const repoll = () => setTimeout(pollAPIServerStatus.bind(this), this.pollingDelay);
-          this.loadAPIServerStatus().then(repoll, repoll);
-        }
-      }.bind(this);
-      setTimeout(pollAPIServerStatus.bind(this), this.pollingDelay);
-    },
-    isUnauthenticatedError(error) {
-      return errors.ErrorUtils.isUnauthenticatedError(error);
-    },
-  },
-};
+interface ErrorEntry {
+  id: number;
+  error: unknown;
+  message: string;
+  createdDate: Date;
+  details?: { response?: { apiServerDown?: boolean } };
+}
+
+const notifications = ref<Notification[]>(NotificationList.list);
+const unhandledErrors = ref<ErrorEntry[]>(errors.UnhandledErrorDisplayList.list);
+const apiServerBackUp = ref<boolean | null>(null);
+const apiServerBackUpTimestamp = ref<number | null>(null);
+const pollingDelay = 10000;
+
+const apiServerDown = computed(() => {
+  // Return true if any notifications indicate that the API Server is down,
+  // but excludes notifications that came before the timestamp of the last
+  // API server status check
+  const notificationsApiServerDown = notifications.value
+    ? notifications.value
+        .filter((n) => {
+          if (apiServerBackUpTimestamp.value) {
+            return n.createdDate.getTime() - apiServerBackUpTimestamp.value > 0;
+          } else {
+            return true;
+          }
+        })
+        .some((n) => {
+          const d = n.details as { response?: { apiServerDown?: boolean } } | null;
+          return d && d.response && d.response.apiServerDown;
+        })
+    : false;
+  const unhandledErrorsApiServerDown = unhandledErrors.value
+    ? unhandledErrors.value
+        .filter((n) => {
+          if (apiServerBackUpTimestamp.value) {
+            return n.createdDate.getTime() - apiServerBackUpTimestamp.value > 0;
+          } else {
+            return true;
+          }
+        })
+        .some((e) => e.details && e.details.response && e.details.response.apiServerDown)
+    : false;
+  return notificationsApiServerDown || unhandledErrorsApiServerDown;
+});
+
+const loginLinkWithNext = computed(() => errors.ErrorUtils.buildLoginUrl());
+const loginLink = computed(() => errors.ErrorUtils.buildLoginUrl(false));
+
+/*
+ * Whenever notifications indicate that the API server is down, start
+ * polling the API server status so we can let the user know when it is
+ * back up.
+ */
+watch(apiServerDown, (newValue) => {
+  if (newValue) {
+    apiServerBackUp.value = false;
+    initPollingAPIServerStatus();
+  }
+});
+
+function variant(notification: Notification): string {
+  if (notification.type === "SUCCESS") {
+    return "success";
+  } else if (notification.type === "ERROR") {
+    return "danger";
+  } else if (notification.type === "WARNING") {
+    return "warning";
+  } else {
+    return "secondary";
+  }
+}
+
+function loadAPIServerStatus(): Promise<void> {
+  return services.APIServerStatusCheckService.get(
+    {},
+    { ignoreErrors: true, showSpinner: false },
+  ).then((status: { apiServerUp?: boolean }) => {
+    if (status.apiServerUp === true) {
+      apiServerBackUp.value = true;
+      apiServerBackUpTimestamp.value = Date.now();
+    }
+  });
+}
+
+function initPollingAPIServerStatus(): void {
+  const pollAPIServerStatus = function () {
+    if (!apiServerBackUp.value) {
+      const repoll = () => setTimeout(pollAPIServerStatus, pollingDelay);
+      loadAPIServerStatus().then(repoll, repoll);
+    }
+  };
+  setTimeout(pollAPIServerStatus, pollingDelay);
+}
+
+function isUnauthenticatedError(error: unknown): boolean {
+  return errors.ErrorUtils.isUnauthenticatedError(error);
+}
 </script>
 
 <style>

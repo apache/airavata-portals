@@ -15,17 +15,18 @@
   </table>
 </template>
 
-<script>
+<script setup lang="ts">
 import ProjectListItem from "./ProjectListItem.vue";
 
-export default {
-  name: "ProjectList",
-  components: {
-    ProjectListItem,
-  },
-  props: ["projects"],
-  data: function () {
-    return {};
-  },
-};
+interface Project {
+  project_id: string;
+  name: string;
+  owner?: string;
+  creation_time?: string | Date;
+  [key: string]: unknown;
+}
+
+defineProps<{
+  projects: Project[];
+}>();
 </script>

@@ -28,116 +28,109 @@
   </extended-user-profile-value-editor>
 </template>
 
-<script>
-import { mapGetters, mapMutations } from "vuex";
+<script setup lang="ts">
+import { computed, ref, watch } from "vue";
 import { useVuelidate } from "@vuelidate/core";
 import { required, requiredIf } from "@vuelidate/validators";
 import { errors } from "django-airavata-common-ui";
+import type { ExtendedUserProfileField } from "django-airavata-common-ui/js/types/user";
 import ExtendedUserProfileValueEditor from "./ExtendedUserProfileValueEditor.vue";
+import { useUserStore } from "django-airavata-common-ui/js/stores/user";
+
 const OTHER_OPTION = new Object(); // sentinel value
 
-export default {
-  components: { ExtendedUserProfileValueEditor },
-  props: ["extendedUserProfileField"],
-  setup() {
-    return { v$: useVuelidate() };
-  },
-  data() {
-    return {
-      otherOptionSelected: false,
-    };
-  },
-  computed: {
-    ...mapGetters("extendedUserProfile", ["getSingleChoiceValue", "getSingleChoiceOther"]),
-    value: {
-      get() {
-        if (this.showOther) {
-          return this.otherOptionValue;
-        } else {
-          return this.getSingleChoiceValue(this.extendedUserProfileField.id);
-        }
-      },
-      set(value) {
-        if (value !== this.otherOptionValue) {
-          this.setSingleChoiceValue({
-            value,
-            id: this.extendedUserProfileField.id,
-          });
-          this.v$.value.$touch();
-        }
-      },
-    },
-    other: {
-      get() {
-        return this.getSingleChoiceOther(this.extendedUserProfileField.id);
-      },
-      set(value) {
-        this.setSingleChoiceOther({
-          value,
-          id: this.extendedUserProfileField.id,
-        });
-        this.v$.other.$touch();
-      },
-    },
-    showOther() {
-      const value = this.getSingleChoiceValue(this.extendedUserProfileField.id);
-      return (value === null && this.other) || this.otherOptionSelected;
-    },
-    options() {
-      return this.extendedUserProfileField && this.extendedUserProfileField.choices
-        ? this.extendedUserProfileField.choices.map((choice) => {
-            return {
-              value: choice.id,
-              text: choice.display_text,
-            };
-          })
-        : [];
-    },
-    otherOptionValue() {
-      return OTHER_OPTION;
-    },
-    valid() {
-      return !this.v$.$invalid;
-    },
-    required() {
-      return this.extendedUserProfileField.required;
-    },
-  },
-  validations() {
-    const validations = {
-      value: {},
-      other: {},
-    };
-    if (this.showOther) {
-      validations.other = { required };
-    } else {
-      validations.value = { required: requiredIf(() => this.required) };
+const props = defineProps<{ extendedUserProfileField: ExtendedUserProfileField }>();
+const emit = defineEmits<{ valid: []; invalid: [] }>();
+
+const userStore = useUserStore();
+const otherOptionSelected = ref(false);
+
+const isRequired = computed(() => props.extendedUserProfileField.required);
+const otherOptionValue = OTHER_OPTION;
+
+const showOther = computed(() => {
+  const storeValue = userStore.getSingleChoiceValue(props.extendedUserProfileField.id!);
+  return (storeValue === null && !!other.value) || otherOptionSelected.value;
+});
+
+const value = computed<object | string | null>({
+  get: () => showOther.value ? otherOptionValue : userStore.getSingleChoiceValue(props.extendedUserProfileField.id!),
+  set: (val) => {
+    if (val !== otherOptionValue) {
+      userStore.setSingleChoiceValue({
+        value: val as string,
+        id: props.extendedUserProfileField.id!,
+      });
+      v$.value.value.$touch();
     }
-    return validations;
   },
-  methods: {
-    ...mapMutations("extendedUserProfile", ["setSingleChoiceValue", "setSingleChoiceOther"]),
-    onChange(event) {
-      this.otherOptionSelected = event.target.value === String(this.otherOptionValue);
-    },
-    onInput() {
-      this.otherOptionSelected = true;
-    },
-    validateState: errors.vuelidateHelpers.validateState,
-    validateStateErrorOnly: errors.vuelidateHelpers.validateStateErrorOnly,
-    touch() {
-      this.v$.$touch();
-    },
+});
+
+const other = computed<string | null>({
+  get: () => userStore.getSingleChoiceOther(props.extendedUserProfileField.id!),
+  set: (val) => {
+    userStore.setSingleChoiceOther({
+      value: val ?? "",
+      id: props.extendedUserProfileField.id!,
+    });
+    v$.value.other.$touch();
   },
-  watch: {
-    valid: {
-      handler(valid) {
-        this.$emit(valid ? "valid" : "invalid");
-      },
-      immediate: true,
-    },
+});
+
+const options = computed(() =>
+  props.extendedUserProfileField?.choices
+    ? props.extendedUserProfileField.choices.map((choice) => ({
+        value: choice.id,
+        text: choice.display_text,
+      }))
+    : [],
+);
+
+const rules = computed(() => {
+  const validations: Record<string, object> = { value: {}, other: {} };
+  if (showOther.value) {
+    validations.other = { required };
+  } else {
+    validations.value = { required: requiredIf(() => isRequired.value) };
+  }
+  return validations;
+});
+
+const formState = computed(() => ({
+  value: value.value,
+  other: other.value,
+}));
+
+const v$ = useVuelidate(rules, formState);
+
+const valid = computed(() => !v$.value.$invalid);
+
+const validateState = errors.vuelidateHelpers.validateState;
+const validateStateErrorOnly = errors.vuelidateHelpers.validateStateErrorOnly;
+
+watch(
+  valid,
+  (isValid) => {
+    if (isValid) emit("valid");
+    else emit("invalid");
   },
-};
+  { immediate: true },
+);
+
+function onChange(event: Event): void {
+  const target = event.target as HTMLSelectElement;
+  otherOptionSelected.value = target.value === String(otherOptionValue);
+}
+
+function onInput(): void {
+  otherOptionSelected.value = true;
+}
+
+function touch(): void {
+  v$.value.$touch();
+}
+
+defineExpose({ touch });
 </script>
 
 <style></style>

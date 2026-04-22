@@ -10,21 +10,21 @@
   </ol>
 </template>
 
-<script>
+<script setup lang="ts">
 import SidebarFeedItem from "./SidebarFeedItem.vue";
 
-export default {
-  name: "SidebarFeed",
-  components: {
-    SidebarFeedItem,
-  },
-  props: {
-    feedItems: {
-      type: Array,
-      default: function () {
-        return [];
-      },
-    },
-  },
-};
+interface FeedItem {
+  id?: string | number;
+  type?: string;
+  url?: string;
+  title: string;
+  timestamp?: string | number | Date;
+  description?: string;
+}
+
+withDefaults(defineProps<{
+  feedItems?: FeedItem[];
+}>(), {
+  feedItems: () => [],
+});
 </script>

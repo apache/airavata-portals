@@ -1,55 +1,47 @@
 <template>
   <span :class="{ 'font-italic': notAvailable }">{{ applicationName }}</span>
 </template>
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import { errors, services, utils } from "django-airavata-api";
-export default {
-  name: "ApplicationName",
-  props: {
-    applicationInterfaceId: {
-      type: String,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      applicationInterface: null,
-      notAvailable: false,
-    };
-  },
-  computed: {
-    applicationName() {
-      if (this.notAvailable) {
-        return "N/A";
+
+const props = defineProps<{
+  applicationInterfaceId: string;
+}>();
+
+const applicationInterface = ref<{ application_name: string } | null>(null);
+const notAvailable = ref(false);
+
+const applicationName = computed(() => {
+  if (notAvailable.value) {
+    return "N/A";
+  } else {
+    return applicationInterface.value ? applicationInterface.value.application_name : "";
+  }
+});
+
+watch(
+  () => props.applicationInterfaceId,
+  () => loadApplicationInterface(),
+);
+
+onMounted(() => {
+  loadApplicationInterface();
+});
+
+function loadApplicationInterface(): void {
+  services.ApplicationInterfaceService.retrieve(
+    { lookup: props.applicationInterfaceId },
+    { ignoreErrors: true, cache: true },
+  )
+    .then((appInterface: { application_name: string }) => (applicationInterface.value = appInterface))
+    .catch((error: unknown) => {
+      if (errors.ErrorUtils.isNotFoundError(error)) {
+        notAvailable.value = true;
       } else {
-        return this.applicationInterface ? this.applicationInterface.application_name : "";
+        throw error;
       }
-    },
-  },
-  watch: {
-    applicationInterfaceId() {
-      this.loadApplicationInterface();
-    },
-  },
-  created() {
-    this.loadApplicationInterface();
-  },
-  methods: {
-    loadApplicationInterface() {
-      services.ApplicationInterfaceService.retrieve(
-        { lookup: this.applicationInterfaceId },
-        { ignoreErrors: true, cache: true },
-      )
-        .then((appInterface) => (this.applicationInterface = appInterface))
-        .catch((error) => {
-          if (errors.ErrorUtils.isNotFoundError(error)) {
-            this.notAvailable = true;
-          } else {
-            throw error;
-          }
-        })
-        .catch(utils.FetchUtils.reportError);
-    },
-  },
-};
+    })
+    .catch(utils.FetchUtils.reportError);
+}
 </script>

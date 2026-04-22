@@ -28,31 +28,49 @@
   </div>
 </template>
 
-<script>
-import { mixins } from "django-airavata-common-ui";
+<script setup lang="ts">
+import { ref, watch, nextTick } from "vue";
 
-export default {
-  name: "ExperimentDescriptionEditor",
-  mixins: [mixins.VModelMixin],
-  data() {
-    return {
-      isEditing: false,
-      originalValue: this.value,
-    };
+const props = defineProps<{
+  modelValue: string | null;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: string | null];
+}>();
+
+const description = ref<HTMLTextAreaElement | null>(null);
+const isEditing = ref(false);
+const originalValue = ref<string | null>(props.modelValue ?? null);
+
+// VModelMixin: local data synced with modelValue
+const data = ref<string | null>(props.modelValue ?? null);
+
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    data.value = newVal ?? null;
   },
-  methods: {
-    toggleEditing() {
-      this.isEditing = !this.isEditing;
-    },
-    startEditing() {
-      this.originalValue = this.data;
-      this.isEditing = true;
-      this.$nextTick(() => this.$refs.description.focus());
-    },
-    cancelEditing() {
-      this.data = this.originalValue;
-      this.isEditing = false;
-    },
-  },
-};
+);
+
+watch(data, (newVal, oldVal) => {
+  if (newVal !== oldVal) {
+    emit("update:modelValue", newVal);
+  }
+});
+
+function toggleEditing() {
+  isEditing.value = !isEditing.value;
+}
+
+function startEditing() {
+  originalValue.value = data.value;
+  isEditing.value = true;
+  nextTick(() => description.value?.focus());
+}
+
+function cancelEditing() {
+  data.value = originalValue.value;
+  isEditing.value = false;
+}
 </script>

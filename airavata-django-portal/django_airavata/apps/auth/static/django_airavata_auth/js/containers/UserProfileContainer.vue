@@ -35,97 +35,82 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed, onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
 import UserProfileEditor from "../components/UserProfileEditor.vue";
-import { notifications } from "django-airavata-common-ui";
-import { mapActions, mapGetters } from "vuex";
 import ExtendedUserProfileEditor from "../components/ExtendedUserProfileEditor.vue";
+import { notifications } from "django-airavata-common-ui";
+import { useUserStore } from "django-airavata-common-ui/js/stores/user";
 
-export default {
-  name: "UserProfileContainer",
-  components: { UserProfileEditor, ExtendedUserProfileEditor },
-  data() {
-    return {
-      invalidForm: false,
-    };
-  },
-  async created() {
-    await this.loadCurrentUser();
-    await this.loadExtendedUserProfileFields();
-    if (this.hasExtendedUserProfileFields) {
-      await this.loadExtendedUserProfileValues();
-    }
+const userStore = useUserStore();
+const { user, hasExtendedUserProfileFields } = storeToRefs(userStore);
 
-    const queryParams = new URLSearchParams(window.location.search);
-    if (queryParams.has("code")) {
-      await this.verifyEmailChange({ code: queryParams.get("code") });
-      notifications.NotificationList.add(
-        new notifications.Notification({
-          type: "SUCCESS",
-          message: "Email address verified and updated",
-          duration: 5,
-        }),
-      );
-      // Update URL, removing the code from the query string
-      window.history.replaceState({}, "", "/auth/user-profile/");
+const userProfileEditor = ref<InstanceType<typeof UserProfileEditor> | null>(null);
+const extendedUserProfileEditor = ref<InstanceType<typeof ExtendedUserProfileEditor> | null>(null);
+
+const mustComplete = computed(
+  () => user.value && (!user.value.complete || !user.value.ext_user_profile_valid),
+);
+
+onMounted(async () => {
+  await userStore.loadCurrentUser();
+  await userStore.loadExtendedUserProfileFields();
+  if (hasExtendedUserProfileFields.value) {
+    await userStore.loadExtendedUserProfileValues();
+  }
+
+  const queryParams = new URLSearchParams(window.location.search);
+  if (queryParams.has("code")) {
+    const code = queryParams.get("code");
+    if (code) {
+      await userStore.verifyEmailChange({ code });
     }
-  },
-  computed: {
-    ...mapGetters("userProfile", ["user"]),
-    ...mapGetters("extendedUserProfile", [
-      "extendedUserProfileFields",
-      "hasExtendedUserProfileFields",
-    ]),
-    mustComplete() {
-      return this.user && (!this.user.complete || !this.user.ext_user_profile_valid);
-    },
-  },
-  methods: {
-    ...mapActions("userProfile", [
-      "loadCurrentUser",
-      "verifyEmailChange",
-      "updateUser",
-      "resendEmailVerification",
-    ]),
-    ...mapActions("extendedUserProfile", [
-      "loadExtendedUserProfileFields",
-      "loadExtendedUserProfileValues",
-      "saveExtendedUserProfileValues",
-    ]),
-    async onSave() {
-      if (
-        this.$refs.userProfileEditor.valid &&
-        (!this.hasExtendedUserProfileFields || this.$refs.extendedUserProfileEditor.valid)
-      ) {
-        await this.updateUser();
-        if (this.hasExtendedUserProfileFields) {
-          await this.saveExtendedUserProfileValues();
-        }
-        // Reload current user to get updated 'complete' and 'ext_user_profile_valid'
-        await this.loadCurrentUser();
-        notifications.NotificationList.add(
-          new notifications.Notification({
-            type: "SUCCESS",
-            message: "User profile saved",
-            duration: 5,
-          }),
-        );
-      } else if (this.hasExtendedUserProfileFields) {
-        this.$refs.extendedUserProfileEditor.touch();
-      }
-    },
-    async handleResendEmailVerification() {
-      await this.resendEmailVerification();
-      notifications.NotificationList.add(
-        new notifications.Notification({
-          type: "SUCCESS",
-          message: "Verification link sent",
-          duration: 5,
-        }),
-      );
-    },
-  },
-};
+    notifications.NotificationList.add(
+      new notifications.Notification({
+        type: "SUCCESS",
+        message: "Email address verified and updated",
+        duration: 5,
+      }),
+    );
+    // Update URL, removing the code from the query string
+    window.history.replaceState({}, "", "/auth/user-profile/");
+  }
+});
+
+async function onSave(): Promise<void> {
+  if (
+    userProfileEditor.value?.valid &&
+    (!hasExtendedUserProfileFields.value || extendedUserProfileEditor.value?.valid)
+  ) {
+    await userStore.updateUser();
+    if (hasExtendedUserProfileFields.value) {
+      await userStore.saveExtendedUserProfileValues();
+    }
+    // Reload current user to get updated 'complete' and 'ext_user_profile_valid'
+    await userStore.loadCurrentUser();
+    notifications.NotificationList.add(
+      new notifications.Notification({
+        type: "SUCCESS",
+        message: "User profile saved",
+        duration: 5,
+      }),
+    );
+  } else if (hasExtendedUserProfileFields.value) {
+    extendedUserProfileEditor.value?.touch();
+  }
+}
+
+async function handleResendEmailVerification(): Promise<void> {
+  await userStore.resendEmailVerification();
+  notifications.NotificationList.add(
+    new notifications.Notification({
+      type: "SUCCESS",
+      message: "Verification link sent",
+      duration: 5,
+    }),
+  );
+}
 </script>
 
 <style></style>

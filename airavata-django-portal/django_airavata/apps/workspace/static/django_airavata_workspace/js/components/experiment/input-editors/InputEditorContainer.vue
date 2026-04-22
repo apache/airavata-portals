@@ -1,5 +1,5 @@
 <template>
-  <input-editor-form-group
+  <InputEditorFormGroup
     :label="experimentInput.name"
     :label-for="inputEditorComponentId"
     :state="validationState"
@@ -19,145 +19,135 @@
       @uploadstart="uploadStart"
       @uploadend="uploadEnd"
     />
-  </input-editor-form-group>
+  </InputEditorFormGroup>
 </template>
 
-<script>
-import UserFileInputEditor from "./UserFileInputEditor.vue";
-import AutocompleteInputEditor from "./AutocompleteInputEditor";
-import CheckboxInputEditor from "./CheckboxInputEditor.vue";
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
+import { models } from "django-airavata-api";
+import { utils } from "django-airavata-common-ui";
 import FileInputEditor from "./FileInputEditor.vue";
 import InputEditorFormGroup from "./InputEditorFormGroup.vue";
 import MultiFileInputEditor from "./MultiFileInputEditor.vue";
-import RadioButtonInputEditor from "./RadioButtonInputEditor.vue";
-import RangeSliderInputEditor from "./RangeSliderInputEditor.vue";
-import SelectInputEditor from "./SelectInputEditor.vue";
-import SliderInputEditor from "./SliderInputEditor.vue";
 import StringInputEditor from "./StringInputEditor.vue";
-import TextareaInputEditor from "./TextareaInputEditor.vue";
 
-import { models } from "django-airavata-api";
-import { mixins, utils } from "django-airavata-common-ui";
+type InputDataObjectType = InstanceType<typeof models.InputDataObjectType>;
+type Experiment = InstanceType<typeof models.Experiment>;
 
-export default {
-  name: "InputEditorContainer",
-  components: {
-    AutocompleteInputEditor,
-    CheckboxInputEditor,
-    FileInputEditor,
-    InputEditorFormGroup,
-    MultiFileInputEditor,
-    RadioButtonInputEditor,
-    RangeSliderInputEditor,
-    SelectInputEditor,
-    SliderInputEditor,
-    StringInputEditor,
-    TextareaInputEditor,
-    UserFileInputEditor,
-  },
-  mixins: [mixins.VModelMixin],
-  props: {
-    experimentInput: {
-      type: models.InputDataObjectType,
-      required: true,
-    },
-    experiment: {
-      type: models.Experiment,
-      required: true,
-    },
-  },
-  data: function () {
-    return {
-      state: null,
-      feedbackMessages: [],
-      inputHasBegun: false,
-      // Store the current value when hiding input so we can restore it when shown again
-      oldValue: null,
-      show: this.experimentInput.show,
-    };
-  },
-  computed: {
-    inputEditorComponentName: function () {
-      // If input specifices an editor UI component, use that
-      if (this.experimentInput.editorUIComponentId) {
-        return this.experimentInput.editorUIComponentId;
-      }
-      // Default UI components based on input type
-      if (this.experimentInput.type === models.DataType.STRING) {
-        return "string-input-editor";
-      } else if (this.experimentInput.type === models.DataType.URI) {
-        return "file-input-editor";
-      } else if (this.experimentInput.type === models.DataType.URI_COLLECTION) {
-        return "multi-file-input-editor";
-      }
-      // Default
-      return "string-input-editor";
-    },
-    inputEditorComponentId: function () {
-      return utils.sanitizeHTMLId(this.experimentInput.name);
-    },
-    validationFeedback: function () {
-      // Only display validation feedback after the user has provided
-      // input so that missing required value errors are only displayed
-      // after interacting with the input editor
-      return this.inputHasBegun ? this.feedbackMessages : null;
-    },
-    validationState: function () {
-      return this.inputHasBegun ? this.state : null;
-    },
-  },
-  watch: {
-    // This is a bit of a workaround for testing purposes. Watcher for
-    // "experimentInput.show" does not get triggered during unit test so sync it
-    // to "show" data variable and then in the unit test manipulate "show"
-    // directly.
-    "experimentInput.show": function (newValue) {
-      this.show = newValue;
-    },
-    show: function (newValue, oldValue) {
-      // Hiding
-      if (oldValue && !newValue) {
-        this.handleHidingInput();
-      }
-      // Showing
-      else if (newValue && !oldValue) {
-        this.handleShowingInput();
-      }
-    },
-  },
-  created() {
-    if (!this.show) {
-      this.handleHidingInput();
+const props = defineProps<{
+  modelValue: string | null;
+  experimentInput: InputDataObjectType;
+  experiment: Experiment;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: string | null];
+  valid: [];
+  invalid: [messages: string[]];
+  uploadstart: [];
+  uploadend: [];
+}>();
+
+// VModelMixin inline: local data synced with modelValue
+const data = ref<string | null>(props.modelValue);
+
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    // Only update when the reference changes or primitive changes
+    if (newVal !== data.value) {
+      data.value = newVal;
     }
   },
-  methods: {
-    recordValidInputEditorValue: function () {
-      this.state = true;
-      this.$emit("valid");
-    },
-    recordInvalidInputEditorValue: function (feedbackMessages) {
-      this.feedbackMessages = feedbackMessages;
-      this.state = false;
-      this.$emit("invalid", feedbackMessages);
-    },
-    valueChanged: function () {
-      this.inputHasBegun = true;
-    },
-    handleHidingInput: function () {
-      this.oldValue = this.data;
-      this.data = null;
-    },
-    handleShowingInput: function () {
-      if (this.oldValue !== null) {
-        this.data = this.oldValue;
-      }
-    },
-    uploadStart() {
-      this.$emit("uploadstart");
-    },
-    uploadEnd() {
-      this.$emit("uploadend");
-    },
+);
+
+watch(data, (newVal, oldVal) => {
+  if (typeof props.modelValue === "object" && newVal === oldVal) {
+    emit("update:modelValue", newVal);
+  } else if ((props.modelValue === null || typeof props.modelValue !== "object") && newVal !== oldVal) {
+    emit("update:modelValue", newVal);
+  }
+});
+
+const state = ref<boolean | null>(null);
+const feedbackMessages = ref<string[]>([]);
+const inputHasBegun = ref(false);
+const oldValue = ref<string | null>(null);
+const show = ref(props.experimentInput.show);
+
+// Map input type to component reference (string fallback for plugin-defined components)
+const inputEditorComponentName = computed<unknown>(() => {
+  if (props.experimentInput.editorUIComponentId) {
+    // Plugin-defined component ID — must be globally registered by the plugin
+    return props.experimentInput.editorUIComponentId as string;
+  }
+  if (props.experimentInput.type === models.DataType.URI) {
+    return FileInputEditor;
+  } else if (props.experimentInput.type === models.DataType.URI_COLLECTION) {
+    return MultiFileInputEditor;
+  }
+  return StringInputEditor;
+});
+
+const inputEditorComponentId = computed<string>(() =>
+  utils.sanitizeHTMLId(props.experimentInput.name),
+);
+
+const validationFeedback = computed(() => (inputHasBegun.value ? feedbackMessages.value : null));
+const validationState = computed(() => (inputHasBegun.value ? state.value : null));
+
+watch(
+  () => props.experimentInput.show,
+  (newValue) => {
+    show.value = newValue;
   },
-};
+);
+
+watch(show, (newValue, oldValue_) => {
+  if (oldValue_ && !newValue) {
+    handleHidingInput();
+  } else if (newValue && !oldValue_) {
+    handleShowingInput();
+  }
+});
+
+onMounted(() => {
+  if (!show.value) {
+    handleHidingInput();
+  }
+});
+
+function recordValidInputEditorValue() {
+  state.value = true;
+  emit("valid");
+}
+
+function recordInvalidInputEditorValue(messages: string[]) {
+  feedbackMessages.value = messages;
+  state.value = false;
+  emit("invalid", messages);
+}
+
+function valueChanged() {
+  inputHasBegun.value = true;
+}
+
+function handleHidingInput() {
+  oldValue.value = data.value;
+  data.value = null;
+}
+
+function handleShowingInput() {
+  if (oldValue.value !== null) {
+    data.value = oldValue.value;
+  }
+}
+
+function uploadStart() {
+  emit("uploadstart");
+}
+
+function uploadEnd() {
+  emit("uploadend");
+}
 </script>

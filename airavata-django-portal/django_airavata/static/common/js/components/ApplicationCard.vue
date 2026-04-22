@@ -24,26 +24,32 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed } from "vue";
 import Linkify from "./Linkify.vue";
-export default {
-  name: "ApplicationCard",
-  components: { Linkify },
-  props: ["appModule", "disabled"],
-  data: function () {
-    return {};
-  },
-  computed: {
-    cardClasses() {
-      return this.disabled ? ["is-disabled"] : [];
-    },
-  },
-  methods: {
-    handleAppClick: function () {
-      this.$emit("app-selected", this.appModule);
-    },
-  },
-};
+
+interface AppModule {
+  app_module_name: string;
+  app_module_description?: string;
+  app_module_version?: string;
+  tags?: string[];
+  [key: string]: unknown;
+}
+
+const props = defineProps<{
+  appModule: AppModule;
+  disabled?: boolean;
+}>();
+
+const emit = defineEmits<{
+  "app-selected": [appModule: AppModule];
+}>();
+
+const cardClasses = computed(() => (props.disabled ? ["is-disabled"] : []));
+
+function handleAppClick(): void {
+  emit("app-selected", props.appModule);
+}
 </script>
 
 <style>

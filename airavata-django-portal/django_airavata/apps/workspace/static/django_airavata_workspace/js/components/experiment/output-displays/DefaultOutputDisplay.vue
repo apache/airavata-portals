@@ -5,13 +5,13 @@
       <pre v-if="finalOutputText">
         {{ finalOutputText }}
       </pre>
-      <div v-for="dp in dataProducts" v-else :key="dp.productUri">
+      <div v-for="dp in dataProducts" v-else :key="(dp as Record<string, unknown>).productUri as string">
         <img
-          v-if="dp.isImage && dp.download_url"
+          v-if="(dp as Record<string, unknown>).isImage && (dp as Record<string, unknown>).download_url"
           class="image-preview rounded"
-          :src="dp.download_url"
+          :src="(dp as Record<string, unknown>).download_url as string"
         />
-        <data-product-viewer :data-product="dp" :mime-type="fileMimeType" />
+        <DataProductViewer :data-product="dp as Record<string, unknown>" :mime-type="fileMimeType ?? undefined" />
       </div>
     </template>
 
@@ -19,15 +19,15 @@
       <pre v-if="intermediateOutputText">
         {{ intermediateOutputText }}
       </pre>
-      <data-product-viewer
+      <DataProductViewer
         v-else
-        :data-product="intermediateOutputDataProduct"
-        :mime-type="fileMimeType"
+        :data-product="intermediateOutputDataProduct as Record<string, unknown>"
+        :mime-type="fileMimeType ?? undefined"
       />
     </template>
     <template v-else-if="intermediateOutputMultipleDataProducts">
-      <div v-for="dp in intermediateOutputMultipleDataProducts" :key="dp.productUri">
-        <data-product-viewer :data-product="dp" :mime-type="fileMimeType" />
+      <div v-for="dp in intermediateOutputMultipleDataProducts" :key="(dp as Record<string, unknown>).productUri as string">
+        <DataProductViewer :data-product="dp as Record<string, unknown>" :mime-type="fileMimeType ?? undefined" />
       </div>
     </template>
     <template v-else-if="!isExecuting && dataProducts.length === 0">
@@ -38,145 +38,135 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import { models, utils } from "django-airavata-api";
 import DataProductViewer from "django-airavata-common-ui/js/components/DataProductViewer.vue";
-import { mapGetters } from "vuex";
+import { useExperimentStore } from "django-airavata-common-ui/js/stores/experiment";
 
 const MAX_DISPLAY_TEXT_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
-export default {
-  name: "DefaultOutputViewer",
-  components: {
-    DataProductViewer,
+type OutputDataObjectType = InstanceType<typeof models.OutputDataObjectType>;
+
+const props = defineProps<{
+  experimentOutput: OutputDataObjectType;
+  dataProducts: unknown[];
+}>();
+
+const experimentStore = useExperimentStore();
+const isExecuting = computed(() => experimentStore.isExecuting);
+
+const intermediateOutputText = ref<string | null>(null);
+const finalOutputText = ref<string | null>(null);
+
+const fileMimeType = computed<string | null>(() => {
+  if ((props.experimentOutput as unknown as Record<string, unknown>).fileMetadataMimeType) {
+    return (props.experimentOutput as unknown as Record<string, unknown>).fileMetadataMimeType as string;
+  } else if (
+    props.experimentOutput.type === models.DataType.STDOUT ||
+    props.experimentOutput.type === models.DataType.STDERR
+  ) {
+    return "text/plain";
+  } else {
+    return null;
+  }
+});
+
+const intermediateOutput = computed(
+  () => (props.experimentOutput as unknown as Record<string, unknown>).intermediateOutput as Record<string, unknown> | undefined,
+);
+
+const intermediateOutputDataProduct = computed(() => {
+  if (
+    intermediateOutput.value &&
+    intermediateOutput.value.dataProducts &&
+    (intermediateOutput.value.dataProducts as unknown[]).length === 1
+  ) {
+    return (intermediateOutput.value.dataProducts as unknown[])[0];
+  }
+  return null;
+});
+
+const intermediateOutputMultipleDataProducts = computed(() => {
+  if (
+    intermediateOutput.value &&
+    intermediateOutput.value.dataProducts &&
+    (intermediateOutput.value.dataProducts as unknown[]).length > 1
+  ) {
+    return intermediateOutput.value.dataProducts as unknown[];
+  }
+  return null;
+});
+
+const intermediateOutputFileSize = computed(() => {
+  if (intermediateOutputDataProduct.value) {
+    return (intermediateOutputDataProduct.value as Record<string, unknown>).filesize as number;
+  }
+  return -1;
+});
+
+const isIntermediateOutputFileDisplayable = computed(() => {
+  const dp = intermediateOutputDataProduct.value as Record<string, unknown> | null;
+  return (
+    dp &&
+    (dp.isText || fileMimeType.value === "text/plain") &&
+    dp.download_url &&
+    (dp.filesize as number) < MAX_DISPLAY_TEXT_FILE_SIZE
+  );
+});
+
+const isFinalOutputFileDisplayable = computed(() => {
+  const dps = props.dataProducts as Record<string, unknown>[];
+  return (
+    dps &&
+    dps.length === 1 &&
+    (dps[0].isText || fileMimeType.value === "text/plain") &&
+    dps[0].download_url &&
+    (dps[0].filesize as number) < MAX_DISPLAY_TEXT_FILE_SIZE
+  );
+});
+
+async function loadIntermediateOutputText() {
+  if (isIntermediateOutputFileDisplayable.value) {
+    const dp = intermediateOutputDataProduct.value as Record<string, unknown>;
+    intermediateOutputText.value = await utils.FetchUtils.get(
+      dp.download_url as string,
+      "",
+      { responseType: "text" },
+    );
+  }
+}
+
+async function loadFinalOutputText() {
+  if (isFinalOutputFileDisplayable.value) {
+    const dps = props.dataProducts as Record<string, unknown>[];
+    finalOutputText.value = await utils.FetchUtils.get(
+      dps[0].download_url as string,
+      "",
+      { responseType: "text" },
+    );
+  }
+}
+
+watch(intermediateOutputFileSize, () => {
+  loadIntermediateOutputText();
+});
+
+watch(
+  () => props.dataProducts,
+  (value, oldValue) => {
+    if ((!oldValue || oldValue.length === 0) && value && value.length > 0) {
+      loadFinalOutputText();
+    }
   },
-  props: {
-    experimentOutput: {
-      type: models.OutputDataObjectType,
-      required: true,
-    },
-    dataProducts: {
-      type: Array,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      intermediateOutputText: null,
-      finalOutputText: null,
-    };
-  },
-  async created() {
-    // Check and load intermediate or final output as text if available and applicable
-    this.loadIntermediateOutputText();
-    this.loadFinalOutputText();
-  },
-  computed: {
-    ...mapGetters("viewExperiment", ["isExecuting"]),
-    fileMimeType() {
-      if (this.experimentOutput.fileMetadataMimeType) {
-        return this.experimentOutput.fileMetadataMimeType;
-      } else if (
-        this.experimentOutput.type === models.DataType.STDOUT ||
-        this.experimentOutput.type === models.DataType.STDERR
-      ) {
-        return "text/plain";
-      } else {
-        return null;
-      }
-    },
-    intermediateOutputProcessStatusState() {
-      if (
-        this.experimentOutput &&
-        this.experimentOutput.intermediateOutput &&
-        this.experimentOutput.intermediateOutput.processStatus
-      ) {
-        return this.experimentOutput.intermediateOutput.processStatus.state;
-      } else {
-        return null;
-      }
-    },
-    intermediateOutputDataProduct() {
-      if (
-        this.experimentOutput &&
-        this.experimentOutput.intermediateOutput &&
-        this.experimentOutput.intermediateOutput.dataProducts &&
-        this.experimentOutput.intermediateOutput.dataProducts.length === 1
-      ) {
-        return this.experimentOutput.intermediateOutput.dataProducts[0];
-      } else {
-        return null;
-      }
-    },
-    intermediateOutputMultipleDataProducts() {
-      if (
-        this.experimentOutput &&
-        this.experimentOutput.intermediateOutput &&
-        this.experimentOutput.intermediateOutput.dataProducts &&
-        this.experimentOutput.intermediateOutput.dataProducts.length > 1
-      ) {
-        return this.experimentOutput.intermediateOutput.dataProducts;
-      } else {
-        return null;
-      }
-    },
-    intermediateOutputFileSize() {
-      if (this.intermediateOutputDataProduct) {
-        return this.intermediateOutputDataProduct.filesize;
-      } else {
-        return -1;
-      }
-    },
-    isIntermediateOutputFileDisplayable() {
-      return (
-        this.intermediateOutputDataProduct &&
-        (this.intermediateOutputDataProduct.isText || this.fileMimeType === "text/plain") &&
-        this.intermediateOutputDataProduct.download_url &&
-        this.intermediateOutputDataProduct.filesize < MAX_DISPLAY_TEXT_FILE_SIZE
-      );
-    },
-    isFinalOutputFileDisplayable() {
-      return (
-        this.dataProducts &&
-        this.dataProducts.length === 1 &&
-        (this.dataProducts[0].isText || this.fileMimeType === "text/plain") &&
-        this.dataProducts[0].download_url &&
-        this.dataProducts[0].filesize < MAX_DISPLAY_TEXT_FILE_SIZE
-      );
-    },
-  },
-  methods: {
-    async loadIntermediateOutputText() {
-      if (this.isIntermediateOutputFileDisplayable) {
-        this.intermediateOutputText = await utils.FetchUtils.get(
-          this.intermediateOutputDataProduct.download_url,
-          "",
-          {
-            responseType: "text",
-          },
-        );
-      }
-    },
-    async loadFinalOutputText() {
-      if (this.isFinalOutputFileDisplayable) {
-        this.finalOutputText = await utils.FetchUtils.get(this.dataProducts[0].download_url, "", {
-          responseType: "text",
-        });
-      }
-    },
-  },
-  watch: {
-    intermediateOutputFileSize() {
-      this.loadIntermediateOutputText();
-    },
-    dataProducts(value, oldValue) {
-      if ((!oldValue || oldValue.length === 0) && value && value.length > 0) {
-        this.loadFinalOutputText();
-      }
-    },
-  },
-};
+);
+
+onMounted(() => {
+  loadIntermediateOutputText();
+  loadFinalOutputText();
+});
 </script>
+
 <style scoped>
 .image-preview {
   display: block;
@@ -188,7 +178,6 @@ pre {
   overflow: auto;
   max-width: 100%;
   margin-bottom: 0;
-  /* background-color: #efefef; */
   background-color: var(--light);
   border-style: solid;
   border-width: 1px;

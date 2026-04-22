@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import vuePlugin from "eslint-plugin-vue";
 import vueParser from "vue-eslint-parser";
+import tsParser from "@typescript-eslint/parser";
 import prettierConfig from "eslint-config-prettier";
 import globals from "globals";
 
@@ -25,6 +26,12 @@ export default [
   {
     languageOptions: {
       parser: vueParser,
+      parserOptions: {
+        // Use TypeScript parser for <script lang="ts"> blocks inside .vue files
+        parser: tsParser,
+        ecmaVersion: 2024,
+        sourceType: "module",
+      },
       ecmaVersion: 2024,
       sourceType: "module",
       globals: {
@@ -45,27 +52,24 @@ export default [
       "vue/no-mutating-props": "error",
       "vue/no-unused-components": "error",
 
-      // Vue Style Guide + Vue 2 deprecation rules demoted to warn.
-      // Track A's <script setup lang="ts"> rewrite will obsolete most of
-      // these (defineEmits/defineProps with TS types, modern slot syntax,
-      // no Options API ordering to police). Track C lands a clean build
-      // + visible warnings; Track A re-enables full strict when the
-      // Options API is gone.
-      "vue/require-explicit-emits": "warn",
-      "vue/require-default-prop": "warn",
-      "vue/require-prop-types": "warn",
-      "vue/order-in-components": "warn",
-      "vue/attributes-order": "warn",
-      "vue/first-attribute-linebreak": "warn",
-      "vue/component-definition-name-casing": "warn",
-      "vue/prop-name-casing": "warn",
-      "vue/no-deprecated-slot-attribute": "warn",
-      "vue/no-deprecated-slot-scope-attribute": "warn",
-      "vue/no-deprecated-delete-set": "warn",
-      "vue/no-deprecated-events-api": "warn",
-      "vue/no-deprecated-v-on-native-modifier": "warn",
+      // Vue Style Guide + Vue 2 deprecation rules — all re-elevated to error
+      // now that Track A's <script setup lang="ts"> rewrite is complete and
+      // all 179 .vue files are clean (M7 final).
+      "vue/require-explicit-emits": "error",
+      "vue/require-default-prop": "error",
+      "vue/require-prop-types": "error",
+      "vue/order-in-components": "error",
+      "vue/attributes-order": "error",
+      "vue/first-attribute-linebreak": "error",
+      "vue/component-definition-name-casing": "error",
+      "vue/prop-name-casing": "error",
+      "vue/no-deprecated-slot-attribute": "error",
+      "vue/no-deprecated-slot-scope-attribute": "error",
+      "vue/no-deprecated-delete-set": "error",
+      "vue/no-deprecated-events-api": "error",
+      "vue/no-deprecated-v-on-native-modifier": "error",
       "vue/multi-word-component-names": "off",
-      "vue/no-v-html": "warn",
+      "vue/no-v-html": "warn",  // Intentional: Wagtail CMS content — acceptable XSS risk
     },
   },
   // Test files: Vitest/Jest globals.

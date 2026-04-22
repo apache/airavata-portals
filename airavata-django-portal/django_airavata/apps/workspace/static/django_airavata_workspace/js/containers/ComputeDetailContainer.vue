@@ -19,9 +19,9 @@
       <div class="row align-items-center mb-3">
         <div class="col">
           <h1 class="h4 mb-0">
-            {{ resource.host_name }}
+            {{ (resource as Record<string, unknown>).host_name }}
             <span
-              v-if="resource.enabled"
+              v-if="(resource as Record<string, unknown>).enabled"
               class="badge bg-success ms-2"
               style="font-size: 0.7rem; vertical-align: middle"
               >Enabled</span
@@ -34,11 +34,11 @@
             >
           </h1>
           <p
-            v-if="resource.resource_description"
+            v-if="(resource as Record<string, unknown>).resource_description"
             class="text-muted mb-0"
             style="font-size: 0.8125rem"
           >
-            {{ resource.resource_description }}
+            {{ (resource as Record<string, unknown>).resource_description }}
           </p>
         </div>
         <div class="col-auto d-flex gap-2">
@@ -85,7 +85,7 @@
             <div class="col-md-6">
               <label class="form-label form-label-sm">Host Name</label>
               <input
-                v-model="resource.host_name"
+                v-model="(resource as Record<string, unknown>).host_name"
                 type="text"
                 class="form-control form-control-sm"
               />
@@ -93,7 +93,7 @@
             <div class="col-md-6">
               <label class="form-label form-label-sm">Description</label>
               <input
-                v-model="resource.resource_description"
+                v-model="(resource as Record<string, unknown>).resource_description"
                 type="text"
                 class="form-control form-control-sm"
                 placeholder="Optional"
@@ -104,19 +104,19 @@
               <div class="form-check form-switch mt-1">
                 <input
                   id="enabledSwitch"
-                  v-model="resource.enabled"
+                  v-model="(resource as Record<string, unknown>).enabled"
                   class="form-check-input"
                   type="checkbox"
                 />
                 <label class="form-check-label" for="enabledSwitch" style="font-size: 0.8125rem">{{
-                  resource.enabled ? "Yes" : "No"
+                  (resource as Record<string, unknown>).enabled ? "Yes" : "No"
                 }}</label>
               </div>
             </div>
             <div class="col-md-2">
               <label class="form-label form-label-sm">CPUs Per Node</label>
               <input
-                v-model.number="resource.cpus_per_node"
+                v-model.number="(resource as Record<string, unknown>).cpus_per_node"
                 type="number"
                 class="form-control form-control-sm"
                 min="1"
@@ -125,7 +125,7 @@
             <div class="col-md-2">
               <label class="form-label form-label-sm">Max Memory (MB)</label>
               <input
-                v-model.number="resource.max_memory_per_node"
+                v-model.number="(resource as Record<string, unknown>).max_memory_per_node"
                 type="number"
                 class="form-control form-control-sm"
                 min="0"
@@ -134,7 +134,7 @@
             <div class="col-md-2">
               <label class="form-label form-label-sm">Default Node Count</label>
               <input
-                v-model.number="resource.default_node_count"
+                v-model.number="(resource as Record<string, unknown>).default_node_count"
                 type="number"
                 class="form-control form-control-sm"
                 min="1"
@@ -143,7 +143,7 @@
             <div class="col-md-2">
               <label class="form-label form-label-sm">Default CPU Count</label>
               <input
-                v-model.number="resource.default_cpu_count"
+                v-model.number="(resource as Record<string, unknown>).default_cpu_count"
                 type="number"
                 class="form-control form-control-sm"
                 min="1"
@@ -152,7 +152,7 @@
             <div class="col-md-2">
               <label class="form-label form-label-sm">Default Walltime (min)</label>
               <input
-                v-model.number="resource.default_walltime"
+                v-model.number="(resource as Record<string, unknown>).default_walltime"
                 type="number"
                 class="form-control form-control-sm"
                 min="1"
@@ -439,300 +439,331 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, reactive, onMounted, onBeforeUnmount } from "vue";
 import { services, utils } from "django-airavata-api";
-import SSHCredentialSelector from "../../../../../admin/static/django_airavata_admin/src/components/credentials/SSHCredentialSelector.vue";
+import SshCredentialSelector from "../../../../../admin/static/django_airavata_admin/src/components/credentials/SSHCredentialSelector.vue";
 
-export default {
-  name: "ComputeDetailContainer",
-  components: {
-    "ssh-credential-selector": SSHCredentialSelector,
-  },
-  props: {
-    computeResourceId: {
-      type: String,
-      default: null,
-    },
-  },
-  data() {
-    return {
-      loading: true,
-      resource: null,
-      sshCredentialToken: null,
-      partitions: [],
-      jobSubmission: {
-        // Backing state for the SSH job submission + its embedded
-        // ResourceJobManager. These fields are persisted via a separate
-        // endpoint from the main compute resource PUT.
-        submissionInterfaceId: null,
-        resourceManagerType: "",
-        jobManagerBinPath: "",
-        sshPort: 22,
-        alternativeSshHostname: "",
-        securityProtocol: "SSH_KEYS",
-        monitorMode: "POLL_JOB_MANAGER",
-      },
-      saving: false,
-      saveError: null,
-      saveSuccess: false,
-      testingConnection: false,
-      connectionStatus: null,
-      connectionSessionId: null,
-      discoveringHPC: false,
-      discoverError: null,
-      sseHandler: null,
-    };
-  },
-  created() {
-    this.loadResource();
-  },
-  beforeUnmount() {
-    if (this.sseHandler) {
-      utils.SSEClient.off("ssh_result", this.sseHandler);
+interface PartitionRow {
+  partition: string;
+  maxRunTime: number | null;
+  nodes: number | null;
+  maxCpusPerNode: number | null;
+  maxMemMbPerNode: number | null;
+  maxGpusPerNode: number | null;
+  gpuTypesStr: string;
+  accountsStr: string;
+}
+
+interface JobSubmission {
+  submissionInterfaceId: string | null;
+  resourceManagerType: string;
+  jobManagerBinPath: string;
+  sshPort: number;
+  alternativeSshHostname: string;
+  securityProtocol: string;
+  monitorMode: string;
+}
+
+interface ConnectionStatus {
+  success: boolean;
+  message: string;
+}
+
+interface SseClient {
+  connect(): void;
+  on(_event: string, _handler: (_e: Record<string, unknown>) => void): void;
+  off(_event: string, _handler: (_e: Record<string, unknown>) => void): void;
+}
+
+const props = withDefaults(defineProps<{
+  computeResourceId?: string | null;
+}>(), {
+  computeResourceId: null,
+});
+
+const loading = ref(true);
+const resource = ref<unknown>(null);
+const sshCredentialToken = ref<string | null>(null);
+const partitions = ref<PartitionRow[]>([]);
+const jobSubmission = reactive<JobSubmission>({
+  submissionInterfaceId: null,
+  resourceManagerType: "",
+  jobManagerBinPath: "",
+  sshPort: 22,
+  alternativeSshHostname: "",
+  securityProtocol: "SSH_KEYS",
+  monitorMode: "POLL_JOB_MANAGER",
+});
+const saving = ref(false);
+const saveError = ref<string | null>(null);
+const saveSuccess = ref(false);
+const testingConnection = ref(false);
+const connectionStatus = ref<ConnectionStatus | null>(null);
+const connectionSessionId = ref<string | null>(null);
+const discoveringHPC = ref(false);
+const discoverError = ref<string | null>(null);
+let sseHandler: ((_e: Record<string, unknown>) => void) | null = null;
+
+function getSseClient(): SseClient | null {
+  const u = utils as unknown as Record<string, unknown>;
+  return (u.SSEClient as SseClient) || null;
+}
+
+async function loadResource(): Promise<void> {
+  if (!props.computeResourceId) {
+    loading.value = false;
+    return;
+  }
+  loading.value = true;
+  try {
+    resource.value = await services.ComputeResourceService.retrieve({
+      lookup: props.computeResourceId,
+    });
+    const res = resource.value as Record<string, unknown>;
+    // Find the first SSH-protocol submission interface, if any.
+    let sshInterfaceId: string | null = null;
+    const jobSubIfaces = res.job_submission_interfaces as Array<Record<string, unknown>> | undefined;
+    if (jobSubIfaces && jobSubIfaces.length > 0) {
+      const sshIface = jobSubIfaces.find(
+        (i) => i.job_submission_protocol === "SSH" || i.job_submission_protocol === "SSH_FORK",
+      );
+      if (sshIface) {
+        sshInterfaceId = sshIface.job_submission_interface_id as string;
+      }
     }
-  },
-  methods: {
-    async loadResource() {
-      if (!this.computeResourceId) {
-        this.loading = false;
-        return;
-      }
-      this.loading = true;
+    // Load the SSH submission detail (separate endpoint).
+    if (sshInterfaceId) {
       try {
-        this.resource = await services.ComputeResourceService.retrieve({
-          lookup: this.computeResourceId,
+        const fetchUtils = utils as unknown as { FetchUtils: { get(_url: string, _params: unknown): Promise<unknown> } };
+        const sshDetail = await fetchUtils.FetchUtils.get("/api/job/submission/ssh", {
+          id: sshInterfaceId,
         });
-        // Find the first SSH-protocol submission interface, if any.
-        let sshInterfaceId = null;
-        if (
-          this.resource.job_submission_interfaces &&
-          this.resource.job_submission_interfaces.length > 0
-        ) {
-          const sshIface = this.resource.job_submission_interfaces.find(
-            (i) => i.job_submission_protocol === "SSH" || i.job_submission_protocol === "SSH_FORK",
-          );
-          if (sshIface) {
-            sshInterfaceId = sshIface.job_submission_interface_id;
-          }
+        if (sshDetail) {
+          const sd = sshDetail as Record<string, unknown>;
+          jobSubmission.submissionInterfaceId = sshInterfaceId;
+          jobSubmission.sshPort = (sd.ssh_port as number) || 22;
+          jobSubmission.alternativeSshHostname = (sd.alternative_ssh_host_name as string) || "";
+          jobSubmission.securityProtocol = (sd.security_protocol as string) || "SSH_KEYS";
+          jobSubmission.monitorMode = (sd.monitor_mode as string) || "POLL_JOB_MANAGER";
+          const rjm = (sd.resource_job_manager as Record<string, unknown>) || {};
+          jobSubmission.resourceManagerType = (rjm.resource_job_manager_type as string) || "";
+          jobSubmission.jobManagerBinPath = (rjm.job_manager_bin_path as string) || "";
         }
-        // Load the SSH submission detail (separate endpoint).
-        if (sshInterfaceId) {
-          try {
-            const sshDetail = await utils.FetchUtils.get("/api/job/submission/ssh", {
-              id: sshInterfaceId,
-            });
-            if (sshDetail) {
-              this.jobSubmission.submissionInterfaceId = sshInterfaceId;
-              this.jobSubmission.sshPort = sshDetail.ssh_port || 22;
-              this.jobSubmission.alternativeSshHostname = sshDetail.alternative_ssh_host_name || "";
-              this.jobSubmission.securityProtocol = sshDetail.security_protocol || "SSH_KEYS";
-              this.jobSubmission.monitorMode = sshDetail.monitor_mode || "POLL_JOB_MANAGER";
-              const rjm = sshDetail.resource_job_manager || {};
-              this.jobSubmission.resourceManagerType = rjm.resource_job_manager_type || "";
-              this.jobSubmission.jobManagerBinPath = rjm.job_manager_bin_path || "";
-            }
-          } catch (e) {
-            // Non-fatal: form stays at defaults.
-            // eslint-disable-next-line no-console
-            console.warn("Failed to load SSH submission details", e);
-          }
-        }
-        // Load existing batch queues as partitions.
-        if (this.resource.batch_queues && this.resource.batch_queues.length > 0) {
-          this.partitions = this.resource.batch_queues.map((q) => ({
-            partition: q.queue_name || "",
-            maxRunTime: q.max_run_time || null,
-            nodes: q.max_nodes || null,
-            maxCpusPerNode: q.cpu_per_node || null,
-            maxMemMbPerNode: q.max_memory || null,
-            maxGpusPerNode: null,
-            gpuTypesStr: "",
-            accountsStr: "",
-          }));
-        }
-      } catch {
-        this.resource = null;
+      } catch (e) {
+        // Non-fatal: form stays at defaults.
+        console.warn("Failed to load SSH submission details", e);
       }
-      this.loading = false;
-    },
-
-    addPartitionRow() {
-      this.partitions.push({
-        partition: "",
-        maxRunTime: null,
-        nodes: null,
-        maxCpusPerNode: null,
-        maxMemMbPerNode: null,
+    }
+    // Load existing batch queues as partitions.
+    const batchQueues = res.batch_queues as Array<Record<string, unknown>> | undefined;
+    if (batchQueues && batchQueues.length > 0) {
+      partitions.value = batchQueues.map((q): PartitionRow => ({
+        partition: (q.queue_name as string) || "",
+        maxRunTime: (q.max_run_time as number) || null,
+        nodes: (q.max_nodes as number) || null,
+        maxCpusPerNode: (q.cpu_per_node as number) || null,
+        maxMemMbPerNode: (q.max_memory as number) || null,
         maxGpusPerNode: null,
         gpuTypesStr: "",
         accountsStr: "",
-      });
+      }));
+    }
+  } catch {
+    resource.value = null;
+  }
+  loading.value = false;
+}
+
+function addPartitionRow(): void {
+  partitions.value.push({
+    partition: "",
+    maxRunTime: null,
+    nodes: null,
+    maxCpusPerNode: null,
+    maxMemMbPerNode: null,
+    maxGpusPerNode: null,
+    gpuTypesStr: "",
+    accountsStr: "",
+  });
+}
+
+function removePartitionRow(idx: number): void {
+  partitions.value.splice(idx, 1);
+}
+
+async function testConnection(): Promise<void> {
+  if (!sshCredentialToken.value) return;
+  testingConnection.value = true;
+  connectionStatus.value = null;
+  connectionSessionId.value = null;
+
+  const handler = (event: Record<string, unknown>): void => {
+    testingConnection.value = false;
+    connectionStatus.value = {
+      success: event.success === true,
+      message:
+        (event.message as string) || (event.success ? "Connection successful." : "Connection failed."),
+    };
+    connectionSessionId.value = (event.session_id as string) || null;
+    getSseClient()?.off("ssh_result", handler);
+    sseHandler = null;
+  };
+  sseHandler = handler;
+  const sseClient = getSseClient();
+  sseClient?.connect();
+  sseClient?.on("ssh_result", handler);
+
+  const res = resource.value as Record<string, unknown>;
+  try {
+    const fetchUtils = utils as unknown as { FetchUtils: { post(_url: string, _data: unknown): Promise<unknown> } };
+    await fetchUtils.FetchUtils.post("/api/ssh/test/", {
+      compute_resource_id: props.computeResourceId,
+      credential_token: sshCredentialToken.value,
+      host: res.host_name,
+      port: jobSubmission.sshPort || 22,
+    });
+  } catch (e) {
+    testingConnection.value = false;
+    const err = e as { message?: string };
+    connectionStatus.value = {
+      success: false,
+      message: err?.message || "Failed to initiate connection test.",
+    };
+    getSseClient()?.off("ssh_result", handler);
+    sseHandler = null;
+  }
+}
+
+async function discoverHPCInfo(): Promise<void> {
+  if (!connectionSessionId.value) return;
+  discoveringHPC.value = true;
+  discoverError.value = null;
+  try {
+    const fetchUtils = utils as unknown as { FetchUtils: { post(_url: string, _data: unknown): Promise<unknown> } };
+    const result = await fetchUtils.FetchUtils.post("/api/ssh/run-info/", {
+      session_id: connectionSessionId.value,
+    });
+    const r = result as { partitions?: Array<Record<string, unknown>> } | null;
+    if (r && r.partitions && r.partitions.length > 0) {
+      partitions.value = r.partitions.map((p): PartitionRow => ({
+        partition: (p.partition as string) || "",
+        maxRunTime: (p.maxRunTime as number) || (p.maxWalltimeHours as number) || null,
+        nodes: (p.nodes as number) || null,
+        maxCpusPerNode: (p.maxCpusPerNode as number) || null,
+        maxMemMbPerNode: (p.maxMemMbPerNode as number) || null,
+        maxGpusPerNode: (p.maxGpusPerNode as number) || null,
+        gpuTypesStr: Array.isArray(p.gpuTypes) ? (p.gpuTypes as string[]).join(", ") : "",
+        accountsStr: Array.isArray(p.accounts) ? (p.accounts as string[]).join(", ") : "",
+      }));
+    } else {
+      discoverError.value = "No partition data returned from HPC discovery.";
+    }
+  } catch (e) {
+    const err = e as { message?: string };
+    discoverError.value = err?.message || "Failed to discover HPC info.";
+  }
+  discoveringHPC.value = false;
+}
+
+async function saveResource(): Promise<void> {
+  saving.value = true;
+  saveError.value = null;
+  saveSuccess.value = false;
+  try {
+    const batch_queues = partitions.value
+      .filter((p) => p.partition && p.partition.trim())
+      .map((p) => ({
+        queue_name: p.partition.trim(),
+        max_run_time: p.maxRunTime || undefined,
+        max_nodes: p.nodes || undefined,
+        cpu_per_node: p.maxCpusPerNode || undefined,
+        max_memory: p.maxMemMbPerNode || undefined,
+      }));
+
+    const payload = {
+      ...(resource.value as Record<string, unknown>),
+      batch_queues,
+    };
+
+    await services.ComputeResourceService.update({
+      lookup: props.computeResourceId,
+      data: payload,
+    });
+
+    if (jobSubmission.resourceManagerType) {
+      await saveSshSubmission();
+    }
+
+    saveSuccess.value = true;
+    // Reload to reflect server state
+    await loadResource();
+  } catch (e) {
+    const err = e as { message?: string };
+    saveError.value = err?.message || "Failed to save compute resource.";
+  }
+  saving.value = false;
+}
+
+async function saveSshSubmission(): Promise<void> {
+  const ssh_job_submission: Record<string, unknown> = {
+    security_protocol: jobSubmission.securityProtocol || "SSH_KEYS",
+    ssh_port: jobSubmission.sshPort || 22,
+    monitor_mode: jobSubmission.monitorMode || "POLL_JOB_MANAGER",
+    alternative_ssh_host_name: jobSubmission.alternativeSshHostname || "",
+    resource_job_manager: {
+      resource_job_manager_type: jobSubmission.resourceManagerType,
+      job_manager_bin_path: jobSubmission.jobManagerBinPath || "",
     },
+  };
 
-    removePartitionRow(idx) {
-      this.partitions.splice(idx, 1);
-    },
+  if (jobSubmission.submissionInterfaceId) {
+    ssh_job_submission.job_submission_interface_id = jobSubmission.submissionInterfaceId;
+    await services.ComputeResourceService.updateSshSubmission({
+      lookup: props.computeResourceId,
+      data: {
+        submission_id: jobSubmission.submissionInterfaceId,
+        ssh_job_submission,
+      },
+    });
+  } else {
+    await services.ComputeResourceService.addSshSubmission({
+      lookup: props.computeResourceId,
+      data: {
+        priority: 0,
+        ssh_job_submission,
+      },
+    });
+  }
+}
 
-    async testConnection() {
-      if (!this.sshCredentialToken) return;
-      this.testingConnection = true;
-      this.connectionStatus = null;
-      this.connectionSessionId = null;
+async function deleteResource(): Promise<void> {
+  const res = resource.value as Record<string, unknown>;
+  if (
+    !window.confirm(
+      `Delete compute resource "${res.host_name}"? This action cannot be undone.`,
+    )
+  ) {
+    return;
+  }
+  try {
+    await services.ComputeResourceService.delete({
+      lookup: props.computeResourceId,
+    });
+    window.location.href = "/resources/compute";
+  } catch (e) {
+    const err = e as { message?: string };
+    window.alert(err?.message || "Failed to delete compute resource.");
+  }
+}
 
-      // Register SSE listener before posting
-      const handler = (event) => {
-        this.testingConnection = false;
-        this.connectionStatus = {
-          success: event.success === true,
-          message:
-            event.message || (event.success ? "Connection successful." : "Connection failed."),
-        };
-        this.connectionSessionId = event.session_id || null;
-        utils.SSEClient.off("ssh_result", handler);
-        this.sseHandler = null;
-      };
-      this.sseHandler = handler;
-      utils.SSEClient.connect();
-      utils.SSEClient.on("ssh_result", handler);
+onMounted(() => {
+  loadResource();
+});
 
-      try {
-        await utils.FetchUtils.post("/api/ssh/test/", {
-          compute_resource_id: this.computeResourceId,
-          credential_token: this.sshCredentialToken,
-          host: this.resource.host_name,
-          port: this.jobSubmission.sshPort || 22,
-        });
-      } catch (e) {
-        this.testingConnection = false;
-        this.connectionStatus = {
-          success: false,
-          message: e?.message || "Failed to initiate connection test.",
-        };
-        utils.SSEClient.off("ssh_result", handler);
-        this.sseHandler = null;
-      }
-    },
-
-    async discoverHPCInfo() {
-      if (!this.connectionSessionId) return;
-      this.discoveringHPC = true;
-      this.discoverError = null;
-      try {
-        const result = await utils.FetchUtils.post("/api/ssh/run-info/", {
-          session_id: this.connectionSessionId,
-        });
-        if (result && result.partitions && result.partitions.length > 0) {
-          this.partitions = result.partitions.map((p) => ({
-            partition: p.partition || "",
-            maxRunTime: p.maxRunTime || p.maxWalltimeHours || null,
-            nodes: p.nodes || null,
-            maxCpusPerNode: p.maxCpusPerNode || null,
-            maxMemMbPerNode: p.maxMemMbPerNode || null,
-            maxGpusPerNode: p.maxGpusPerNode || null,
-            gpuTypesStr: Array.isArray(p.gpuTypes) ? p.gpuTypes.join(", ") : "",
-            accountsStr: Array.isArray(p.accounts) ? p.accounts.join(", ") : "",
-          }));
-        } else {
-          this.discoverError = "No partition data returned from HPC discovery.";
-        }
-      } catch (e) {
-        this.discoverError = e?.message || "Failed to discover HPC info.";
-      }
-      this.discoveringHPC = false;
-    },
-
-    async saveResource() {
-      this.saving = true;
-      this.saveError = null;
-      this.saveSuccess = false;
-      try {
-        // Map partitions back to batch_queues. max_run_time is what the
-        // server uses as the walltime cap for SLURM submissions.
-        const batch_queues = this.partitions
-          .filter((p) => p.partition && p.partition.trim())
-          .map((p) => ({
-            queue_name: p.partition.trim(),
-            max_run_time: p.maxRunTime || undefined,
-            max_nodes: p.nodes || undefined,
-            cpu_per_node: p.maxCpusPerNode || undefined,
-            max_memory: p.maxMemMbPerNode || undefined,
-          }));
-
-        const payload = {
-          ...this.resource,
-          batch_queues,
-        };
-
-        await services.ComputeResourceService.update({
-          lookup: this.computeResourceId,
-          data: payload,
-        });
-
-        // Save the SSH submission separately, if the user has selected
-        // a resource manager type. The SSH submission is NOT part of the
-        // ComputeResourceDescription proto, so it has its own endpoint.
-        if (this.jobSubmission.resourceManagerType) {
-          await this.saveSshSubmission();
-        }
-
-        this.saveSuccess = true;
-        // Reload to reflect server state
-        await this.loadResource();
-      } catch (e) {
-        this.saveError = e?.message || "Failed to save compute resource.";
-      }
-      this.saving = false;
-    },
-
-    async saveSshSubmission() {
-      const ssh_job_submission = {
-        security_protocol: this.jobSubmission.securityProtocol || "SSH_KEYS",
-        ssh_port: this.jobSubmission.sshPort || 22,
-        monitor_mode: this.jobSubmission.monitorMode || "POLL_JOB_MANAGER",
-        alternative_ssh_host_name: this.jobSubmission.alternativeSshHostname || "",
-        resource_job_manager: {
-          resource_job_manager_type: this.jobSubmission.resourceManagerType,
-          job_manager_bin_path: this.jobSubmission.jobManagerBinPath || "",
-        },
-      };
-
-      if (this.jobSubmission.submissionInterfaceId) {
-        ssh_job_submission.job_submission_interface_id = this.jobSubmission.submissionInterfaceId;
-        await services.ComputeResourceService.updateSshSubmission({
-          lookup: this.computeResourceId,
-          data: {
-            submission_id: this.jobSubmission.submissionInterfaceId,
-            ssh_job_submission,
-          },
-        });
-      } else {
-        await services.ComputeResourceService.addSshSubmission({
-          lookup: this.computeResourceId,
-          data: {
-            priority: 0,
-            ssh_job_submission,
-          },
-        });
-      }
-    },
-
-    async deleteResource() {
-      if (
-        !window.confirm(
-          `Delete compute resource "${this.resource.host_name}"? This action cannot be undone.`,
-        )
-      ) {
-        return;
-      }
-      try {
-        await services.ComputeResourceService.delete({
-          lookup: this.computeResourceId,
-        });
-        window.location.href = "/resources/compute";
-      } catch (e) {
-        window.alert(e?.message || "Failed to delete compute resource.");
-      }
-    },
-  },
-};
+onBeforeUnmount(() => {
+  if (sseHandler) {
+    getSseClient()?.off("ssh_result", sseHandler);
+  }
+});
 </script>

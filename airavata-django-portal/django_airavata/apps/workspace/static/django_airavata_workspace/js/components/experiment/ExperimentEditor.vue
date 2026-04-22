@@ -1,6 +1,6 @@
 <template>
   <div>
-    <unsaved-changes-guard :dirty="dirty" />
+    <UnsavedChangesGuard :dirty="dirty" />
     <div class="row">
       <div class="col-auto me-auto">
         <h1 class="h4 mb-4">
@@ -12,7 +12,7 @@
         </h1>
       </div>
       <div class="col-auto">
-        <share-button
+        <ShareButton
           ref="shareButton"
           :entity-id="localExperiment.experiment_id"
           :entity-label="'Experiment'"
@@ -41,7 +41,7 @@
               :state="getValidationState('experiment_name')"
             />
           </form-group>
-          <experiment-description-editor v-model="localExperiment.description" />
+          <ExperimentDescriptionEditor v-model="localExperiment.description" />
         </div>
       </div>
       <div class="row">
@@ -84,10 +84,10 @@
       </div>
       <div class="row">
         <div class="col">
-          <workspace-notices-management-container
-            v-if="appInterface && appInterface.application_description"
+          <WorkspaceNoticesManagementContainer
+            v-if="appInterface && (appInterface as Record<string, unknown>).application_description"
             class="mt-2"
-            :data="[{ notificationMessage: appInterface.application_description }]"
+            :data="[{ notificationMessage: (appInterface as Record<string, unknown>).application_description as string | undefined }]"
           />
         </div>
       </div>
@@ -101,9 +101,8 @@
           <div class="card border-default">
             <div class="card-body">
               <h2 class="h6 mb-3">Application Inputs</h2>
-
               <transition-group name="fade">
-                <input-editor-container
+                <InputEditorContainer
                   v-for="experimentInput in localExperiment.experiment_inputs"
                   v-show="experimentInput.show"
                   :key="experimentInput.name"
@@ -121,15 +120,15 @@
           </div>
         </div>
       </div>
-      <group-resource-profile-selector
+      <GroupResourceProfileSelector
         v-model="localExperiment.user_configuration_data.group_resource_profile_id"
         @invalid="invalidGroupResourceProfileSelector = true"
         @valid="invalidGroupResourceProfileSelector = false"
       >
-      </group-resource-profile-selector>
+      </GroupResourceProfileSelector>
       <div class="row">
         <div class="col">
-          <computational-resource-scheduling-editor
+          <ComputationalResourceSchedulingEditor
             v-if="localExperiment.user_configuration_data.group_resource_profile_id"
             v-model="localExperiment.user_configuration_data.computational_resource_scheduling"
             :app-module-id="appModule.app_module_id"
@@ -139,7 +138,7 @@
             @invalid="invalidComputationalResourceSchedulingEditor = true"
             @valid="invalidComputationalResourceSchedulingEditor = false"
           >
-          </computational-resource-scheduling-editor>
+          </ComputationalResourceSchedulingEditor>
         </div>
       </div>
       <div class="row">
@@ -174,226 +173,243 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
 import ComputationalResourceSchedulingEditor from "./ComputationalResourceSchedulingEditor.vue";
 import ExperimentDescriptionEditor from "./ExperimentDescriptionEditor.vue";
 import GroupResourceProfileSelector from "./GroupResourceProfileSelector.vue";
 import InputEditorContainer from "./input-editors/InputEditorContainer.vue";
 import { models, services } from "django-airavata-api";
 import { components, utils } from "django-airavata-common-ui";
-import WorkspaceNoticesManagementContainer from "../notices/WorkspaceNoticesManagementContainer";
+import WorkspaceNoticesManagementContainer from "../notices/WorkspaceNoticesManagementContainer.vue";
 
-export default {
-  name: "EditExperiment",
-  components: {
-    WorkspaceNoticesManagementContainer,
-    ComputationalResourceSchedulingEditor,
-    ExperimentDescriptionEditor,
-    GroupResourceProfileSelector,
-    InputEditorContainer,
-    "share-button": components.ShareButton,
-    "unsaved-changes-guard": components.UnsavedChangesGuard,
+const ShareButton = components.ShareButton;
+const UnsavedChangesGuard = components.UnsavedChangesGuard;
+
+type Experiment = InstanceType<typeof models.Experiment>;
+type ApplicationModule = InstanceType<typeof models.ApplicationModule>;
+type ApplicationInterfaceDefinition = InstanceType<typeof models.ApplicationInterfaceDefinition>;
+
+interface ProjectOption {
+  value: string;
+  text: string;
+}
+
+const props = defineProps<{
+  experiment: Experiment;
+  appModule: ApplicationModule;
+  appInterface: ApplicationInterfaceDefinition;
+}>();
+
+const emit = defineEmits<{
+  saved: [experiment: Experiment];
+  savedAndLaunched: [experiment: Experiment];
+}>();
+
+const shareButton = ref<{ mergeAndSave: (_id: string) => Promise<unknown> } | null>(null);
+
+const projects = ref<unknown[]>([]);
+const localExperiment = ref<Experiment>(props.experiment.clone() as Experiment);
+const invalidInputs = ref<string[]>([]);
+const invalidComputationalResourceSchedulingEditor = ref(false);
+const invalidGroupResourceProfileSelector = ref(false);
+const edited = ref(false);
+const saved_ = ref(false);
+const uploadingInputs = ref<string[]>([]);
+
+const sharedProjectOptions = computed<ProjectOption[]>(() =>
+  (projects.value as Array<Record<string, unknown>>)
+    .filter((p) => !p.is_owner)
+    .map((project) => ({
+      value: project.project_id as string,
+      text: project.name + (!project.is_owner ? " (owned by " + project.owner + ")" : ""),
+    })),
+);
+
+const myProjectOptions = computed<ProjectOption[]>(() =>
+  (projects.value as Array<Record<string, unknown>>)
+    .filter((p) => p.is_owner)
+    .map((project) => ({
+      value: project.project_id as string,
+      text: project.name as string,
+    })),
+);
+
+const valid = computed(() => {
+  const validation = localExperiment.value.validate();
+  return (
+    Object.keys(validation).length === 0 &&
+    invalidInputs.value.length === 0 &&
+    !invalidComputationalResourceSchedulingEditor.value &&
+    !invalidGroupResourceProfileSelector.value
+  );
+});
+
+const isSaveDisabled = computed(() => !valid.value || hasUploadingInputs.value);
+
+const dirty = computed(() => edited.value && !saved_.value);
+
+const hasUploadingInputs = computed(() => uploadingInputs.value.length > 0);
+
+watch(
+  () => props.experiment,
+  (newValue) => {
+    localExperiment.value = newValue.clone() as Experiment;
   },
-  props: {
-    experiment: {
-      type: models.Experiment,
-      required: true,
-    },
-    appModule: {
-      type: models.ApplicationModule,
-      required: true,
-    },
-    appInterface: {
-      type: models.ApplicationInterfaceDefinition,
-      required: true,
-    },
+);
+
+watch(
+  localExperiment,
+  () => {
+    edited.value = true;
   },
-  data() {
-    return {
-      projects: [],
-      localExperiment: this.experiment.clone(),
-      invalidInputs: [],
-      invalidComputationalResourceSchedulingEditor: false,
-      invalidGroupResourceProfileSelector: false,
-      edited: false,
-      saved: false,
-      uploadingInputs: [],
-    };
+  { deep: true },
+);
+
+watch(
+  () => (props.experiment as unknown as Record<string, unknown>).experiment_inputs,
+  () => {
+    experimentInputsChanged();
   },
-  computed: {
-    sharedProjectOptions: function () {
-      return this.projects
-        .filter((p) => !p.is_owner)
-        .map((project) => ({
-          value: project.project_id,
-          text: project.name + (!project.is_owner ? " (owned by " + project.owner + ")" : ""),
-        }));
-    },
-    myProjectOptions() {
-      return this.projects
-        .filter((p) => p.is_owner)
-        .map((project) => ({
-          value: project.project_id,
-          text: project.name,
-        }));
-    },
-    valid: function () {
-      const validation = this.localExperiment.validate();
-      return (
-        Object.keys(validation).length === 0 &&
-        this.invalidInputs.length === 0 &&
-        !this.invalidComputationalResourceSchedulingEditor &&
-        !this.invalidGroupResourceProfileSelector
-      );
-    },
-    isSaveDisabled: function () {
-      return !this.valid || this.hasUploadingInputs;
-    },
-    dirty() {
-      return this.edited && !this.saved;
-    },
-    hasUploadingInputs() {
-      return this.uploadingInputs.length > 0;
-    },
-  },
-  mounted: function () {
-    services.ProjectService.listAll().then((projects) => {
-      this.projects = projects;
-      if (!this.localExperiment.project_id) {
-        services.WorkspacePreferencesService.get().then((workspacePreferences) => {
-          if (!this.localExperiment.project_id) {
-            this.localExperiment.project_id = workspacePreferences.most_recent_project_id;
-          }
-        });
-      }
-    });
-  },
-  methods: {
-    saveExperiment: function () {
-      return this.saveOrUpdateExperiment().then((experiment) => {
-        this.localExperiment = experiment;
-        this.$emit("saved", experiment);
-      });
-    },
-    saveAndLaunchExperiment: function () {
-      return this.saveOrUpdateExperiment().then((experiment) => {
-        this.localExperiment = experiment;
-        return services.ExperimentService.launch({
-          lookup: experiment.experiment_id,
-        }).then(() => {
-          this.$emit("savedAndLaunched", experiment);
-        });
-      });
-    },
-    saveOrUpdateExperiment: function () {
-      if (this.localExperiment.experiment_id) {
-        return services.ExperimentService.update({
-          lookup: this.localExperiment.experiment_id,
-          data: this.localExperiment,
-        }).then((experiment) => {
-          this.saved = true;
-          return experiment;
-        });
-      } else {
-        return services.ExperimentService.create({
-          data: this.localExperiment,
-        }).then((experiment) => {
-          // Can't save sharing settings for a new experiment until it has been
-          // created
-          this.saved = true;
-          return this.$refs.shareButton
-            .mergeAndSave(experiment.experiment_id)
-            .then(() => experiment);
-        });
-      }
-    },
-    getValidationFeedback: function (properties) {
-      return utils.getProperty(this.localExperiment.validate(), properties);
-    },
-    getValidationState: function (properties) {
-      return this.getValidationFeedback(properties) ? false : null;
-    },
-    recordInvalidInputEditorValue: function (experimentInputName) {
-      if (!this.invalidInputs.includes(experimentInputName)) {
-        this.invalidInputs.push(experimentInputName);
-      }
-    },
-    recordValidInputEditorValue: function (experimentInputName) {
-      if (this.invalidInputs.includes(experimentInputName)) {
-        const index = this.invalidInputs.indexOf(experimentInputName);
-        this.invalidInputs.splice(index, 1);
-      }
-    },
-    uploadStart(experimentInputName) {
-      if (!this.uploadingInputs.includes(experimentInputName)) {
-        this.uploadingInputs.push(experimentInputName);
-      }
-    },
-    uploadEnd(experimentInputName) {
-      if (this.uploadingInputs.includes(experimentInputName)) {
-        const index = this.uploadingInputs.indexOf(experimentInputName);
-        this.uploadingInputs.splice(index, 1);
-      }
-    },
-    inputValueChanged: function () {
-      this.localExperiment.evaluateInputDependencies();
-    },
-    // Inline debounce wrapper (replaces lodash.debounce).
-    calculateQueueSettings: (() => {
-      let t;
-      return function () {
-        clearTimeout(t);
-        const ctx = this;
-        t = setTimeout(async () => {
-          const queueSettingsUpdate = await services.QueueSettingsCalculatorService.calculate(
-            {
-              lookup: ctx.appInterface.queue_settings_calculator_id,
-              data: ctx.localExperiment,
-            },
-            { showSpinner: false },
-          );
-          // Override values in computationalResourceScheduling with the values
-          // returned from the queue settings calculator
-          Object.assign(
-            ctx.localExperiment.user_configuration_data.computationalResourceScheduling,
-            queueSettingsUpdate,
-          );
-        }, 500);
+  { deep: true },
+);
+
+watch(
+  () => {
+    const ucd = (props.experiment as unknown as {
+      user_configuration_data?: {
+        computational_resource_scheduling?: { resource_host_id?: string };
       };
-    })(),
-    experimentInputsChanged() {
-      if (this.appInterface.queue_settings_calculator_id) {
-        this.calculateQueueSettings();
-      }
-    },
-    resourceHostIdChanged() {
-      if (this.appInterface.queue_settings_calculator_id) {
-        this.calculateQueueSettings();
-      }
-    },
+    }).user_configuration_data;
+    return ucd?.computational_resource_scheduling?.resource_host_id;
   },
-  watch: {
-    experiment: function (newValue) {
-      this.localExperiment = newValue.clone();
-    },
-    localExperiment: {
-      handler() {
-        this.edited = true;
-      },
-      deep: true,
-    },
-    "experiment.experiment_inputs": {
-      handler() {
-        this.experimentInputsChanged();
-      },
-      deep: true,
-    },
-    "experiment.user_configuration_data.computational_resource_scheduling.resource_host_id":
-      function () {
-        this.resourceHostIdChanged();
-      },
+  () => {
+    resourceHostIdChanged();
   },
-};
+);
+
+onMounted(() => {
+  services.ProjectService.listAll().then((projs: unknown) => {
+    projects.value = projs as unknown[];
+    if (!localExperiment.value.project_id) {
+      services.WorkspacePreferencesService.get().then((workspacePreferences: unknown) => {
+        const prefs = workspacePreferences as Record<string, unknown>;
+        if (!localExperiment.value.project_id) {
+          localExperiment.value.project_id = prefs.most_recent_project_id as string;
+        }
+      });
+    }
+  });
+});
+
+function saveExperiment() {
+  return saveOrUpdateExperiment().then((experiment: Experiment) => {
+    localExperiment.value = experiment;
+    emit("saved", experiment);
+  });
+}
+
+function saveAndLaunchExperiment() {
+  return saveOrUpdateExperiment().then((experiment: Experiment) => {
+    localExperiment.value = experiment;
+    return services.ExperimentService.launch({
+      lookup: experiment.experiment_id,
+    }).then(() => {
+      emit("savedAndLaunched", experiment);
+    });
+  });
+}
+
+function saveOrUpdateExperiment(): Promise<Experiment> {
+  if (localExperiment.value.experiment_id) {
+    return services.ExperimentService.update({
+      lookup: localExperiment.value.experiment_id,
+      data: localExperiment.value,
+    }).then((experiment: unknown) => {
+      saved_.value = true;
+      return experiment as Experiment;
+    });
+  } else {
+    return services.ExperimentService.create({
+      data: localExperiment.value,
+    }).then((experiment: unknown) => {
+      const exp = experiment as Experiment;
+      saved_.value = true;
+      return shareButton.value!
+        .mergeAndSave(exp.experiment_id)
+        .then(() => exp);
+    });
+  }
+}
+
+function getValidationFeedback(properties: string): unknown {
+  return utils.getProperty(localExperiment.value.validate(), properties);
+}
+
+function getValidationState(properties: string): boolean | null {
+  return getValidationFeedback(properties) ? false : null;
+}
+
+function recordInvalidInputEditorValue(experimentInputName: string) {
+  if (!invalidInputs.value.includes(experimentInputName)) {
+    invalidInputs.value.push(experimentInputName);
+  }
+}
+
+function recordValidInputEditorValue(experimentInputName: string) {
+  if (invalidInputs.value.includes(experimentInputName)) {
+    const index = invalidInputs.value.indexOf(experimentInputName);
+    invalidInputs.value.splice(index, 1);
+  }
+}
+
+function uploadStart(experimentInputName: string) {
+  if (!uploadingInputs.value.includes(experimentInputName)) {
+    uploadingInputs.value.push(experimentInputName);
+  }
+}
+
+function uploadEnd(experimentInputName: string) {
+  if (uploadingInputs.value.includes(experimentInputName)) {
+    const index = uploadingInputs.value.indexOf(experimentInputName);
+    uploadingInputs.value.splice(index, 1);
+  }
+}
+
+function inputValueChanged() {
+  (localExperiment.value as unknown as { evaluateInputDependencies: () => void }).evaluateInputDependencies();
+}
+
+// Inline debounce wrapper for calculateQueueSettings
+let calcTimer: ReturnType<typeof setTimeout> | undefined;
+function calculateQueueSettings() {
+  clearTimeout(calcTimer);
+  calcTimer = setTimeout(async () => {
+    const queueSettingsUpdate = await services.QueueSettingsCalculatorService.calculate(
+      {
+        lookup: (props.appInterface as unknown as Record<string, unknown>).queue_settings_calculator_id,
+        data: localExperiment.value,
+      },
+      { showSpinner: false },
+    );
+    Object.assign(
+      (localExperiment.value as unknown as Record<string, unknown> & { user_configuration_data: Record<string, unknown> }).user_configuration_data.computationalResourceScheduling as object,
+      queueSettingsUpdate,
+    );
+  }, 500);
+}
+
+function experimentInputsChanged() {
+  if ((props.appInterface as unknown as Record<string, unknown>).queue_settings_calculator_id) {
+    calculateQueueSettings();
+  }
+}
+
+function resourceHostIdChanged() {
+  if ((props.appInterface as unknown as Record<string, unknown>).queue_settings_calculator_id) {
+    calculateQueueSettings();
+  }
+}
 </script>
 
 <style>

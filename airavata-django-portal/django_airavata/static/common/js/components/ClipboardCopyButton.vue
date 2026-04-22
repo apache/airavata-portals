@@ -15,43 +15,38 @@
   </button>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import ClipboardJS from "clipboard";
 
-export default {
-  name: "ClipboardCopyButton",
-  props: {
-    text: {
-      type: String,
-    },
-    variant: {
-      type: String,
-      default: "secondary",
-    },
-  },
-  data() {
-    return {
-      show: false,
-    };
-  },
-  computed: {
-    disabled() {
-      return !this.text;
-    },
-  },
-  mounted() {
-    let clipboard = new ClipboardJS(this.$refs.copyButton);
-    clipboard.on("success", this.onCopySuccess);
-  },
-  beforeUnmount() {
-    let clipboard = new ClipboardJS(this.$refs.copyButton);
-    clipboard.destroy();
-  },
-  methods: {
-    onCopySuccess() {
-      this.show = true;
-      setTimeout(() => (this.show = false), 2000);
-    },
-  },
-};
+const props = withDefaults(defineProps<{
+  text?: string;
+  variant?: string;
+}>(), {
+  text: undefined,
+  variant: "secondary",
+});
+
+const copyButton = ref<HTMLElement | null>(null);
+const show = ref(false);
+let clipboard: ClipboardJS | null = null;
+
+const disabled = computed(() => !props.text);
+
+onMounted(() => {
+  if (copyButton.value) {
+    clipboard = new ClipboardJS(copyButton.value);
+    clipboard.on("success", onCopySuccess);
+  }
+});
+
+onBeforeUnmount(() => {
+  clipboard?.destroy();
+  clipboard = null;
+});
+
+function onCopySuccess(): void {
+  show.value = true;
+  setTimeout(() => (show.value = false), 2000);
+}
 </script>

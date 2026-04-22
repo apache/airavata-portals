@@ -1,0 +1,7 @@
+{
+  "extends": "@airavata/tooling/tsconfig.base.json",
+  "include": [
+    "static/django_airavata_admin/src/**/*.ts",
+    "static/django_airavata_admin/src/**/*.vue"
+  ]
+}

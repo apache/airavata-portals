@@ -22,19 +22,18 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "UserManagementContainer",
-  computed: {
-    menuText() {
-      if (this.$route.name === "identity-service-users") {
-        return "Identity Service";
-      } else if (this.$route.name === "unverified-email-users") {
-        return "Unverified Emails";
-      } else {
-        return "Menu";
-      }
-    },
-  },
-};
+<script setup lang="ts">
+import { computed } from "vue";
+import { useRoute } from "vue-router";
+
+const route = useRoute();
+
+const menuText = computed(() => {
+  if (route.name === "identity-service-users") {
+    return "Identity Service";
+  } else if (route.name === "unverified-email-users") {
+    return "Unverified Emails";
+  }
+  return "Menu";
+});
 </script>

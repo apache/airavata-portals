@@ -9,24 +9,24 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "ExternalIdpUserInfoPanel",
-  props: ["externalIDPUserInfo"],
-  computed: {
-    userinfo() {
-      return this.external_idp_user_info.userinfo ? this.external_idp_user_info.userinfo : {};
-    },
-    items() {
-      return Object.keys(this.userinfo).map((claim) => {
-        return {
-          claim: claim,
-          value: this.external_idp_user_info.userinfo[claim],
-        };
-      });
-    },
-  },
-};
+<script setup lang="ts">
+import { computed } from "vue";
+
+const props = defineProps<{
+  externalIDPUserInfo: {
+    idp_alias?: string;
+    userinfo?: Record<string, unknown>;
+  };
+}>();
+
+const userinfo = computed(() => props.externalIDPUserInfo.userinfo ?? {});
+
+const items = computed(() =>
+  Object.keys(userinfo.value).map((claim) => ({
+    claim,
+    value: userinfo.value[claim],
+  }))
+);
 </script>
 
 <style></style>

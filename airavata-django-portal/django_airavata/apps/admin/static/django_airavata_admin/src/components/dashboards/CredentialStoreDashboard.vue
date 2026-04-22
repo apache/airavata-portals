@@ -86,46 +86,53 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
 import { services, session } from "django-airavata-api";
 import { components } from "django-airavata-common-ui";
 import NewSSHCredentialModal from "../credentials/NewSSHCredentialModal.vue";
 
-export default {
-  components: {
-    "delete-link": components.DeleteLink,
-    "human-date": components.HumanDate,
-    "clipboard-copy-link": components.ClipboardCopyLink,
-    "new-ssh-credential-modal": NewSSHCredentialModal,
-    "share-button": components.ShareButton,
-  },
-  data() {
-    return {
-      sshKeys: [],
-      currentUsername: session.Session.username,
-    };
-  },
-  created() {
-    this.fetchSSHKeys();
-  },
-  methods: {
-    isAdminUser(username) {
-      return username === "default-admin" || username === "admin";
-    },
-    fetchSSHKeys() {
-      services.CredentialSummaryService.allSSHCredentials().then((creds) => (this.sshKeys = creds));
-    },
-    showNewSSHCredentialModal() {
-      this.$refs.newSSHCredentialModal.show();
-    },
-    createNewSSHCredential(data) {
-      services.CredentialSummaryService.createSSH({ data }).then(() => this.fetchSSHKeys());
-    },
-    deleteSSHCredential(cred) {
-      services.CredentialSummaryService.delete({ lookup: cred.token }).then(() =>
-        this.fetchSSHKeys(),
-      );
-    },
-  },
-};
+const DeleteLink = components.DeleteLink;
+const HumanDate = components.HumanDate;
+const ClipboardCopyLink = components.ClipboardCopyLink;
+const ShareButton = components.ShareButton;
+
+interface CredentialSummary {
+  token: string;
+  username: string;
+  description?: string;
+  public_key?: string;
+  persisted_time?: string;
+  user_has_write_access?: boolean;
+}
+
+const newSSHCredentialModal = ref<InstanceType<typeof NewSSHCredentialModal> | null>(null);
+const sshKeys = ref<CredentialSummary[]>([]);
+const currentUsername = session.Session.username as string;
+
+onMounted(() => {
+  fetchSSHKeys();
+});
+
+function isAdminUser(username: string) {
+  return username === "default-admin" || username === "admin";
+}
+
+function fetchSSHKeys() {
+  services.CredentialSummaryService.allSSHCredentials().then(
+    (creds: CredentialSummary[]) => (sshKeys.value = creds),
+  );
+}
+
+function showNewSSHCredentialModal() {
+  newSSHCredentialModal.value?.show();
+}
+
+function createNewSSHCredential(data: { description: string }) {
+  services.CredentialSummaryService.createSSH({ data }).then(() => fetchSSHKeys());
+}
+
+function deleteSSHCredential(cred: CredentialSummary) {
+  services.CredentialSummaryService.delete({ lookup: cred.token }).then(() => fetchSSHKeys());
+}
 </script>

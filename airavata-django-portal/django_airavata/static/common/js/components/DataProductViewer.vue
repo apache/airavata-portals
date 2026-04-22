@@ -7,50 +7,47 @@
   <span v-else>{{ filename }}</span>
 </template>
 
-<script>
-import { models } from "django-airavata-api";
-export default {
-  name: "DataProductViewer",
-  props: {
-    dataProduct: {
-      type: models.DataProduct,
-      required: true,
-    },
-    inputFile: {
-      type: Boolean,
-      default: false,
-    },
-    mimeType: {
-      type: String,
-    },
-    openInNewWindow: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  computed: {
-    filename() {
-      if (this.inputFile) {
-        // productName captures the user provided name of the file, which may
-        // not match the name of the file on the storage system (for example,
-        // because of file name collision)
-        return this.dataProduct.productName;
-      } else {
-        return this.dataProduct.filename;
-      }
-    },
-    downloadURL() {
-      if (!this.dataProduct.download_url) {
-        return null;
-      } else if (this.mime_type) {
-        return `${this.dataProduct.download_url}&mime-type=${encodeURIComponent(this.mime_type)}`;
-      } else {
-        return this.dataProduct.download_url;
-      }
-    },
-    linkTarget() {
-      return this.openInNewWindow ? "_blank" : "_self";
-    },
-  },
-};
+<script setup lang="ts">
+import { computed } from "vue";
+
+interface DataProduct {
+  productName?: string;
+  filename?: string;
+  download_url?: string;
+  [key: string]: unknown;
+}
+
+const props = withDefaults(defineProps<{
+  dataProduct: DataProduct;
+  inputFile?: boolean;
+  mimeType?: string;
+  openInNewWindow?: boolean;
+}>(), {
+  inputFile: false,
+  mimeType: undefined,
+  openInNewWindow: false,
+});
+
+const filename = computed(() => {
+  if (props.inputFile) {
+    // productName captures the user provided name of the file, which may
+    // not match the name of the file on the storage system (for example,
+    // because of file name collision)
+    return props.dataProduct.productName;
+  } else {
+    return props.dataProduct.filename;
+  }
+});
+
+const downloadURL = computed(() => {
+  if (!props.dataProduct.download_url) {
+    return null;
+  } else if (props.mimeType) {
+    return `${props.dataProduct.download_url}&mime-type=${encodeURIComponent(props.mimeType)}`;
+  } else {
+    return props.dataProduct.download_url;
+  }
+});
+
+const linkTarget = computed(() => (props.openInNewWindow ? "_blank" : "_self"));
 </script>

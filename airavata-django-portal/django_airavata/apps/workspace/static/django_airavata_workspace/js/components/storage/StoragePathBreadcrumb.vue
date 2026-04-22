@@ -14,39 +14,41 @@
   </nav>
 </template>
 
-<script>
-export default {
-  name: "StoragePathBreadcrumb",
-  props: {
-    parts: {
-      type: Array,
-      required: true,
-    },
-    rootName: {
-      type: String,
-      default: "Home",
-    },
-  },
-  computed: {
-    items() {
-      const subparts = [];
-      const partsItems = this.parts.map((part, index) => {
-        subparts.push(part);
-        return {
-          text: part,
-          path: subparts.join("/"),
-          active: index === this.parts.length - 1,
-        };
-      });
-      return [{ text: this.rootName, path: "", active: this.parts.length === 0 }].concat(
-        partsItems,
-      );
-    },
-  },
-  methods: {
-    directorySelected(path) {
-      this.$emit("directory-selected", path);
-    },
-  },
-};
+<script setup lang="ts">
+import { computed } from "vue";
+
+interface BreadcrumbItem {
+  text: string;
+  path: string;
+  active: boolean;
+}
+
+const props = withDefaults(
+  defineProps<{
+    parts: string[];
+    rootName?: string;
+  }>(),
+  { rootName: "Home" },
+);
+
+const emit = defineEmits<{
+  "directory-selected": [path: string];
+}>();
+
+const items = computed<BreadcrumbItem[]>(() => {
+  const subparts: string[] = [];
+  const partsItems = props.parts.map((part, index) => {
+    subparts.push(part);
+    return {
+      text: part,
+      path: subparts.join("/"),
+      active: index === props.parts.length - 1,
+    };
+  });
+  return [{ text: props.rootName, path: "", active: props.parts.length === 0 }].concat(partsItems);
+});
+
+function directorySelected(path: string) {
+  emit("directory-selected", path);
+}
 </script>

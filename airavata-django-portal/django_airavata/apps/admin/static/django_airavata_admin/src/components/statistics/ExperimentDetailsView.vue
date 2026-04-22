@@ -218,7 +218,7 @@
             <div>{{ experimentDataDir }}</div>
             <div v-if="archived" class="alert alert-warning mt-2">
               This directory was archived in
-              <b>{{ experimentArchive.archive_name }}</b> on {{ experimentArchive.created_date }}.
+              <b>{{ experimentArchive?.archive_name }}</b> on {{ experimentArchive?.created_date }}.
             </div>
           </td>
         </tr>
@@ -331,113 +331,121 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
 import { models, services } from "django-airavata-api";
-import { components } from "django-airavata-common-ui";
-
 import { relativeTime } from "django-airavata-common-ui/js/utils/dates.js";
 
-export default {
-  name: "ExperimentDetailsView",
-  components: {
-    "clipboard-copy-link": components.ClipboardCopyLink,
-    "data-product-viewer": components.DataProductViewer,
-    "human-date": components.HumanDate,
-  },
-  props: {
-    experiment: {
-      type: models.Experiment,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      fullExperiment: null,
-      experimentArchive: null,
-    };
-  },
-  computed: {
-    inputDataProducts() {
-      const result = {};
-      if (this.fullExperiment && this.fullExperiment.inputDataProducts) {
-        this.fullExperiment.experiment.experimentInputs.forEach((input) => {
-          result[input.name] = this.getDataProducts(input, this.fullExperiment.inputDataProducts);
-        });
-      }
-      return result;
-    },
-    outputDataProducts() {
-      const result = {};
-      if (this.fullExperiment && this.fullExperiment.outputDataProducts) {
-        this.fullExperiment.experiment.experimentOutputs.forEach((output) => {
-          result[output.name] = this.getDataProducts(
-            output,
-            this.fullExperiment.outputDataProducts,
-          );
-        });
-      }
-      return result;
-    },
-    creationTime: function () {
-      return relativeTime(this.fullExperiment.experiment.creation_time);
-    },
-    lastModifiedTime: function () {
-      return relativeTime(this.fullExperiment.experimentStatus.time_of_state_change);
-    },
-    jobCreationTimes: function () {
-      return this.fullExperiment.jobDetails.map((jobDetail) =>
-        relativeTime(jobDetail.creation_time),
-      );
-    },
-    failedJobs() {
-      if (this.fullExperiment && this.fullExperiment.jobDetails) {
-        return this.fullExperiment.jobDetails.filter(
-          (job) =>
-            this.experiment.latestStatus.state === models.ExperimentState.FAILED ||
-            (job.latestJobStatus && job.latestJobStatus.jobState === models.JobState.FAILED),
-        );
-      } else {
-        return [];
-      }
-    },
-    experimentDataDir() {
-      if (this.experiment && this.experiment.userConfigurationData) {
-        return this.experiment.userConfigurationData.experimentDataDir;
-      } else {
-        return null;
-      }
-    },
-    archived() {
-      return this.experimentArchive?.archived;
-    },
-  },
-  created() {
-    services.FullExperimentService.retrieve({
-      lookup: this.experiment.experiment_id,
-    }).then((fullExperiment) => (this.fullExperiment = fullExperiment));
-    services.ExperimentArchiveService.get({
-      experimentId: this.experiment.experiment_id,
-    }).then((result) => {
-      this.experimentArchive = result;
-    });
-  },
-  methods: {
-    getDataProducts(io, collection) {
-      if (!io.value || !collection) {
-        return [];
-      }
-      let dataProducts = null;
-      if (io.type === models.DataType.URI_COLLECTION) {
-        const dataProductURIs = io.value.split(",");
-        dataProducts = dataProductURIs.map((uri) => collection.find((dp) => dp.productUri === uri));
-      } else {
-        const dataProductURI = io.value;
-        dataProducts = collection.filter((dp) => dp.productUri === dataProductURI);
-      }
-      return dataProducts ? dataProducts.filter((dp) => (dp ? true : false)) : [];
-    },
-  },
+type DataProduct = { productUri: string; [key: string]: unknown };
+type ExperimentIO = { name: string; value?: string; type?: { isSimpleValueType?: boolean; isFileValueType?: boolean; [key: string]: unknown } | unknown };
+type JobDetail = { jobId: string; jobName?: string; workingDir?: string; jobDescription?: string; creation_time: Date | string | number; jobStatusStateName?: string; latestJobStatus?: { jobState: unknown }; stdOut?: string; stdErr?: string };
+type FullExperimentInner = {
+  experiment: { experimentInputs: ExperimentIO[]; experimentOutputs: ExperimentIO[]; execution_id?: string; isProgressing?: boolean; creation_time?: Date | string | number; [key: string]: unknown };
+  inputDataProducts?: DataProduct[];
+  outputDataProducts?: DataProduct[];
+  project?: unknown;
+  projectName?: string;
+  application_name?: string;
+  computeHostName?: string;
+  experimentStatusName?: string;
+  experimentStatus: { time_of_state_change: Date | string | number };
+  jobDetails?: JobDetail[];
+  [key: string]: unknown;
 };
+type ExperimentArchive = { archived?: boolean; archive_name?: string; created_date?: string };
+
+const props = defineProps<{
+  experiment: InstanceType<typeof models.Experiment>;
+}>();
+
+const fullExperiment = ref<FullExperimentInner | null>(null);
+const experimentArchive = ref<ExperimentArchive | null>(null);
+
+const inputDataProducts = computed(() => {
+  const result: Record<string, DataProduct[]> = {};
+  if (fullExperiment.value && fullExperiment.value.inputDataProducts) {
+    fullExperiment.value.experiment.experimentInputs.forEach((input) => {
+      result[input.name] = getDataProducts(input, fullExperiment.value!.inputDataProducts ?? []);
+    });
+  }
+  return result;
+});
+
+const outputDataProducts = computed(() => {
+  const result: Record<string, DataProduct[]> = {};
+  if (fullExperiment.value && fullExperiment.value.outputDataProducts) {
+    fullExperiment.value.experiment.experimentOutputs.forEach((output) => {
+      result[output.name] = getDataProducts(output, fullExperiment.value!.outputDataProducts ?? []);
+    });
+  }
+  return result;
+});
+
+const creationTime = computed(() =>
+  fullExperiment.value?.experiment.creation_time
+    ? relativeTime(fullExperiment.value.experiment.creation_time as Date | string | number)
+    : ""
+);
+
+const lastModifiedTime = computed(() =>
+  fullExperiment.value
+    ? relativeTime(fullExperiment.value.experimentStatus.time_of_state_change)
+    : ""
+);
+
+const jobCreationTimes = computed(() =>
+  fullExperiment.value?.jobDetails
+    ? fullExperiment.value.jobDetails.map((jobDetail) =>
+        relativeTime(jobDetail.creation_time as Date | string | number)
+      )
+    : []
+);
+
+const failedJobs = computed(() => {
+  if (fullExperiment.value?.jobDetails) {
+    return fullExperiment.value.jobDetails.filter(
+      (job) =>
+        props.experiment.latestStatus.state === models.ExperimentState.FAILED ||
+        (job.latestJobStatus && job.latestJobStatus.jobState === models.JobState.FAILED)
+    );
+  }
+  return [];
+});
+
+const experimentDataDir = computed(() => {
+  if (props.experiment?.userConfigurationData) {
+    return props.experiment.userConfigurationData.experimentDataDir;
+  }
+  return null;
+});
+
+const archived = computed(() => experimentArchive.value?.archived);
+
+function getDataProducts(io: ExperimentIO, collection: DataProduct[]): DataProduct[] {
+  if (!io.value || !collection) {
+    return [];
+  }
+  let dataProducts: (DataProduct | undefined)[] | null = null;
+  if (io.type === models.DataType.URI_COLLECTION) {
+    const dataProductURIs = io.value.split(",");
+    dataProducts = dataProductURIs.map((uri) => collection.find((dp) => dp.productUri === uri));
+  } else {
+    const dataProductURI = io.value;
+    dataProducts = collection.filter((dp) => dp.productUri === dataProductURI);
+  }
+  return dataProducts ? dataProducts.filter((dp): dp is DataProduct => !!dp) : [];
+}
+
+onMounted(() => {
+  services.FullExperimentService.retrieve({
+    lookup: props.experiment.experiment_id,
+  }).then((fe: typeof fullExperiment.value) => (fullExperiment.value = fe));
+  services.ExperimentArchiveService.get({
+    experimentId: props.experiment.experiment_id,
+  }).then((result: ExperimentArchive) => {
+    experimentArchive.value = result;
+  });
+});
 </script>
 
 <style scoped>

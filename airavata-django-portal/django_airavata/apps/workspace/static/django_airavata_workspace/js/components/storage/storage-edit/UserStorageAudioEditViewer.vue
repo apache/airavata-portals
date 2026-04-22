@@ -12,27 +12,13 @@
   </div>
 </template>
 
-<script>
-import UserStorageDownloadButton from "./UserStorageDownloadButton";
+<script setup lang="ts">
+import UserStorageDownloadButton from "./UserStorageDownloadButton.vue";
 
-export default {
-  name: "UserStorageAudioFileEditViewer",
-  components: {
-    UserStorageDownloadButton: UserStorageDownloadButton,
-  },
-  props: {
-    fileName: {
-      required: true,
-    },
-    dataProductUri: {
-      required: true,
-    },
-    mimeType: {
-      required: true,
-    },
-    downloadUrl: {
-      required: true,
-    },
-  },
-};
+defineProps<{
+  fileName: string;
+  dataProductUri: string;
+  mimeType: string;
+  downloadUrl: string;
+}>();
 </script>

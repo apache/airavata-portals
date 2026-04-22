@@ -6,41 +6,33 @@
   </a>
 </template>
 
-<script>
-export default {
-  name: "FavoriteToggle",
-  props: {
-    favorite: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  computed: {
-    classes() {
-      if (!this.favorite) {
-        return ["not-favorite"];
-      } else {
-        return [];
-      }
-    },
-    titleText() {
-      if (this.favorite) {
-        return "Unmark as favorite";
-      } else {
-        return "Mark as favorite";
-      }
-    },
-  },
-  methods: {
-    toggleFavorite() {
-      if (this.favorite) {
-        this.$emit("unfavorite");
-      } else {
-        this.$emit("favorite");
-      }
-    },
-  },
-};
+<script setup lang="ts">
+import { computed } from "vue";
+
+const props = withDefaults(defineProps<{
+  favorite?: boolean;
+}>(), {
+  favorite: false,
+});
+
+const emit = defineEmits<{
+  unfavorite: [];
+  favorite: [];
+}>();
+
+const classes = computed(() => (props.favorite ? [] : ["not-favorite"]));
+
+const titleText = computed(() =>
+  props.favorite ? "Unmark as favorite" : "Mark as favorite",
+);
+
+function toggleFavorite(): void {
+  if (props.favorite) {
+    emit("unfavorite");
+  } else {
+    emit("favorite");
+  }
+}
 </script>
 
 <style scoped>

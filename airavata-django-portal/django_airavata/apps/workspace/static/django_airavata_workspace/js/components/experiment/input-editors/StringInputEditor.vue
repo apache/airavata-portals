@@ -13,16 +13,34 @@
   />
 </template>
 
-<script>
-import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
+<script setup lang="ts">
+import { models } from "django-airavata-api";
+import { useInputEditor } from "@/composables/useInputEditor";
 
-export default {
-  name: "StringInputEditor",
-  mixins: [InputEditorMixin],
-  props: {
-    value: {
-      type: String,
-    },
-  },
-};
+type InputDataObjectType = InstanceType<typeof models.InputDataObjectType>;
+type Experiment = InstanceType<typeof models.Experiment>;
+
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string | null;
+    experimentInput: InputDataObjectType;
+    experiment?: Experiment;
+    id: string;
+    readOnly?: boolean;
+  }>(),
+  { modelValue: null, experiment: undefined, readOnly: false },
+);
+
+const emit = defineEmits<{
+  "update:modelValue": [value: string | null];
+  valid: [];
+  invalid: [messages: string[]];
+}>();
+
+const { data, componentValidState, valueChanged } = useInputEditor(
+  props,
+  (_, v) => emit("update:modelValue", v),
+  () => emit("valid"),
+  (msgs) => emit("invalid", msgs),
+);
 </script>

@@ -50,52 +50,52 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, nextTick } from "vue";
 import { Modal } from "bootstrap";
 
-export default {
-  name: "NewPasswordCredentialModal",
-  data() {
-    return {
-      username: null,
-      password: null,
-      description: null,
-    };
-  },
-  computed: {
-    valid() {
-      return (
-        this.username &&
-        this.username.trim() !== "" &&
-        this.password &&
-        this.password.trim() !== "" &&
-        this.description &&
-        this.description.trim() !== ""
-      );
-    },
-  },
-  methods: {
-    okClicked() {
-      if (!this.valid) return;
-      this.$emit("new", {
-        username: this.username,
-        password: this.password,
-        description: this.description,
-      });
-      Modal.getInstance(this.$refs.modal).hide();
-      this.username = null;
-      this.password = null;
-      this.description = null;
-    },
-    show() {
-      this.username = null;
-      this.password = null;
-      this.description = null;
-      new Modal(this.$refs.modal).show();
-      this.$nextTick(() => {
-        if (this.$refs.usernameInput) this.$refs.usernameInput.focus();
-      });
-    },
-  },
-};
+const emit = defineEmits<{
+  new: [data: { username: string; password: string; description: string }];
+}>();
+
+const modal = ref<HTMLElement | null>(null);
+const usernameInput = ref<HTMLInputElement | null>(null);
+const username = ref<string | null>(null);
+const password = ref<string | null>(null);
+const description = ref<string | null>(null);
+
+const valid = computed(
+  () =>
+    username.value &&
+    username.value.trim() !== "" &&
+    password.value &&
+    password.value.trim() !== "" &&
+    description.value &&
+    description.value.trim() !== "",
+);
+
+function okClicked() {
+  if (!valid.value || !username.value || !password.value || !description.value) return;
+  emit("new", {
+    username: username.value,
+    password: password.value,
+    description: description.value,
+  });
+  if (modal.value) Modal.getInstance(modal.value)?.hide();
+  username.value = null;
+  password.value = null;
+  description.value = null;
+}
+
+function show() {
+  username.value = null;
+  password.value = null;
+  description.value = null;
+  if (modal.value) new Modal(modal.value).show();
+  nextTick(() => {
+    usernameInput.value?.focus();
+  });
+}
+
+defineExpose({ show });
 </script>

@@ -13,26 +13,40 @@
   />
 </template>
 
-<script>
-import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
+<script setup lang="ts">
+import { computed } from "vue";
+import { models } from "django-airavata-api";
+import { useInputEditor } from "@/composables/useInputEditor";
+
+type InputDataObjectType = InstanceType<typeof models.InputDataObjectType>;
+type Experiment = InstanceType<typeof models.Experiment>;
 
 const DEFAULT_ROWS = 3;
 
-export default {
-  name: "TextareaInputEditor",
-  mixins: [InputEditorMixin],
-  props: {
-    value: {
-      type: String,
-    },
-    rows: {
-      type: Number,
-    },
-  },
-  computed: {
-    editorRows: function () {
-      return this.rows || this.editorConfig.rows || DEFAULT_ROWS;
-    },
-  },
-};
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string | null;
+    experimentInput: InputDataObjectType;
+    experiment?: Experiment;
+    id: string;
+    readOnly?: boolean;
+    rows?: number;
+  }>(),
+  { modelValue: null, experiment: undefined, rows: DEFAULT_ROWS, readOnly: false },
+);
+
+const emit = defineEmits<{
+  "update:modelValue": [value: string | null];
+  valid: [];
+  invalid: [messages: string[]];
+}>();
+
+const { data, componentValidState, editorConfig, valueChanged } = useInputEditor(
+  props,
+  (_, v) => emit("update:modelValue", v),
+  () => emit("valid"),
+  (msgs) => emit("invalid", msgs),
+);
+
+const editorRows = computed(() => props.rows || editorConfig.value.rows || DEFAULT_ROWS);
 </script>

@@ -40,58 +40,56 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed, onMounted } from "vue";
 import { models } from "django-airavata-api";
-import { mapActions, mapGetters } from "vuex";
-export default {
-  props: {
-    iamUserProfile: {
-      type: models.IAMUserProfile,
-      required: true,
-    },
-  },
-  created() {
-    this.loadExtendedUserProfileFields();
-    this.loadExtendedUserProfileValues({
-      username: this.iamUserProfile.user_id,
-    });
-  },
-  computed: {
-    ...mapGetters("extendedUserProfile", [
-      "extendedUserProfileFields",
-      "extendedUserProfileValues",
-    ]),
-    fields() {
-      return ["name", "value"];
-    },
-    items() {
-      if (this.extendedUserProfileFields && this.extendedUserProfileValues) {
-        const items = [];
-        for (const field of this.extendedUserProfileFields) {
-          const value = this.getValue(field);
-          items.push({
-            name: field.name,
-            value: value ? value.value_display : null,
-            // if no value, consider it invalid only if it is required
-            valid: value ? value.valid : !field.required,
-          });
-        }
-        return items;
-      } else {
-        return [];
-      }
-    },
-  },
-  methods: {
-    ...mapActions("extendedUserProfile", [
-      "loadExtendedUserProfileFields",
-      "loadExtendedUserProfileValues",
-    ]),
-    getValue(field) {
-      return this.extendedUserProfileValues.find((v) => v.ext_user_profile_field === field.id);
-    },
-  },
+import { useUserStore } from "django-airavata-common-ui/js/stores/user";
+import type { ExtendedUserProfileField } from "django-airavata-common-ui/js/types/user";
+
+// The model has `valid` and `value_display` fields beyond the interface
+type ExtendedUserProfileValueModel = {
+  ext_user_profile_field: number;
+  valid?: boolean;
+  value_display?: unknown;
+  [key: string]: unknown;
 };
+
+const props = defineProps<{
+  iamUserProfile: InstanceType<typeof models.IAMUserProfile>;
+}>();
+
+const userStore = useUserStore();
+
+const extendedUserProfileFields = computed(() => userStore.extendedUserProfileFields);
+const extendedUserProfileValues = computed(
+  () => userStore.extendedUserProfileValues as ExtendedUserProfileValueModel[]
+);
+
+function getValue(field: ExtendedUserProfileField): ExtendedUserProfileValueModel | undefined {
+  return extendedUserProfileValues.value?.find(
+    (v) => v.ext_user_profile_field === field.id
+  );
+}
+
+const items = computed(() => {
+  if (extendedUserProfileFields.value && extendedUserProfileValues.value) {
+    return extendedUserProfileFields.value.map((field) => {
+      const value = getValue(field);
+      return {
+        name: field.name,
+        value: value ? value.value_display : null,
+        // if no value, consider it invalid only if it is required
+        valid: value ? value.valid : !field.required,
+      };
+    });
+  }
+  return [];
+});
+
+onMounted(() => {
+  userStore.loadExtendedUserProfileFields();
+  userStore.loadExtendedUserProfileValues({ username: props.iamUserProfile.user_id });
+});
 </script>
 
 <style scoped>

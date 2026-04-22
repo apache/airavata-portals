@@ -1,104 +1,82 @@
 <template>
-  <user-storage-text-edit-viewer
+  <UserStorageTextEditViewer
     v-if="isText"
     :file-name="fileName"
     :data-product-uri="dataProductUri"
     :mime-type="mimeType"
     :download-url="downloadUrl"
-    @file-content-changed="(fileContent) => $emit('file-content-changed', fileContent)"
+    @file-content-changed="(fileContent) => emit('file-content-changed', fileContent)"
   />
-  <user-storage-image-edit-viewer
+  <UserStorageImageEditViewer
     v-else-if="isImage"
     :file-name="fileName"
     :data-product-uri="dataProductUri"
     :mime-type="mimeType"
     :download-url="downloadUrl"
-    @file-content-changed="(fileContent) => $emit('file-content-changed', fileContent)"
+    @file-content-changed="(fileContent) => emit('file-content-changed', fileContent)"
   />
-  <user-storage-audio-edit-viewer
+  <UserStorageAudioEditViewer
     v-else-if="isAudio"
     :file-name="fileName"
     :data-product-uri="dataProductUri"
     :mime-type="mimeType"
     :download-url="downloadUrl"
-    @file-content-changed="(fileContent) => $emit('file-content-changed', fileContent)"
+    @file-content-changed="(fileContent) => emit('file-content-changed', fileContent)"
   />
-  <user-storage-video-edit-viewer
+  <UserStorageVideoEditViewer
     v-else-if="isVideo"
     :file-name="fileName"
     :data-product-uri="dataProductUri"
     :mime-type="mimeType"
     :download-url="downloadUrl"
-    @file-content-changed="(fileContent) => $emit('file-content-changed', fileContent)"
+    @file-content-changed="(fileContent) => emit('file-content-changed', fileContent)"
   />
-  <user-storage-pdf-edit-viewer
+  <UserStoragePdfEditViewer
     v-else-if="isPdf"
     :file-name="fileName"
     :data-product-uri="dataProductUri"
     :mime-type="mimeType"
     :download-url="downloadUrl"
-    @file-content-changed="(fileContent) => $emit('file-content-changed', fileContent)"
+    @file-content-changed="(fileContent) => emit('file-content-changed', fileContent)"
   />
-  <user-storage-default-edit-viewer
+  <UserStorageDefaultEditViewer
     v-else
     :file-name="fileName"
     :data-product-uri="dataProductUri"
     :mime-type="mimeType"
     :download-url="downloadUrl"
-    @file-content-changed="(fileContent) => $emit('file-content-changed', fileContent)"
+    @file-content-changed="(fileContent) => emit('file-content-changed', fileContent)"
   />
 </template>
 
-<script>
-import UserStorageTextEditViewer from "./UserStorageTextEditViewer";
-import UserStorageImageEditViewer from "./UserStorageImageEditViewer";
-import UserStorageDefaultEditViewer from "./UserStorageDefaultEditViewer";
-import UserStorageAudioEditViewer from "./UserStorageAudioEditViewer";
-import UserStorageVideoEditViewer from "./UserStorageVideoEditViewer";
-import UserStoragePdfEditViewer from "./UserStoragePdfEditViewer";
+<script setup lang="ts">
+import { computed } from "vue";
+import UserStorageTextEditViewer from "./UserStorageTextEditViewer.vue";
+import UserStorageImageEditViewer from "./UserStorageImageEditViewer.vue";
+import UserStorageDefaultEditViewer from "./UserStorageDefaultEditViewer.vue";
+import UserStorageAudioEditViewer from "./UserStorageAudioEditViewer.vue";
+import UserStorageVideoEditViewer from "./UserStorageVideoEditViewer.vue";
+import UserStoragePdfEditViewer from "./UserStoragePdfEditViewer.vue";
 
-export default {
-  name: "UserStorageFileEditViewer",
-  components: {
-    UserStorageTextEditViewer,
-    UserStorageImageEditViewer,
-    UserStorageDefaultEditViewer,
-    UserStorageAudioEditViewer,
-    UserStorageVideoEditViewer,
-    UserStoragePdfEditViewer,
-  },
-  props: {
-    fileName: {
-      required: true,
-    },
-    dataProductUri: {
-      required: true,
-    },
-    mimeType: {
-      required: true,
-    },
-  },
-  computed: {
-    isText() {
-      return /text\/.*/.test(this.mime_type);
-    },
-    isImage() {
-      return /image\/.*/.test(this.mime_type);
-    },
-    isAudio() {
-      return /audio\/.*/.test(this.mime_type);
-    },
-    isVideo() {
-      return /video\/.*/.test(this.mime_type);
-    },
-    isPdf() {
-      return /pdf/.test(this.mime_type);
-    },
-    downloadUrl() {
-      return `/sdk/download/?data-product-uri=${this.dataProductUri}`;
-    },
-  },
-};
+const props = defineProps<{
+  fileName: string;
+  dataProductUri: string;
+  mimeType: string;
+}>();
+
+const emit = defineEmits<{
+  "file-content-changed": [fileContent: string];
+}>();
+
+const downloadUrl = computed(
+  () => `/sdk/download/?data-product-uri=${props.dataProductUri}`,
+);
+
+const isText = computed(() => /text\/.*/.test(props.mimeType));
+const isImage = computed(() => /image\/.*/.test(props.mimeType));
+const isAudio = computed(() => /audio\/.*/.test(props.mimeType));
+const isVideo = computed(() => /video\/.*/.test(props.mimeType));
+const isPdf = computed(() => /pdf/.test(props.mimeType));
 </script>
 
 <style>

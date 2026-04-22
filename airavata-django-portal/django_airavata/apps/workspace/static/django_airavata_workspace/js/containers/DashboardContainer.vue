@@ -1,6 +1,6 @@
 <template>
   <div>
-    <pga-link />
+    <PgaLink />
     <div class="row align-items-center mb-3">
       <div class="col">
         <h1 class="h4 mb-0">Applications</h1>
@@ -12,7 +12,7 @@
         </a>
       </div>
     </div>
-    <workspace-notices-management-container />
+    <WorkspaceNoticesManagementContainer />
 
     <div v-if="launchMode" class="alert alert-info d-flex align-items-center">
       <i class="fa fa-info-circle me-2"></i>
@@ -56,7 +56,7 @@
             </tr>
             <tr
               v-for="item in allApplicationData"
-              :key="item.appModule.app_module_id"
+              :key="(item.appModule as any).app_module_id"
               style="cursor: pointer"
               @click="navigateToApp(item.appModule)"
             >
@@ -78,12 +78,12 @@
               <td>
                 <i class="fa fa-cube me-2 text-muted"></i>
                 <strong :class="{ 'text-muted': item.disabled }">{{
-                  item.appModule.app_module_name
+                  (item.appModule as any).app_module_name
                 }}</strong>
               </td>
               <td>
-                <span v-if="item.appModule.app_module_version" class="badge bg-secondary">{{
-                  item.appModule.app_module_version
+                <span v-if="(item.appModule as any).app_module_version" class="badge bg-secondary">{{
+                  (item.appModule as any).app_module_version
                 }}</span>
                 <span v-else class="text-muted">-</span>
               </td>
@@ -91,7 +91,7 @@
                 <span class="fw-medium text-muted">default-admin</span>
                 <span class="badge bg-primary ms-1">Admin</span>
               </td>
-              <td class="text-muted">{{ truncate(item.appModule.app_module_description, 60) }}</td>
+              <td class="text-muted">{{ truncate((item.appModule as any).app_module_description, 60) }}</td>
               <td class="text-nowrap" style="width: 1%" @click.stop>
                 <div class="d-flex gap-2 justify-content-end flex-nowrap">
                   <a
@@ -140,7 +140,7 @@
           </div>
           <div class="modal-body">
             <p>
-              Are you sure you want to delete <strong>{{ deleteTarget.app_module_name }}</strong
+              Are you sure you want to delete <strong>{{ (deleteTarget as any).app_module_name }}</strong
               >?
             </p>
             <p class="text-muted mb-0" style="font-size: 0.8125rem">
@@ -159,123 +159,122 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onBeforeMount } from "vue";
 import { services } from "django-airavata-api";
-import urls from "../utils/urls";
-import PgaLink from "../components/PgaLink";
-import WorkspaceNoticesManagementContainer from "../components/notices/WorkspaceNoticesManagementContainer";
+import PgaLink from "../components/PgaLink.vue";
+import WorkspaceNoticesManagementContainer from "../components/notices/WorkspaceNoticesManagementContainer.vue";
 
-export default {
-  name: "DashboardContainer",
-  components: {
-    WorkspaceNoticesManagementContainer,
-    "pga-link": PgaLink,
-  },
-  data() {
-    return {
-      accessibleAppModules: null,
-      allApplicationModules: null,
-      workspacePreferences: null,
-      loading: true,
-      deleteTarget: null,
-      deleting: false,
-    };
-  },
-  computed: {
-    accessibleModuleIds() {
-      return this.accessibleAppModules ? this.accessibleAppModules.map((a) => a.app_module_id) : [];
-    },
-    allApplicationData() {
-      return this.allApplicationModules
-        ? this.allApplicationModules.map((app) => ({
-            appModule: app,
-            disabled: this.accessibleModuleIds.indexOf(app.app_module_id) < 0,
-          }))
-        : [];
-    },
-    favoriteApplicationIds() {
-      if (this.workspacePreferences && this.workspacePreferences.application_preferences) {
-        return this.workspacePreferences.application_preferences
-          .filter((p) => p.favorite)
-          .map((p) => p.application_id);
-      }
-      return [];
-    },
-    launchMode() {
-      try {
-        return new URLSearchParams(window.location.search).get("action") === "launch";
-      } catch {
-        return false;
-      }
-    },
-  },
-  beforeMount() {
-    this.loadApplications();
-  },
-  methods: {
-    handleAppSelected(appModule) {
-      urls.navigateToCreateExperiment(appModule);
-    },
-    editUrl(appModule) {
-      return "/workspace/applications/" + appModule.app_module_id + "/";
-    },
-    navigateToApp(appModule) {
-      window.location.href = this.editUrl(appModule);
-    },
-    runExperimentUrl(appModule) {
-      return "/workspace/applications/" + appModule.app_module_id + "/create_experiment";
-    },
-    toggleFavorite(appModule) {
-      const action = this.isFavorite(appModule) ? "unfavorite" : "favorite";
-      services.ApplicationModuleService[action]({ lookup: appModule.app_module_id })
-        .then(() => services.WorkspacePreferencesService.get())
-        .then((prefs) => (this.workspacePreferences = prefs));
-    },
-    isFavorite(appModule) {
-      return this.favoriteApplicationIds.indexOf(appModule.app_module_id) >= 0;
-    },
-    truncate(text, len) {
-      if (!text) return "";
-      return text.length > len ? text.substring(0, len) + "..." : text;
-    },
-    confirmDelete(appModule) {
-      this.deleteTarget = appModule;
-    },
-    deleteApplication() {
-      if (!this.deleteTarget) return;
-      this.deleting = true;
-      services.ApplicationModuleService.delete({ lookup: this.deleteTarget.app_module_id })
-        .then(() => {
-          this.allApplicationModules = this.allApplicationModules.filter(
-            (m) => m.app_module_id !== this.deleteTarget.app_module_id,
-          );
-          this.deleteTarget = null;
-        })
-        .catch(() => {
-          // If simple delete fails, the admin editor handles cascading delete
-          // Redirect there instead
-          window.location.href = this.editUrl(this.deleteTarget);
-        })
-        .finally(() => {
-          this.deleting = false;
-        });
-    },
-    loadApplications() {
-      this.loading = true;
-      Promise.all([
-        services.ApplicationModuleService.list()
-          .then((result) => (this.accessibleAppModules = result))
-          .catch(() => (this.accessibleAppModules = [])),
-        services.ApplicationModuleService.listAll()
-          .then((result) => (this.allApplicationModules = result))
-          .catch(() => (this.allApplicationModules = [])),
-        services.WorkspacePreferencesService.get()
-          .then((prefs) => (this.workspacePreferences = prefs))
-          .catch(() => {}),
-      ]).finally(() => {
-        this.loading = false;
-      });
-    },
-  },
-};
+const accessibleAppModules = ref<unknown[] | null>(null);
+const allApplicationModules = ref<unknown[] | null>(null);
+const workspacePreferences = ref<unknown | null>(null);
+const loading = ref(true);
+const deleteTarget = ref<unknown | null>(null);
+const deleting = ref(false);
+
+const accessibleModuleIds = computed<string[]>(() =>
+  accessibleAppModules.value
+    ? (accessibleAppModules.value as Array<{ app_module_id: string }>).map((a) => a.app_module_id)
+    : [],
+);
+
+const allApplicationData = computed(() =>
+  allApplicationModules.value
+    ? (allApplicationModules.value as Array<{ app_module_id: string }>).map((app) => ({
+        appModule: app,
+        disabled: accessibleModuleIds.value.indexOf(app.app_module_id) < 0,
+      }))
+    : [],
+);
+
+const favoriteApplicationIds = computed<string[]>(() => {
+  const prefs = workspacePreferences.value as { application_preferences?: Array<{ favorite: boolean; application_id: string }> } | null;
+  if (prefs?.application_preferences) {
+    return prefs.application_preferences
+      .filter((p) => p.favorite)
+      .map((p) => p.application_id);
+  }
+  return [];
+});
+
+const launchMode = computed<boolean>(() => {
+  try {
+    return new URLSearchParams(window.location.search).get("action") === "launch";
+  } catch {
+    return false;
+  }
+});
+
+function editUrl(appModule: unknown) {
+  return "/workspace/applications/" + (appModule as { app_module_id: string }).app_module_id + "/";
+}
+
+function navigateToApp(appModule: unknown) {
+  window.location.href = editUrl(appModule);
+}
+
+function runExperimentUrl(appModule: unknown) {
+  return "/workspace/applications/" + (appModule as { app_module_id: string }).app_module_id + "/create_experiment";
+}
+
+function toggleFavorite(appModule: unknown) {
+  const mod = appModule as { app_module_id: string };
+  const action = isFavorite(appModule) ? "unfavorite" : "favorite";
+  (services.ApplicationModuleService as unknown as Record<string, (_opts: unknown) => Promise<unknown>>)[action]({ lookup: mod.app_module_id })
+    .then(() => services.WorkspacePreferencesService.get())
+    .then((prefs: unknown) => (workspacePreferences.value = prefs));
+}
+
+function isFavorite(appModule: unknown): boolean {
+  return favoriteApplicationIds.value.indexOf((appModule as { app_module_id: string }).app_module_id) >= 0;
+}
+
+function truncate(text: string | null | undefined, len: number): string {
+  if (!text) return "";
+  return text.length > len ? text.substring(0, len) + "..." : text;
+}
+
+function confirmDelete(appModule: unknown) {
+  deleteTarget.value = appModule;
+}
+
+function deleteApplication() {
+  if (!deleteTarget.value) return;
+  deleting.value = true;
+  const target = deleteTarget.value as { app_module_id: string };
+  services.ApplicationModuleService.delete({ lookup: target.app_module_id })
+    .then(() => {
+      allApplicationModules.value = (allApplicationModules.value as Array<{ app_module_id: string }> | null)?.filter(
+        (m) => m.app_module_id !== target.app_module_id,
+      ) ?? null;
+      deleteTarget.value = null;
+    })
+    .catch(() => {
+      window.location.href = editUrl(target);
+    })
+    .finally(() => {
+      deleting.value = false;
+    });
+}
+
+function loadApplications() {
+  loading.value = true;
+  Promise.all([
+    services.ApplicationModuleService.list()
+      .then((result: unknown) => (accessibleAppModules.value = result as unknown[]))
+      .catch(() => (accessibleAppModules.value = [])),
+    services.ApplicationModuleService.listAll()
+      .then((result: unknown) => (allApplicationModules.value = result as unknown[]))
+      .catch(() => (allApplicationModules.value = [])),
+    services.WorkspacePreferencesService.get()
+      .then((prefs: unknown) => (workspacePreferences.value = prefs))
+      .catch(() => {}),
+  ]).finally(() => {
+    loading.value = false;
+  });
+}
+
+onBeforeMount(() => {
+  loadApplications();
+});
 </script>

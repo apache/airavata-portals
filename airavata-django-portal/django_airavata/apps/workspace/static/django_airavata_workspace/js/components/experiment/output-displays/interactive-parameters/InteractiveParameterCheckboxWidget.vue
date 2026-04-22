@@ -9,14 +9,12 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "InteractiveParameterCheckboxWidget",
-  props: {
-    value: {
-      type: Boolean,
-      required: true,
-    },
-  },
-};
+<script setup lang="ts">
+defineProps<{
+  value: boolean;
+}>();
+
+defineEmits<{
+  input: [event: Event];
+}>();
 </script>

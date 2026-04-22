@@ -5,51 +5,47 @@
     </a>
     <!-- TODO: Replace b-modal with Bootstrap 5 modal -->
     <div ref="modal" class="modal" :title="fileName" scrollable size="lg" static lazy>
-      <user-storage-file-edit-viewer
+      <UserStorageFileEditViewer
         :file-name="fileName"
         :data-product-uri="dataProductUri"
         :mime-type="mimeType"
-        @file-content-changed="(fileContent) => $emit('file-content-changed', fileContent)"
+        @file-content-changed="(fileContent) => emit('file-content-changed', fileContent)"
       />
-      <template slot="modal-footer">
+      <div class="modal-footer">
         <a :href="storageFileViewRouteUrl()" target="_blank">Open in a new window</a>
-      </template>
+      </div>
     </div>
   </div>
 </template>
 
-<script>
-import UserStorageFileEditViewer from "./UserStorageEditViewer";
+<script setup lang="ts">
+import { ref } from "vue";
+import UserStorageFileEditViewer from "./UserStorageEditViewer.vue";
 
-export default {
-  name: "UserStorageLink",
-  components: { UserStorageFileEditViewer },
-  props: {
-    fileName: {
-      required: true,
-    },
-    dataProductUri: {
-      required: true,
-    },
-    mimeType: {
-      required: true,
-    },
-    allowPreview: {
-      default: true,
-      required: false,
-    },
-  },
-  methods: {
-    showFilePreview(event) {
-      if (this.allowPreview) {
-        this.$refs.modal.show();
-        event.preventDefault();
-      }
-    },
-    storageFileViewRouteUrl() {
-      // This endpoint can handle XHR upload or a TUS uploadURL
-      return `/resources/storage/~?dataProductUri=${this.dataProductUri}`;
-    },
-  },
-};
+const props = withDefaults(
+  defineProps<{
+    fileName: string;
+    dataProductUri: string;
+    mimeType: string;
+    allowPreview?: boolean;
+  }>(),
+  { allowPreview: true },
+);
+
+const emit = defineEmits<{
+  "file-content-changed": [fileContent: string];
+}>();
+
+const modal = ref<HTMLElement & { show?: () => void } | null>(null);
+
+function showFilePreview(event: MouseEvent) {
+  if (props.allowPreview) {
+    modal.value?.show?.();
+    event.preventDefault();
+  }
+}
+
+function storageFileViewRouteUrl() {
+  return `/resources/storage/~?dataProductUri=${props.dataProductUri}`;
+}
 </script>

@@ -21,31 +21,23 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
 import { components } from "django-airavata-common-ui";
-export default {
-  name: "InputEditorFormGroup",
-  components: {
-    linkify: components.Linkify,
+
+const Linkify = components.Linkify;
+
+withDefaults(
+  defineProps<{
+    label: string;
+    labelFor: string;
+    state?: boolean | null;
+    feedbackMessages?: string[] | null;
+    description?: string | null;
+  }>(),
+  {
+    state: null,
+    feedbackMessages: null,
+    description: null,
   },
-  props: {
-    label: {
-      type: String,
-      required: true,
-    },
-    labelFor: {
-      type: String,
-      required: true,
-    },
-    state: {
-      type: Boolean,
-    },
-    feedbackMessages: {
-      type: Array,
-    },
-    description: {
-      type: String,
-    },
-  },
-};
+);
 </script>

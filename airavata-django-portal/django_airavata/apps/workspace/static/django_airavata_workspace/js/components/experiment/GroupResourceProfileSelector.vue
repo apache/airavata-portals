@@ -23,93 +23,92 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
 import { services } from "django-airavata-api";
 
-export default {
-  name: "GroupResourceProfileSelector",
-  props: {
-    value: {
-      type: String,
-    },
-  },
-  data() {
-    return {
-      groupResourceProfileId: this.value,
-      groupResourceProfiles: [],
-      workspacePreferences: null,
-    };
-  },
-  computed: {
-    groupResourceProfileOptions: function () {
-      if (this.groupResourceProfiles && this.groupResourceProfiles.length > 0) {
-        const groupResourceProfileOptions = this.groupResourceProfiles.map(
-          (groupResourceProfile) => {
-            return {
-              value: groupResourceProfile.group_resource_profile_id,
-              text: groupResourceProfile.group_resource_profile_name,
-            };
-          },
-        );
-        groupResourceProfileOptions.sort((a, b) => a.text.localeCompare(b.text));
-        return groupResourceProfileOptions;
-      } else {
-        return [];
+interface GroupResourceProfile {
+  group_resource_profile_id: string;
+  group_resource_profile_name: string;
+}
+
+interface WorkspacePreferences {
+  most_recent_project_resource_profile_id?: string;
+}
+
+const props = defineProps<{
+  modelValue?: string | null;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: string | null];
+  valid: [];
+  invalid: [];
+}>();
+
+const groupResourceProfileId = ref<string | null>(props.modelValue ?? null);
+const groupResourceProfiles = ref<GroupResourceProfile[]>([]);
+const workspacePreferences = ref<WorkspacePreferences | null>(null);
+
+const groupResourceProfileOptions = computed(() => {
+  if (groupResourceProfiles.value.length > 0) {
+    const options = groupResourceProfiles.value.map((grp) => ({
+      value: grp.group_resource_profile_id,
+      text: grp.group_resource_profile_name,
+    }));
+    options.sort((a, b) => a.text.localeCompare(b.text));
+    return options;
+  }
+  return [];
+});
+
+const valid = computed(() => !!groupResourceProfileId.value);
+
+function emitValueChanged() {
+  validate();
+  emit("update:modelValue", groupResourceProfileId.value);
+}
+
+function validate() {
+  if (!valid.value) {
+    emit("invalid");
+  } else {
+    emit("valid");
+  }
+}
+
+function selectedValueInGroupResourceProfileList(profiles: GroupResourceProfile[]) {
+  return profiles.map((grp) => grp.group_resource_profile_id).indexOf(props.modelValue ?? "") >= 0;
+}
+
+function loadGroupResourceProfiles() {
+  return services.ProjectResourceProfileService.list().then(
+    (profiles: GroupResourceProfile[]) => {
+      groupResourceProfiles.value = profiles;
+      if (
+        (!props.modelValue || !selectedValueInGroupResourceProfileList(profiles)) &&
+        groupResourceProfiles.value.length > 0
+      ) {
+        // automatically select the last one user selected
+        groupResourceProfileId.value =
+          workspacePreferences.value?.most_recent_project_resource_profile_id ?? null;
+        emitValueChanged();
       }
     },
-    valid() {
-      return !!this.groupResourceProfileId;
-    },
-  },
-  watch: {},
-  async mounted() {
-    await this.loadWorkspacePreferences();
-    await this.loadGroupResourceProfiles();
-    this.validate();
-  },
-  methods: {
-    loadGroupResourceProfiles: function () {
-      return services.ProjectResourceProfileService.list().then((groupResourceProfiles) => {
-        this.groupResourceProfiles = groupResourceProfiles;
-        if (
-          (!this.value || !this.selectedValueInGroupResourceProfileList(groupResourceProfiles)) &&
-          this.groupResourceProfiles &&
-          this.groupResourceProfiles.length > 0
-        ) {
-          // automatically select the last one user selected
-          this.groupResourceProfileId =
-            this.workspacePreferences.most_recent_project_resource_profile_id;
-          this.emitValueChanged();
-        }
-      });
-    },
-    loadWorkspacePreferences() {
-      return services.WorkspacePreferencesService.get().then(
-        (workspacePreferences) => (this.workspacePreferences = workspacePreferences),
-      );
-    },
-    groupResourceProfileChanged: function (groupResourceProfileId) {
-      this.groupResourceProfileId = groupResourceProfileId;
-      this.emitValueChanged();
-    },
-    emitValueChanged: function () {
-      this.validate();
-      this.$emit("input", this.groupResourceProfileId);
-    },
-    selectedValueInGroupResourceProfileList(groupResourceProfiles) {
-      return (
-        groupResourceProfiles.map((grp) => grp.group_resource_profile_id).indexOf(this.value) >= 0
-      );
-    },
-    validate() {
-      if (!this.valid) {
-        this.$emit("invalid");
-      } else {
-        this.$emit("valid");
-      }
-    },
-  },
-};
+  );
+}
+
+function loadWorkspacePreferences() {
+  return services.WorkspacePreferencesService.get().then(
+    (prefs: WorkspacePreferences) => (workspacePreferences.value = prefs),
+  );
+}
+
+onMounted(async () => {
+  await loadWorkspacePreferences();
+  await loadGroupResourceProfiles();
+  validate();
+});
 </script>
 
 <style></style>

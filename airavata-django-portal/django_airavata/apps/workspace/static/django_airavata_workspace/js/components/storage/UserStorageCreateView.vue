@@ -1,7 +1,7 @@
 <template>
   <div v-if="userHasWriteAccess" class="d-flex gap-2 mb-2">
     <uppy
-      ref="file-upload"
+      ref="fileUpload"
       :xhr-upload-endpoint="uploadEndpoint"
       :tus-upload-finish-endpoint="uploadEndpoint"
       multiple
@@ -21,48 +21,44 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed } from "vue";
 import { components } from "django-airavata-common-ui";
-import { session } from "django-airavata-api";
 
-export default {
-  name: "UserStorageCreateView",
-  components: {
-    uppy: components.Uppy,
-  },
-  props: {
-    userStoragePath: {
-      required: true,
-    },
-    storagePath: {
-      required: true,
-    },
-  },
-  data() {
-    return {
-      dirName: null,
-    };
-  },
-  computed: {
-    uploadEndpoint() {
-      return "/api/user-storage/" + this.storagePath;
-    },
-    username() {
-      return session.Session.username;
-    },
-    userHasWriteAccess() {
-      return this.userStoragePath.user_has_write_access;
-    },
-  },
-  methods: {
-    uploadFinished() {
-      this.$refs["file-upload"].reset();
-      this.$emit("upload-finished");
-    },
-    addDirectory() {
-      this.$emit("add-directory", this.dirName);
-      this.dirName = null;
-    },
-  },
-};
+const Uppy = components.Uppy;
+
+interface UserStoragePathLike {
+  user_has_write_access: boolean;
+}
+
+const props = defineProps<{
+  userStoragePath: UserStoragePathLike;
+  storagePath: string;
+}>();
+
+const emit = defineEmits<{
+  "upload-finished": [];
+  "add-directory": [dirName: string];
+}>();
+
+const fileUpload = ref<{ reset: () => void } | null>(null);
+const dirName = ref<string | null>(null);
+
+const uploadEndpoint = computed(() => `/api/user-storage/${props.storagePath}`);
+const userHasWriteAccess = computed(() => props.userStoragePath.user_has_write_access);
+
+function uploadFinished() {
+  fileUpload.value?.reset();
+  emit("upload-finished");
+}
+
+function addDirectory() {
+  if (dirName.value) {
+    emit("add-directory", dirName.value);
+    dirName.value = null;
+  }
+}
+
+// Register uppy as a component
+const uppy = Uppy;
 </script>

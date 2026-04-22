@@ -2,7 +2,7 @@
   <form>
     <template v-for="item in items" :key="item.key">
       <validated-form-group
-        :label="item.label"
+        :label="item.label ?? ''"
         :valid="isValid(item.key)"
         :feedback-messages="getFeedbackMessages(item.key)"
         :description="item.description"
@@ -10,73 +10,73 @@
         <slot
           :item="item.item"
           :valid="() => setValid(item.key)"
-          :invalid="(messages) => setInvalid(item.key, messages)"
+          :invalid="(messages: string | string[]) => setInvalid(item.key, messages)"
         />
       </validated-form-group>
     </template>
   </form>
 </template>
 
-<script>
-import ValidatedFormGroup from "./ValidatedFormGroup";
+<script setup lang="ts">
+import { ref, computed } from "vue";
+import ValidatedFormGroup from "./ValidatedFormGroup.vue";
 
-export default {
-  name: "ValidatedForm",
-  components: {
-    ValidatedFormGroup,
-  },
-  props: {
-    items: {
-      type: Array,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      invalidFormItems: [],
-      feedbackMessages: {},
-    };
-  },
-  computed: {
-    valid() {
-      return this.invalidFormItems.length === 0;
-    },
-  },
-  methods: {
-    setValid(key) {
-      const wasValid = this.valid;
-      if (this.invalidFormItems.includes(key)) {
-        const index = this.invalidFormItems.indexOf(key);
-        this.invalidFormItems.splice(index, 1);
-      }
-      if (!wasValid && this.valid) {
-        this.$emit("valid");
-      }
-    },
-    setInvalid(key, messages) {
-      const wasValid = this.valid;
-      if (!this.invalidFormItems.includes(key)) {
-        this.invalidFormItems.push(key);
-      }
-      if (typeof messages === "string") {
-        this.feedbackMessages[key] = [messages];
-      } else {
-        this.feedbackMessages[key] = messages;
-      }
-      if (wasValid) {
-        this.$emit("invalid");
-      }
-    },
-    isValid(key) {
-      return !this.invalidFormItems.includes(key);
-    },
-    getFeedbackMessages(key) {
-      if (key in this.feedbackMessages) {
-        return this.feedbackMessages[key];
-      } else {
-        return [];
-      }
-    },
-  },
-};
+interface FormItem {
+  key: string;
+  label?: string;
+  description?: string;
+  item: unknown;
+}
+
+defineProps<{
+  items: FormItem[];
+}>();
+
+const emit = defineEmits<{
+  valid: [];
+  invalid: [];
+}>();
+
+const invalidFormItems = ref<string[]>([]);
+const feedbackMessages = ref<Record<string, string[]>>({});
+
+const valid = computed(() => invalidFormItems.value.length === 0);
+
+function setValid(key: string): void {
+  const wasValid = valid.value;
+  if (invalidFormItems.value.includes(key)) {
+    const index = invalidFormItems.value.indexOf(key);
+    invalidFormItems.value.splice(index, 1);
+  }
+  if (!wasValid && valid.value) {
+    emit("valid");
+  }
+}
+
+function setInvalid(key: string, messages: string | string[]): void {
+  const wasValid = valid.value;
+  if (!invalidFormItems.value.includes(key)) {
+    invalidFormItems.value.push(key);
+  }
+  if (typeof messages === "string") {
+    feedbackMessages.value[key] = [messages];
+  } else {
+    feedbackMessages.value[key] = messages;
+  }
+  if (wasValid) {
+    emit("invalid");
+  }
+}
+
+function isValid(key: string): boolean {
+  return !invalidFormItems.value.includes(key);
+}
+
+function getFeedbackMessages(key: string): string[] {
+  if (key in feedbackMessages.value) {
+    return feedbackMessages.value[key];
+  } else {
+    return [];
+  }
+}
 </script>

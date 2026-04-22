@@ -31,85 +31,91 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "AutocompleteTextInput",
-  props: {
-    suggestions: {
-      type: Array,
-      required: true,
-    },
-    placeholder: {
-      type: String,
-      default: "Type to get suggestions...",
-    },
-    maxMatches: {
-      type: Number,
-      default: 5,
-    },
-  },
-  data() {
-    return {
-      open: false,
-      current: 0,
-      searchValue: "",
-    };
-  },
+<script setup lang="ts">
+import { ref, computed } from "vue";
 
-  computed: {
-    filtered() {
-      return this.suggestions
-        .filter((data) => {
-          // Case insensitive search
-          return data.name.toLowerCase().indexOf(this.searchValue.toLowerCase()) >= 0;
-        })
-        .slice(0, this.maxMatches);
-    },
-  },
-  methods: {
-    updateSearchValue(event) {
-      const value = event.target.value;
-      if (this.open === false) {
-        this.open = true;
-        this.current = 0;
-      }
-      if (value === "") {
-        this.open = false;
-      }
-      this.searchValue = value;
-      this.$emit("search-changed", value);
-    },
-    enter() {
-      if (this.filtered.length === 0) {
-        return;
-      }
-      this.emitSelectedItem(this.current);
-      this.searchValue = "";
-      this.open = false;
-    },
-    up() {
-      if (this.current > 0) {
-        this.current--;
-      }
-    },
-    down() {
-      if (this.current < this.filtered.length - 1) {
-        this.current++;
-      }
-    },
-    isActive(index) {
-      return index === this.current;
-    },
-    suggestionClick(index) {
-      this.emitSelectedItem(index);
-      this.searchValue = "";
-      this.open = false;
-    },
-    emitSelectedItem(index) {
-      this.$emit("selected", this.filtered[index]);
-    },
-  },
-};
+interface Suggestion {
+  id: string | number;
+  name: string;
+  type?: string;
+  user?: {
+    first_name?: string;
+    last_name?: string;
+    user_id?: string;
+    email?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+const props = defineProps<{
+  suggestions: Suggestion[];
+  placeholder?: string;
+  maxMatches?: number;
+}>();
+
+const emit = defineEmits<{
+  "search-changed": [value: string];
+  selected: [suggestion: Suggestion];
+}>();
+
+const open = ref(false);
+const current = ref(0);
+const searchValue = ref("");
+
+const filtered = computed(() =>
+  props.suggestions
+    .filter((data) => data.name.toLowerCase().indexOf(searchValue.value.toLowerCase()) >= 0)
+    .slice(0, props.maxMatches ?? 5),
+);
+
+function updateSearchValue(event: Event): void {
+  const value = (event.target as HTMLInputElement).value;
+  if (open.value === false) {
+    open.value = true;
+    current.value = 0;
+  }
+  if (value === "") {
+    open.value = false;
+  }
+  searchValue.value = value;
+  emit("search-changed", value);
+}
+
+function enter(): void {
+  if (filtered.value.length === 0) {
+    return;
+  }
+  emitSelectedItem(current.value);
+  searchValue.value = "";
+  open.value = false;
+}
+
+function up(): void {
+  if (current.value > 0) {
+    current.value--;
+  }
+}
+
+function down(): void {
+  if (current.value < filtered.value.length - 1) {
+    current.value++;
+  }
+}
+
+function isActive(index: number): boolean {
+  return index === current.value;
+}
+
+function suggestionClick(index: number): void {
+  emitSelectedItem(index);
+  searchValue.value = "";
+  open.value = false;
+}
+
+function emitSelectedItem(index: number): void {
+  emit("selected", filtered.value[index]);
+}
 </script>
 
 <style scoped>

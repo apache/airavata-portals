@@ -23,33 +23,41 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref } from "vue";
 import { Modal } from "bootstrap";
 
-export default {
-  name: "ConfirmationDialog",
-  props: {
-    title: {
-      type: String,
-      default: "Please confirm",
-    },
-  },
-  methods: {
-    show() {
-      new Modal(this.$refs.modal).show();
-    },
-    hide() {
-      const instance = Modal.getInstance(this.$refs.modal);
-      if (instance) instance.hide();
-    },
-    ok() {
-      this.$emit("ok");
-      this.hide();
-    },
-    cancel() {
-      this.$emit("cancel");
-      this.hide();
-    },
-  },
-};
+withDefaults(defineProps<{
+  title?: string;
+}>(), {
+  title: "Please confirm",
+});
+
+const emit = defineEmits<{
+  ok: [];
+  cancel: [];
+}>();
+
+const modal = ref<HTMLElement | null>(null);
+
+function show(): void {
+  new Modal(modal.value!).show();
+}
+
+function hide(): void {
+  const instance = Modal.getInstance(modal.value!);
+  if (instance) instance.hide();
+}
+
+function ok(): void {
+  emit("ok");
+  hide();
+}
+
+function cancel(): void {
+  emit("cancel");
+  hide();
+}
+
+defineExpose({ show, hide });
 </script>

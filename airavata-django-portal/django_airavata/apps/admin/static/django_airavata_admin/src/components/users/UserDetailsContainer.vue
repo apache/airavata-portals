@@ -55,50 +55,41 @@
     </li>
   </ul>
 </template>
-<script>
+<script setup lang="ts">
+import { ref, computed, watch } from "vue";
 import { models } from "django-airavata-api";
-import ActivateUserPanel from "./ActivateUserPanel";
-import EnableUserPanel from "./EnableUserPanel";
-import DeleteUserPanel from "./DeleteUserPanel";
+import ActivateUserPanel from "./ActivateUserPanel.vue";
+import EnableUserPanel from "./EnableUserPanel.vue";
+import DeleteUserPanel from "./DeleteUserPanel.vue";
 import ChangeUsernamePanel from "./ChangeUsernamePanel.vue";
-import ExternalIDPUserInfoPanel from "./ExternalIDPUserInfoPanel.vue";
+import ExternalIdpUserInfoPanel from "./ExternalIDPUserInfoPanel.vue";
 import UserProfilePanel from "./UserProfilePanel.vue";
 import ExtendedUserProfilePanel from "./ExtendedUserProfilePanel.vue";
 
-export default {
-  name: "UserDetailsContainer",
-  components: {
-    EnableUserPanel,
-    DeleteUserPanel,
-    ActivateUserPanel,
-    ChangeUsernamePanel,
-    "external-idp-user-info-panel": ExternalIDPUserInfoPanel,
-    UserProfilePanel,
-    ExtendedUserProfilePanel,
-  },
-  props: {
-    iamUserProfile: {
-      type: models.IAMUserProfile,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      localIAMUserProfile: this.iamUserProfile.clone(),
-    };
-  },
-  computed: {
-    hasExternalIDPUserInfo() {
-      return Object.keys(this.localIAMUserProfile.external_idp_user_info).length !== 0;
-    },
-    isUsernameInvalid() {
-      return this.iamUserProfile.user_profile_invalid_fields.indexOf("username") >= 0;
-    },
-  },
-  watch: {
-    iamUserProfile(newValue) {
-      this.localIAMUserProfile = newValue.clone();
-    },
-  },
-};
+const props = defineProps<{
+  iamUserProfile: InstanceType<typeof models.IAMUserProfile>;
+}>();
+
+defineEmits<{
+  "enable-user": [username: string];
+  "delete-user": [username: string];
+  "update-username": [args: [string, string]];
+}>();
+
+const localIAMUserProfile = ref(props.iamUserProfile.clone());
+
+watch(
+  () => props.iamUserProfile,
+  (newValue) => {
+    localIAMUserProfile.value = newValue.clone();
+  }
+);
+
+const hasExternalIDPUserInfo = computed(
+  () => Object.keys(localIAMUserProfile.value.external_idp_user_info).length !== 0
+);
+
+const isUsernameInvalid = computed(
+  () => props.iamUserProfile.user_profile_invalid_fields.indexOf("username") >= 0
+);
 </script>

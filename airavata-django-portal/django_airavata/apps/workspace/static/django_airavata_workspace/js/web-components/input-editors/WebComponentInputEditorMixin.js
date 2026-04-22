@@ -1,4 +1,5 @@
 import { utils } from "django-airavata-common-ui";
+import { useWebComponentsStore } from "django-airavata-common-ui/js/stores/webComponents";
 
 export default {
   props: {
@@ -6,8 +7,10 @@ export default {
     name: String,
   },
   emits: ["update:modelValue"],
-  // TODO: web components need Vue 3 defineCustomElement migration
-  // store: store,
+  setup() {
+    const webComponentsStore = useWebComponentsStore();
+    return { webComponentsStore };
+  },
   data() {
     return {
       data: this.modelValue,
@@ -21,7 +24,7 @@ export default {
       return utils.sanitizeHTMLId(this.experimentInput.name);
     },
     experimentInput() {
-      return this.$store.getters.getExperimentInputByName(this.name);
+      return this.webComponentsStore.getExperimentInputByName(this.name);
     },
   },
   methods: {

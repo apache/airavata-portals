@@ -26,25 +26,16 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref } from "vue";
 import ParserListItem from "./ParserListItem.vue";
+import { models } from "django-airavata-api";
 
-export default {
-  name: "ParserList",
-  components: {
-    ParserListItem,
-  },
-  props: ["parsers"],
-  data: function () {
-    return {
-      owner: "owner",
-      alertMsg: null,
-      alertVariant: "primary",
-      showDismissibleAlert: false,
-    };
-  },
-  methods: {},
-};
+defineProps<{ parsers: InstanceType<typeof models.Parser>[] | null }>();
+
+const alertMsg = ref<string | null>(null);
+const alertVariant = ref("primary");
+const showDismissibleAlert = ref(false);
 </script>
 
 <style>

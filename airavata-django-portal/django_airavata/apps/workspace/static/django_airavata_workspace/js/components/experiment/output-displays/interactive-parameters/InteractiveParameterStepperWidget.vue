@@ -17,57 +17,63 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "InteractiveParameterStepperWidget",
-  props: {
-    value: {
-      type: Number,
-      required: true,
-    },
-    parameter: {
-      type: Object,
-    },
-  },
-  data() {
-    return {
-      currentValue: parseFloat(this.value),
-      valid: false,
-    };
-  },
-  computed: {
-    disabled() {
-      return !this.valid || this.currentValue === parseFloat(this.value);
-    },
-  },
-  methods: {
-    updateValue(newValue) {
-      if ("max" in this.parameter) {
-        newValue = Math.min(this.parameter.max, newValue);
-      }
-      if ("min" in this.parameter) {
-        newValue = Math.max(this.parameter.min, newValue);
-      }
-      this.currentValue = parseFloat(newValue);
-      if (this.$refs.textInput.validity.valid) {
-        this.valid = true;
-        this.$emit("valid");
-      } else {
-        this.valid = false;
-        this.$emit("invalid", this.$refs.textInput.validationMessage);
-      }
-    },
-    submit() {
-      if (!this.disabled) {
-        this.$emit("input", this.currentValue);
-      }
-    },
-    enterKeyPressed() {
-      if (!this.disabled) {
-        this.$refs.textInput.blur();
-        this.submit();
-      }
-    },
-  },
-};
+<script setup lang="ts">
+import { ref, computed } from "vue";
+
+interface InteractiveParameter {
+  min?: number;
+  max?: number;
+  step?: number;
+  [key: string]: unknown;
+}
+
+const props = defineProps<{
+  value: number;
+  parameter: InteractiveParameter;
+}>();
+
+const emit = defineEmits<{
+  input: [value: number];
+  valid: [];
+  invalid: [message: string];
+}>();
+
+const textInput = ref<HTMLInputElement | null>(null);
+const currentValue = ref<number>(parseFloat(String(props.value)));
+const valid = ref(false);
+
+const disabled = computed(
+  () => !valid.value || currentValue.value === parseFloat(String(props.value)),
+);
+
+function updateValue(event: Event) {
+  let newValue = parseFloat((event.target as HTMLInputElement).value);
+  if (props.parameter && props.parameter.max !== null && props.parameter.max !== undefined) {
+    newValue = Math.min(props.parameter.max, newValue);
+  }
+  if (props.parameter && props.parameter.min !== null && props.parameter.min !== undefined) {
+    newValue = Math.max(props.parameter.min, newValue);
+  }
+  currentValue.value = newValue;
+  if (textInput.value?.validity.valid) {
+    valid.value = true;
+    emit("valid");
+  } else {
+    valid.value = false;
+    emit("invalid", textInput.value?.validationMessage ?? "");
+  }
+}
+
+function submit() {
+  if (!disabled.value) {
+    emit("input", currentValue.value);
+  }
+}
+
+function enterKeyPressed() {
+  if (!disabled.value) {
+    textInput.value?.blur();
+    submit();
+  }
+}
 </script>

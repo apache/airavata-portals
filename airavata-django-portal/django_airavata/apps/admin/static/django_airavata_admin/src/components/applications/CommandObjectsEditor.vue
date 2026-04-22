@@ -22,44 +22,61 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, watch, nextTick } from "vue";
 import { models } from "django-airavata-api";
-import { mixins } from "django-airavata-common-ui";
 
-export default {
-  name: "CommandObjectsEditor",
-  mixins: [mixins.VModelMixin],
-  props: {
-    value: {
-      type: Array,
-    },
-    title: {
-      type: String,
-      required: true,
-    },
-    addButtonLabel: {
-      type: String,
-      required: true,
-    },
-    readonly: {
-      type: Boolean,
-      default: false,
-    },
+type CommandObject = InstanceType<typeof models.CommandObject>;
+
+const props = defineProps<{
+  modelValue: CommandObject[] | null;
+  title: string;
+  addButtonLabel: string;
+  readonly?: boolean;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [value: CommandObject[]];
+}>();
+
+const commandObjectInputs = ref<HTMLInputElement[]>([]);
+
+// Local reactive copy
+const data = ref<CommandObject[]>(
+  props.modelValue ? props.modelValue.map((item) => item.clone() as CommandObject) : [],
+);
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    data.value = newValue ? newValue.map((item) => item.clone() as CommandObject) : [];
   },
-  methods: {
-    addCommandObject() {
-      if (!this.data) {
-        this.data = [];
-      }
-      this.data.push(new models.CommandObject());
-      this.$nextTick(() =>
-        this.$refs.commandObjectInputs[this.$refs.commandObjectInputs.length - 1].focus(),
-      );
-    },
-    deleteCommandObject(commandObject) {
-      const index = this.data.findIndex((cmd) => cmd.key === commandObject.key);
-      this.data.splice(index, 1);
-    },
+  { deep: true },
+);
+
+watch(
+  data,
+  (newValue) => {
+    emit("update:modelValue", newValue);
   },
-};
+  { deep: true },
+);
+
+function addCommandObject() {
+  if (!data.value) {
+    data.value = [];
+  }
+  data.value.push(new models.CommandObject());
+  nextTick(() => {
+    const inputs = commandObjectInputs.value;
+    if (inputs && inputs.length > 0) {
+      inputs[inputs.length - 1].focus();
+    }
+  });
+}
+
+function deleteCommandObject(commandObject: CommandObject) {
+  const index = data.value.findIndex((cmd) => (cmd as CommandObject).key === commandObject.key);
+  data.value.splice(index, 1);
+}
 </script>
