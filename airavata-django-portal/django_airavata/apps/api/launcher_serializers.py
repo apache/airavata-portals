@@ -35,10 +35,14 @@ class ExperimentDraftSerializer(serializers.Serializer):
     runtime = RuntimeSerializer()
 
     def validate_inputs(self, value):
-        # Each input is either a scalar (str/int/float/bool) or a {storage_id, path} object.
+        scalar_types = (str, int, float, bool)
         for name, v in value.items():
             if isinstance(v, dict):
                 StorageRefSerializer(data=v).is_valid(raise_exception=True)
+            elif not isinstance(v, scalar_types):
+                raise serializers.ValidationError(
+                    {name: "input must be a scalar (str/int/float/bool) or a {storage_id, path} object"}
+                )
         return value
 
 

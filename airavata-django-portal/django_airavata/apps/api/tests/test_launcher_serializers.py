@@ -3,11 +3,12 @@ from pathlib import Path
 from unittest import TestCase
 
 import jsonschema
+from django.conf import settings
 
 from django_airavata.apps.api import launcher_serializers
 
 
-CONTRACTS = Path(__file__).resolve().parents[4] / "tests" / "contracts"
+CONTRACTS = Path(settings.BASE_DIR) / "tests" / "contracts"
 
 
 class ExperimentDraftSerializerTest(TestCase):
@@ -49,6 +50,18 @@ class ExperimentDraftSerializerTest(TestCase):
     def test_serializer_rejects_bad_walltime(self):
         draft = self._valid_draft()
         draft["runtime"]["walltime"] = "not-a-time"
+        serializer = launcher_serializers.ExperimentDraftSerializer(data=draft)
+        self.assertFalse(serializer.is_valid())
+
+    def test_serializer_rejects_malformed_file_input(self):
+        draft = self._valid_draft()
+        draft["inputs"]["sim_dir"] = {"storage_id": "my-home"}  # missing 'path'
+        serializer = launcher_serializers.ExperimentDraftSerializer(data=draft)
+        self.assertFalse(serializer.is_valid())
+
+    def test_serializer_rejects_non_scalar_non_dict_input(self):
+        draft = self._valid_draft()
+        draft["inputs"]["steps"] = [1, 2, 3]  # neither scalar nor {storage_id, path}
         serializer = launcher_serializers.ExperimentDraftSerializer(data=draft)
         self.assertFalse(serializer.is_valid())
 
