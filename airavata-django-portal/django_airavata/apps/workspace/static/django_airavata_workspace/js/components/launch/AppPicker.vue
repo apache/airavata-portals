@@ -46,6 +46,7 @@
 import { computed, ref } from "vue";
 import type { Application } from "django-airavata-common-ui/js/stores/launch-types";
 import { useLaunchStore } from "django-airavata-common-ui/js/stores/launch";
+import { useConfirmReset } from "../../composables/useConfirmReset";
 
 const props = defineProps<{ applications: Application[] }>();
 const store = useLaunchStore();
@@ -74,7 +75,16 @@ const filtered = computed(() => {
   return xs;
 });
 
+const guardedPick = useConfirmReset(
+  "Switching app clears interface, inputs, and outputs. Continue?",
+  (a: Application) => store.pickApp(a),
+);
+
 function pick(a: Application) {
-  store.pickApp(a);
+  if (store.draft.app_id && store.draft.app_id !== a.app_id) {
+    guardedPick(a);
+  } else {
+    store.pickApp(a);
+  }
 }
 </script>

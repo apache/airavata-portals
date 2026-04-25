@@ -38,6 +38,7 @@
 
 <script setup lang="ts">
 import { useLaunchStore } from "django-airavata-common-ui/js/stores/launch";
+import { useConfirmReset } from "../../composables/useConfirmReset";
 
 defineProps<{ projects: Array<{ project_id: string; name: string }> }>();
 
@@ -46,9 +47,23 @@ const store = useLaunchStore();
 function onName(v: string) {
   store.setMeta({ name: v, project_id: store.draft.project_id, description: store.draft.description });
 }
+
+const guardedProject = useConfirmReset(
+  "Switching project clears your runtime selections. Continue?",
+  (id: string | null) => {
+    store.setMeta({ name: store.draft.name, project_id: id, description: store.draft.description });
+  },
+);
+
 function onProject(v: string) {
-  store.setMeta({ name: store.draft.name, project_id: v || null, description: store.draft.description });
+  const next = v || null;
+  if (store.draft.project_id && store.draft.project_id !== next) {
+    guardedProject(next);
+  } else {
+    store.setMeta({ name: store.draft.name, project_id: next, description: store.draft.description });
+  }
 }
+
 function onDescription(v: string) {
   store.setMeta({ name: store.draft.name, project_id: store.draft.project_id, description: v });
 }
