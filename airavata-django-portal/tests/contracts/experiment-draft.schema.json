@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ExperimentDraft",
+  "type": "object",
+  "required": ["name", "project_id", "app_id", "interface_name", "inputs", "outputs", "runtime"],
+  "properties": {
+    "name": {"type": "string", "minLength": 1, "maxLength": 256},
+    "project_id": {"type": "string"},
+    "description": {"type": "string"},
+    "app_id": {"type": "string"},
+    "interface_name": {"type": "string"},
+    "inputs": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {"type": ["string", "number", "boolean"]},
+          {
+            "type": "object",
+            "required": ["storage_id", "path"],
+            "properties": {
+              "storage_id": {"type": "string"},
+              "path": {"type": "string"}
+            }
+          }
+        ]
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["storage_id", "path"],
+        "properties": {
+          "storage_id": {"type": "string"},
+          "path": {"type": "string"}
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["compute_resource_id", "partition", "walltime", "nodes", "cpus_per_node"],
+      "properties": {
+        "compute_resource_id": {"type": "string"},
+        "partition": {"type": "string"},
+        "walltime": {"type": "string", "pattern": "^\\d{1,3}:[0-5]\\d:[0-5]\\d$"},
+        "nodes": {"type": "integer", "minimum": 1},
+        "cpus_per_node": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}
