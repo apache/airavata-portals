@@ -1,22 +1,16 @@
 import json
 import logging
-from urllib.parse import urlparse
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from django.utils.module_loading import import_string
 from rest_framework.renderers import JSONRenderer
 
-from django_airavata.apps.api import models
-from django_airavata.apps.api import user_storage as user_storage_sdk
 from django_airavata.apps.api.views import (
-    ApplicationModuleViewSet,
     ExperimentSearchViewSet,
     FullExperimentViewSet,
     ProjectViewSet,
 )
-from django_airavata.proto_compat import DataType
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +21,6 @@ ENTRY_POINTS = {
     "project-list": "static/django_airavata_workspace/js/entry-project-list.js",
     "project-overview": "static/django_airavata_workspace/js/entry-project-overview.js",
     "edit-project": "static/django_airavata_workspace/js/entry-edit-project.js",
-    "create-experiment": "static/django_airavata_workspace/js/entry-create-experiment.js",
-    "edit-experiment": "static/django_airavata_workspace/js/entry-edit-experiment.js",
     "view-experiment": "static/django_airavata_workspace/js/entry-view-experiment.js",
     "user-storage": "static/django_airavata_workspace/js/entry-user-storage.js",
     "compute": "static/django_airavata_workspace/js/entry-compute.js",
@@ -111,19 +103,6 @@ def _create_default_project(request):
 
 
 @login_required
-def applications(request):
-    request.active_nav_item = "applications"
-    return render(
-        request,
-        "django_airavata_workspace/base.html",
-        {
-            "bundle_name": "applications",
-            "entry_point": ENTRY_POINTS["applications"],
-        },
-    )
-
-
-@login_required
 def new_application(request):
     request.active_nav_item = "applications"
     return render(
@@ -183,105 +162,6 @@ def project_overview(request, project_id):
             "breadcrumbs_json": json.dumps(breadcrumbs),
         },
     )
-
-
-@login_required
-def create_experiment(request, app_module_id):
-    request.active_nav_item = "applications"
-
-    # User input files can be passed as query parameters
-    # <input name>=<path/to/user_file>
-    # and also as data product URIs
-    # <input name>=<data product URI>
-    app_interface = ApplicationModuleViewSet.as_view({"get": "application_interface"})(
-        request, app_module_id=app_module_id
-    )
-    if app_interface.status_code != 200:
-        raise Exception("Failed to load application module data: {}".format(app_interface.data["detail"]))
-    user_input_values = {}
-    for app_input in app_interface.data.get("application_inputs", []):
-        if app_input["type"] == DataType.URI and app_input["name"] in request.GET:
-            user_file_value = request.GET[app_input["name"]]
-            try:
-                user_file_url = urlparse(user_file_value)
-                if user_file_url.scheme == "airavata-dp":
-                    dp_uri = user_file_value
-                    try:
-                        data_product = request.airavata_client.research.get_data_product(dp_uri)
-                        if user_storage_sdk.exists(request, data_product):
-                            user_input_values[app_input["name"]] = dp_uri
-                    except Exception:
-                        logger.exception(f"Failed checking data product uri: {dp_uri}", extra={"request": request})
-            except ValueError:
-                logger.exception(f"Invalid user file value: {user_file_value}", extra={"request": request})
-        elif app_input["type"] == DataType.STRING and app_input["name"] in request.GET:
-            name = app_input["name"]
-            user_input_values[name] = request.GET[name]
-    context = {
-        "bundle_name": "create-experiment",
-        "entry_point": ENTRY_POINTS["create-experiment"],
-        "app_module_id": app_module_id,
-        "user_input_values": json.dumps(user_input_values),
-    }
-    if "experiment-data-dir" in request.GET:
-        context["experiment_data_dir"] = request.GET["experiment-data-dir"]
-
-    template_path = "django_airavata_workspace/create_experiment.html"
-    # Apply a custom application template if it exists
-    custom_template_path, custom_context = get_custom_template(request, app_module_id)
-    if custom_template_path is not None:
-        logger.debug(f"Applying custom application template {custom_template_path}")
-        template_path = custom_template_path
-        context.update(custom_context)
-
-    return render(request, template_path, context)
-
-
-@login_required
-def edit_experiment(request, project_id, experiment_id):
-    request.active_nav_item = "projects"
-
-    project = request.airavata_client.research.get_project(project_id)
-    experiment = request.airavata_client.research.get_experiment(experiment_id)
-    applicationInterface = request.airavata_client.research.get_application_interface(experiment.execution_id)
-    app_module_id = applicationInterface.application_modules[0]
-
-    breadcrumbs = [
-        {"label": "Projects", "url": "/workspace/projects"},
-        {"label": project.name, "url": f"/workspace/projects/{project_id}/"},
-        {"label": "Experiments", "url": f"/workspace/projects/{project_id}/experiments"},
-        {"label": "Edit Experiment", "url": None},
-    ]
-
-    context = {
-        "bundle_name": "edit-experiment",
-        "entry_point": ENTRY_POINTS["edit-experiment"],
-        "experiment_id": experiment_id,
-        "app_module_id": app_module_id,
-        "project_id": project_id,
-        "breadcrumbs_json": json.dumps(breadcrumbs),
-    }
-    template_path = "django_airavata_workspace/edit_experiment.html"
-    custom_template_path, custom_context = get_custom_template(request, app_module_id)
-    if custom_template_path is not None:
-        logger.debug(f"Applying custom application template {custom_template_path}")
-        template_path = custom_template_path
-        context.update(custom_context)
-
-    return render(request, template_path, context)
-
-
-def get_custom_template(request, app_module_id):
-    template_path = None
-    context = {}
-    query = models.ApplicationTemplate.objects.filter(application_module_id=app_module_id)
-    if query.exists():
-        application_template = query.get()
-        template_path = application_template.template_path
-        for context_processor in application_template.context_processors.all():
-            context_processor = import_string(context_processor.callable_path)
-            context.update(context_processor(request))
-    return template_path, context
 
 
 @login_required

@@ -23,8 +23,8 @@ urlpatterns = [
     ),
     re_path(
         r"^projects/(?P<project_id>[^/]+)/experiments/(?P<experiment_id>[^/]+)/edit$",
-        views.edit_experiment,
-        name="edit_experiment",
+        RedirectView.as_view(url="/workspace/launch", permanent=True),
+        name="edit_experiment_redirect",
     ),
     re_path(
         r"^projects/(?P<project_id>[^/]+)/experiments/(?P<experiment_id>[^/]+)/$",
