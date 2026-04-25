@@ -109,7 +109,11 @@ export const useLaunchStore = defineStore("launch", () => {
     for (const io of iface.outputs) {
       if (io.type !== "file" && io.type !== "dir") continue;
       const v = draft.outputs[io.name];
-      if (!v || !v.path || !v.storage_id) return false;
+      if (!v) {
+        if (io.required) return false;
+        continue;
+      }
+      if (!v.path || !v.storage_id) return false;
     }
     return true;
   });
@@ -130,12 +134,21 @@ export const useLaunchStore = defineStore("launch", () => {
     return (h >>> 0).toString(16);
   });
 
+  function setStorages(s: UserStorage[]) {
+    storages.value = s;
+  }
+
+  function setProfile(p: ResourceProfile | null) {
+    profile.value = p;
+  }
+
   function reset() {
     Object.assign(draft, makeDraft());
     pickedApp.value = null;
     profile.value = null;
     preview.value = null;
     previewError.value = null;
+    previewLoading.value = false;
     lastPreviewedHash.value = null;
   }
 
@@ -158,6 +171,8 @@ export const useLaunchStore = defineStore("launch", () => {
     setInput,
     setOutput,
     setRuntime,
+    setStorages,
+    setProfile,
     reset,
   };
 });

@@ -64,3 +64,41 @@ describe("useLaunchStore", () => {
     expect(s.draftHash).toBe(h2);
   });
 });
+
+describe("setters and reset", () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  it("setStorages and setProfile populate state", () => {
+    const s = useLaunchStore();
+    s.setStorages([{ storage_id: "x", name: "X", is_primary: true }]);
+    s.setProfile({ project_id: "p1", allocation_id: "A1", compute_resources: [] });
+    expect(s.storages).toHaveLength(1);
+    expect(s.profile?.allocation_id).toBe("A1");
+  });
+
+  it("reset clears all state including previewLoading", () => {
+    const s = useLaunchStore();
+    s.setMeta({ name: "x", project_id: "p1", description: "" });
+    s.previewLoading = true;
+    s.reset();
+    expect(s.draft.name).toBe("");
+    expect(s.draft.project_id).toBeNull();
+    expect(s.previewLoading).toBe(false);
+  });
+
+  it("optional outputs do not block tab1 validity", () => {
+    const s = useLaunchStore();
+    const iface = {
+      name: "run",
+      inputs: [{ name: "x", type: "int" as const, required: true }],
+      outputs: [{ name: "log", type: "file" as const, required: false }],
+    };
+    s.setMeta({ name: "x", project_id: "p1", description: "" });
+    s.pickApp({ app_id: "a", name: "A", category: "C",
+                content: { kind: "github", url: "g" }, interfaces: [iface] });
+    s.pickInterface("run");
+    s.setInput("x", 1);
+    // No output set, but it's not required
+    expect(s.tab1Valid).toBe(true);
+  });
+});
