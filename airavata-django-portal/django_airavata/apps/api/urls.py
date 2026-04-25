@@ -109,6 +109,10 @@ urlpatterns += [
     ),
     re_path(r"^launcher/storages/$", launcher_views.user_storages, name="launcher_user_storages"),
     re_path(r"^launcher/projects/$", launcher_views.projects_list, name="launcher_projects_list"),
+    re_path(r"^launcher/experiment-drafts/preview/$",
+            launcher_views.experiment_draft_preview, name="launcher_draft_preview"),
+    re_path(r"^launcher/experiment-drafts/$",
+            launcher_views.experiment_draft_create, name="launcher_draft_create"),
 ]
 
 if logger.isEnabledFor(logging.DEBUG):
