@@ -1034,7 +1034,7 @@ async function deleteApp(): Promise<void> {
     if (props.appModuleId) {
       await services.ApplicationModuleService.delete({ lookup: props.appModuleId });
     }
-    window.location.href = "/workspace/launch";
+    window.location.href = "/workspace/applications";
   } catch (error) {
     console.error("Failed to delete application", error);
     const err = error as { message?: string; details?: unknown };
@@ -1048,7 +1048,7 @@ async function deleteApp(): Promise<void> {
 }
 
 function cancel(): void {
-  window.location.href = "/workspace/launch";
+  window.location.href = "/workspace/applications";
 }
 
 onMounted(() => {

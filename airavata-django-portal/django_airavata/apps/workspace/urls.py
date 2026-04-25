@@ -41,7 +41,8 @@ urlpatterns = [
     re_path(r"^projects/(?P<project_id>[^/]+)/edit$", views.edit_project, name="edit_project"),
     # Generic experiment launcher (Task 5)
     re_path(r"^launch$", views.launch, name="launch"),
-    # Applications (gateway-wide)
+    # Applications (gateway-wide) — app management surface stays. Only the
+    # per-app create_experiment URL redirects to the new generic launcher.
     re_path(r"^applications/new$", views.new_application, name="new_application"),
     re_path(
         r"^applications/(?P<app_module_id>[^/]+)/create_experiment$",
@@ -50,10 +51,10 @@ urlpatterns = [
     ),
     re_path(
         r"^applications/(?P<app_module_id>[^/]+)/$",
-        RedirectView.as_view(url="/workspace/launch", permanent=True),
-        name="application_editor_redirect",
+        views.edit_application,
+        name="application_editor",
     ),
-    re_path(r"^applications$", RedirectView.as_view(url="/workspace/launch", permanent=True), name="applications_redirect"),
+    re_path(r"^applications$", views.applications, name="applications"),
     # Resources — storage
     re_path(
         r"^storage/(?P<storage_resource_id>[^/]+)/tree(?:/(?P<path>.*))?$",
@@ -68,3 +69,4 @@ urlpatterns = [
     re_path(r"^storage$", views.user_storage, name="storage"),
     re_path(r"^compute", views.compute_resources, name="compute"),
 ]
+

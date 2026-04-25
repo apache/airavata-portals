@@ -1,5 +1,9 @@
 <template>
   <div class="container-fluid">
+    <header class="mb-3">
+      <h1 class="h3 mb-1">Launch Experiment</h1>
+      <p class="text-muted mb-0">Pick an application, give it inputs, choose runtime, then review the generated submission script before launch.</p>
+    </header>
     <ExperimentMetaHeader :projects="projects" />
     <WizardTabs :active="active" @update:active="onChangeTab" />
     <div data-test="active-tab" :data-active="active" />
@@ -37,6 +41,7 @@ function onChangeTab(n: 1 | 2 | 3) {
 }
 
 onMounted(async () => {
+  document.title = "Launch Experiment · Airavata Portal";
   store.hydrate();
   const url = new URL(window.location.href);
   const t = Number(url.searchParams.get("tab"));

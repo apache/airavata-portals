@@ -68,15 +68,17 @@ class LaunchViewTest(TestCase):
         self.assertEqual(resp.status_code, 301)
         self.assertEqual(resp["Location"], "/workspace/launch")
 
-    def test_old_applications_url_redirects_to_launch(self):
+    def test_applications_url_renders_app_list(self):
+        # /workspace/applications stays as the app management page (not a redirect).
         resp = self.client.get("/workspace/applications", follow=False)
-        self.assertEqual(resp.status_code, 301)
-        self.assertEqual(resp["Location"], "/workspace/launch")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'id="applications"')
 
-    def test_old_application_editor_url_redirects_to_launch(self):
+    def test_application_editor_url_renders_editor(self):
+        # /workspace/applications/<id>/ stays as the app editor (not a redirect).
         resp = self.client.get("/workspace/applications/some-module-id/", follow=False)
-        self.assertEqual(resp.status_code, 301)
-        self.assertEqual(resp["Location"], "/workspace/launch")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'id="application-editor"')
 
     def test_launch_requires_auth(self):
         self.client.logout()

@@ -103,6 +103,19 @@ def _create_default_project(request):
 
 
 @login_required
+def applications(request):
+    request.active_nav_item = "applications"
+    return render(
+        request,
+        "django_airavata_workspace/base.html",
+        {
+            "bundle_name": "applications",
+            "entry_point": ENTRY_POINTS["applications"],
+        },
+    )
+
+
+@login_required
 def new_application(request):
     request.active_nav_item = "applications"
     return render(

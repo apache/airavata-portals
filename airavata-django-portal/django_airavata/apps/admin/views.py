@@ -14,7 +14,7 @@ def app_catalog(request):
     # sub-routes (new, edit) still render the admin SPA editor.
     path = request.path.rstrip("/")
     if path == "/admin/applications":
-        return redirect(reverse("django_airavata_workspace:launch"))
+        return redirect(reverse("django_airavata_workspace:applications"))
     request.active_nav_item = "app_catalog"
     return render(request, "admin/admin_base.html")
 

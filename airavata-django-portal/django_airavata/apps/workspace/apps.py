@@ -21,8 +21,8 @@ class WorkspaceConfig(AiravataAppConfig):
         {
             "label": "Applications",
             "icon": "fa fa-cubes",
-            "url": "django_airavata_workspace:launch",
-            "active_prefixes": ["applications", "launch"],
+            "url": "django_airavata_workspace:applications",
+            "active_prefixes": ["applications"],
         },
         {
             "label": "Datasets",
