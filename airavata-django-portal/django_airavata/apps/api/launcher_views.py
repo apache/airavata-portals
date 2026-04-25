@@ -1,5 +1,6 @@
-from rest_framework import permissions, status
+from rest_framework import permissions
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -26,7 +27,7 @@ def application_detail(request: Request, app_id: str) -> Response:
     try:
         return Response(_client(request).get_application(app_id=app_id))
     except LookupError:
-        return Response({"detail": "not found"}, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound()
 
 
 @api_view(["GET"])

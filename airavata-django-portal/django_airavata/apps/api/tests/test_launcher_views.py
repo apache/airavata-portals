@@ -36,6 +36,12 @@ class LauncherListingViewsTest(APITestCase):
         self.assertEqual(resp.json()["app_id"], "namd")
 
     @override_settings(LAUNCHER_CLIENT_STUB=True)
+    def test_application_detail_not_found(self):
+        resp = self.client.get("/api/launcher/applications/does-not-exist/")
+        self.assertEqual(resp.status_code, 404)
+        self.assertIn("detail", resp.json())
+
+    @override_settings(LAUNCHER_CLIENT_STUB=True)
     def test_resource_profile_for_project(self):
         resp = self.client.get("/api/launcher/projects/proj-1/resource-profile/")
         self.assertEqual(resp.status_code, 200)
@@ -61,6 +67,7 @@ class LauncherListingViewsTest(APITestCase):
         self.assertIn("project_id", body["results"][0])
         self.assertIn("name", body["results"][0])
 
+    @override_settings(LAUNCHER_CLIENT_STUB=True)
     def test_endpoints_require_auth(self):
         # Clear the forced authentication so the requests are anonymous.
         self.client.force_authenticate(user=None)
