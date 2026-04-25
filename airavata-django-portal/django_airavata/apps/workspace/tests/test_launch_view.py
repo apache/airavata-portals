@@ -73,6 +73,11 @@ class LaunchViewTest(TestCase):
         self.assertEqual(resp.status_code, 301)
         self.assertEqual(resp["Location"], "/workspace/launch")
 
+    def test_old_application_editor_url_redirects_to_launch(self):
+        resp = self.client.get("/workspace/applications/some-module-id/", follow=False)
+        self.assertEqual(resp.status_code, 301)
+        self.assertEqual(resp["Location"], "/workspace/launch")
+
     def test_launch_requires_auth(self):
         self.client.logout()
         self._authz_patcher.stop()

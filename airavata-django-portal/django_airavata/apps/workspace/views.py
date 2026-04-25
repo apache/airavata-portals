@@ -453,6 +453,7 @@ def datasets_list(request):
 
 @login_required
 def launch(request):
+    request.active_nav_item = "launch"
     return render(request, "django_airavata_workspace/launch.html", {
         "feature_flag": getattr(settings, "FEATURE_GENERIC_LAUNCHER", False),
     })
