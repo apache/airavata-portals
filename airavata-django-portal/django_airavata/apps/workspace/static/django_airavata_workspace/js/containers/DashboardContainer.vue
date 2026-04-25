@@ -214,7 +214,7 @@ function navigateToApp(appModule: unknown) {
 }
 
 function runExperimentUrl(appModule: unknown) {
-  return "/workspace/applications/" + (appModule as { app_module_id: string }).app_module_id + "/create_experiment";
+  return "/workspace/launch";
 }
 
 function toggleFavorite(appModule: unknown) {

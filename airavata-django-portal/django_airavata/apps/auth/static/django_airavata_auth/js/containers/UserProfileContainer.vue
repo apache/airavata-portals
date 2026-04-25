@@ -27,7 +27,7 @@
         </template>
 
         <button class="btn btn-primary" @click="onSave">Save</button>
-        <button v-if="!mustComplete" class="btn btn-success" href="/workspace/applications">
+        <button v-if="!mustComplete" class="btn btn-success" href="/workspace/launch">
           Go to Applications
         </button>
       </div>

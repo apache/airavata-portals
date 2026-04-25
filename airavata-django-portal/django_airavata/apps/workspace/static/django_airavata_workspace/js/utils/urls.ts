@@ -2,10 +2,6 @@ interface Experiment {
   experiment_id: string;
 }
 
-interface AppModule {
-  app_module_id: string;
-}
-
 interface Project {
   project_id: string;
 }
@@ -54,15 +50,11 @@ export default {
       this.viewExperiment(projectId, experiment, { launching })
     );
   },
-  createExperiment(appModule: AppModule): string {
-    return (
-      "/workspace/applications/" +
-      encodeURIComponent(appModule.app_module_id) +
-      "/create_experiment"
-    );
+  createExperiment(): string {
+    return "/workspace/launch";
   },
-  navigateToCreateExperiment(appModule: AppModule): void {
-    window.location.assign(this.createExperiment(appModule));
+  navigateToCreateExperiment(): void {
+    window.location.assign(this.createExperiment());
   },
   projectOverview(project: Project): string {
     return (

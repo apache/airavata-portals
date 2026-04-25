@@ -37,7 +37,7 @@
         <h5 class="mb-0">Recent Experiments</h5>
         <div class="ms-auto d-flex gap-2">
           <a
-            href="/workspace/applications?action=launch"
+            href="/workspace/launch"
             class="btn btn-primary btn-sm"
             title="Choose an application to run an experiment from"
           >

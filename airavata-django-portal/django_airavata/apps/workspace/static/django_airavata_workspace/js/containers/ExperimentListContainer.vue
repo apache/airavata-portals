@@ -7,7 +7,7 @@
         <p class="text-muted mb-0">Search, view, and manage your computational experiments.</p>
       </div>
       <div class="col-auto">
-        <a href="/workspace/applications" class="btn btn-primary btn-sm"
+        <a href="/workspace/launch" class="btn btn-primary btn-sm"
           ><i class="fa fa-plus me-1"></i>Create New</a
         >
       </div>
@@ -94,7 +94,7 @@
                   <div class="table-empty__title">No experiments yet</div>
                   <div class="table-empty__text">
                     Launch your first experiment from the
-                    <a href="/workspace/applications">Dashboard</a>.
+                    <a href="/workspace/launch">Dashboard</a>.
                   </div>
                 </div>
               </td>

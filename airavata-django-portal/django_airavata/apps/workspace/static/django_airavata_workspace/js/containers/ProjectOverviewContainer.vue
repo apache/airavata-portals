@@ -235,7 +235,7 @@ const experimentsUrl = computed(() =>
 const artifactsUrl = computed(() =>
   `/workspace/projects/${encodeURIComponent(props.projectId)}/artifacts`,
 );
-const newExperimentUrl = "/workspace/applications";
+const newExperimentUrl = "/workspace/launch";
 
 const formattedCreationTime = computed(() => {
   const p = project.value as Record<string, unknown> | null;

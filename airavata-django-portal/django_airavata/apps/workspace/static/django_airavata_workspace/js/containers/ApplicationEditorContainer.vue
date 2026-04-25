@@ -723,7 +723,7 @@ const hasInterface = computed(() => {
 
 const hasDeployments = computed(() => appDeployments.value.length > 0);
 
-const launchUrl = computed(() => "/workspace/applications/" + props.appModuleId + "/create_experiment");
+const launchUrl = computed(() => "/workspace/launch");
 
 const inputDataTypes = computed(() => (models.InputDataObjectType as unknown as Record<string, unknown>).VALID_DATA_TYPES as unknown[]);
 
@@ -1034,7 +1034,7 @@ async function deleteApp(): Promise<void> {
     if (props.appModuleId) {
       await services.ApplicationModuleService.delete({ lookup: props.appModuleId });
     }
-    window.location.href = "/workspace/applications";
+    window.location.href = "/workspace/launch";
   } catch (error) {
     console.error("Failed to delete application", error);
     const err = error as { message?: string; details?: unknown };
@@ -1048,7 +1048,7 @@ async function deleteApp(): Promise<void> {
 }
 
 function cancel(): void {
-  window.location.href = "/workspace/applications";
+  window.location.href = "/workspace/launch";
 }
 
 onMounted(() => {
