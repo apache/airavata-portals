@@ -57,3 +57,43 @@ class StubLauncherClientTest(TestCase):
         self.assertTrue(len(projects) >= 1)
         self.assertIn("project_id", projects[0])
         self.assertIn("name", projects[0])
+
+    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    def test_generate_preview_emits_slurm_script_for_bridges(self):
+        client = launcher_client.get_client(user_token="ignored")
+        draft = {
+            "name": "x",
+            "project_id": "proj-stub",
+            "app_id": "app-stub",
+            "interface_name": "run",
+            "inputs": {},
+            "outputs": {},
+            "runtime": {
+                "compute_resource_id": "bridges-2",
+                "partition": "RM",
+                "walltime": "01:00:00",
+                "nodes": 1,
+                "cpus_per_node": 8,
+            },
+        }
+        preview = client.generate_preview(draft)
+        self.assertTrue(preview["invocation_command"].startswith("sbatch"))
+        self.assertIn("#SBATCH", preview["script_contents"])
+
+    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    def test_list_applications_filters_by_category(self):
+        client = launcher_client.get_client(user_token="ignored")
+        results = client.list_applications(category="Molecular Dynamics", search=None)
+        self.assertTrue(len(results) >= 1)
+        self.assertTrue(all(a["category"] == "Molecular Dynamics" for a in results))
+
+    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    def test_list_applications_filters_by_search(self):
+        client = launcher_client.get_client(user_token="ignored")
+        results = client.list_applications(category=None, search="namd")
+        self.assertTrue(any("NAMD" in a["name"] for a in results))
+
+    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    def test_list_applications_search_returns_empty_when_no_match(self):
+        client = launcher_client.get_client(user_token="ignored")
+        self.assertEqual(client.list_applications(category=None, search="nonexistent-app"), [])

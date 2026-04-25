@@ -63,6 +63,34 @@ describe("useLaunchStore", () => {
     s.setMeta({ name: "x", project_id: "p1", description: "" });
     expect(s.draftHash).toBe(h2);
   });
+
+  it("treats non-required null inputs as valid for tab1", () => {
+    const s = useLaunchStore();
+    const iface = {
+      name: "run",
+      inputs: [
+        { name: "a", type: "int" as const, required: true },
+        { name: "b", type: "int" as const, required: false },
+      ],
+      outputs: [],
+    };
+    s.setMeta({ name: "x", project_id: "p1", description: "" });
+    s.pickApp({ app_id: "x", name: "X", category: "C",
+                content: { kind: "github", url: "g" }, interfaces: [iface] });
+    s.pickInterface("run");
+    s.setInput("a", 1);
+    // 'b' deliberately unset (null), but optional
+    expect(s.tab1Valid).toBe(true);
+  });
+
+  it("rejects empty walltime in tab2Valid", () => {
+    const s = useLaunchStore();
+    s.setRuntime({
+      compute_resource_id: "cr-1", partition: "RM",
+      walltime: "", nodes: 1, cpus_per_node: 8,
+    });
+    expect(s.tab2Valid).toBe(false);
+  });
 });
 
 describe("setters and reset", () => {

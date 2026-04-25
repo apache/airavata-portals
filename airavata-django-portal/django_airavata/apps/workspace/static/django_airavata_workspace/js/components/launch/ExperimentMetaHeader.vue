@@ -3,6 +3,7 @@
     <div class="col-md-6">
       <input
         data-test="exp-name"
+        aria-label="Experiment name"
         class="form-control"
         :value="store.draft.name"
         placeholder="Experiment name"
@@ -13,6 +14,7 @@
     <div class="col-md-6">
       <select
         data-test="exp-project"
+        aria-label="Project"
         class="form-select"
         :value="store.draft.project_id ?? ''"
         @change="onProject(($event.target as HTMLSelectElement).value)"
@@ -26,6 +28,7 @@
     <div class="col-12">
       <textarea
         data-test="exp-description"
+        aria-label="Description"
         class="form-control"
         rows="2"
         :value="store.draft.description"

@@ -9,6 +9,7 @@ stub and the real client. Tests should mock at the ``get_client`` boundary.
 
 from __future__ import annotations
 
+import copy
 from typing import Any, Protocol
 
 from django.conf import settings
@@ -55,7 +56,7 @@ class _StubClient:
         self.user_token = user_token
 
     def list_applications(self, *, category: str | None, search: str | None) -> list[dict[str, Any]]:
-        results = list(_STUB_APPS)
+        results = [copy.deepcopy(a) for a in _STUB_APPS]
         if category:
             results = [a for a in results if a["category"] == category]
         if search:
@@ -66,7 +67,7 @@ class _StubClient:
     def get_application(self, *, app_id: str) -> dict[str, Any]:
         for a in _STUB_APPS:
             if a["app_id"] == app_id:
-                return a
+                return copy.deepcopy(a)
         raise LookupError(f"unknown app_id {app_id!r}")
 
     def get_project_resource_profile(self, *, project_id: str) -> dict[str, Any]:
@@ -152,25 +153,25 @@ class _RealClient:
     def __init__(self, user_token: str) -> None:
         self.user_token = user_token
 
-    def list_applications(self, *, category, search):
+    def list_applications(self, *, category: str | None, search: str | None) -> list[dict[str, Any]]:
         raise NotImplementedError("real client requires airavata server new-model RPCs (Task 28)")
 
-    def get_application(self, *, app_id):
+    def get_application(self, *, app_id: str) -> dict[str, Any]:
         raise NotImplementedError("real client requires airavata server new-model RPCs (Task 28)")
 
-    def get_project_resource_profile(self, *, project_id):
+    def get_project_resource_profile(self, *, project_id: str) -> dict[str, Any]:
         raise NotImplementedError("real client requires airavata server new-model RPCs (Task 28)")
 
-    def list_user_storages(self):
+    def list_user_storages(self) -> list[dict[str, Any]]:
         raise NotImplementedError("real client requires airavata server new-model RPCs (Task 28)")
 
-    def list_projects(self):
+    def list_projects(self) -> list[dict[str, Any]]:
         raise NotImplementedError("real client requires airavata server new-model RPCs (Task 28)")
 
-    def generate_preview(self, draft):
+    def generate_preview(self, draft: dict[str, Any]) -> dict[str, Any]:
         raise NotImplementedError("real client requires airavata server new-model RPCs (Task 28)")
 
-    def launch_experiment(self, draft):
+    def launch_experiment(self, draft: dict[str, Any]) -> dict[str, Any]:
         raise NotImplementedError("real client requires airavata server new-model RPCs (Task 28)")
 
 
