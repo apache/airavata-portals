@@ -25,5 +25,6 @@ export default defineAppConfig({
     "compute-detail": resolve(srcDir, "entry-compute-detail.js"),
     "project-overview": resolve(srcDir, "entry-project-overview.js"),
     "application-editor": resolve(srcDir, "entry-application-editor.js"),
+    launch: resolve(srcDir, "entry-launch.ts"),
   },
 });
