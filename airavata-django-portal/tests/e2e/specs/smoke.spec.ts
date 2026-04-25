@@ -2,6 +2,7 @@ import { test, expect } from "../fixtures/auth";
 
 const AUTHENTICATED_PAGES = [
   "/workspace/home",
+  "/workspace/launch",
   "/workspace/projects",
   "/workspace/applications",
   "/workspace/datasets",
