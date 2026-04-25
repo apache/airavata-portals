@@ -625,7 +625,7 @@ if 'GATEWAY_ID' not in dir():
 
 
 # Generic experiment launcher feature flags
-FEATURE_GENERIC_LAUNCHER = os.environ.get("FEATURE_GENERIC_LAUNCHER", "False").lower() == "true"
+FEATURE_GENERIC_LAUNCHER = os.environ.get("FEATURE_GENERIC_LAUNCHER", "True").lower() == "true"
 LAUNCHER_CLIENT_STUB = os.environ.get("LAUNCHER_CLIENT_STUB", "True").lower() == "true"
 
 
