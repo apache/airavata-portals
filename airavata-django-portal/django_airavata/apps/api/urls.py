@@ -4,6 +4,7 @@ from django.urls import re_path
 from rest_framework import routers
 from rest_framework.urlpatterns import format_suffix_patterns
 
+from . import launcher_views
 from . import views
 from . import views_ssh
 
@@ -90,6 +91,25 @@ urlpatterns = [
 ]
 
 urlpatterns = router.urls + format_suffix_patterns(urlpatterns)
+
+# Launcher endpoints — thin proxies over launcher_client.
+# The parameterized project route must be listed before the bare projects list
+# so Django's regex matcher resolves it first.
+urlpatterns += [
+    re_path(r"^launcher/applications/$", launcher_views.applications_list, name="launcher_applications_list"),
+    re_path(
+        r"^launcher/applications/(?P<app_id>[^/]+)/$",
+        launcher_views.application_detail,
+        name="launcher_application_detail",
+    ),
+    re_path(
+        r"^launcher/projects/(?P<project_id>[^/]+)/resource-profile/$",
+        launcher_views.project_resource_profile,
+        name="launcher_project_resource_profile",
+    ),
+    re_path(r"^launcher/storages/$", launcher_views.user_storages, name="launcher_user_storages"),
+    re_path(r"^launcher/projects/$", launcher_views.projects_list, name="launcher_projects_list"),
+]
 
 if logger.isEnabledFor(logging.DEBUG):
     for router_url in router.urls:
