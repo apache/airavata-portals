@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load django_vite %}
+
+{% block content %}
+  <div id="launch-app" data-feature-flag="{{ feature_flag|yesno:'on,off' }}"></div>
+{% endblock %}
+
+{% block scripts %}
+  {% vite_asset "js/entry-launch.ts" app="WORKSPACE" %}
+{% endblock %}

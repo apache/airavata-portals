@@ -39,19 +39,21 @@ urlpatterns = [
     ),
     # Project edit
     re_path(r"^projects/(?P<project_id>[^/]+)/edit$", views.edit_project, name="edit_project"),
+    # Generic experiment launcher (Task 5)
+    re_path(r"^launch$", views.launch, name="launch"),
     # Applications (gateway-wide)
     re_path(r"^applications/new$", views.new_application, name="new_application"),
     re_path(
         r"^applications/(?P<app_module_id>[^/]+)/create_experiment$",
-        views.create_experiment,
-        name="create_experiment",
+        RedirectView.as_view(url="/workspace/launch", permanent=True),
+        name="create_experiment_redirect",
     ),
     re_path(
         r"^applications/(?P<app_module_id>[^/]+)/$",
-        views.edit_application,
-        name="edit_application",
+        RedirectView.as_view(url="/workspace/launch", permanent=True),
+        name="application_editor_redirect",
     ),
-    re_path(r"^applications$", views.applications, name="applications"),
+    re_path(r"^applications$", RedirectView.as_view(url="/workspace/launch", permanent=True), name="applications_redirect"),
     # Resources — storage
     re_path(
         r"^storage/(?P<storage_resource_id>[^/]+)/tree(?:/(?P<path>.*))?$",

@@ -26,8 +26,8 @@ def email_user_added_to_group(sender, user, groups, request, **kwargs):
             "last_name": user.lastName,
             "username": user.userId,
             "portal_title": settings.PORTAL_TITLE,
-            "dashboard_url": request.build_absolute_uri(reverse("django_airavata_workspace:applications")),
-            "experiments_url": request.build_absolute_uri(reverse("django_airavata_workspace:applications")),
+            "dashboard_url": request.build_absolute_uri(reverse("django_airavata_workspace:launch")),
+            "experiments_url": request.build_absolute_uri(reverse("django_airavata_workspace:launch")),
             "group_names": [g.name for g in groups],
         }
     )

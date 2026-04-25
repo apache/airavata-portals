@@ -253,7 +253,7 @@ WAGTAILIMAGES_JPEG_QUALITY = 100
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 
 LOGIN_URL = "django_airavata_auth:login"
-LOGIN_REDIRECT_URL = "django_airavata_workspace:applications"
+LOGIN_REDIRECT_URL = "django_airavata_workspace:launch"
 LOGOUT_REDIRECT_URL = "/"
 
 AUTHENTICATION_OPTIONS = {
