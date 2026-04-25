@@ -14,14 +14,15 @@ test("launch a stub experiment via /workspace/launch", async ({ page }) => {
   await page.locator("[data-test='app-tile-namd']").click();
   await page.locator("[data-test='iface-card-run']").click();
 
-  // Inputs
-  // sim_dir is a dir; pick a storage and a path
-  const storageSelects = page.locator("select").filter({ hasText: /My Home|Bridges/ });
-  await storageSelects.first().selectOption({ index: 1 });
+  // Inputs — sim_dir (dir), force_field (file), steps (int)
+  await page.locator("select[data-test='file-storage-sim_dir']").selectOption("my-home");
   await page.locator("input[data-test='file-path-sim_dir']").fill("/home/x/sim");
+  await page.locator("select[data-test='file-storage-force_field']").selectOption("my-home");
+  await page.locator("input[data-test='file-path-force_field']").fill("/home/x/charmm36.prm");
   await page.locator("input[data-test='scalar-steps']").fill("100");
 
   // Output: trajectory
+  await page.locator("select[data-test='file-out-storage-trajectory']").selectOption("my-home");
   await page.locator("input[data-test='file-out-path-trajectory']").fill("/home/x/out.dcd");
 
   // Tab 2

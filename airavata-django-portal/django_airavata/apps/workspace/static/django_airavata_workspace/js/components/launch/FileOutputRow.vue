@@ -7,6 +7,7 @@
     <select
       class="form-select form-select-sm"
       style="width: 160px;"
+      :data-test="`file-out-storage-${descriptor.name}`"
       :value="modelValue?.storage_id ?? ''"
       @change="onStorage(($event.target as HTMLSelectElement).value)"
     >

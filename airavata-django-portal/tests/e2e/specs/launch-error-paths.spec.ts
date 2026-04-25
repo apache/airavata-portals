@@ -16,11 +16,12 @@ test("preview failure shows error and disables launch", async ({ page }) => {
   await page.locator("select[data-test='exp-project']").selectOption({ index: 1 });
   await page.locator("[data-test='app-tile-namd']").click();
   await page.locator("[data-test='iface-card-run']").click();
-  // Pick a storage for sim_dir and fill its path
-  const storageSelects = page.locator("select").filter({ hasText: /My Home|Bridges/ });
-  await storageSelects.first().selectOption({ index: 1 });
+  await page.locator("select[data-test='file-storage-sim_dir']").selectOption("my-home");
   await page.locator("input[data-test='file-path-sim_dir']").fill("/x");
+  await page.locator("select[data-test='file-storage-force_field']").selectOption("my-home");
+  await page.locator("input[data-test='file-path-force_field']").fill("/ff");
   await page.locator("input[data-test='scalar-steps']").fill("1");
+  await page.locator("select[data-test='file-out-storage-trajectory']").selectOption("my-home");
   await page.locator("input[data-test='file-out-path-trajectory']").fill("/y");
   await page.locator("button[role='tab']").nth(1).click();
   await page.locator("select[data-test='cr']").selectOption("bridges-2");
@@ -41,11 +42,12 @@ test("project change clears runtime selections", async ({ page }) => {
 
   await page.locator("[data-test='app-tile-namd']").click();
   await page.locator("[data-test='iface-card-run']").click();
-  // Storage + path for sim_dir
-  const storageSelects = page.locator("select").filter({ hasText: /My Home|Bridges/ });
-  await storageSelects.first().selectOption({ index: 1 });
+  await page.locator("select[data-test='file-storage-sim_dir']").selectOption("my-home");
   await page.locator("input[data-test='file-path-sim_dir']").fill("/x");
+  await page.locator("select[data-test='file-storage-force_field']").selectOption("my-home");
+  await page.locator("input[data-test='file-path-force_field']").fill("/ff");
   await page.locator("input[data-test='scalar-steps']").fill("1");
+  await page.locator("select[data-test='file-out-storage-trajectory']").selectOption("my-home");
   await page.locator("input[data-test='file-out-path-trajectory']").fill("/y");
   await page.locator("button[role='tab']").nth(1).click();
   await page.locator("select[data-test='cr']").selectOption("bridges-2");
