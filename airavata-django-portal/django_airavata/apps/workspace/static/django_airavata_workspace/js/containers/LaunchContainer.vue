@@ -1,9 +1,11 @@
 <template>
-  <div class="container-fluid">
-    <header class="mb-3">
-      <h1 class="h3 mb-1">Launch Experiment</h1>
-      <p class="text-muted mb-0">Pick an application, give it inputs, choose runtime, then review the generated submission script before launch.</p>
-    </header>
+  <div>
+    <div class="row align-items-center mb-3">
+      <div class="col">
+        <h1 class="h4 mb-0">Launch Experiment</h1>
+        <p class="text-muted mb-0">Pick an application, give it inputs, choose runtime, then review the generated submission script before launch.</p>
+      </div>
+    </div>
     <ExperimentMetaHeader :projects="projects" />
     <WizardTabs :active="active" @update:active="onChangeTab" />
     <div data-test="active-tab" :data-active="active" />
