@@ -5,9 +5,12 @@ import LaunchContainer from "../../../../js/containers/LaunchContainer.vue";
 
 vi.mock("django-airavata-common-ui/js/services/launcherService", () => ({
   launcherService: {
-    listProjects: vi.fn().mockResolvedValue({ results: [] }),
+    listProjects: vi.fn(),
+    listApplications: vi.fn(),
+    listUserStorages: vi.fn(),
   },
 }));
+
 
 describe("LaunchContainer", () => {
   beforeEach(() => setActivePinia(createPinia()));
