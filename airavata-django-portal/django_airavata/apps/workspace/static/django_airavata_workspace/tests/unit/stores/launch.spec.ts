@@ -102,3 +102,37 @@ describe("setters and reset", () => {
     expect(s.tab1Valid).toBe(true);
   });
 });
+
+describe("draft persistence", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    localStorage.clear();
+  });
+
+  it("saves draft to localStorage on every change", () => {
+    const s = useLaunchStore();
+    s.setMeta({ name: "abc", project_id: "p1", description: "" });
+    const stored = localStorage.getItem("launch-draft");
+    expect(stored).not.toBeNull();
+    expect(JSON.parse(stored!).name).toBe("abc");
+  });
+
+  it("restores draft from localStorage on hydrate()", () => {
+    localStorage.setItem("launch-draft", JSON.stringify({
+      name: "restored", project_id: "p1", description: "",
+      app_id: null, interface_name: null, inputs: {}, outputs: {},
+      runtime: { compute_resource_id: null, partition: null,
+                 walltime: "01:00:00", nodes: 1, cpus_per_node: 1 },
+    }));
+    const s = useLaunchStore();
+    s.hydrate();
+    expect(s.draft.name).toBe("restored");
+  });
+
+  it("reset() clears localStorage", () => {
+    const s = useLaunchStore();
+    s.setMeta({ name: "abc", project_id: "p1", description: "" });
+    s.reset();
+    expect(localStorage.getItem("launch-draft")).toBeNull();
+  });
+});

@@ -18,6 +18,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { launcherService } from "django-airavata-common-ui/js/services/launcherService";
+import { useLaunchStore } from "django-airavata-common-ui/js/stores/launch";
 import ExperimentMetaHeader from "../components/launch/ExperimentMetaHeader.vue";
 import WizardTabs from "../components/launch/WizardTabs.vue";
 import Tab1ApplicationInputs from "../components/launch/Tab1ApplicationInputs.vue";
@@ -26,6 +27,7 @@ import Tab3ReviewLaunch from "../components/launch/Tab3ReviewLaunch.vue";
 
 const active = ref<1 | 2 | 3>(1);
 const projects = ref<Array<{ project_id: string; name: string }>>([]);
+const store = useLaunchStore();
 
 function onChangeTab(n: 1 | 2 | 3) {
   active.value = n;
@@ -35,6 +37,7 @@ function onChangeTab(n: 1 | 2 | 3) {
 }
 
 onMounted(async () => {
+  store.hydrate();
   const url = new URL(window.location.href);
   const t = Number(url.searchParams.get("tab"));
   if (t === 1 || t === 2 || t === 3) active.value = t as 1 | 2 | 3;

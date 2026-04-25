@@ -19,6 +19,7 @@ export function defineVitestConfig({ srcDir, overrides = {} }) {
     test: {
       globals: true,
       environment: "jsdom",
+      environmentOptions: { jsdom: { url: "http://localhost/" } },
       setupFiles: [resolve(import.meta.dirname, "./vitest-setup.ts")],
       include: ["**/*.{test,spec}.{js,ts,mjs}", "**/tests/**/*.{test,spec}.{js,ts}"],
       exclude: ["**/node_modules/**", "**/dist/**", "**/tests/e2e/**"],

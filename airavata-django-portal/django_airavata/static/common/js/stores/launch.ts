@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import type {
   Application,
   ExperimentDraft,
@@ -142,6 +142,29 @@ export const useLaunchStore = defineStore("launch", () => {
     profile.value = p;
   }
 
+  const STORAGE_KEY = "launch-draft";
+
+  function persist(draftValue: ExperimentDraft) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(draftValue)); } catch { /* ignore quota */ }
+  }
+
+  function clearPersisted() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
+  }
+
+  function hydrate() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<ExperimentDraft>;
+      Object.assign(draft, makeDraft(), parsed);
+    } catch {
+      /* ignore corrupted draft */
+    }
+  }
+
+  watch(draft, (d) => persist(d), { deep: true, flush: "sync" });
+
   function reset() {
     Object.assign(draft, makeDraft());
     pickedApp.value = null;
@@ -150,6 +173,7 @@ export const useLaunchStore = defineStore("launch", () => {
     previewError.value = null;
     previewLoading.value = false;
     lastPreviewedHash.value = null;
+    clearPersisted();
   }
 
   return {
@@ -173,6 +197,7 @@ export const useLaunchStore = defineStore("launch", () => {
     setRuntime,
     setStorages,
     setProfile,
+    hydrate,
     reset,
   };
 });
