@@ -18,7 +18,7 @@ class LauncherListingViewsTest(APITestCase):
         # and the stub client ignores the token entirely.
         self.client.force_authenticate(user=self.user)
 
-    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    @override_settings(LAUNCHER_CLIENT_STUB=True, LAUNCHER_USE_FIXTURES=True)
     def test_applications_list_default(self):
         resp = self.client.get("/api/launcher/applications/")
         self.assertEqual(resp.status_code, 200)
@@ -26,26 +26,26 @@ class LauncherListingViewsTest(APITestCase):
         self.assertIn("results", body)
         self.assertTrue(len(body["results"]) >= 1)
 
-    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    @override_settings(LAUNCHER_CLIENT_STUB=True, LAUNCHER_USE_FIXTURES=True)
     def test_applications_list_filters_by_search(self):
         resp = self.client.get("/api/launcher/applications/?search=namd")
         self.assertEqual(resp.status_code, 200)
         names = [a["name"] for a in resp.json()["results"]]
         self.assertIn("NAMD", names)
 
-    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    @override_settings(LAUNCHER_CLIENT_STUB=True, LAUNCHER_USE_FIXTURES=True)
     def test_application_detail(self):
         resp = self.client.get("/api/launcher/applications/namd/")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["app_id"], "namd")
 
-    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    @override_settings(LAUNCHER_CLIENT_STUB=True, LAUNCHER_USE_FIXTURES=True)
     def test_application_detail_not_found(self):
         resp = self.client.get("/api/launcher/applications/does-not-exist/")
         self.assertEqual(resp.status_code, 404)
         self.assertIn("detail", resp.json())
 
-    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    @override_settings(LAUNCHER_CLIENT_STUB=True, LAUNCHER_USE_FIXTURES=True)
     def test_resource_profile_for_project(self):
         resp = self.client.get("/api/launcher/projects/proj-1/resource-profile/")
         self.assertEqual(resp.status_code, 200)
@@ -53,7 +53,7 @@ class LauncherListingViewsTest(APITestCase):
         self.assertIn("compute_resources", body)
         self.assertIn("allocation_id", body)
 
-    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    @override_settings(LAUNCHER_CLIENT_STUB=True, LAUNCHER_USE_FIXTURES=True)
     def test_user_storages(self):
         resp = self.client.get("/api/launcher/storages/")
         self.assertEqual(resp.status_code, 200)
@@ -61,7 +61,7 @@ class LauncherListingViewsTest(APITestCase):
         self.assertIn("results", body)
         self.assertTrue(any(s.get("is_primary") for s in body["results"]))
 
-    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    @override_settings(LAUNCHER_CLIENT_STUB=True, LAUNCHER_USE_FIXTURES=True)
     def test_projects_list(self):
         resp = self.client.get("/api/launcher/projects/")
         self.assertEqual(resp.status_code, 200)
@@ -71,7 +71,7 @@ class LauncherListingViewsTest(APITestCase):
         self.assertIn("project_id", body["results"][0])
         self.assertIn("name", body["results"][0])
 
-    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    @override_settings(LAUNCHER_CLIENT_STUB=True, LAUNCHER_USE_FIXTURES=True)
     def test_endpoints_require_auth(self):
         # Clear the forced authentication so the requests are anonymous.
         self.client.force_authenticate(user=None)
@@ -106,7 +106,7 @@ class LauncherWriteViewsTest(APITestCase):
             },
         }
 
-    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    @override_settings(LAUNCHER_CLIENT_STUB=True, LAUNCHER_USE_FIXTURES=True)
     def test_preview_returns_script_and_command(self):
         resp = self.client.post("/api/launcher/experiment-drafts/preview/", self.draft, format="json")
         self.assertEqual(resp.status_code, 200, resp.content)
@@ -116,7 +116,7 @@ class LauncherWriteViewsTest(APITestCase):
         self.assertIn("warnings", body)
         self.assertTrue(body["script_contents"].startswith("#!/bin/bash"))
 
-    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    @override_settings(LAUNCHER_CLIENT_STUB=True, LAUNCHER_USE_FIXTURES=True)
     def test_preview_rejects_invalid_draft(self):
         bad = dict(self.draft)
         bad["runtime"] = {**bad["runtime"], "walltime": "garbage"}
@@ -124,7 +124,7 @@ class LauncherWriteViewsTest(APITestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertIn("runtime", resp.json())
 
-    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    @override_settings(LAUNCHER_CLIENT_STUB=True, LAUNCHER_USE_FIXTURES=True)
     def test_preview_returns_502_when_client_unreachable(self):
         with patch.object(launcher_views, "_client") as mock_client:
             mock_client.return_value.generate_preview.side_effect = ConnectionError("airavata down")
@@ -132,7 +132,7 @@ class LauncherWriteViewsTest(APITestCase):
         self.assertEqual(resp.status_code, 502)
         self.assertIn("message", resp.json())
 
-    @override_settings(LAUNCHER_CLIENT_STUB=True)
+    @override_settings(LAUNCHER_CLIENT_STUB=True, LAUNCHER_USE_FIXTURES=True)
     def test_create_returns_experiment_id(self):
         resp = self.client.post("/api/launcher/experiment-drafts/", self.draft, format="json")
         self.assertEqual(resp.status_code, 201, resp.content)

@@ -627,6 +627,10 @@ if 'GATEWAY_ID' not in dir():
 # Generic experiment launcher feature flags
 FEATURE_GENERIC_LAUNCHER = os.environ.get("FEATURE_GENERIC_LAUNCHER", "True").lower() == "true"
 LAUNCHER_CLIENT_STUB = os.environ.get("LAUNCHER_CLIENT_STUB", "True").lower() == "true"
+# When True, the launcher client returns hardcoded fixture apps instead of
+# bridging to the legacy app catalog. Used by Playwright e2e specs that target
+# the NAMD fixture; production runs leave this False so users see real apps.
+LAUNCHER_USE_FIXTURES = os.environ.get("LAUNCHER_USE_FIXTURES", "False").lower() == "true"
 
 
 

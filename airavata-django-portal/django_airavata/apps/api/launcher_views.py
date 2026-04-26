@@ -9,7 +9,7 @@ from django_airavata.apps.api import launcher_client, launcher_serializers
 
 def _client(request: Request) -> launcher_client.LauncherClient:
     token = request.session.get("ACCESS_TOKEN", "")
-    return launcher_client.get_client(user_token=token)
+    return launcher_client.get_client(user_token=token, request=request)
 
 
 @api_view(["GET"])
