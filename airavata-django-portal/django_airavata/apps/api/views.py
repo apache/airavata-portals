@@ -38,6 +38,7 @@ from airavata_django_portal_sdk import (
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.db.models import F
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -1967,6 +1968,60 @@ class LogRecordConsumer(APIView):
                         log_record['message'],
                         json.dumps(log_record['details'], indent=4),
                         stacktrace), extra={'request': request})
+        # Persist ERROR-level records so the experiment view can surface errors
+        # that happened during experiment setup/editing. The same error is
+        # commonly reported more than once; rather than insert duplicate rows we
+        # keep a single row per unique error and bump its count/last-seen time.
+        # Best-effort: never let a logging failure break the request.
+        if log_record['level'] == 'ERROR':
+            try:
+                stacktrace = "\n".join(log_record['stacktrace'])
+                record, created = (
+                    models.ExperimentErrorRecord.objects.get_or_create(
+                        experiment_id=view_utils.resolve_experiment_id(
+                            log_record),
+                        username=getattr(request.user, 'username',
+                                         'anonymous'),
+                        level=log_record['level'],
+                        message=log_record['message'],
+                        defaults={
+                            'details': log_record['details'],
+                            'stacktrace': stacktrace,
+                        },
+                    ))
+                if not created:
+                    # Bump the occurrence count and refresh the last-seen time
+                    # (updated is auto_now) and latest details/stacktrace.
+                    record.count = F('count') + 1
+                    record.details = log_record['details']
+                    record.stacktrace = stacktrace
+                    record.save(update_fields=['count', 'details',
+                                               'stacktrace', 'updated'])
+            except Exception:
+                log.exception("Failed to persist frontend ExperimentErrorRecord")
+        return Response(serializer.data)
+
+
+class ExperimentSetupErrorListView(APIView):
+    """List the frontend setup errors recorded for a single experiment.
+
+    Access is gated by the user's ability to load the experiment from Airavata:
+    getExperiment raises if the requester lacks read access, in which case we
+    return a 403.
+    """
+    serializer_class = serializers.ExperimentErrorRecordSerializer
+
+    def get(self, request, experiment_id, format=None):
+        try:
+            request.airavata_client.getExperiment(
+                request.authz_token, experiment_id)
+        except Exception:
+            raise PermissionDenied(
+                "You do not have access to this experiment.")
+        records = models.ExperimentErrorRecord.objects.filter(
+            experiment_id=experiment_id)
+        serializer = self.serializer_class(
+            records, many=True, context={'request': request})
         return Response(serializer.data)
 
 

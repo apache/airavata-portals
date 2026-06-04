@@ -8,6 +8,7 @@ class UnhandledError {
     details = null,
     suppressDisplay = false,
     suppressLogging = false,
+    experimentId = null,
   }) {
     this.id = idSequence++;
     this.message = message;
@@ -15,6 +16,7 @@ class UnhandledError {
     this.details = details;
     this.suppressDisplay = suppressDisplay;
     this.suppressLogging = suppressLogging;
+    this.experimentId = experimentId;
     this.createdDate = new Date();
   }
 

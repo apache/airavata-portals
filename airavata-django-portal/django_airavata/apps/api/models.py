@@ -73,3 +73,30 @@ class ApplicationSettings(models.Model):
     application_module_id = models.CharField(max_length=255, unique=True)
     show_queue_settings = models.BooleanField(default=True)
     queue_settings_calculator_id = models.CharField(max_length=255, null=True)
+
+
+class ExperimentErrorRecord(models.Model):
+    """A frontend error encountered by a user, optionally tied to an experiment.
+
+    These are the error LogRecords reported to the LogRecordConsumer (the same
+    ones written to the server log). Persisting them lets the experiment view
+    surface errors that happened during experiment setup/editing.
+    """
+    experiment_id = models.CharField(max_length=255, null=True, blank=True,
+                                     db_index=True)
+    username = models.CharField(max_length=64, db_index=True)
+    level = models.CharField(max_length=16)
+    message = models.TextField()
+    details = models.JSONField(null=True, blank=True)
+    stacktrace = models.TextField(blank=True)
+    # Number of times this same error has been reported, and when it was last
+    # seen. Repeated reports bump these instead of inserting duplicate rows.
+    count = models.PositiveIntegerField(default=1)
+    created = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated']
+
+    def __str__(self):
+        return f"{self.updated:%Y-%m-%d %H:%M:%S} {self.level}: {self.message}"

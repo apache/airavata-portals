@@ -1,3 +1,4 @@
+import ErrorContext from "./errors/ErrorContext";
 import ErrorUtils from "./errors/ErrorUtils";
 import UnhandledError from "./errors/UnhandledError";
 import UnhandledErrorDispatcher from "./errors/UnhandledErrorDispatcher";
@@ -16,6 +17,7 @@ import ComputeResourceReservation from "./models/ComputeResourceReservation";
 import DataProduct from "./models/DataProduct";
 import DataType from "./models/DataType";
 import Experiment from "./models/Experiment";
+import ExperimentErrorRecord from "./models/ExperimentErrorRecord";
 import ExperimentSearchFields from "./models/ExperimentSearchFields";
 import ExperimentState from "./models/ExperimentState";
 import ExtendedUserProfileField from "./models/ExtendedUserProfileField";
@@ -65,6 +67,7 @@ import PaginationIterator from "./utils/PaginationIterator";
 import StringUtils from "./utils/StringUtils";
 
 const errors = {
+  ErrorContext,
   ErrorUtils,
   UnhandledError,
   UnhandledErrorDispatcher,
@@ -86,6 +89,7 @@ const models = {
   DataProduct,
   DataType,
   Experiment,
+  ExperimentErrorRecord,
   ExperimentSearchFields,
   ExperimentState,
   ExtendedUserProfileField,
@@ -131,6 +135,7 @@ const services = {
   ExperimentArchiveService: ServiceFactory.service("ExperimentArchive"),
   ExperimentSearchService: ServiceFactory.service("ExperimentSearch"),
   ExperimentService: ServiceFactory.service("Experiments"),
+  ExperimentSetupErrorService: ServiceFactory.service("ExperimentSetupErrors"),
   ExperimentStatisticsService: ServiceFactory.service("ExperimentStatistics"),
   ExperimentStoragePathService: ServiceFactory.service(
     "ExperimentStoragePaths"

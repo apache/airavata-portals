@@ -47,6 +47,9 @@ export default {
   },
   computed: {},
   mounted: function () {
+    // Associate any errors reported while editing with this experiment, even
+    // when the failing request doesn't itself reference the experiment id.
+    errors.ErrorContext.setExperimentId(this.experimentId);
     services.ExperimentService.retrieve({ lookup: this.experimentId })
       .then((experiment) => {
         this.experiment = experiment;
@@ -82,6 +85,9 @@ export default {
           })
         );
       });
+  },
+  beforeDestroy: function () {
+    errors.ErrorContext.clearExperimentId();
   },
 };
 </script>

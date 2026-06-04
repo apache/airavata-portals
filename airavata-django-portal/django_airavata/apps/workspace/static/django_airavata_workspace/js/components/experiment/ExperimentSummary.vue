@@ -113,6 +113,16 @@
                       <span class="sr-only">Progressing...</span>
                     </template>
                     {{ localFullExperiment.experimentStatusName }}
+                    <b-alert
+                      v-if="hasStaleExecutingStatus"
+                      show
+                      variant="warning"
+                      class="mt-2 mb-0"
+                    >
+                      <i class="fa fa-exclamation-triangle"></i>
+                      Errors occurred while setting up this experiment — the
+                      status above may be stale. See "Setup Errors" below.
+                    </b-alert>
                   </td>
                 </tr>
                 <tr
@@ -268,6 +278,38 @@
                     </b-card>
                   </td>
                 </tr>
+                <tr v-if="setupErrors.length > 0">
+                  <th scope="row">Setup Errors</th>
+                  <td>
+                    <b-card
+                      v-for="setupError in setupErrors"
+                      :key="setupError.id"
+                      header="Setup Error"
+                      class="mb-2"
+                    >
+                      <p class="mb-1">
+                        {{ setupError.message }}
+                        <b-badge
+                          v-if="setupError.count > 1"
+                          variant="secondary"
+                          class="ml-1"
+                        >
+                          &times;{{ setupError.count }}
+                        </b-badge>
+                      </p>
+                      <small class="text-muted">
+                        <span v-if="setupError.details && setupError.details.url">
+                          {{ setupError.details.url }}
+                          <span v-if="setupError.details.status">
+                            (HTTP {{ setupError.details.status }})
+                          </span>
+                          &middot;
+                        </span>
+                        {{ setupErrorTime(setupError) }}
+                      </small>
+                    </b-card>
+                  </td>
+                </tr>
                 <template v-if="failedJobs.length > 0">
                   <tr v-for="job in failedJobs" :key="job.jobId">
                     <th scope="row">Job Submission Response</th>
@@ -326,6 +368,8 @@ export default {
     ...mapGetters("viewExperiment", [
       "finishedOrExecuting",
       "showQueueSettings",
+      "setupErrors",
+      "hasStaleExecutingStatus",
     ]),
     localFullExperiment() {
       return this.fullExperiment;
@@ -420,6 +464,11 @@ export default {
   },
   methods: {
     ...mapActions("viewExperiment", ["clone", "launch", "cancel"]),
+    setupErrorTime(setupError) {
+      // Prefer the last-seen time (updated) over first-seen (created).
+      const time = setupError.updated || setupError.created;
+      return time ? moment(time).fromNow() : "";
+    },
     async onClone() {
       await this.clone();
       urls.navigateToEditExperiment(this.clonedExperiment);

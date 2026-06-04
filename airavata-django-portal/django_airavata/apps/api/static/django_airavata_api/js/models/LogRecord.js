@@ -9,6 +9,7 @@ const FIELDS = [
     type: "string",
     list: true,
   },
+  "experimentId",
 ];
 
 export default class LogRecord extends BaseModel {

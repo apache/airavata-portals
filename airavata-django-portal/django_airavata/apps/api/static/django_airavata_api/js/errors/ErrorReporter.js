@@ -1,5 +1,6 @@
 import { services } from "..";
 import LogRecord from "../models/LogRecord";
+import ErrorContext from "./ErrorContext";
 
 import StackTrace from "stacktrace-js";
 
@@ -17,6 +18,10 @@ class ErrorReporter {
               message: unhandledError.message,
               details: unhandledError.details,
               stacktrace: stacktrace,
+              // Associate with an experiment when known: an explicit id on the
+              // error wins, otherwise fall back to the current setup context.
+              experimentId:
+                unhandledError.experimentId || ErrorContext.experimentId,
             }),
           },
           { ignoreErrors: true }

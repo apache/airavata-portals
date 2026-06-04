@@ -6,6 +6,7 @@ import ComputeResourceDescription from "./models/ComputeResourceDescription";
 import CredentialSummary from "./models/CredentialSummary";
 import DataProduct from "./models/DataProduct";
 import Experiment from "./models/Experiment";
+import ExperimentErrorRecord from "./models/ExperimentErrorRecord";
 import ExperimentSearchFields from "./models/ExperimentSearchFields";
 import ExperimentStatistics from "./models/ExperimentStatistics";
 import ExperimentStoragePath from "./models/ExperimentStoragePath";
@@ -224,6 +225,16 @@ export default {
     queryParams: ["limit", "offset"].concat(
       ExperimentSearchFields.values.map((f) => f.name)
     ),
+  },
+  ExperimentSetupErrors: {
+    url: "/api/experiments",
+    methods: {
+      list: {
+        url: "/api/experiments/<experimentId>/setup-errors/",
+        requestType: "get",
+        modelClass: ExperimentErrorRecord,
+      },
+    },
   },
   ExperimentStatistics: {
     url: "/api/experiment-statistics",

@@ -33,6 +33,9 @@ export const mutations = {
   setGroupResourceProfile(state, { groupResourceProfile }) {
     state.groupResourceProfile = groupResourceProfile;
   },
+  setSetupErrors(state, { setupErrors }) {
+    state.setupErrors = setupErrors;
+  },
 };
 export const actions = {
   async setInitialFullExperimentData({ dispatch }, { fullExperimentData }) {
@@ -58,8 +61,27 @@ export const actions = {
         errors.UnhandledErrorDispatcher.reportUnhandledError(error);
       }
     }
+    // Track the experiment so any errors reported while viewing get associated
+    // with it.
+    errors.ErrorContext.setExperimentId(fullExperiment.experimentId);
     dispatch("loadGroupResourceProfile");
+    dispatch("loadSetupErrors");
     dispatch("initPollingExperiment");
+  },
+  async loadSetupErrors({ commit, getters }) {
+    const experimentId = getters.experimentId;
+    if (!experimentId) {
+      return;
+    }
+    try {
+      const setupErrors = await services.ExperimentSetupErrorService.list(
+        { experimentId },
+        { ignoreErrors: true, showSpinner: false }
+      );
+      commit("setSetupErrors", { setupErrors });
+    } catch (error) {
+      // Best-effort; never let setup-error loading disrupt the view.
+    }
   },
   setLaunching({ dispatch, commit }, { launching }) {
     commit("setLaunching", { launching });
@@ -87,6 +109,7 @@ export const actions = {
         await dispatch("loadExperiment", {
           experimentId: state.fullExperiment.experimentId,
         });
+        dispatch("loadSetupErrors");
         setTimeout(() => {
           dispatch("pollExperiment");
         }, 3000);
@@ -254,6 +277,14 @@ export const getters = {
   groupResourceProfileId(state, getters) {
     return getters.experiment?.userConfigurationData?.groupResourceProfileId;
   },
+  setupErrors(state) {
+    return state.setupErrors;
+  },
+  // True when setup errors were recorded but the experiment status still shows
+  // as EXECUTING — a hint that the displayed status may be stale.
+  hasStaleExecutingStatus(state, getters) {
+    return getters.isExecuting && state.setupErrors.length > 0;
+  },
 };
 
 const state = {
@@ -264,6 +295,7 @@ const state = {
   runningIntermediateOutputFetches: {},
   applicationInterface: null,
   groupResourceProfile: null,
+  setupErrors: [],
 };
 export default {
   namespaced: true,

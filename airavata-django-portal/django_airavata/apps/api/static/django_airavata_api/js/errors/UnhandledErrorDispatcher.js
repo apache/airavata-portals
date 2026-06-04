@@ -9,6 +9,7 @@ class UnhandledErrorDispatcher {
     details = null,
     suppressDisplay = false,
     suppressLogging = false,
+    experimentId = null,
   }) {
     const unhandledError = new UnhandledError({
       message,
@@ -16,6 +17,7 @@ class UnhandledErrorDispatcher {
       details,
       suppressDisplay,
       suppressLogging,
+      experimentId,
     });
     this.reportUnhandledError(unhandledError);
   }

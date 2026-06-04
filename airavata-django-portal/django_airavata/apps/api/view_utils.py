@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+import re
 from collections.__init__ import OrderedDict
 from datetime import datetime
 from pathlib import Path
@@ -212,6 +214,44 @@ def convert_utc_iso8601_to_date(iso8601_utc_string):
     logger.debug("convert_utc_iso8601_to_date({})={}".format(
         iso8601_utc_string, timestamp))
     return timestamp
+
+
+# Matches /api/experiments/<id>/... and /api/full-experiments/<id>/... in a
+# reported error's request URL. Experiment ids may contain '.', so the id is
+# any run of non-slash characters.
+_EXPERIMENT_URL_RE = re.compile(r'/api/(?:full-)?experiments/(?P<id>[^/?]+)')
+
+
+def resolve_experiment_id(log_record):
+    """Best-effort extraction of an experiment id from a reported LogRecord.
+
+    Resolution order:
+      1. an explicit ``experimentId`` supplied by the frontend,
+      2. an experiment id embedded in the request URL (``details['url']``),
+      3. an ``experimentId`` key in the request body (``details['body']``,
+         present for createExperiment/updateExperiment/launch calls).
+    Returns the id string, or ``None`` when it can't be determined.
+    """
+    explicit = log_record.get('experimentId')
+    if explicit:
+        return explicit
+    details = log_record.get('details') or {}
+    if not isinstance(details, dict):
+        return None
+    url = details.get('url')
+    if url:
+        match = _EXPERIMENT_URL_RE.search(url)
+        if match:
+            return match.group('id')
+    body = details.get('body')
+    if isinstance(body, str):
+        try:
+            body = json.loads(body)
+        except (ValueError, TypeError):
+            body = None
+    if isinstance(body, dict):
+        return body.get('experimentId') or None
+    return None
 
 
 class IsInAdminsGroupPermission(permissions.BasePermission):

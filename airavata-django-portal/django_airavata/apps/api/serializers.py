@@ -2121,6 +2121,20 @@ class LogRecordSerializer(serializers.Serializer):
     message = serializers.CharField()
     details = StoredJSONField()
     stacktrace = serializers.ListField(child=serializers.CharField())
+    # Optional experiment context supplied by the frontend when an error is
+    # reported from within an experiment editor/view.
+    experimentId = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True)
+
+
+class ExperimentErrorRecordSerializer(serializers.ModelSerializer):
+    experimentId = serializers.CharField(source='experiment_id',
+                                         read_only=True)
+
+    class Meta:
+        model = models.ExperimentErrorRecord
+        fields = ('id', 'experimentId', 'username', 'level', 'message',
+                  'details', 'stacktrace', 'count', 'created', 'updated')
 
 
 class SettingsSerializer(serializers.Serializer):
