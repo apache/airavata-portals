@@ -136,6 +136,7 @@ const services = {
   ExperimentSearchService: ServiceFactory.service("ExperimentSearch"),
   ExperimentService: ServiceFactory.service("Experiments"),
   ExperimentSetupErrorService: ServiceFactory.service("ExperimentSetupErrors"),
+  UserSetupErrorService: ServiceFactory.service("UserSetupErrors"),
   ExperimentStatisticsService: ServiceFactory.service("ExperimentStatistics"),
   ExperimentStoragePathService: ServiceFactory.service(
     "ExperimentStoragePaths"

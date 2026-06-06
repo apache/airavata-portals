@@ -2025,6 +2025,43 @@ class ExperimentSetupErrorListView(APIView):
         return Response(serializer.data)
 
 
+class UserSetupErrorListView(APIView):
+    """List the requesting user's setup errors across all their experiments.
+
+    Used by the header "Notifications" dropdown to surface, on every page, which
+    experiment encountered which setup error. Only records tied to an experiment
+    the user can still load from Airavata are returned, so we never leak another
+    user's experiments. Each distinct experiment is resolved once to attach a
+    human-readable name for display.
+    """
+    serializer_class = serializers.UserSetupErrorSerializer
+
+    def get(self, request, format=None):
+        records = models.ExperimentErrorRecord.objects.filter(
+            username=request.user.username, experiment_id__isnull=False)
+        # Resolve each distinct experiment id at most once. A failed lookup
+        # (e.g. the experiment was deleted or the user lost access) drops the
+        # record rather than exposing it.
+        experiment_names = {}
+        accessible_records = []
+        for record in records:
+            experiment_id = record.experiment_id
+            if experiment_id not in experiment_names:
+                try:
+                    experiment = request.airavata_client.getExperiment(
+                        request.authz_token, experiment_id)
+                    experiment_names[experiment_id] = experiment.experimentName
+                except Exception:
+                    experiment_names[experiment_id] = None
+            if experiment_names[experiment_id] is not None:
+                accessible_records.append(record)
+        serializer = self.serializer_class(
+            accessible_records, many=True,
+            context={'request': request,
+                     'experiment_names': experiment_names})
+        return Response(serializer.data)
+
+
 class SettingsAPIView(APIView):
     serializer_class = serializers.SettingsSerializer
 

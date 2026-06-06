@@ -236,6 +236,16 @@ export default {
       },
     },
   },
+  UserSetupErrors: {
+    url: "/api/notifications/setup-errors",
+    methods: {
+      list: {
+        url: "/api/notifications/setup-errors/",
+        requestType: "get",
+        modelClass: ExperimentErrorRecord,
+      },
+    },
+  },
   ExperimentStatistics: {
     url: "/api/experiment-statistics",
     methods: {

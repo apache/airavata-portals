@@ -2137,6 +2137,22 @@ class ExperimentErrorRecordSerializer(serializers.ModelSerializer):
                   'details', 'stacktrace', 'count', 'created', 'updated')
 
 
+class UserSetupErrorSerializer(ExperimentErrorRecordSerializer):
+    """Setup error record annotated with its experiment's display name.
+
+    The name map is resolved once per request by the view and supplied via
+    serializer context to avoid a Thrift lookup per row.
+    """
+    experimentName = serializers.SerializerMethodField()
+
+    class Meta(ExperimentErrorRecordSerializer.Meta):
+        fields = ExperimentErrorRecordSerializer.Meta.fields + (
+            'experimentName',)
+
+    def get_experimentName(self, obj):
+        return self.context.get('experiment_names', {}).get(obj.experiment_id)
+
+
 class SettingsSerializer(serializers.Serializer):
     fileUploadMaxFileSize = serializers.IntegerField()
     tusEndpoint = serializers.CharField()
