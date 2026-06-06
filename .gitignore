@@ -1,3 +1,9 @@
 
 node_modules/
 .DS_Store
+
+NETWORK_STRUCTURE.md
+.understandignore
+fingerprints.json
+meta.json
+knowledge-graph.json
