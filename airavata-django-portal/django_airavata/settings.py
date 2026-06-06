@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 import os
 import sys
 
+import certifi
 from airavata_django_portal_commons import dynamic_apps
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -281,6 +282,12 @@ ACCESS_TOKEN_REDIRECT_ALLOWED_URIS = []
 # has lived longer than this period, it will be closed.
 # (https://github.com/Thriftpy/thrift_connector)
 THRIFT_CLIENT_POOL_KEEPALIVE = 5
+
+# CA certificate bundle used to verify TLS certificates when establishing
+# secure (TSSLSocket) Thrift connections to the Airavata API and Profile
+# services. Defaults to the certifi bundle. Override in settings_local.py to
+# point at a custom CA file (e.g. for a self-signed server certificate).
+CA_CERTS_PATH = certifi.where()
 
 # Webpack loader
 WEBPACK_LOADER = {
