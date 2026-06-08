@@ -216,6 +216,25 @@ GATEWAY_USER_DATA_ARCHIVE_MINIMUM_ARCHIVE_SIZE_GB = 1
 # Legacy (PGA) Portal link - provide a link to the legacy portal
 PGA_URL = None
 
+# Portal title shown in the header and emails. Override in settings_local.py.
+PORTAL_TITLE = 'Airavata Django Portal'
+
+# Portal app-shell "chrome" (base.html): favicon, header logo, and user-menu
+# links. Previously sourced from Wagtail snippet models; now sourced from
+# settings so the app shell does not depend on Wagtail. Every key is optional;
+# override PORTAL_CHROME (and PORTAL_TITLE) in settings_local.py.
+PORTAL_CHROME = {
+    # Favicon URL (absolute or static). Falls back to the bundled Airavata logo.
+    "favicon_url": None,
+    # Header logo image URL. Falls back to the bundled Airavata logo.
+    "logo_url": None,
+    # Optional background color for the header logo container.
+    "logo_background_color": None,
+    # Extra dropdown items in the user menu. List of
+    # {"link": str, "link_text": str, "icon_class": str}.
+    "user_menu_links": [],
+}
+
 # Django REST Framework configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

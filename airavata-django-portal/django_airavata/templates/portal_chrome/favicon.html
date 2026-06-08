@@ -1,0 +1,6 @@
+{% load static %}
+{% if favicon_url %}
+<link rel="icon" href="{{ favicon_url }}">
+{% else %}
+<link rel="icon" href="{% static 'images/airavata-logo.png' %}">
+{% endif %}

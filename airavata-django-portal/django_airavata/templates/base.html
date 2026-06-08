@@ -1,10 +1,10 @@
-{% load navigation_tags static %}
+{% load portal_chrome static %}
 {% load render_bundle from webpack_loader %}
 {% load humanize %}
 <!DOCTYPE html>
 
 <head>
-  {% favicon %}
+  {% portal_favicon %}
   {% include "./django_airavata/google_analytics.html" %}
 
   {% render_bundle 'chunk-vendors' 'css' 'COMMON' %}
@@ -148,9 +148,9 @@
 <body>
   <header class=c-header>
     {% block header %}
-    {% gateway_icon %}
+    {% portal_logo %}
     {% endblock %}
-    <div class=c-header__title><a href="/">{% block title %}{% gateway_title %}{% endblock %}</a>
+    <div class=c-header__title><a href="/">{% block title %}{% portal_title %}{% endblock %}</a>
     </div>
     {% if user.is_authenticated %}
     <div class=c-header__controls>
@@ -195,7 +195,7 @@
                 {% endif %}
               {% endfor %}
             {% endif %}
-            {% main_menu_navs %}
+            {% portal_main_menu %}
           </div>
         </div>
       </div>
