@@ -6,10 +6,14 @@ def create_homepage(apps, schema_editor):
     ContentType = apps.get_model("contenttypes.ContentType")
     Page = apps.get_model("wagtailcore.Page")
     Site = apps.get_model("wagtailcore.Site")
+    Locale = apps.get_model("wagtailcore.Locale")
     HomePage = apps.get_model("home.HomePage")
 
-    # Delete the default homepage (of type Page) as created by wagtailcore.0002_initial_data,
-    # if it exists
+    # This migration depends on the full HomePage schema (FKs to wagtailimages /
+    # wagtailcore.Page), so it runs after wagtailcore is fully migrated. Remove
+    # the default Site and welcome Page created by wagtailcore.0002_initial_data
+    # (delete the Site first; Page.delete would otherwise be blocked by the FK).
+    Site.objects.filter(hostname="localhost").delete()
     page_content_type = ContentType.objects.get(
         model="page", app_label="wagtailcore"
     )
@@ -22,6 +26,9 @@ def create_homepage(apps, schema_editor):
         model="homepage", app_label="home"
     )
 
+    # The default locale exists by now (wagtailcore.0054_initial_locale).
+    locale = Locale.objects.first()
+
     # Create a new homepage
     homepage = HomePage.objects.create(
         title="Home",
@@ -32,6 +39,7 @@ def create_homepage(apps, schema_editor):
         depth=2,
         numchild=0,
         url_path="/home/",
+        locale_id=locale.pk,
     )
 
     # Create a site with the new homepage set as the root
@@ -52,10 +60,6 @@ def remove_homepage(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
-    run_before = [
-        ("wagtailcore", "0053_locale_model"),
-    ]
 
     dependencies = [
         ("home", "0001_initial"),
