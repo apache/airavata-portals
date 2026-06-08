@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@electron/fuses": "^1.8.0",
-    "electron": "^29.3.0",
+    "electron": "^39.0.0",
     "electron-builder": "^26.0.0",
     "next": "^15.5.19",
     "nextron": "^9.6.0",

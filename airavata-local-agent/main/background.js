@@ -127,9 +127,9 @@ if (!gotTheLock) {
 
     app.commandLine.appendSwitch('ignore-certificate-errors');
 
-    session.defaultSession.clearStorageData([], (data) => {
-      log.info("Cleared storage data", data);
-    });
+    session.defaultSession.clearStorageData()
+      .then(() => log.info("Cleared storage data"))
+      .catch((err) => log.error("Error clearing storage data", err));
 
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
       // open external URLs in browser, not in the app
@@ -194,9 +194,9 @@ ipcMain.on('open-default-browser', (event, url) => {
 
 ipcMain.on('ci-logon-logout', (event) => {
   log.warn('logging out');
-  session.defaultSession.clearStorageData([], (data) => {
-    log.info("Cleared storage data", data);
-  });
+  session.defaultSession.clearStorageData()
+    .then(() => log.info("Cleared storage data"))
+    .catch((err) => log.error("Error clearing storage data", err));
 });
 
 ipcMain.on('ci-logon-login', async (event) => {
