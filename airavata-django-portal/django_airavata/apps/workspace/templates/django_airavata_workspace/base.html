@@ -1,11 +1,9 @@
 {% extends 'base.html' %}
 
 {% load static %}
-{% load render_bundle from webpack_loader %}
+{% load render_bundle get_files from webpack_loader %}
 
 {% block css %}
-{% render_bundle 'chunk-vendors' 'css' 'WORKSPACE' %}
-{% render_bundle 'chunk-common' 'css' 'WORKSPACE' %}
 {% render_bundle bundle_name 'css' 'WORKSPACE' %}
 {% endblock %}
 
@@ -14,7 +12,9 @@
 {% endblock content %}
 
 {% block scripts %}
-{% render_bundle 'chunk-vendors' 'js' 'WORKSPACE' %}
-{% render_bundle 'chunk-common' 'js' 'WORKSPACE' %}
-{% render_bundle bundle_name 'js' 'WORKSPACE' %}
+{% comment %} Vite emits an ES module bundle per page entry; load it as
+type="module" so its shared-chunk imports resolve. {% endcomment %}
+{% get_files bundle_name 'js' 'WORKSPACE' as bundle_js %}
+{% for f in bundle_js %}<script type="module" src="{{ f.url }}"></script>
+{% endfor %}
 {% endblock %}
