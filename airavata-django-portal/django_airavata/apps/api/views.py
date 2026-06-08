@@ -659,10 +659,12 @@ class ApplicationDeploymentViewSet(APIBackedViewSet):
     @action(detail=True)
     def queues(self, request, app_deployment_id):
         """Return queues for this deployment with defaults overridden by deployment defaults if they exist"""
-        app_deployment = self.request.airavata_client.getApplicationDeployment(
-            self.authz_token, app_deployment_id)
-        compute_resource = request.airavata_client.getComputeResource(
-            request.authz_token, app_deployment.computeHostId)
+        app_deployment = grpc_adapters.application_deployment(
+            self.request.airavata.research.get_application_deployment(
+                app_deployment_id))
+        compute_resource = grpc_adapters.compute_resource(
+            request.airavata.compute.get_compute_resource(
+                app_deployment.computeHostId))
         # Override defaults with app deployment default queue, if defined
         batch_queues = []
         for batch_queue in compute_resource.batchQueues:
@@ -686,21 +688,19 @@ class ComputeResourceViewSet(mixins.RetrieveModelMixin,
     lookup_field = 'compute_resource_id'
 
     def get_instance(self, lookup_value, format=None):
-        return self.request.airavata_client.getComputeResource(
-            self.authz_token, lookup_value)
+        return grpc_adapters.compute_resource(
+            self.request.airavata.compute.get_compute_resource(lookup_value))
 
     @action(detail=False)
     def all_names(self, request, format=None):
         """Return a map of compute resource names keyed by resource id."""
         return Response(
-            request.airavata_client.getAllComputeResourceNames(
-                request.authz_token))
+            request.airavata.compute.get_all_compute_resource_names())
 
     @action(detail=False)
     def all_names_list(self, request, format=None):
         """Return a list of compute resource names keyed by resource id."""
-        all_names = request.airavata_client.getAllComputeResourceNames(
-            request.authz_token)
+        all_names = request.airavata.compute.get_all_compute_resource_names()
         return Response([
             {
                 'host_id': host_id,
@@ -713,8 +713,8 @@ class ComputeResourceViewSet(mixins.RetrieveModelMixin,
 
     @action(detail=True)
     def queues(self, request, compute_resource_id, format=None):
-        details = request.airavata_client.getComputeResource(
-            request.authz_token, compute_resource_id)
+        details = grpc_adapters.compute_resource(
+            request.airavata.compute.get_compute_resource(compute_resource_id))
         serializer = self.serializer_class(instance=details,
                                            context={'request': request})
         data = serializer.data

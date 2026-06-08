@@ -13,6 +13,9 @@ serializers are made protobuf-native.
 
 from types import SimpleNamespace
 
+from airavata.model.appcatalog.computeresource.ttypes import (
+    JobSubmissionProtocol as _ThriftJobSubmissionProtocol,
+)
 from airavata.model.appcatalog.parallelism.ttypes import (
     ApplicationParallelismType as _ThriftParallelismType,
 )
@@ -87,6 +90,109 @@ def storage_resource(pb):
         # nullable, divides by 1000) -> keep the int.
         creationTime=pb.creation_time,
         updateTime=pb.update_time,
+    )
+
+
+# proto JobSubmissionProtocol member name -> Thrift JobSubmissionProtocol value.
+# Mostly aligned, but proto JSP_CLOUD maps to Thrift CLOUD (name divergence).
+_JOB_SUBMISSION_PROTOCOL = {
+    'LOCAL': _ThriftJobSubmissionProtocol.LOCAL,
+    'SSH': _ThriftJobSubmissionProtocol.SSH,
+    'GLOBUS': _ThriftJobSubmissionProtocol.GLOBUS,
+    'UNICORE': _ThriftJobSubmissionProtocol.UNICORE,
+    'JSP_CLOUD': _ThriftJobSubmissionProtocol.CLOUD,
+    'SSH_FORK': _ThriftJobSubmissionProtocol.SSH_FORK,
+    'LOCAL_FORK': _ThriftJobSubmissionProtocol.LOCAL_FORK,
+}
+
+# proto FileSystems int value -> Thrift FileSystems int value (built lazily by
+# name; the proto map key is a bare int32 with no enum descriptor to read).
+_file_systems_proto_to_thrift = None
+
+
+def _file_systems(pb_map):
+    """proto ``file_systems`` map<int32, string> -> {Thrift FileSystems int: path}.
+
+    The proto map key is a bare int32 holding a proto ``FileSystems`` value;
+    convert each to the Thrift ``FileSystems`` int (by name — proto HOME=1 vs
+    Thrift HOME=0) so the serializer's ``DictField`` renders the same '0'..'4'
+    keys the Thrift i32-keyed map produced. Keys stay plain ints (not IntEnum)
+    so ``DictField``'s ``str(key)`` yields the digit, as Thrift's map did.
+    Unknown keys (e.g. the proto-only zero sentinel) are dropped.
+    """
+    global _file_systems_proto_to_thrift
+    if _file_systems_proto_to_thrift is None:
+        from airavata.model.appcatalog.computeresource.ttypes import FileSystems
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
+            compute_resource_pb2,
+        )
+        proto_fs = compute_resource_pb2.FileSystems
+        _file_systems_proto_to_thrift = {
+            proto_fs.Value(name): int(getattr(FileSystems, name))
+            for name in proto_fs.keys() if hasattr(FileSystems, name)
+        }
+    return {
+        _file_systems_proto_to_thrift[k]: v
+        for k, v in pb_map.items() if k in _file_systems_proto_to_thrift
+    }
+
+
+def _batch_queue(pb):
+    """gRPC ``BatchQueue`` -> ``BatchQueueSerializer`` shape (all scalars)."""
+    return SimpleNamespace(
+        queueName=pb.queue_name,
+        queueDescription=pb.queue_description,
+        maxRunTime=pb.max_run_time,
+        maxNodes=pb.max_nodes,
+        maxProcessors=pb.max_processors,
+        maxJobsInQueue=pb.max_jobs_in_queue,
+        maxMemory=pb.max_memory,
+        cpuPerNode=pb.cpu_per_node,
+        defaultNodeCount=pb.default_node_count,
+        defaultCPUCount=pb.default_cpu_count,
+        defaultWalltime=pb.default_walltime,
+        queueSpecificMacros=pb.queue_specific_macros,
+        isDefaultQueue=pb.is_default_queue,
+    )
+
+
+def _job_submission_interface(pb):
+    """gRPC ``JobSubmissionInterface`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        jobSubmissionInterfaceId=pb.job_submission_interface_id,
+        jobSubmissionProtocol=_thrift_enum_mapped(
+            pb, 'job_submission_protocol', _JOB_SUBMISSION_PROTOCOL),
+        priorityOrder=pb.priority_order,
+    )
+
+
+def compute_resource(pb):
+    """gRPC ``ComputeResourceDescription`` -> ``ComputeResourceDescriptionSerializer`` shape.
+
+    The deepest read model: recursively adapts batch queues, the file-systems
+    map, and the job-submission and data-movement interface lists.
+    """
+    return SimpleNamespace(
+        computeResourceId=pb.compute_resource_id,
+        hostName=pb.host_name,
+        hostAliases=list(pb.host_aliases),
+        ipAddresses=list(pb.ip_addresses),
+        resourceDescription=pb.resource_description,
+        enabled=pb.enabled,
+        batchQueues=[_batch_queue(q) for q in pb.batch_queues],
+        fileSystems=_file_systems(pb.file_systems),
+        jobSubmissionInterfaces=[
+            _job_submission_interface(j) for j in pb.job_submission_interfaces],
+        dataMovementInterfaces=[
+            _data_movement_interface(d) for d in pb.data_movement_interfaces],
+        maxMemoryPerNode=pb.max_memory_per_node,
+        gatewayUsageReporting=pb.gateway_usage_reporting,
+        gatewayUsageModuleLoadCommand=pb.gateway_usage_module_load_command,
+        gatewayUsageExecutable=pb.gateway_usage_executable,
+        cpusPerNode=pb.cpus_per_node,
+        defaultNodeCount=pb.default_node_count,
+        defaultCPUCount=pb.default_cpu_count,
+        defaultWalltime=pb.default_walltime,
     )
 
 
