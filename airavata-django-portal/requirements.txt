@@ -13,12 +13,13 @@ jupyter==1.0.0
 papermill==1.0.1
 
 # gRPC libs. Bumped for the new Airavata gRPC SDK (airavata-python-sdk 3.0.0,
-# Track D): grpcio>=1.60 and protobuf>=4.25. google-api-python-client is bumped
-# off 1.12.8 because its old google-api-core pinned protobuf<4.
-google-api-python-client>=2.0
+# Track D): grpcio>=1.60 and protobuf>=5.26 (the generated stubs use
+# protobuf's runtime_version, added in 5.26). The unused google-api-python-client
+# was removed — its google-api-core transitive hard-pinned protobuf<4, which is
+# incompatible with the new stubs (and nothing in the portal imports it).
 grpcio>=1.60.0
 grpcio-tools>=1.60.0
-protobuf>=4.25.0
+protobuf>=5.26.0,<7.0.0
 googleapis-common-protos>=1.62.0
 
 # Legacy Thrift SDK — still required while apps/api views are repointed from

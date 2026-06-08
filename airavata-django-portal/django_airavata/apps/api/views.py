@@ -65,6 +65,7 @@ from django_airavata.apps.auth.models import EmailVerification
 
 from . import (
     exceptions,
+    grpc_adapters,
     helpers,
     models,
     output_views,
@@ -156,14 +157,16 @@ class ProjectViewSet(APIBackedViewSet):
 
         class ProjectResultIterator(APIResultIterator):
             def get_results(self, limit=-1, offset=0):
-                return view.request.airavata_client.getUserProjects(
-                    view.authz_token, view.gateway_id, view.username, limit, offset)
+                projects = view.request.airavata.research.get_user_projects(
+                    gateway_id=view.gateway_id, user_name=view.username,
+                    limit=limit, offset=offset)
+                return [grpc_adapters.project(p) for p in projects]
 
         return ProjectResultIterator()
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getProject(
-            self.authz_token, lookup_value)
+        return grpc_adapters.project(
+            self.request.airavata.research.get_project(lookup_value))
 
     def perform_create(self, serializer):
         project = serializer.save(
@@ -182,8 +185,12 @@ class ProjectViewSet(APIBackedViewSet):
 
     @action(detail=False)
     def list_all(self, request):
-        projects = self.request.airavata_client.getUserProjects(
-            self.authz_token, self.gateway_id, self.username, -1, 0)
+        projects = [
+            grpc_adapters.project(p)
+            for p in self.request.airavata.research.get_user_projects(
+                gateway_id=self.gateway_id, user_name=self.username,
+                limit=-1, offset=0)
+        ]
         serializer = serializers.ProjectSerializer(
             projects, many=True, context={'request': request})
         return Response(serializer.data)
