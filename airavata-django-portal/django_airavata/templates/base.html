@@ -1,5 +1,5 @@
 {% load portal_chrome static %}
-{% load render_bundle from webpack_loader %}
+{% load render_bundle get_files from webpack_loader %}
 {% load humanize %}
 <!DOCTYPE html>
 
@@ -7,7 +7,6 @@
   {% portal_favicon %}
   {% include "./django_airavata/google_analytics.html" %}
 
-  {% render_bundle 'chunk-vendors' 'css' 'COMMON' %}
   {% render_bundle 'app' 'css' 'COMMON' %}
   {% block css %}
 
@@ -256,10 +255,16 @@
     // provide data for initializing api's session.Session
     window.AiravataPortalSessionData = {{ user_session_data|safe }};
   </script>
-  {% render_bundle 'chunk-vendors' 'js' 'COMMON' %}
-  {% render_bundle 'app' 'js' 'COMMON' %}
+  {% comment %} Vite emits ES module bundles; load them as type="module" so their
+  shared-chunk imports resolve. The inline session script above is a classic
+  script and runs first, before these deferred modules. {% endcomment %}
+  {% get_files 'app' 'js' 'COMMON' as common_app_js %}
+  {% for f in common_app_js %}<script type="module" src="{{ f.url }}"></script>
+  {% endfor %}
   {% if user.is_authenticated %}
-    {% render_bundle 'notices' 'js' 'COMMON' %}
+    {% get_files 'notices' 'js' 'COMMON' as common_notices_js %}
+    {% for f in common_notices_js %}<script type="module" src="{{ f.url }}"></script>
+    {% endfor %}
   {% endif %}
   {% block scripts %}
   {% endblock %}
