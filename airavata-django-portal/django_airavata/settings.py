@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 import os
 import sys
 
-from airavata_django_portal_commons import dynamic_apps
+from django_airavata.commons import dynamic_apps
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -118,7 +118,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django_airavata.context_processors.airavata_app_registry',
-                'airavata_django_portal_commons.dynamic_apps.context_processors.custom_app_registry',
+                'django_airavata.commons.dynamic_apps.context_processors.custom_app_registry',
                 'django_airavata.context_processors.get_notifications',
                 'django_airavata.context_processors.user_session_data',
                 'django_airavata.context_processors.google_analytics_tracking_id',

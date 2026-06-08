@@ -14,9 +14,6 @@ This repository contains the following sub-projects and templates:
 - **airavata-django-portal-sdk**  
   A pluggable SDK enabling custom Django-based science gateways with minimal setup.
 
-- **airavata-django-portal-commons**  
-  Shared UI components and utilities used across Django-based portals.
-
 ### Starter Templates
 
 - **airavata-cookiecutter-django-app**  

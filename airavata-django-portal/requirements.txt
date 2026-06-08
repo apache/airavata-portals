@@ -26,6 +26,5 @@ grpcio==1.53.2 ; python_version >= "3.7"
 
 airavata-django-portal-sdk==1.8.4
 airavata-python-sdk==2.2.7
-airavata-django-portal-commons==1.0.0
 
 -e "."

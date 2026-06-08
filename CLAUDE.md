@@ -12,7 +12,6 @@ Monorepo of web portals, SDKs, and tools built on top of Apache Airavata. Contai
 |---------|-------|---------|
 | `airavata-django-portal` | Django 3.2 + Vue 2 | Reference science gateway (main portal) |
 | `airavata-django-portal-sdk` | Python | Reusable library for custom Django app extensions (PyPI) |
-| `airavata-django-portal-commons` | Python | Dynamic app loading and shared utilities (PyPI) |
 | `airavata-research-portal` | React 19 + Vite + TypeScript | CyberShuttle research platform (newest) |
 | `airavata-custos-portal` | Django + Vue 2 | Identity, group, and permissions management UI |
 | `airavata-mft-portal` | Django + Webpack | Managed File Transfer dashboard |
@@ -71,7 +70,7 @@ Each app under `django_airavata/apps/` is self-contained with its own frontend:
 
 - **Backend**: Django + DRF, Thrift-based Airavata client, Wagtail CMS for page content
 - **Frontend**: Vue 2 per app, webpack/Vue CLI builds, each app has colocated `static/` with its own build config
-- **Dynamic apps**: Plugin-style extensions discovered via Python entry points (powered by `airavata-django-portal-commons`)
+- **Dynamic apps**: Plugin-style extensions discovered via Python entry points (powered by `django_airavata.commons`)
 - **Web components**: Workspace app builds Vue components as reusable web components
 - **No business logic** — the portal is a rendering layer. All logic lives in the Airavata server.
 

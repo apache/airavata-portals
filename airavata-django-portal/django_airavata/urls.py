@@ -41,7 +41,7 @@ urlpatterns = [
     re_path(r'^403/', views.error403),
     re_path(r'^404/', views.error404),
     re_path(r'^500/', views.error500),
-    path('', include('airavata_django_portal_commons.dynamic_apps.urls')),
+    path('', include('django_airavata.commons.dynamic_apps.urls')),
     path('', include(wagtail_urls)),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

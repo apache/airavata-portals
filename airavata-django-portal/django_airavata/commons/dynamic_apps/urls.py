@@ -1,4 +1,4 @@
-from airavata_django_portal_commons import dynamic_apps
+from django_airavata.commons import dynamic_apps
 from django.conf.urls import include
 from django.urls import path
 

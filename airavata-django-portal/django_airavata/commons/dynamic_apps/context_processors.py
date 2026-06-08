@@ -3,7 +3,7 @@ from importlib import import_module
 import logging
 import re
 
-from airavata_django_portal_commons import dynamic_apps
+from django_airavata.commons import dynamic_apps
 
 logger = logging.getLogger(__name__)
 
