@@ -1,7 +1,7 @@
 airavata-python-sdk==2.2.7
 bcrypt==3.1.7
 cffi==1.15.1
-cryptography==38.0.4
+cryptography==46.0.7
 Django==3.2.16
 djangorestframework==3.11.2
 google-api-python-client==1.12.8
