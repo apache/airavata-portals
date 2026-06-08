@@ -1811,10 +1811,8 @@ class CredentialSummarySerializer(
     userHasWriteAccess = serializers.SerializerMethodField()
 
     def get_userHasWriteAccess(self, credential_summary):
-        request = self.context['request']
-        return request.airavata_client.userHasAccess(
-            request.authz_token, credential_summary.token,
-            ResourcePermissionType.WRITE)
+        return user_has_access(
+            self.context['request'], credential_summary.token)
 
 
 class StoragePreferenceSerializer(

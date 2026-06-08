@@ -1366,31 +1366,32 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
 class CredentialSummaryViewSet(APIBackedViewSet):
     serializer_class = serializers.CredentialSummarySerializer
 
+    def _credential_summaries(self, summary_type):
+        return [
+            grpc_adapters.credential_summary(s)
+            for s in self.request.airavata.credential.get_all_credential_summaries(
+                self.gateway_id, grpc_adapters.proto_summary_type(summary_type))
+        ]
+
     def get_list(self):
-        ssh_creds = self.request.airavata_client.getAllCredentialSummaries(
-            self.authz_token, SummaryType.SSH)
-        pwd_creds = self.request.airavata_client.getAllCredentialSummaries(
-            self.authz_token, SummaryType.PASSWD)
-        return ssh_creds + pwd_creds
+        return (self._credential_summaries(SummaryType.SSH) +
+                self._credential_summaries(SummaryType.PASSWD))
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getCredentialSummary(
-            self.authz_token, lookup_value)
+        return grpc_adapters.credential_summary(
+            self.request.airavata.credential.get_credential_summary(
+                lookup_value, self.gateway_id))
 
     @action(detail=False)
     def ssh(self, request):
-        summaries = self.request.airavata_client.getAllCredentialSummaries(
-            self.authz_token, SummaryType.SSH
-        )
-        serializer = self.get_serializer(summaries, many=True)
+        serializer = self.get_serializer(
+            self._credential_summaries(SummaryType.SSH), many=True)
         return Response(serializer.data)
 
     @action(detail=False)
     def password(self, request):
-        summaries = self.request.airavata_client.getAllCredentialSummaries(
-            self.authz_token, SummaryType.PASSWD
-        )
-        serializer = self.get_serializer(summaries, many=True)
+        serializer = self.get_serializer(
+            self._credential_summaries(SummaryType.PASSWD), many=True)
         return Response(serializer.data)
 
     @action(methods=['post'], detail=False)
