@@ -80,6 +80,20 @@ from . import models, thrift_utils, view_utils
 log = logging.getLogger(__name__)
 
 
+def user_has_access(request, resource_id, permission="WRITE"):
+    """gRPC sharing access check (Track D — replaces the Thrift userHasAccess).
+
+    ``permission`` is the ResourcePermissionType enum name (WRITE/READ/OWNER/
+    MANAGE_SHARING); the backend prefixes the gateway internally. The acting user
+    is taken from the authenticated token context server-side, so ``user_id`` is
+    passed for the facade signature but ignored by the backend.
+    """
+    return request.airavata.sharing.user_has_access(
+        resource_id=resource_id,
+        user_id=request.user.username,
+        permission_type=permission)
+
+
 class FullyEncodedHyperlinkedIdentityField(
         serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
@@ -282,10 +296,7 @@ class ProjectSerializer(
         return instance
 
     def get_userHasWriteAccess(self, project):
-        request = self.context['request']
-        return request.airavata_client.userHasAccess(
-            request.authz_token, project.projectID,
-            ResourcePermissionType.WRITE)
+        return user_has_access(self.context['request'], project.projectID)
 
     def get_isOwner(self, project):
         request = self.context['request']
