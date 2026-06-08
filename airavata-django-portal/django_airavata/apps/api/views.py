@@ -1486,15 +1486,14 @@ class StorageResourceViewSet(mixins.RetrieveModelMixin,
     lookup_field = 'storage_resource_id'
 
     def get_instance(self, lookup_value, format=None):
-        return self.request.airavata_client.getStorageResource(
-            self.authz_token, lookup_value)
+        return grpc_adapters.storage_resource(
+            self.request.airavata.storage.get_storage_resource(lookup_value))
 
     @action(detail=False)
     def all_names(self, request, format=None):
-        """Return a map of compute resource names keyed by resource id."""
+        """Return a map of storage resource names keyed by resource id."""
         return Response(
-            request.airavata_client.getAllStorageResourceNames(
-                request.authz_token))
+            request.airavata.storage.get_all_storage_resource_names())
 
 
 class StoragePreferenceViewSet(APIBackedViewSet):

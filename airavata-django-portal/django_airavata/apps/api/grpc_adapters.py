@@ -18,6 +18,9 @@ from airavata.model.appcatalog.parallelism.ttypes import (
 )
 from airavata.model.application.io.ttypes import DataType as _ThriftDataType
 from airavata.model.credential.store.ttypes import SummaryType as _ThriftSummaryType
+from airavata.model.data.movement.ttypes import (
+    DataMovementProtocol as _ThriftDataMovementProtocol,
+)
 
 
 def _thrift_enum(pb, field, thrift_enum):
@@ -31,6 +34,60 @@ def _thrift_enum(pb, field, thrift_enum):
     enum_descriptor = pb.DESCRIPTOR.fields_by_name[field].enum_type
     name = enum_descriptor.values_by_number[getattr(pb, field)].name
     return getattr(thrift_enum, name)
+
+
+def _thrift_enum_mapped(pb, field, proto_name_to_thrift):
+    """Bridge a proto enum field to a Thrift value via an EXPLICIT name map.
+
+    Needed when the proto and Thrift enum member NAMES diverge — proto3 prefixes
+    members whose bare name would collide in the file (e.g. proto
+    ``DATA_MOVEMENT_PROTOCOL_LOCAL`` vs Thrift ``LOCAL``), and some members exist
+    on only one side (e.g. proto-only ``GRID_FTP``). Unmapped members — including
+    the zero ``*_UNKNOWN`` sentinel and proto-only values — return None (the
+    serializer fields are nullable for these).
+    """
+    enum_descriptor = pb.DESCRIPTOR.fields_by_name[field].enum_type
+    proto_name = enum_descriptor.values_by_number[getattr(pb, field)].name
+    return proto_name_to_thrift.get(proto_name)
+
+
+# proto DataMovementProtocol member name -> Thrift DataMovementProtocol value.
+# Names diverge (proto prefixes LOCAL; proto-only GRID_FTP has no Thrift value).
+_DATA_MOVEMENT_PROTOCOL = {
+    'DATA_MOVEMENT_PROTOCOL_LOCAL': _ThriftDataMovementProtocol.LOCAL,
+    'SCP': _ThriftDataMovementProtocol.SCP,
+    'SFTP': _ThriftDataMovementProtocol.SFTP,
+    'UNICORE_STORAGE_SERVICE': _ThriftDataMovementProtocol.UNICORE_STORAGE_SERVICE,
+}
+
+
+def _data_movement_interface(pb):
+    """gRPC ``DataMovementInterface`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        dataMovementInterfaceId=pb.data_movement_interface_id,
+        dataMovementProtocol=_thrift_enum_mapped(
+            pb, 'data_movement_protocol', _DATA_MOVEMENT_PROTOCOL),
+        priorityOrder=pb.priority_order,
+        creationTime=pb.creation_time or None,
+        updateTime=pb.update_time or None,
+        storageResourceId=pb.storage_resource_id,
+    )
+
+
+def storage_resource(pb):
+    """gRPC ``StorageResourceDescription`` -> ``StorageResourceSerializer`` shape."""
+    return SimpleNamespace(
+        storageResourceId=pb.storage_resource_id,
+        hostName=pb.host_name,
+        storageResourceDescription=pb.storage_resource_description,
+        enabled=pb.enabled,
+        dataMovementInterfaces=[
+            _data_movement_interface(d) for d in pb.data_movement_interfaces],
+        # top-level creation/update use UTCPosixTimestampDateTimeField (not
+        # nullable, divides by 1000) -> keep the int.
+        creationTime=pb.creation_time,
+        updateTime=pb.update_time,
+    )
 
 
 def proto_summary_type(thrift_summary_type):
