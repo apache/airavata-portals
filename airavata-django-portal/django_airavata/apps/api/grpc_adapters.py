@@ -13,6 +13,7 @@ serializers are made protobuf-native.
 
 from types import SimpleNamespace
 
+from airavata.model.application.io.ttypes import DataType as _ThriftDataType
 from airavata.model.credential.store.ttypes import SummaryType as _ThriftSummaryType
 
 
@@ -103,4 +104,63 @@ def credential_summary(pb):
         persistedTime=pb.persisted_time,
         token=pb.token,
         description=pb.description,
+    )
+
+
+def _input_data_object(pb):
+    """gRPC ``InputDataObjectType`` -> ``InputDataObjectTypeSerializer`` shape."""
+    return SimpleNamespace(
+        name=pb.name,
+        value=pb.value,
+        # DataType proto/Thrift ints differ per name -> bridge by name; the
+        # serializer's EnumChoiceField(DataType) reads ``.name`` off the member.
+        type=_thrift_enum(pb, 'type', _ThriftDataType),
+        applicationArgument=pb.application_argument,
+        standardInput=pb.standard_input,
+        userFriendlyDescription=pb.user_friendly_description,
+        # JSON string; empty -> None so StoredJSONField renders null like Thrift.
+        metaData=pb.meta_data or None,
+        inputOrder=pb.input_order,
+        isRequired=pb.is_required,
+        requiredToAddedToCommandLine=pb.required_to_added_to_command_line,
+        dataStaged=pb.data_staged,
+        storageResourceId=pb.storage_resource_id,
+        isReadOnly=pb.is_read_only,
+        overrideFilename=pb.override_filename,
+    )
+
+
+def _output_data_object(pb):
+    """gRPC ``OutputDataObjectType`` -> ``OutputDataObjectTypeSerializer`` shape."""
+    return SimpleNamespace(
+        name=pb.name,
+        value=pb.value,
+        type=_thrift_enum(pb, 'type', _ThriftDataType),
+        applicationArgument=pb.application_argument,
+        isRequired=pb.is_required,
+        requiredToAddedToCommandLine=pb.required_to_added_to_command_line,
+        dataMovement=pb.data_movement,
+        location=pb.location,
+        searchQuery=pb.search_query,
+        outputStreaming=pb.output_streaming,
+        storageResourceId=pb.storage_resource_id,
+        metaData=pb.meta_data or None,
+    )
+
+
+def application_interface(pb):
+    """gRPC ``ApplicationInterfaceDescription`` -> ``ApplicationInterfaceDescriptionSerializer`` shape.
+
+    Recursively adapts the nested ``applicationInputs``/``applicationOutputs``
+    repeated messages.
+    """
+    return SimpleNamespace(
+        applicationInterfaceId=pb.application_interface_id,
+        applicationName=pb.application_name,
+        applicationDescription=pb.application_description,
+        applicationModules=list(pb.application_modules),
+        applicationInputs=[_input_data_object(i) for i in pb.application_inputs],
+        applicationOutputs=[_output_data_object(o) for o in pb.application_outputs],
+        archiveWorkingDirectory=pb.archive_working_directory,
+        hasOptionalFileInputs=pb.has_optional_file_inputs,
     )

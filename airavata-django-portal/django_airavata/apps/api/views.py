@@ -554,18 +554,22 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
     lookup_field = 'app_interface_id'
 
     def get_list(self):
-        return self.request.airavata_client.getAllApplicationInterfaces(
-            self.authz_token, self.gateway_id)
+        return [
+            grpc_adapters.application_interface(i)
+            for i in self.request.airavata.research.get_all_application_interfaces(
+                self.gateway_id)
+        ]
 
     def get_instance(self, lookup_value):
         try:
-            return self.request.airavata_client.getApplicationInterface(
-                self.authz_token, lookup_value)
+            return grpc_adapters.application_interface(
+                self.request.airavata.research.get_application_interface(
+                    lookup_value))
         except Exception:
             # If it failed to load, check to see if it exists at all
-            all_interfaces = self.request.airavata_client.getAllApplicationInterfaces(
-                self.authz_token, self.gateway_id)
-            interface_ids = map(lambda i: i.applicationInterfaceId, all_interfaces)
+            all_interfaces = self.request.airavata.research.get_all_application_interfaces(
+                self.gateway_id)
+            interface_ids = [i.application_interface_id for i in all_interfaces]
             if lookup_value not in interface_ids:
                 raise Http404("Application interface does not exist")
             else:
@@ -608,8 +612,8 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
 
     @action(detail=True)
     def compute_resources(self, request, app_interface_id):
-        compute_resources = request.airavata_client.getAvailableAppInterfaceComputeResources(
-            self.authz_token, app_interface_id)
+        compute_resources = request.airavata.research.get_available_app_interface_compute_resources(
+            app_interface_id)
         return Response(compute_resources)
 
 
