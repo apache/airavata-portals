@@ -3254,8 +3254,16 @@ dir-glob@^3.0.1:
     path-type "^4.0.0"
 
 "django-airavata-api@link:../../apps/api":
-  version "0.0.0"
-  uid ""
+  version "1.0.0-beta.3"
+  dependencies:
+    "@babel/polyfill" "^7.0.0"
+    "@babel/runtime" "^7.1.2"
+    browserslist "^4.16.7"
+    core-js "^3.8.3"
+    stacktrace-js "^2.0.0"
+    terser "^4.1.2"
+    url-parse "^1.4.3"
+    uuid "^3.3.2"
 
 dns-equal@^1.0.0:
   version "1.0.0"
@@ -5169,10 +5177,10 @@ lines-and-columns@^1.1.6:
   resolved "https://registry.yarnpkg.com/lines-and-columns/-/lines-and-columns-1.2.4.tgz#eca284f75d2965079309dc0ad9255abb2ebc1632"
   integrity sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==
 
-linkifyjs@^2.1.9:
-  version "2.1.9"
-  resolved "https://registry.yarnpkg.com/linkifyjs/-/linkifyjs-2.1.9.tgz#af06e45a2866ff06c4766582590d098a4d584702"
-  integrity sha512-74ivurkK6WHvHFozVaGtQWV38FzBwSTGNmJolEgFp7QgR2bl6ArUWlvT4GcHKbPe1z3nWYi+VUdDZk16zDOVug==
+linkifyjs@^4.3.2:
+  version "4.3.2"
+  resolved "https://registry.yarnpkg.com/linkifyjs/-/linkifyjs-4.3.2.tgz#d97eb45419aabf97ceb4b05a7adeb7b8c8ade2b1"
+  integrity sha512-NT1CJtq3hHIreOianA8aSXn6Cw0JzYOuDQbOrSPe7gqFnCpKP++MQe3ODgO3oh2GJFORkAAdqredOa60z63GbA==
 
 load-json-file@^4.0.0:
   version "4.0.0"
