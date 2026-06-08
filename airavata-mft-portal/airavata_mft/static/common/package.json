@@ -24,7 +24,7 @@
     "eslint": "^6.7.2",
     "eslint-plugin-vue": "^6.2.2",
     "vue-template-compiler": "^2.6.11",
-    "webpack": "^4.28.4",
+    "webpack": "^5.107.2",
     "webpack-bundle-tracker": "^0.4.2-beta",
     "webpack-dev-middleware": "^3.5.1",
     "webpack-dev-server": "^3.1.14"
