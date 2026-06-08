@@ -28,3 +28,13 @@ def project(pb):
         sharedUsers=list(pb.shared_users),
         sharedGroups=list(pb.shared_groups),
     )
+
+
+def application_module(pb):
+    """gRPC ``ApplicationModule`` protobuf -> ``ApplicationModuleSerializer`` shape."""
+    return SimpleNamespace(
+        appModuleId=pb.app_module_id,
+        appModuleName=pb.app_module_name,
+        appModuleVersion=pb.app_module_version,
+        appModuleDescription=pb.app_module_description,
+    )

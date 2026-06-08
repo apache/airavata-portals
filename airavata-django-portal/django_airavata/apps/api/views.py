@@ -439,12 +439,15 @@ class ApplicationModuleViewSet(APIBackedViewSet):
     lookup_field = 'app_module_id'
 
     def get_list(self):
-        return self.request.airavata_client.getAccessibleAppModules(
-            self.authz_token, self.gateway_id)
+        return [
+            grpc_adapters.application_module(m)
+            for m in self.request.airavata.research.get_accessible_app_modules(
+                gateway_id=self.gateway_id)
+        ]
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getApplicationModule(
-            self.authz_token, lookup_value)
+        return grpc_adapters.application_module(
+            self.request.airavata.research.get_application_module(lookup_value))
 
     def perform_create(self, serializer):
         app_module = serializer.save()
@@ -535,8 +538,11 @@ class ApplicationModuleViewSet(APIBackedViewSet):
 
     @action(detail=False)
     def list_all(self, request, format=None):
-        all_modules = self.request.airavata_client.getAllAppModules(
-            self.authz_token, self.gateway_id)
+        all_modules = [
+            grpc_adapters.application_module(m)
+            for m in self.request.airavata.research.get_all_app_modules(
+                gateway_id=self.gateway_id)
+        ]
         serializer = self.serializer_class(
             all_modules, many=True, context={'request': request})
         return Response(serializer.data)
