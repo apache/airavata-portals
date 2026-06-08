@@ -2,12 +2,9 @@
 {% extends 'base.html' %}
 
 {% load static %}
-{% load render_bundle from webpack_loader %}
+{% load render_bundle get_files from webpack_loader %}
 
 {% block css %}
-{% render_bundle 'chunk-vendors' 'css' 'DATAPARSERS' %}
-{% comment %} NOTE: dataparsers won't have a common chunk until it has more than one entry point. {% endcomment %}
-{% render_bundle 'chunk-common' 'css' 'DATAPARSERS' %}
 {% render_bundle bundle_name 'css' 'DATAPARSERS' %}
 {% endblock %}
 
@@ -16,7 +13,9 @@
 {% endblock content %}
 
 {% block scripts %}
-{% render_bundle 'chunk-vendors' 'js' 'DATAPARSERS' %}
-{% render_bundle 'chunk-common' 'js' 'DATAPARSERS' %}
-{% render_bundle bundle_name 'js' 'DATAPARSERS' %}
+{% comment %} Vite emits an ES module bundle per page entry; load it as
+type="module" so its shared-chunk imports resolve. {% endcomment %}
+{% get_files bundle_name 'js' 'DATAPARSERS' as bundle_js %}
+{% for f in bundle_js %}<script type="module" src="{{ f.url }}"></script>
+{% endfor %}
 {% endblock %}
