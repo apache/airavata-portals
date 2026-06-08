@@ -7,7 +7,7 @@ requests==2.32.4
 
 # LangChain + Qwen3 integration (from your working demo)
 langchain==0.1.0
-langchain-community==0.0.13
+langchain-community==0.3.27
 langchain-ollama==0.0.1
 langchain-core==0.1.0
 
