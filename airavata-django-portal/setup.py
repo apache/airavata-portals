@@ -27,8 +27,6 @@ setup(
             'requests-oauthlib',
             'thrift',
             'thrift_connector',
-            'wagtail',
-            'wagtailfontawesome',
             'jupyter',
             'papermill',
             "airavata-django-portal-sdk",

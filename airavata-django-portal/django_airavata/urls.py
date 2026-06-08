@@ -18,9 +18,6 @@ from django.conf.urls import include
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, re_path
-from wagtail.admin import urls as wagtailadmin_urls
-from wagtail.core import urls as wagtail_urls
-from wagtail.documents import urls as wagtaildocs_urls
 
 from . import views
 
@@ -34,15 +31,15 @@ urlpatterns = [
     re_path(r'^dataparsers/', include('django_airavata.apps.dataparsers.urls')),
     path('sdk/', include('airavata_django_portal_sdk.urls')),
     re_path(r'^home$', views.home, name='home'),
-    re_path(r'^cms/', include(wagtailadmin_urls)),
-    re_path(r'^documents/', include(wagtaildocs_urls)),
     # For testing, developing error pages
     re_path(r'^400/', views.error400),
     re_path(r'^403/', views.error403),
     re_path(r'^404/', views.error404),
     re_path(r'^500/', views.error500),
+    # Landing pages, documentation, and other CMS content are served by the
+    # standalone airavata-cms service; a reverse proxy routes the portal's app
+    # paths (below) here and everything else to the CMS (see deploy/).
     path('', include('django_airavata.commons.dynamic_apps.urls')),
-    path('', include(wagtail_urls)),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 handler400 = views.error400

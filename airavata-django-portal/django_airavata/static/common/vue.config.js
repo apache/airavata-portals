@@ -4,7 +4,6 @@ module.exports = {
   publicPath: "/static/common/dist/",
   pages: {
     app: "./js/main.js",
-    cms: "./js/cms.js",
     notices: "./js/notices.js",
   },
   configureWebpack: (config) => {

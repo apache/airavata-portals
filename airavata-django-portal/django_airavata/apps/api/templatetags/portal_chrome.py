@@ -1,10 +1,9 @@
 """Template tags that render the portal app-shell ("chrome") from settings.
 
-These replace the Wagtail-backed ``navigation_tags`` used by ``base.html``,
-sourcing the favicon, header logo, title, and user-menu links from
-``settings.PORTAL_CHROME`` / ``settings.PORTAL_TITLE``. They must not import
-Wagtail. (The Wagtail CMS-page shell keeps its own ``navigation_tags`` until the
-CMS is extracted.)
+These source the favicon, header logo, title, and user-menu links for
+``base.html`` from ``settings.PORTAL_CHROME`` / ``settings.PORTAL_TITLE``. The
+portal no longer ships a CMS; landing pages and other content are served by the
+standalone airavata-cms service.
 """
 
 from django import template
