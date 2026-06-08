@@ -1,6 +1,6 @@
 import logging
 from importlib import import_module
-from importlib_metadata import entry_points
+from importlib.metadata import entry_points
 
 
 # AppConfig instances from custom Django apps
