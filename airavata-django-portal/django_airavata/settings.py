@@ -213,9 +213,10 @@ PORTAL_CHROME = {
 
 # Django REST Framework configuration
 REST_FRAMEWORK = {
+    # Track D: authenticate purely from a Keycloak token (no session, no DB user,
+    # no separate Django auth layer). The portal just expects a valid token.
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication',
-        'django_airavata.apps.api.authentication.OAuthAuthentication',
+        'django_airavata.apps.auth.token_authentication.KeycloakTokenAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',

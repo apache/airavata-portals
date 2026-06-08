@@ -14,11 +14,26 @@ class AiravataClientMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        with utils.airavata_api_client_pool.connection() as airavata_client:
-            request.airavata_client = airavata_client
-            response = self.get_response(request)
+        # Track D: attach the Thrift client lazily so requests that only use the
+        # gRPC client (request.airavata) never open a Thrift connection. The
+        # connection is acquired from the pool on first access and released after
+        # the response. Views/serializers still on Thrift work unchanged.
+        from django.utils.functional import SimpleLazyObject
 
-        return response
+        opened = []
+
+        def _client():
+            ctx = utils.airavata_api_client_pool.connection()
+            client = ctx.__enter__()
+            opened.append(ctx)
+            return client
+
+        request.airavata_client = SimpleLazyObject(_client)
+        try:
+            return self.get_response(request)
+        finally:
+            for ctx in opened:
+                ctx.__exit__(None, None, None)
 
     def process_exception(self, request, exception):
         if isinstance(exception, thrift.transport.TTransport.TTransportException):
