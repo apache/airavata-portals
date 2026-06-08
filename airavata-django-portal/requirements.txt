@@ -12,13 +12,24 @@ zipstream-new==1.1.8
 jupyter==1.0.0
 papermill==1.0.1
 
-# gRPC libs
-google-api-python-client==1.12.8
-grpcio-tools==1.48.2 ; python_version < "3.7"
-grpcio-tools==1.51.1 ; python_version >= "3.7"
-grpcio==1.48.2 ; python_version < "3.7"
-grpcio==1.53.2 ; python_version >= "3.7"
+# gRPC libs. Bumped for the new Airavata gRPC SDK (airavata-python-sdk 3.0.0,
+# Track D): grpcio>=1.60 and protobuf>=4.25. google-api-python-client is bumped
+# off 1.12.8 because its old google-api-core pinned protobuf<4.
+google-api-python-client>=2.0
+grpcio>=1.60.0
+grpcio-tools>=1.60.0
+protobuf>=4.25.0
+googleapis-common-protos>=1.62.0
 
+# Legacy Thrift SDK — still required while apps/api views are repointed from
+# Thrift (request.airavata_client) to gRPC (request.airavata) resource family by
+# resource family. The NEW gRPC SDK (import name airavata_sdk) cannot be pip
+# co-installed because it shares this PyPI/import name; during the Track D
+# transition it is provided on PYTHONPATH from the local apache/airavata checkout
+# (PYTHONPATH=/path/to/airavata/airavata-python-sdk). Both are dropped at D6.
+# NOTE: protobuf>=4 breaks the legacy MFT storage stubs (airavata-django-portal-sdk,
+# generated for protobuf<=3.20); the dev DjangoFileSystemProvider path is
+# unaffected and MFT regen is part of D4 (storage).
 airavata-django-portal-sdk==1.8.4
 airavata-python-sdk==2.2.7
 

@@ -72,6 +72,10 @@ MIDDLEWARE = [
     'django_airavata.apps.auth.middleware.authz_token_middleware',
     'django_airavata.middleware.AiravataClientMiddleware',
     'django_airavata.middleware.profile_service_client',
+    # Track D: new gRPC AiravataClient (request.airavata), additive alongside the
+    # Thrift request.airavata_client. Must come after authz_token_middleware (uses
+    # request.authz_token for the access token).
+    'django_airavata.middleware.airavata_grpc_client',
     # Needs to come after authz_token_middleware, airavata_client and
     # profile_service_client
     'django_airavata.apps.auth.middleware.gateway_groups_middleware',
@@ -397,6 +401,15 @@ LOGGING = {
 }
 
 
+
+# New gRPC backend (Track D). The portal is migrating from the legacy Thrift API
+# to the new Airavata gRPC/REST server (airavata-python-sdk AiravataClient). These
+# defaults target the tilt-managed server on :9090 and may be overridden via env
+# vars or settings_local.py. The gRPC client coexists with the Thrift client while
+# apps/api views are repointed resource-family by resource-family.
+GRPC_API_HOST = os.environ.get('GRPC_API_HOST', 'localhost')
+GRPC_API_PORT = int(os.environ.get('GRPC_API_PORT', 9090))
+GRPC_API_SECURE = os.environ.get('GRPC_API_SECURE', 'false').lower() == 'true'
 
 # Allow all settings to be overridden by settings_local.py file
 try:
