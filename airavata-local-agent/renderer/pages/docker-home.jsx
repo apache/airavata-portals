@@ -19,7 +19,8 @@
 *                                                              
 *
 *****************************************************************/
-import { Grid, GridItem, Tabs, useToast, Box, Progress, Text, keyframes, TabPanels, Tab, TabPanel, Stack, Heading, IconButton, Icon, Alert, AlertIcon } from "@chakra-ui/react";
+import { Grid, GridItem, Tabs, useToast, Box, Progress, Text, TabPanels, Tab, TabPanel, Stack, Heading, IconButton, Icon, Alert, AlertIcon } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react";
 import { HeaderBox } from "../components/HeaderBox";
 import { DockerContainersList } from "../components/DockerComponents/DockerContainersList";
 import { useEffect, useState } from "react";
