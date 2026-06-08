@@ -6,10 +6,10 @@ import BatchQueue from "../../js/models/BatchQueue";
 import { createExperiment } from "../../js/utils/ExperimentUtils";
 
 // Mock out 'index' so that RESTful service calls can be mocked
-jest.mock("../../js/index");
+vi.mock("../../js/index");
 
 beforeEach(() => {
-  jest.resetAllMocks();
+  vi.resetAllMocks();
 });
 
 test("error thrown when no applicationName given", async () => {
