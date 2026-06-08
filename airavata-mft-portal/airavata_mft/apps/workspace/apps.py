@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class WorkspaceConfig(AppConfig):
-    name = 'workspace'
+    name = 'airavata_mft.apps.workspace'

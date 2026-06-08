@@ -1,8 +1,8 @@
 from . import views
-from django.conf.urls import url
+from django.urls import re_path
 
 app_name='workspace'
 urlpatterns = [
-    url(r'^storage/$', views.storage,name="storages"),
-    url(r'^storage/(?P<storage_id>[^/]+)/$', views.resources,name="resources")
+    re_path(r'^storage/$', views.storage, name="storages"),
+    re_path(r'^storage/(?P<storage_id>[^/]+)/$', views.resources, name="resources")
 ]

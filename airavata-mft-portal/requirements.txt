@@ -1,5 +1,5 @@
-Django==3.0.4
-djangorestframework==3.11.0
-grpcio==1.27.2
-googleapis-common-protos==1.51.0
-django-webpack-loader==0.7.0
+Django==4.2.30
+djangorestframework==3.16.1
+grpcio==1.80.0
+googleapis-common-protos==1.75.0
+django-webpack-loader==1.8.1
