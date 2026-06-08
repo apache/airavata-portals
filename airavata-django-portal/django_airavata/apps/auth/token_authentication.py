@@ -89,6 +89,17 @@ class KeycloakTokenAuthentication(authentication.BaseAuthentication):
         if hasattr(request, '_request'):
             request._request.authz_token = authz_token
             request._request.user = user
+        # Several serializers read request.is_gateway_admin (it was set by the
+        # session-based gateway_groups_middleware, which pure-token auth skips).
+        # Default to non-admin so those serializers don't crash. TODO (D5): derive
+        # real admin status from gRPC — compute.get_gateway_groups() +
+        # sharing.gm_get_all_groups_user_belongs(username) — once there is an admin
+        # gateway user to validate the group/field shapes against, and cache it.
+        request.is_gateway_admin = False
+        request.is_read_only_gateway_admin = False
+        if hasattr(request, '_request'):
+            request._request.is_gateway_admin = False
+            request._request.is_read_only_gateway_admin = False
         return (user, token)
 
     def authenticate_header(self, request):
