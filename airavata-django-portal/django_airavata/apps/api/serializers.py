@@ -515,10 +515,8 @@ class ApplicationDeploymentDescriptionSerializer(
         allow_null=True)
 
     def get_userHasWriteAccess(self, appDeployment):
-        request = self.context['request']
-        return request.airavata_client.userHasAccess(
-            request.authz_token, appDeployment.appDeploymentId,
-            ResourcePermissionType.WRITE)
+        return user_has_access(
+            self.context['request'], appDeployment.appDeploymentId)
 
 
 class ComputeResourceDescriptionSerializer(

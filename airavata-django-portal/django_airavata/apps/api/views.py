@@ -630,15 +630,16 @@ class ApplicationDeploymentViewSet(APIBackedViewSet):
             raise ParseError("Query params appModuleId and "
                              "groupResourceProfileId are required together.")
         if app_module_id and group_resource_profile_id:
-            return self.request.airavata_client.getApplicationDeploymentsForAppModuleAndGroupResourceProfile(
-                self.authz_token, app_module_id, group_resource_profile_id)
+            deployments = self.request.airavata.research.get_application_deployments_for_app_module_and_group_resource_profile(
+                app_module_id, group_resource_profile_id)
         else:
-            return self.request.airavata_client.getAccessibleApplicationDeployments(
-                self.authz_token, self.gateway_id, ResourcePermissionType.READ)
+            deployments = self.request.airavata.research.get_accessible_application_deployments(
+                self.gateway_id)
+        return [grpc_adapters.application_deployment(d) for d in deployments]
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getApplicationDeployment(
-            self.authz_token, lookup_value)
+        return grpc_adapters.application_deployment(
+            self.request.airavata.research.get_application_deployment(lookup_value))
 
     def perform_create(self, serializer):
         application_deployment = serializer.save()
