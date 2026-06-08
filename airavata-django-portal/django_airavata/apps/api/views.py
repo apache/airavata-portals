@@ -954,12 +954,14 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
     lookup_field = 'group_resource_profile_id'
 
     def get_list(self):
-        return self.request.airavata_client.getGroupResourceList(
-            self.authz_token, self.gateway_id)
+        return [
+            grpc_adapters.group_resource_profile(p)
+            for p in self.request.airavata.compute.get_group_resource_list()
+        ]
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getGroupResourceProfile(
-            self.authz_token, lookup_value)
+        return grpc_adapters.group_resource_profile(
+            self.request.airavata.compute.get_group_resource_profile(lookup_value))
 
     def perform_create(self, serializer):
         group_resource_profile = serializer.save()

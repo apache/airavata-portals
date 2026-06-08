@@ -16,6 +16,9 @@ from types import SimpleNamespace
 from airavata.model.appcatalog.computeresource.ttypes import (
     JobSubmissionProtocol as _ThriftJobSubmissionProtocol,
 )
+from airavata.model.appcatalog.groupresourceprofile.ttypes import (
+    ResourceType as _ThriftResourceType,
+)
 from airavata.model.appcatalog.parallelism.ttypes import (
     ApplicationParallelismType as _ThriftParallelismType,
 )
@@ -369,4 +372,141 @@ def application_deployment(pb):
         defaultCPUCount=pb.default_cpu_count or None,
         defaultWalltime=pb.default_walltime or None,
         editableByUser=pb.editable_by_user,
+    )
+
+
+# proto ResourceType member name -> Thrift ResourceType value (names align,
+# ints differ: proto SLURM=1 vs Thrift SLURM=0).
+_RESOURCE_TYPE = {
+    'SLURM': _ThriftResourceType.SLURM,
+    'AWS': _ThriftResourceType.AWS,
+}
+
+
+def _compute_resource_reservation(pb):
+    """gRPC ``ComputeResourceReservation`` -> ``ComputeResourceReservationSerializer`` shape."""
+    return SimpleNamespace(
+        reservationId=pb.reservation_id,
+        reservationName=pb.reservation_name,
+        queueNames=list(pb.queue_names),
+        # serializer overrides start/end with nullable UTC fields.
+        startTime=pb.start_time or None,
+        endTime=pb.end_time or None,
+    )
+
+
+def _group_account_ssh_provisioner_config(pb):
+    """gRPC ``GroupAccountSSHProvisionerConfig`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        resourceId=pb.resource_id,
+        groupResourceProfileId=pb.group_resource_profile_id,
+        configName=pb.config_name,
+        configValue=pb.config_value,
+    )
+
+
+def _slurm_compute_resource_preference(pb):
+    """gRPC ``SlurmComputeResourcePreference`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        allocationProjectNumber=pb.allocation_project_number,
+        preferredBatchQueue=pb.preferred_batch_queue,
+        qualityOfService=pb.quality_of_service,
+        usageReportingGatewayId=pb.usage_reporting_gateway_id,
+        sshAccountProvisioner=pb.ssh_account_provisioner,
+        groupSSHAccountProvisionerConfigs=[
+            _group_account_ssh_provisioner_config(c)
+            for c in pb.group_ssh_account_provisioner_configs],
+        sshAccountProvisionerAdditionalInfo=pb.ssh_account_provisioner_additional_info,
+        reservations=[_compute_resource_reservation(r) for r in pb.reservations],
+    )
+
+
+def _aws_compute_resource_preference(pb):
+    """gRPC ``AwsComputeResourcePreference`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        region=pb.region,
+        preferredAmiId=pb.preferred_ami_id,
+        preferredInstanceType=pb.preferred_instance_type,
+    )
+
+
+def _environment_specific_preferences(pb):
+    """proto oneof ``EnvironmentSpecificPreferences`` -> {slurm, aws} (one set)."""
+    which = pb.WhichOneof('preferences')
+    return SimpleNamespace(
+        slurm=(_slurm_compute_resource_preference(pb.slurm)
+               if which == 'slurm' else None),
+        aws=(_aws_compute_resource_preference(pb.aws)
+             if which == 'aws' else None),
+    )
+
+
+def _group_compute_resource_preference(pb):
+    """gRPC ``GroupComputeResourcePreference`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        computeResourceId=pb.compute_resource_id,
+        groupResourceProfileId=pb.group_resource_profile_id,
+        overridebyAiravata=pb.override_by_airavata,
+        loginUserName=pb.login_user_name,
+        scratchLocation=pb.scratch_location,
+        # rendered as raw ints; bridge by name (incl. the JSP_CLOUD/LOCAL
+        # divergences) to the Thrift integer the frontend expects.
+        preferredJobSubmissionProtocol=_thrift_enum_mapped(
+            pb, 'preferred_job_submission_protocol', _JOB_SUBMISSION_PROTOCOL),
+        preferredDataMovementProtocol=_thrift_enum_mapped(
+            pb, 'preferred_data_movement_protocol', _DATA_MOVEMENT_PROTOCOL),
+        # empty token -> None so the serializer's userHasWriteAccess token READ
+        # check (``token is None or ...``) skips unset tokens.
+        resourceSpecificCredentialStoreToken=(
+            pb.resource_specific_credential_store_token or None),
+        resourceType=_thrift_enum_mapped(pb, 'resource_type', _RESOURCE_TYPE),
+        specificPreferences=(
+            _environment_specific_preferences(pb.specific_preferences)
+            if pb.HasField('specific_preferences') else None),
+    )
+
+
+def _compute_resource_policy(pb):
+    """gRPC ``ComputeResourcePolicy`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        resourcePolicyId=pb.resource_policy_id,
+        computeResourceId=pb.compute_resource_id,
+        groupResourceProfileId=pb.group_resource_profile_id,
+        allowedBatchQueues=list(pb.allowed_batch_queues),
+    )
+
+
+def _batch_queue_resource_policy(pb):
+    """gRPC ``BatchQueueResourcePolicy`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        resourcePolicyId=pb.resource_policy_id,
+        computeResourceId=pb.compute_resource_id,
+        groupResourceProfileId=pb.group_resource_profile_id,
+        queuename=pb.queuename,
+        maxAllowedNodes=pb.max_allowed_nodes,
+        maxAllowedCores=pb.max_allowed_cores,
+        maxAllowedWalltime=pb.max_allowed_walltime,
+    )
+
+
+def group_resource_profile(pb):
+    """gRPC ``GroupResourceProfile`` -> ``GroupResourceProfileSerializer`` shape.
+
+    Recursively adapts the compute preferences (each carrying a slurm/aws
+    union of specific preferences with reservations) and the compute /
+    batch-queue resource policies.
+    """
+    return SimpleNamespace(
+        gatewayId=pb.gateway_id,
+        groupResourceProfileId=pb.group_resource_profile_id,
+        groupResourceProfileName=pb.group_resource_profile_name,
+        computePreferences=[
+            _group_compute_resource_preference(p) for p in pb.compute_preferences],
+        computeResourcePolicies=[
+            _compute_resource_policy(p) for p in pb.compute_resource_policies],
+        batchQueueResourcePolicies=[
+            _batch_queue_resource_policy(p) for p in pb.batch_queue_resource_policies],
+        creationTime=pb.creation_time or None,
+        updatedTime=pb.updated_time or None,
+        defaultCredentialStoreToken=pb.default_credential_store_token or None,
     )

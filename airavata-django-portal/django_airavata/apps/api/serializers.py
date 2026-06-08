@@ -1628,9 +1628,8 @@ class GroupResourceProfileSerializer(
 
     def get_userHasWriteAccess(self, groupResourceProfile):
         request = self.context['request']
-        write_access = request.airavata_client.userHasAccess(
-            request.authz_token, groupResourceProfile.groupResourceProfileId,
-            ResourcePermissionType.WRITE)
+        write_access = user_has_access(
+            request, groupResourceProfile.groupResourceProfileId, "WRITE")
         if not write_access:
             return False
         # Check that user has READ access to all tokens in this
@@ -1640,8 +1639,7 @@ class GroupResourceProfileSerializer(
                       for cp in groupResourceProfile.computePreferences])
 
         def check_token(token):
-            return token is None or request.airavata_client.userHasAccess(
-                request.authz_token, token, ResourcePermissionType.READ)
+            return token is None or user_has_access(request, token, "READ")
 
         return all(map(check_token, tokens))
 
