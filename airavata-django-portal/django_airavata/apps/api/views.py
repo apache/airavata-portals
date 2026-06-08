@@ -315,18 +315,19 @@ class ExperimentSearchViewSet(mixins.ListModelMixin, GenericAPIBackedViewSet):
     def get_list(self):
         view = self
 
+        # gRPC SearchExperiments takes filters as a map<string, string> keyed by
+        # ExperimentSearchFields member name (the query-param key already is one).
         filters = {}
-        for filter_item in self.request.query_params.items():
-            if filter_item[0] in ExperimentSearchFields.__members__:
-                # Lookup enum value for this ExperimentSearchFields
-                search_field = ExperimentSearchFields[filter_item[0]]
-                filters[search_field] = filter_item[1]
+        for key, value in self.request.query_params.items():
+            if key in ExperimentSearchFields.__members__:
+                filters[key] = value
 
         class ExperimentSearchResultIterator(APIResultIterator):
             def get_results(self, limit=-1, offset=0):
-                return view.request.airavata_client.searchExperiments(
-                    view.authz_token, view.gateway_id, view.username, filters,
-                    limit, offset)
+                summaries = view.request.airavata.research.search_experiments(
+                    gateway_id=view.gateway_id, user_name=view.username,
+                    filters=filters, limit=limit, offset=offset)
+                return [grpc_adapters.experiment_summary(s) for s in summaries]
 
         # Preserve query parameters when moving to next and previous links
         return ExperimentSearchResultIterator(query_params=self.request.query_params.copy())

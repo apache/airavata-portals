@@ -38,3 +38,20 @@ def application_module(pb):
         appModuleVersion=pb.app_module_version,
         appModuleDescription=pb.app_module_description,
     )
+
+
+def experiment_summary(pb):
+    """gRPC ``ExperimentSummaryModel`` protobuf -> ``ExperimentSummarySerializer`` shape."""
+    return SimpleNamespace(
+        experimentId=pb.experiment_id,
+        projectId=pb.project_id,
+        gatewayId=pb.gateway_id,
+        creationTime=pb.creation_time or None,
+        userName=pb.user_name,
+        name=pb.name,
+        description=pb.description,
+        executionId=pb.execution_id,
+        resourceHostId=pb.resource_host_id,
+        experimentStatus=pb.experiment_status,
+        statusUpdateTime=pb.status_update_time or None,
+    )
