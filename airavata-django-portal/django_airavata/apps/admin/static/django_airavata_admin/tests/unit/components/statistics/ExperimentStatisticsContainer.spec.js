@@ -10,50 +10,50 @@ Vue.use(VueFlatPickr);
 
 import { models, services, utils } from "django-airavata-api";
 import ExperimentStatus from "django-airavata-api/static/django_airavata_api/js/models/ExperimentStatus";
-jest.mock("django-airavata-api", () => {
-  const originalModule = jest.requireActual("django-airavata-api");
+vi.mock("django-airavata-api", async () => {
+  const originalModule = await vi.importActual("django-airavata-api");
   return {
     __esModule: true,
     ...originalModule,
     // Mock just the RESTful service calls
     services: {
       ApplicationInterfaceService: {
-        list: jest.fn(),
+        list: vi.fn(),
       },
       ExperimentStatisticsService: {
-        get: jest.fn(),
+        get: vi.fn(),
       },
       ComputeResourceService: {
-        namesList: jest.fn(),
+        namesList: vi.fn(),
       },
       ExperimentSearchService: {
-        list: jest.fn(),
+        list: vi.fn(),
       },
       ExperimentService: {
-        retrieve: jest.fn(),
+        retrieve: vi.fn(),
       },
       FullExperimentService: {
-        retrieve: jest.fn(),
+        retrieve: vi.fn(),
       },
       GroupResourceProfileService: {
-        list: jest.fn(),
+        list: vi.fn(),
       },
       ExperimentArchiveService: {
-        get: jest.fn(),
+        get: vi.fn(),
       },
     },
   };
 });
 
 beforeEach(() => {
-  jest.resetAllMocks();
+  vi.resetAllMocks();
 
   const spinner = document.createElement("div");
   spinner.id = "airavata-spinner";
   document.body.appendChild(spinner);
 
   // jsdom doesn't implement scrollIntoView so just provide a stubbed implementation
-  Element.prototype.scrollIntoView = jest.fn();
+  Element.prototype.scrollIntoView = vi.fn();
 });
 
 test("load experiment by job id when job id matches unique experiment", async () => {

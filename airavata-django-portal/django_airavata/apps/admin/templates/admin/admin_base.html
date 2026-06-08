@@ -1,15 +1,17 @@
 {% extends "base.html" %}
 {% load static %}
-{% load render_bundle from webpack_loader %}
+{% load render_bundle get_files from webpack_loader %}
 {% block content %}
 <div id=app></div>
 {% endblock %} {% block css %}
-{% render_bundle 'chunk-vendors' 'css' 'ADMIN' %}
 {% render_bundle 'app' 'css' 'ADMIN' %}
 <link rel=stylesheet type=text/css href={% static 'django_airavata_admin/static/css/admin.css' %}> {% endblock %}
 
 {% block scripts %}
     {{ block.super }}
-    {% render_bundle 'chunk-vendors' 'js' 'ADMIN' %}
-    {% render_bundle 'app' 'js' 'ADMIN' %}
+    {% comment %} Vite emits an ES module bundle; load it as type="module" so its
+    shared-chunk imports resolve. {% endcomment %}
+    {% get_files 'app' 'js' 'ADMIN' as admin_app_js %}
+    {% for f in admin_app_js %}<script type="module" src="{{ f.url }}"></script>
+    {% endfor %}
 {% endblock %}
