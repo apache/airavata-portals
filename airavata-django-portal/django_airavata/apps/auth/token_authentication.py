@@ -67,12 +67,14 @@ class KeycloakTokenAuthentication(authentication.BaseAuthentication):
         header = request.META.get('HTTP_AUTHORIZATION', '')
         if header.startswith('Bearer '):
             token = header[len('Bearer '):].strip()
+            bearer = True
         else:
             # Browser bridge: the session login flow stores the Keycloak access
             # token in the session; use it when no Authorization header is sent
             # so the existing browser session authenticates against the
             # token-only API. (Final state: the frontend sends the token as a
             # Bearer header and the session login is removed.)
+            bearer = False
             session = getattr(request, 'session', None)
             token = session.get('ACCESS_TOKEN') if session is not None else None
             if not token:
@@ -86,7 +88,19 @@ class KeycloakTokenAuthentication(authentication.BaseAuthentication):
             logger.warning("Keycloak token validation failed: %s", e)
             raise exceptions.AuthenticationFailed("Invalid or expired token")
 
-        user = KeycloakUser(claims)
+        # Browser-session bridge: when the token comes from the session (no
+        # Bearer header), the Django session login already established a
+        # DB-backed user that the user/profile views depend on
+        # (``request.user.id``, ``request.user.user_profile``). Reuse it. A pure
+        # Bearer request (API/desktop client) has no session user, so derive a
+        # lightweight non-DB user straight from the verified token claims.
+        session_user = None
+        if hasattr(request, '_request'):
+            session_user = getattr(request._request, 'user', None)
+        if not bearer and session_user is not None and session_user.is_authenticated:
+            user = session_user
+        else:
+            user = KeycloakUser(claims)
         authz_token = AuthzToken(
             accessToken=token,
             claimsMap={'gatewayID': settings.GATEWAY_ID,
