@@ -66,6 +66,7 @@ from django_airavata.apps.auth.models import EmailVerification
 from . import (
     exceptions,
     grpc_adapters,
+    grpc_requests,
     helpers,
     models,
     output_views,
@@ -172,15 +173,15 @@ class ProjectViewSet(APIBackedViewSet):
         project = serializer.save(
             owner=self.username,
             gatewayId=self.gateway_id)
-        project_id = self.request.airavata_client.createProject(
-            self.authz_token, self.gateway_id, project)
+        project_id = self.request.airavata.research.create_project(
+            self.gateway_id, grpc_requests.project(project))
         project.projectID = project_id
         self._update_most_recent_project(project_id)
 
     def perform_update(self, serializer):
         project = serializer.save()
-        self.request.airavata_client.updateProject(
-            self.authz_token, project.projectID, project)
+        self.request.airavata.research.update_project(
+            project.projectID, grpc_requests.project(project))
         self._update_most_recent_project(project.projectID)
 
     @action(detail=False)
