@@ -5,6 +5,7 @@ import logging
 import os
 import warnings
 from datetime import datetime, timedelta
+from urllib.parse import quote
 
 from airavata.model.appcatalog.computeresource.ttypes import (
     CloudJobSubmission,
@@ -33,8 +34,7 @@ from airavata.model.group.ttypes import ResourcePermissionType
 from airavata.model.user.ttypes import Status
 from airavata_django_portal_sdk import (
     experiment_util,
-    queue_settings_calculators,
-    user_storage
+    queue_settings_calculators
 )
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -88,11 +88,12 @@ log = logging.getLogger(__name__)
 
 
 def _storage_upload_and_register(request, dir_path, uploaded_file, name=None,
-                                 content_type=None):
+                                 content_type=None, experiment_id=None):
     """Upload a file to user storage and register a data product for it (gRPC).
 
     Writes the bytes via the ``storage`` facade (the path is the full file path,
-    ``~/``-prefixed so the backend resolves it against the storage root), then
+    ``~/``-prefixed so the backend resolves it against the storage root, or
+    relative to the experiment data dir when ``experiment_id`` is given), then
     registers a data product via the ``research`` facade so the file has a
     canonical product URI. Returns the registered data product adapted to the
     ``DataProductSerializer`` shape. Replaces the legacy
@@ -101,8 +102,9 @@ def _storage_upload_and_register(request, dir_path, uploaded_file, name=None,
     """
     storage = request.airavata.storage
     name = name or os.path.basename(getattr(uploaded_file, 'name', '') or '')
-    # Full file path, ~/-prefixed so resolvePath expands it to the storage root.
-    upload_path = "~/" + os.path.join(dir_path, name).lstrip("/")
+    # Full file path resolved against the storage root (or experiment data dir).
+    upload_path = _user_storage_path(
+        os.path.join(dir_path, name), experiment_id, request)
     content = uploaded_file.read()
     storage.upload_file(
         path=upload_path, content=content, name=name,
@@ -969,10 +971,12 @@ def tus_upload_finish(request):
 @api_view()
 def download_file(request):
     # TODO: remove this deprecated view
-    warnings.warn("download_file view has moved to SDK", DeprecationWarning)
-    # redirect to /sdk/download
+    warnings.warn("download_file view is deprecated; use 'download-file'", DeprecationWarning)
+    # Redirect to the gRPC byte-streaming download endpoint.
     data_product_uri = request.GET.get('data-product-uri', '')
-    return redirect(user_storage.get_download_url(request, data_product_uri=data_product_uri))
+    return redirect(
+        request.build_absolute_uri(reverse('django_airavata_api:download-file'))
+        + '?data-product-uri=' + quote(data_product_uri))
 
 
 @api_view()
@@ -1659,6 +1663,28 @@ class ParserViewSet(mixins.CreateModelMixin,
         self.request.airavata.research.save_parser(grpc_requests.parser(parser))
 
 
+def _user_storage_path(path, experiment_id=None, request=None):
+    """Resolve a user-storage path to the absolute, ``~/``-prefixed path the gRPC
+    storage facade expects.
+
+    A bare relative path is taken relative to the user's storage root (``~/``).
+    When ``experiment_id`` is given, the path is relative to that experiment's
+    data directory (resolved via the experiment's userConfigurationData).
+    """
+    rel = (path or "").lstrip("/")
+    if experiment_id:
+        experiment = grpc_adapters.experiment(
+            request.airavata.research.get_experiment(experiment_id))
+        data_dir = (experiment.userConfigurationData.experimentDataDir
+                    if experiment.userConfigurationData else None) or ""
+        base = data_dir.rstrip("/")
+        full = base + ("/" + rel if rel else "")
+        return full if (full.startswith("/") or full.startswith("~/")) else "~/" + full
+    if rel.startswith("~"):
+        return rel
+    return "~/" + rel
+
+
 class UserStoragePathView(APIView):
     serializer_class = serializers.UserStoragePathSerializer
     permission_classes = (IsAuthenticated, UserStorageSharedDirPermission)
@@ -1672,19 +1698,18 @@ class UserStoragePathView(APIView):
     def post(self, request, path="/", format=None):
         path = request.data.get('path', path)
         experiment_id = request.data.get('experiment-id')
-        if not user_storage.dir_exists(request, path, experiment_id=experiment_id):
-            _, resource_path = user_storage.create_user_dir(request, path, experiment_id=experiment_id)
-            # create_user_dir may create the directory with a different name
-            # than requested, for example, converting spaces to underscores, so
-            # use as the path the path that is returned by create_user_dir
-            path = resource_path
+        storage = request.airavata.storage
+        resolved = _user_storage_path(path, experiment_id, request)
+        if not storage.dir_exists(resolved):
+            storage.create_dir(resolved)
 
         data_product = None
         # Handle direct upload
         if 'file' in request.FILES:
             user_file = request.FILES['file']
-            data_product = user_storage.save(
-                request, path, user_file, content_type=user_file.content_type,
+            data_product = _storage_upload_and_register(
+                request, path, user_file, name=user_file.name,
+                content_type=user_file.content_type,
                 experiment_id=experiment_id)
         # Handle a tus upload
         elif 'uploadURL' in request.POST:
@@ -1692,26 +1717,26 @@ class UserStoragePathView(APIView):
 
             def save_file(file_path, file_name, file_type):
                 with open(file_path, 'rb') as uploaded_file:
-                    return user_storage.save(request, path, uploaded_file,
-                                             name=file_name, content_type=file_type,
-                                             experiment_id=experiment_id)
+                    return _storage_upload_and_register(
+                        request, path, uploaded_file, name=file_name,
+                        content_type=file_type, experiment_id=experiment_id)
             data_product = tus.save_tus_upload(uploadURL, save_file)
         return self._create_response(request, path, uploaded=data_product, experiment_id=experiment_id)
 
-    # Accept wither to replace file or to replace file content text.
+    # Accept either to replace file or to replace file content text.
     def put(self, request, path="/", format=None):
         path = request.POST.get('path', path)
         # Replace the file if the request has a file upload.
         if 'file' in request.FILES:
             self.delete(request=request, path=path, format=format)
             dir_path, file_name = os.path.split(path)
-            self.post(request=request, path=dir_path, format=format, file_name=file_name)
+            self.post(request=request, path=dir_path, format=format)
         # Replace only the file content if the request body has the `fileContentText`
         elif request.data and "fileContentText" in request.data:
-            user_storage.update_file_content(
-                request=request,
-                path=path,
-                fileContentText=request.data["fileContentText"])
+            request.airavata.storage.upload_file(
+                path=_user_storage_path(path),
+                content=request.data["fileContentText"].encode("utf-8"),
+                name=os.path.basename(path))
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -1720,20 +1745,25 @@ class UserStoragePathView(APIView):
     def delete(self, request, path="/", format=None):
         path = request.data.get('path', path)
         experiment_id = request.data.get('experiment-id')
-        if user_storage.dir_exists(request, path, experiment_id=experiment_id):
-            user_storage.delete_dir(request, path, experiment_id=experiment_id)
+        storage = request.airavata.storage
+        resolved = _user_storage_path(path, experiment_id, request)
+        if storage.dir_exists(resolved):
+            storage.delete_dir(resolved)
         else:
-            user_storage.delete_user_file(request, path, experiment_id=experiment_id)
+            storage.delete_file(resolved)
 
         return Response(status=204)
 
     def _create_response(self, request, path, uploaded=None, experiment_id=None):
-        if user_storage.dir_exists(request, path, experiment_id=experiment_id):
-            directories, files = user_storage.listdir(request, path, experiment_id=experiment_id)
+        storage = request.airavata.storage
+        resolved = _user_storage_path(path, experiment_id, request)
+        if storage.dir_exists(resolved):
+            listing = storage.list_dir(resolved)
             data = {
                 'isDir': True,
-                'directories': directories,
-                'files': files
+                'directories': [
+                    grpc_adapters.user_storage_directory(d) for d in listing.directories],
+                'files': [grpc_adapters.user_storage_file(f) for f in listing.files],
             }
             if uploaded is not None:
                 data['uploaded'] = uploaded
@@ -1743,7 +1773,7 @@ class UserStoragePathView(APIView):
                 data, context={'request': request})
             return Response(serializer.data)
         else:
-            file = user_storage.get_file_metadata(request, path, experiment_id=experiment_id)
+            file = grpc_adapters.user_storage_file(storage.get_file_metadata(resolved))
             data = {
                 'isDir': False,
                 'directories': [],
@@ -1774,23 +1804,39 @@ class ExperimentStoragePathView(APIView):
         return self._create_response(request, experiment_id, path)
 
     def _create_response(self, request, experiment_id, path):
-        if user_storage.experiment_dir_exists(request, experiment_id, path):
-            directories, files = user_storage.list_experiment_dir(request, experiment_id, path)
-
-            def add_expid(d):
-                d['experiment_id'] = experiment_id
-                return d
-            data = {
-                'isDir': True,
-                'directories': map(add_expid, directories),
-                'files': map(add_expid, files)
-            }
-            data['parts'] = self._split_path(path)
-            serializer = self.serializer_class(
-                data, context={'request': request})
-            return Response(serializer.data)
-        else:
+        storage = request.airavata.storage
+        resolved = _user_storage_path(path, experiment_id, request)
+        if not storage.dir_exists(resolved):
             raise Http404(f"Path '{path}' does not exist for {experiment_id}")
+        listing = storage.list_dir(resolved)
+
+        def rel(entry_path):
+            # Expose the path relative to the experiment data dir, as the legacy
+            # list_experiment_dir did (resolved is the absolute experiment path).
+            base = resolved.rstrip("/")
+            p = entry_path
+            if p.startswith(base + "/"):
+                return p[len(base) + 1:]
+            return os.path.basename(p)
+
+        def add_expid(d):
+            d['experiment_id'] = experiment_id
+            return d
+        data = {
+            'isDir': True,
+            'directories': [
+                add_expid(grpc_adapters.user_storage_directory(
+                    d, relative_path=os.path.join(path, rel(d.path)) if path else rel(d.path)))
+                for d in listing.directories],
+            'files': [
+                add_expid(grpc_adapters.user_storage_file(
+                    f, relative_path=os.path.join(path, rel(f.path)) if path else rel(f.path)))
+                for f in listing.files],
+        }
+        data['parts'] = self._split_path(path)
+        serializer = self.serializer_class(
+            data, context={'request': request})
+        return Response(serializer.data)
 
     def _split_path(self, path):
         head, tail = os.path.split(path)

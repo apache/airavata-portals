@@ -67,9 +67,7 @@ from airavata.model.workspace.ttypes import (
     Project
 )
 from airavata_django_portal_sdk import (
-    experiment_util,
-    queue_settings_calculators,
-    user_storage
+    experiment_util
 )
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -1871,26 +1869,8 @@ class UserHasWriteAccessToPathSerializer(serializers.Serializer):
 
     def get_userHasWriteAccess(self, instance):
         request = self.context['request']
-        # Special handling when using remote API to access user data storage
-        if hasattr(settings, 'GATEWAY_DATA_STORE_REMOTE_API'):
-            if "userHasWriteAccess" in instance:
-                return instance["userHasWriteAccess"]
-            elif instance.get("isDir", False):
-                path = Path(instance.get("path", ""))
-                if path != Path(""):
-                    # get parent directory listing and use that to figure out if
-                    # there is write access to this directory
-                    directories, _ = user_storage.listdir(request, path.parent)
-                    for d in directories:
-                        if Path(d["path"]) == path:
-                            return d.get("userHasWriteAccess", False)
-                    return False
-                else:
-                    # User always has write access on home directory
-                    return True
-            else:
-                return False
-
+        if "userHasWriteAccess" in instance:
+            return instance["userHasWriteAccess"]
         is_shared_path = view_utils.is_shared_path(instance["path"])
         if is_shared_path:
             return request.is_gateway_admin
@@ -1909,9 +1889,18 @@ class UserStorageFileSerializer(UserHasWriteAccessToPathSerializer):
     hidden = serializers.BooleanField()
 
     def get_downloadURL(self, file):
-        """Getter for downloadURL field."""
+        """Lazy portal URL to the byte-streaming download endpoint for this file.
+
+        Returns None when the file has no data product URI; resolving the bytes is
+        deferred to the endpoint, so this getter makes no backend call.
+        """
         request = self.context['request']
-        return user_storage.get_lazy_download_url(request, data_product_uri=file['data-product-uri'])
+        data_product_uri = file.get('data-product-uri')
+        if not data_product_uri:
+            return None
+        base = request.build_absolute_uri(
+            reverse('django_airavata_api:download-file'))
+        return base + '?data-product-uri=' + quote(data_product_uri)
 
 
 class UserStorageDirectorySerializer(UserHasWriteAccessToPathSerializer):
