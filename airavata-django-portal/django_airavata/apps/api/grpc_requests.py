@@ -59,6 +59,18 @@ def project(t):
     )
 
 
+def password_credential(gateway_id, portal_user_name, login_user_name,
+                         password, description):
+    """Build a proto ``PasswordCredential`` from the create-password request."""
+    return _pb2("credential.store.credential_store_pb2").PasswordCredential(
+        gateway_id=gateway_id or '',
+        portal_user_name=portal_user_name or '',
+        login_user_name=login_user_name or '',
+        password=password or '',
+        description=description or '',
+    )
+
+
 def application_module(t):
     """Thrift ``ApplicationModule`` -> proto ``ApplicationModule``."""
     return _pb2("appcatalog.appdeployment.app_deployment_pb2").ApplicationModule(

@@ -1412,10 +1412,11 @@ class CredentialSummaryViewSet(APIBackedViewSet):
         if 'description' not in request.data:
             raise ParseError("'description' is required in request")
         description = request.data.get('description')
-        token_id = self.request.airavata_client.generateAndRegisterSSHKeys(
-            request.authz_token, description)
-        credential_summary = self.request.airavata_client.getCredentialSummary(
-            request.authz_token, token_id)
+        token_id = request.airavata.credential.generate_and_register_ssh_keys(
+            self.gateway_id, self.username, description)
+        credential_summary = grpc_adapters.credential_summary(
+            request.airavata.credential.get_credential_summary(
+                token_id, self.gateway_id))
         serializer = self.get_serializer(credential_summary)
         return Response(serializer.data)
 
@@ -1429,20 +1430,23 @@ class CredentialSummaryViewSet(APIBackedViewSet):
         username = request.data.get('username')
         password = request.data.get('password')
         description = request.data.get('description')
-        token_id = self.request.airavata_client.registerPwdCredential(
-            request.authz_token, username, password, description)
-        credential_summary = self.request.airavata_client.getCredentialSummary(
-            request.authz_token, token_id)
+        token_id = request.airavata.credential.register_pwd_credential(
+            self.gateway_id,
+            grpc_requests.password_credential(
+                self.gateway_id, self.username, username, password, description))
+        credential_summary = grpc_adapters.credential_summary(
+            request.airavata.credential.get_credential_summary(
+                token_id, self.gateway_id))
         serializer = self.get_serializer(credential_summary)
         return Response(serializer.data)
 
     def perform_destroy(self, instance):
         if instance.type == SummaryType.SSH:
-            self.request.airavata_client.deleteSSHPubKey(
-                self.authz_token, instance.token)
+            self.request.airavata.credential.delete_ssh_pub_key(
+                instance.token, self.gateway_id)
         elif instance.type == SummaryType.PASSWD:
-            self.request.airavata_client.deletePWDCredential(
-                self.authz_token, instance.token)
+            self.request.airavata.credential.delete_pwd_credential(
+                instance.token, self.gateway_id)
 
 
 class CurrentGatewayResourceProfile(APIView):
