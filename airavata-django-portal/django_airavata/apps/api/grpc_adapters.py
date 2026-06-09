@@ -284,6 +284,28 @@ def experiment_summary(pb):
     )
 
 
+def experiment_statistics(pb):
+    """gRPC ``ExperimentStatistics`` -> ``ExperimentStatisticsSerializer`` shape.
+
+    A wrapper of per-state counts plus per-state experiment-summary lists, each
+    list adapted with :func:`experiment_summary`.
+    """
+    return SimpleNamespace(
+        allExperimentCount=pb.all_experiment_count,
+        completedExperimentCount=pb.completed_experiment_count,
+        cancelledExperimentCount=pb.cancelled_experiment_count,
+        failedExperimentCount=pb.failed_experiment_count,
+        createdExperimentCount=pb.created_experiment_count,
+        runningExperimentCount=pb.running_experiment_count,
+        allExperiments=[experiment_summary(s) for s in pb.all_experiments],
+        completedExperiments=[experiment_summary(s) for s in pb.completed_experiments],
+        failedExperiments=[experiment_summary(s) for s in pb.failed_experiments],
+        cancelledExperiments=[experiment_summary(s) for s in pb.cancelled_experiments],
+        createdExperiments=[experiment_summary(s) for s in pb.created_experiments],
+        runningExperiments=[experiment_summary(s) for s in pb.running_experiments],
+    )
+
+
 def credential_summary(pb):
     """gRPC ``CredentialSummary`` protobuf -> ``CredentialSummarySerializer`` shape."""
     return SimpleNamespace(

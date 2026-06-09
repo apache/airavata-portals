@@ -1896,9 +1896,11 @@ class ExperimentStatisticsView(APIView):
         limit = int(request.GET.get('limit', '50'))
         offset = int(request.GET.get('offset', '0'))
 
-        statistics = request.airavata_client.getExperimentStatistics(
-            request.authz_token, settings.GATEWAY_ID, from_time, to_time,
-            username, application_name, resource_hostname, limit, offset)
+        statistics = grpc_adapters.experiment_statistics(
+            request.airavata.research.get_experiment_statistics(
+                settings.GATEWAY_ID, from_time, to_time,
+                username or "", application_name or "", resource_hostname or "",
+                limit, offset))
         serializer = self.serializer_class(statistics, context={'request': request})
 
         paginator = pagination.LimitOffsetPagination()
