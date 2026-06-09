@@ -1447,9 +1447,9 @@ class CredentialSummaryViewSet(APIBackedViewSet):
 class CurrentGatewayResourceProfile(APIView):
 
     def get(self, request, format=None):
-        gateway_resource_profile = \
-            request.airavata_client.getGatewayResourceProfile(
-                request.authz_token, settings.GATEWAY_ID)
+        gateway_resource_profile = grpc_adapters.gateway_resource_profile(
+            request.airavata.compute.get_gateway_resource_profile(
+                settings.GATEWAY_ID))
         serializer = serializers.GatewayResourceProfileSerializer(
             gateway_resource_profile, context={'request': request})
         return Response(serializer.data)
@@ -1471,8 +1471,8 @@ class CurrentGatewayResourceProfile(APIView):
 class ExperimentArchiveView(APIView):
 
     def get(self, request, experiment_id=None, format=None):
-        experiment: ExperimentModel = request.airavata_client.getExperiment(
-            request.authz_token, experiment_id)
+        experiment = grpc_adapters.experiment(
+            request.airavata.research.get_experiment(experiment_id))
         result = dict(archived=False, archive_name=None, created_date=None,
                       max_age=settings.GATEWAY_USER_DATA_ARCHIVE_MAX_AGE_DAYS)
         try:
@@ -1508,12 +1508,16 @@ class StoragePreferenceViewSet(APIBackedViewSet):
     lookup_field = 'storage_resource_id'
 
     def get_list(self):
-        return self.request.airavata_client.getAllGatewayStoragePreferences(
-            self.authz_token, settings.GATEWAY_ID)
+        return [
+            grpc_adapters.storage_preference(p)
+            for p in self.request.airavata.compute.get_all_gateway_storage_preferences(
+                settings.GATEWAY_ID)
+        ]
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getGatewayStoragePreference(
-            self.authz_token, settings.GATEWAY_ID, lookup_value)
+        return grpc_adapters.storage_preference(
+            self.request.airavata.compute.get_gateway_storage_preference(
+                settings.GATEWAY_ID, lookup_value))
 
     def perform_create(self, serializer):
         storage_preference = serializer.save()
