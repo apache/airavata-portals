@@ -44,9 +44,7 @@ from airavata.model.data.replica.ttypes import (
     DataReplicaLocationModel
 )
 from airavata.model.experiment.ttypes import (
-    ExperimentModel,
-    ExperimentStatistics,
-    ExperimentSummaryModel
+    ExperimentModel
 )
 from airavata.model.group.ttypes import GroupModel, ResourcePermissionType
 from airavata.model.job.ttypes import JobModel
@@ -212,6 +210,23 @@ def proto_enum_name_field(enum_descriptor, proto_prefix='', **kwargs):
         by_number={v.number: v.name for v in enum_descriptor.values},
         by_name={v.name: v.number for v in enum_descriptor.values},
         proto_prefix=proto_prefix, **kwargs)
+
+
+class ProtoIntOrNoneField(serializers.IntegerField):
+    """Renders a protobuf int field as a raw integer, mapping the proto-0 default
+    to ``None`` to match the old auto-generated ``IntegerField`` whose adapter fed
+    it ``pb.<field> or None``.
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('allow_null', True)
+        kwargs.setdefault('read_only', True)
+        super().__init__(*args, **kwargs)
+
+    def to_representation(self, value):
+        if not value:
+            return None
+        return super().to_representation(value)
 
 
 class StoredJSONField(serializers.JSONField):
@@ -852,25 +867,50 @@ class FullExperimentSerializer(serializers.Serializer):
         raise Exception("Not implemented")
 
 
-class BaseExperimentSummarySerializer(
-        thrift_utils.create_serializer_class(ExperimentSummaryModel)):
-    creationTime = UTCPosixTimestampDateTimeField()
-    statusUpdateTime = UTCPosixTimestampDateTimeField()
+class BaseExperimentSummarySerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``ExperimentSummaryModel`` message.
+
+    Read-only; used directly for the experiment-statistics summary lists (where
+    the timestamps render as ISO strings — see :class:`ExperimentSummarySerializer`
+    for the experiment-search variant's int rendering).
+    """
+
+    experimentId = serializers.CharField(source='experiment_id', read_only=True)
+    projectId = serializers.CharField(source='project_id', read_only=True)
+    gatewayId = serializers.CharField(source='gateway_id', read_only=True)
+    creationTime = ProtoTimestampField(
+        source='creation_time', null_if_zero=True, read_only=True)
+    userName = serializers.CharField(source='user_name', read_only=True)
+    name = serializers.CharField(read_only=True)
+    description = serializers.CharField(read_only=True)
+    executionId = serializers.CharField(source='execution_id', read_only=True)
+    resourceHostId = serializers.CharField(
+        source='resource_host_id', read_only=True)
+    experimentStatus = serializers.CharField(
+        source='experiment_status', read_only=True)
+    statusUpdateTime = ProtoTimestampField(
+        source='status_update_time', null_if_zero=True, read_only=True)
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:experiment-detail',
-        lookup_field='experimentId',
+        lookup_field='experiment_id',
         lookup_url_kwarg='experiment_id')
     project = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:project-detail',
-        lookup_field='projectId',
+        lookup_field='project_id',
         lookup_url_kwarg='project_id')
 
 
 class ExperimentSummarySerializer(BaseExperimentSummarySerializer):
+    # The experiment-search list historically rendered these timestamps as raw
+    # epoch-millis ints (the Thrift metaclass regenerated them as IntegerField on
+    # this subclass, shadowing the base's ISO field); preserve that exactly.
+    creationTime = ProtoIntOrNoneField(source='creation_time')
+    statusUpdateTime = ProtoIntOrNoneField(source='status_update_time')
     userHasWriteAccess = serializers.SerializerMethodField()
 
     def get_userHasWriteAccess(self, experiment):
-        return user_has_access(self.context['request'], experiment.experimentId)
+        return user_has_access(
+            self.context['request'], experiment.experiment_id)
 
 
 class UserProfileSerializer(
@@ -2231,14 +2271,33 @@ class NotificationSerializer(thrift_utils.create_serializer_class(Notification))
                 )
 
 
-class ExperimentStatisticsSerializer(
-        thrift_utils.create_serializer_class(ExperimentStatistics)):
-    allExperiments = BaseExperimentSummarySerializer(many=True)
-    completedExperiments = BaseExperimentSummarySerializer(many=True)
-    failedExperiments = BaseExperimentSummarySerializer(many=True)
-    cancelledExperiments = BaseExperimentSummarySerializer(many=True)
-    createdExperiments = BaseExperimentSummarySerializer(many=True)
-    runningExperiments = BaseExperimentSummarySerializer(many=True)
+class ExperimentStatisticsSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``ExperimentStatistics`` message."""
+
+    allExperimentCount = serializers.IntegerField(
+        source='all_experiment_count', read_only=True)
+    completedExperimentCount = serializers.IntegerField(
+        source='completed_experiment_count', read_only=True)
+    cancelledExperimentCount = serializers.IntegerField(
+        source='cancelled_experiment_count', read_only=True)
+    failedExperimentCount = serializers.IntegerField(
+        source='failed_experiment_count', read_only=True)
+    createdExperimentCount = serializers.IntegerField(
+        source='created_experiment_count', read_only=True)
+    runningExperimentCount = serializers.IntegerField(
+        source='running_experiment_count', read_only=True)
+    allExperiments = BaseExperimentSummarySerializer(
+        source='all_experiments', many=True, read_only=True)
+    completedExperiments = BaseExperimentSummarySerializer(
+        source='completed_experiments', many=True, read_only=True)
+    failedExperiments = BaseExperimentSummarySerializer(
+        source='failed_experiments', many=True, read_only=True)
+    cancelledExperiments = BaseExperimentSummarySerializer(
+        source='cancelled_experiments', many=True, read_only=True)
+    createdExperiments = BaseExperimentSummarySerializer(
+        source='created_experiments', many=True, read_only=True)
+    runningExperiments = BaseExperimentSummarySerializer(
+        source='running_experiments', many=True, read_only=True)
 
 
 class UnverifiedEmailUserProfile(serializers.Serializer):

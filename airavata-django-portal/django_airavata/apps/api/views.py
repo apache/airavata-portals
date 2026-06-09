@@ -363,10 +363,9 @@ class ExperimentSearchViewSet(mixins.ListModelMixin, GenericAPIBackedViewSet):
 
         class ExperimentSearchResultIterator(APIResultIterator):
             def get_results(self, limit=-1, offset=0):
-                summaries = view.request.airavata.research.search_experiments(
+                return list(view.request.airavata.research.search_experiments(
                     gateway_id=view.gateway_id, user_name=view.username,
-                    filters=filters, limit=limit, offset=offset)
-                return [grpc_adapters.experiment_summary(s) for s in summaries]
+                    filters=filters, limit=limit, offset=offset))
 
         # Preserve query parameters when moving to next and previous links
         return ExperimentSearchResultIterator(query_params=self.request.query_params.copy())
@@ -1996,15 +1995,14 @@ class ExperimentStatisticsView(APIView):
         limit = int(request.GET.get('limit', '50'))
         offset = int(request.GET.get('offset', '0'))
 
-        statistics = grpc_adapters.experiment_statistics(
-            request.airavata.research.get_experiment_statistics(
-                settings.GATEWAY_ID, from_time, to_time,
-                username or "", application_name or "", resource_hostname or "",
-                limit, offset))
+        statistics = request.airavata.research.get_experiment_statistics(
+            settings.GATEWAY_ID, from_time, to_time,
+            username or "", application_name or "", resource_hostname or "",
+            limit, offset)
         serializer = self.serializer_class(statistics, context={'request': request})
 
         paginator = pagination.LimitOffsetPagination()
-        paginator.count = statistics.allExperimentCount
+        paginator.count = statistics.all_experiment_count
         paginator.limit = limit
         paginator.offset = offset
         paginator.request = request
