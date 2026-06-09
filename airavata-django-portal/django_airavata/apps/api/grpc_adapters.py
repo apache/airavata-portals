@@ -256,22 +256,6 @@ def proto_summary_type(thrift_summary_type):
         _ThriftSummaryType(thrift_summary_type).name)
 
 
-def project(pb):
-    """gRPC ``Project`` protobuf -> ``ProjectSerializer`` (Thrift ``Project``) shape."""
-    return SimpleNamespace(
-        projectID=pb.project_id,
-        owner=pb.owner,
-        gatewayId=pb.gateway_id,
-        name=pb.name,
-        description=pb.description,
-        # int64 epoch millis, like the Thrift field; 0 (unset) -> None for the
-        # serializer's allow_null creationTime.
-        creationTime=pb.creation_time or None,
-        sharedUsers=list(pb.shared_users),
-        sharedGroups=list(pb.shared_groups),
-    )
-
-
 def application_module(pb):
     """gRPC ``ApplicationModule`` protobuf -> ``ApplicationModuleSerializer`` shape."""
     return SimpleNamespace(

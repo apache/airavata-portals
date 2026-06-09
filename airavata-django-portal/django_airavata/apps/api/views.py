@@ -195,40 +195,35 @@ class ProjectViewSet(APIBackedViewSet):
 
         class ProjectResultIterator(APIResultIterator):
             def get_results(self, limit=-1, offset=0):
-                projects = view.request.airavata.research.get_user_projects(
+                return view.request.airavata.research.get_user_projects(
                     gateway_id=view.gateway_id, user_name=view.username,
                     limit=limit, offset=offset)
-                return [grpc_adapters.project(p) for p in projects]
 
         return ProjectResultIterator()
 
     def get_instance(self, lookup_value):
-        return grpc_adapters.project(
-            self.request.airavata.research.get_project(lookup_value))
+        return self.request.airavata.research.get_project(lookup_value)
 
     def perform_create(self, serializer):
         project = serializer.save(
             owner=self.username,
-            gatewayId=self.gateway_id)
+            gateway_id=self.gateway_id)
         project_id = self.request.airavata.research.create_project(
-            self.gateway_id, grpc_requests.project(project))
-        project.projectID = project_id
+            self.gateway_id, project)
+        project.project_id = project_id
         self._update_most_recent_project(project_id)
 
     def perform_update(self, serializer):
         project = serializer.save()
         self.request.airavata.research.update_project(
-            project.projectID, grpc_requests.project(project))
-        self._update_most_recent_project(project.projectID)
+            project.project_id, project)
+        self._update_most_recent_project(project.project_id)
 
     @action(detail=False)
     def list_all(self, request):
-        projects = [
-            grpc_adapters.project(p)
-            for p in self.request.airavata.research.get_user_projects(
-                gateway_id=self.gateway_id, user_name=self.username,
-                limit=-1, offset=0)
-        ]
+        projects = self.request.airavata.research.get_user_projects(
+            gateway_id=self.gateway_id, user_name=self.username,
+            limit=-1, offset=0)
         serializer = serializers.ProjectSerializer(
             projects, many=True, context={'request': request})
         return Response(serializer.data)
@@ -464,9 +459,8 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
             compute_resource = None
         if serializers.user_has_access(
                 self.request, experimentModel.projectId, 'READ'):
-            project = grpc_adapters.project(
-                self.request.airavata.research.get_project(
-                    experimentModel.projectId))
+            project = self.request.airavata.research.get_project(
+                experimentModel.projectId)
         else:
             # User may not have access to project, only experiment
             project = None

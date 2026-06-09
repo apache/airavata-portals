@@ -63,8 +63,7 @@ from airavata.model.status.ttypes import (
 from airavata.model.user.ttypes import UserProfile
 from airavata.model.workspace.ttypes import (
     Notification,
-    NotificationPriority,
-    Project
+    NotificationPriority
 )
 from airavata_django_portal_sdk import (
     experiment_util
@@ -143,6 +142,29 @@ class UTCPosixTimestampDateTimeField(serializers.DateTimeField):
 
     def current_time_ms(self):
         return int(datetime.datetime.utcnow().timestamp() * 1000)
+
+
+class ProtoTimestampField(UTCPosixTimestampDateTimeField):
+    """Renders a protobuf int64 epoch-millis field as the same ISO timestamp the
+    Thrift-generated serializers produced.
+
+    proto3 scalar int fields default to ``0`` (never None), so an unset timestamp
+    reads as ``0``. When ``null_if_zero`` is set the field treats ``0`` as the
+    Thrift ``None`` and renders ``null`` (matching the old ``allow_null`` fields
+    whose adapters mapped ``pb.<time> or None``); otherwise ``0`` renders as the
+    epoch like the old non-nullable fields did.
+    """
+
+    def __init__(self, *args, null_if_zero=False, **kwargs):
+        self.null_if_zero = null_if_zero
+        if null_if_zero:
+            kwargs.setdefault('allow_null', True)
+        super().__init__(*args, **kwargs)
+
+    def to_representation(self, obj):
+        if self.null_if_zero and not obj:
+            return None
+        return super().to_representation(obj)
 
 
 class StoredJSONField(serializers.JSONField):
@@ -273,35 +295,60 @@ class GroupSerializer(thrift_utils.create_serializer_class(GroupModel)):
             }
 
 
-class ProjectSerializer(
-        thrift_utils.create_serializer_class(Project)):
-    class Meta:
-        required = ('name',)
-        read_only = ('owner', 'gatewayId')
+class ProjectSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``Project`` message.
 
+    Reads protobuf fields directly (``project_id``, ``creation_time``, ...) and
+    emits the historical Thrift-named JSON keys (``projectID``, ``creationTime``,
+    ...) so the REST contract with the Vue frontend is unchanged. ``save()``
+    returns a proto ``Project`` the view passes straight to the gRPC facade.
+    """
+
+    projectID = serializers.CharField(source='project_id', read_only=True)
+    owner = serializers.CharField(read_only=True)
+    gatewayId = serializers.CharField(source='gateway_id', read_only=True)
+    name = serializers.CharField()
+    description = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False)
+    creationTime = ProtoTimestampField(
+        source='creation_time', null_if_zero=True, read_only=True)
+    sharedUsers = serializers.ListField(
+        source='shared_users', child=serializers.CharField(),
+        read_only=True)
+    sharedGroups = serializers.ListField(
+        source='shared_groups', child=serializers.CharField(),
+        read_only=True)
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:project-detail',
-        lookup_field='projectID',
+        lookup_field='project_id',
         lookup_url_kwarg='project_id')
     experiments = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:project-experiments',
-        lookup_field='projectID',
+        lookup_field='project_id',
         lookup_url_kwarg='project_id')
-    creationTime = UTCPosixTimestampDateTimeField(allow_null=True)
     userHasWriteAccess = serializers.SerializerMethodField()
     isOwner = serializers.SerializerMethodField()
 
     def create(self, validated_data):
-        return Project(**validated_data)
+        from airavata_sdk.generated.org.apache.airavata.model.workspace import (
+            workspace_pb2,
+        )
+        return workspace_pb2.Project(
+            owner=validated_data.get('owner', '') or '',
+            gateway_id=validated_data.get('gateway_id', '') or '',
+            name=validated_data.get('name', '') or '',
+            description=validated_data.get('description', '') or '',
+        )
 
     def update(self, instance, validated_data):
-        instance.name = validated_data.get('name', instance.name)
-        instance.description = validated_data.get(
-            'description', instance.description)
+        if 'name' in validated_data:
+            instance.name = validated_data['name'] or ''
+        if 'description' in validated_data:
+            instance.description = validated_data['description'] or ''
         return instance
 
     def get_userHasWriteAccess(self, project):
-        return user_has_access(self.context['request'], project.projectID)
+        return user_has_access(self.context['request'], project.project_id)
 
     def get_isOwner(self, project):
         request = self.context['request']

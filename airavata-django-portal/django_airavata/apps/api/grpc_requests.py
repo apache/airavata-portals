@@ -68,20 +68,6 @@ def _proto_enum(proto_enum, thrift_enum, value, prefix=''):
     return proto_enum.Value(name)
 
 
-def project(t):
-    """Thrift ``Project`` -> proto ``Project`` request message."""
-    return _workspace_pb2().Project(
-        project_id=t.projectID or '',
-        owner=t.owner or '',
-        gateway_id=t.gatewayId or '',
-        name=t.name or '',
-        description=t.description or '',
-        creation_time=t.creationTime or 0,
-        shared_users=list(t.sharedUsers or []),
-        shared_groups=list(t.sharedGroups or []),
-    )
-
-
 def password_credential(gateway_id, portal_user_name, login_user_name,
                          password, description):
     """Build a proto ``PasswordCredential`` from the create-password request."""
