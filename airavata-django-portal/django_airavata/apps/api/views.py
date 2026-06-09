@@ -447,10 +447,10 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
             comp_res_sched = user_conf.computationalResourceScheduling
             compute_resource_id = comp_res_sched.resourceHostId
         try:
-            compute_resource = grpc_adapters.compute_resource(
+            compute_resource = (
                 self.request.airavata.compute.get_compute_resource(
-                    compute_resource_id)) \
-                if compute_resource_id else None
+                    compute_resource_id)
+                if compute_resource_id else None)
         except Exception:
             log.exception("Failed to load compute resource for {}".format(
                 compute_resource_id), extra={'request': self.request})
@@ -702,20 +702,22 @@ class ApplicationDeploymentViewSet(APIBackedViewSet):
         app_deployment = grpc_adapters.application_deployment(
             self.request.airavata.research.get_application_deployment(
                 app_deployment_id))
-        compute_resource = grpc_adapters.compute_resource(
-            request.airavata.compute.get_compute_resource(
-                app_deployment.computeHostId))
+        compute_resource = request.airavata.compute.get_compute_resource(
+            app_deployment.computeHostId)
         # Override defaults with app deployment default queue, if defined
         batch_queues = []
-        for batch_queue in compute_resource.batchQueues:
+        for batch_queue in compute_resource.batch_queues:
             if app_deployment.defaultQueueName:
-                if app_deployment.defaultQueueName == batch_queue.queueName:
-                    batch_queue.isDefaultQueue = True
-                    batch_queue.defaultNodeCount = app_deployment.defaultNodeCount
-                    batch_queue.defaultCPUCount = app_deployment.defaultCPUCount
-                    batch_queue.defaultWalltime = app_deployment.defaultWalltime
+                if app_deployment.defaultQueueName == batch_queue.queue_name:
+                    batch_queue.is_default_queue = True
+                    batch_queue.default_node_count = (
+                        app_deployment.defaultNodeCount or 0)
+                    batch_queue.default_cpu_count = (
+                        app_deployment.defaultCPUCount or 0)
+                    batch_queue.default_walltime = (
+                        app_deployment.defaultWalltime or 0)
                 else:
-                    batch_queue.isDefaultQueue = False
+                    batch_queue.is_default_queue = False
             batch_queues.append(batch_queue)
         serializer = serializers.BatchQueueSerializer(
             batch_queues, many=True, context={'request': request})
@@ -728,8 +730,7 @@ class ComputeResourceViewSet(mixins.RetrieveModelMixin,
     lookup_field = 'compute_resource_id'
 
     def get_instance(self, lookup_value, format=None):
-        return grpc_adapters.compute_resource(
-            self.request.airavata.compute.get_compute_resource(lookup_value))
+        return self.request.airavata.compute.get_compute_resource(lookup_value)
 
     @action(detail=False)
     def all_names(self, request, format=None):
@@ -753,8 +754,8 @@ class ComputeResourceViewSet(mixins.RetrieveModelMixin,
 
     @action(detail=True)
     def queues(self, request, compute_resource_id, format=None):
-        details = grpc_adapters.compute_resource(
-            request.airavata.compute.get_compute_resource(compute_resource_id))
+        details = request.airavata.compute.get_compute_resource(
+            compute_resource_id)
         serializer = self.serializer_class(instance=details,
                                            context={'request': request})
         data = serializer.data
@@ -1539,8 +1540,7 @@ class StorageResourceViewSet(mixins.RetrieveModelMixin,
     lookup_field = 'storage_resource_id'
 
     def get_instance(self, lookup_value, format=None):
-        return grpc_adapters.storage_resource(
-            self.request.airavata.storage.get_storage_resource(lookup_value))
+        return self.request.airavata.storage.get_storage_resource(lookup_value)
 
     @action(detail=False)
     def all_names(self, request, format=None):

@@ -15,10 +15,6 @@ from airavata.model.appcatalog.appdeployment.ttypes import (
 from airavata.model.appcatalog.appinterface.ttypes import (
     ApplicationInterfaceDescription
 )
-from airavata.model.appcatalog.computeresource.ttypes import (
-    BatchQueue,
-    ComputeResourceDescription
-)
 from airavata.model.appcatalog.groupresourceprofile.ttypes import (
     ComputeResourceReservation,
     GroupComputeResourcePreference,
@@ -28,9 +24,6 @@ from airavata.model.appcatalog.groupresourceprofile.ttypes import (
     AwsComputeResourcePreference
 )
 from airavata.model.appcatalog.parser.ttypes import IOType as _ThriftIOType
-from airavata.model.appcatalog.storageresource.ttypes import (
-    StorageResourceDescription
-)
 from airavata.model.application.io.ttypes import (
     InputDataObjectType,
     OutputDataObjectType
@@ -314,6 +307,42 @@ def data_movement_protocol_field(**kwargs):
         data_movement_pb2.DataMovementProtocol.DESCRIPTOR,
         _ThriftDataMovementProtocol, proto_prefix='DATA_MOVEMENT_PROTOCOL_',
         name_map=_DATA_MOVEMENT_PROTOCOL_NAME_MAP, **kwargs)
+
+
+class ProtoFileSystemsMapField(serializers.Field):
+    """Renders a proto ``map<int32, string>`` whose int key holds a proto
+    ``FileSystems`` value as the ``{Thrift FileSystems int (as a string): path}``
+    dict the old i32-keyed Thrift map produced.
+
+    proto and Thrift assign different integers to the same member (proto HOME=1
+    vs Thrift HOME=0), so the key is bridged by NAME; the JSON key is the Thrift
+    integer as a string (DRF ``DictField`` rendered ``str(key)`` for the i32 map).
+    """
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault('read_only', True)
+        super().__init__(**kwargs)
+        self._proto_to_thrift = None
+
+    def _key_map(self):
+        if self._proto_to_thrift is None:
+            from airavata.model.appcatalog.computeresource.ttypes import (
+                FileSystems,
+            )
+            from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
+                compute_resource_pb2,
+            )
+            proto_fs = compute_resource_pb2.FileSystems
+            self._proto_to_thrift = {
+                proto_fs.Value(name): int(getattr(FileSystems, name))
+                for name in proto_fs.keys() if hasattr(FileSystems, name)
+            }
+        return self._proto_to_thrift
+
+    def to_representation(self, value):
+        key_map = self._key_map()
+        return {
+            str(key_map[k]): v for k, v in value.items() if k in key_map}
 
 
 class StoredJSONField(serializers.JSONField):
@@ -752,13 +781,109 @@ class ApplicationDeploymentDescriptionSerializer(
             self.context['request'], appDeployment.appDeploymentId)
 
 
-class ComputeResourceDescriptionSerializer(
-        thrift_utils.create_serializer_class(ComputeResourceDescription)):
-    pass
+class BatchQueueSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``BatchQueue`` message."""
+
+    queueName = serializers.CharField(
+        source='queue_name', allow_blank=True, allow_null=True, required=False)
+    queueDescription = serializers.CharField(
+        source='queue_description', allow_blank=True, allow_null=True,
+        required=False)
+    maxRunTime = serializers.IntegerField(
+        source='max_run_time', allow_null=True, required=False)
+    maxNodes = serializers.IntegerField(
+        source='max_nodes', allow_null=True, required=False)
+    maxProcessors = serializers.IntegerField(
+        source='max_processors', allow_null=True, required=False)
+    maxJobsInQueue = serializers.IntegerField(
+        source='max_jobs_in_queue', allow_null=True, required=False)
+    maxMemory = serializers.IntegerField(
+        source='max_memory', allow_null=True, required=False)
+    cpuPerNode = serializers.IntegerField(
+        source='cpu_per_node', allow_null=True, required=False)
+    defaultNodeCount = serializers.IntegerField(
+        source='default_node_count', allow_null=True, required=False)
+    defaultCPUCount = serializers.IntegerField(
+        source='default_cpu_count', allow_null=True, required=False)
+    defaultWalltime = serializers.IntegerField(
+        source='default_walltime', allow_null=True, required=False)
+    queueSpecificMacros = serializers.CharField(
+        source='queue_specific_macros', allow_blank=True, allow_null=True,
+        required=False)
+    isDefaultQueue = serializers.BooleanField(
+        source='is_default_queue', required=False, default=False)
 
 
-class BatchQueueSerializer(thrift_utils.create_serializer_class(BatchQueue)):
-    pass
+class JobSubmissionInterfaceSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``JobSubmissionInterface`` message."""
+
+    jobSubmissionInterfaceId = serializers.CharField(
+        source='job_submission_interface_id', allow_blank=True, allow_null=True,
+        required=False)
+    jobSubmissionProtocol = job_submission_protocol_field(
+        source='job_submission_protocol', required=False, allow_null=True)
+    priorityOrder = serializers.IntegerField(
+        source='priority_order', allow_null=True, required=False)
+
+
+class DataMovementInterfaceSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``DataMovementInterface`` message."""
+
+    dataMovementInterfaceId = serializers.CharField(
+        source='data_movement_interface_id', allow_blank=True, allow_null=True,
+        required=False)
+    dataMovementProtocol = data_movement_protocol_field(
+        source='data_movement_protocol', required=False, allow_null=True)
+    priorityOrder = serializers.IntegerField(
+        source='priority_order', allow_null=True, required=False)
+    creationTime = ProtoIntOrNoneField(source='creation_time')
+    updateTime = ProtoIntOrNoneField(source='update_time')
+    storageResourceId = serializers.CharField(
+        source='storage_resource_id', allow_blank=True, allow_null=True,
+        required=False)
+
+
+class ComputeResourceDescriptionSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``ComputeResourceDescription`` message."""
+
+    computeResourceId = serializers.CharField(
+        source='compute_resource_id', allow_blank=True, allow_null=True,
+        required=False)
+    hostName = serializers.CharField(
+        source='host_name', allow_blank=True, allow_null=True, required=False)
+    hostAliases = serializers.ListField(
+        source='host_aliases', child=serializers.CharField(), required=False)
+    ipAddresses = serializers.ListField(
+        source='ip_addresses', child=serializers.CharField(), required=False)
+    resourceDescription = serializers.CharField(
+        source='resource_description', allow_blank=True, allow_null=True,
+        required=False)
+    enabled = serializers.BooleanField(required=False, default=False)
+    batchQueues = BatchQueueSerializer(
+        source='batch_queues', many=True, required=False)
+    fileSystems = ProtoFileSystemsMapField(source='file_systems', required=False)
+    jobSubmissionInterfaces = JobSubmissionInterfaceSerializer(
+        source='job_submission_interfaces', many=True, required=False)
+    dataMovementInterfaces = DataMovementInterfaceSerializer(
+        source='data_movement_interfaces', many=True, required=False)
+    maxMemoryPerNode = serializers.IntegerField(
+        source='max_memory_per_node', allow_null=True, required=False)
+    gatewayUsageReporting = serializers.BooleanField(
+        source='gateway_usage_reporting', required=False, default=False)
+    gatewayUsageModuleLoadCommand = serializers.CharField(
+        source='gateway_usage_module_load_command', allow_blank=True,
+        allow_null=True, required=False)
+    gatewayUsageExecutable = serializers.CharField(
+        source='gateway_usage_executable', allow_blank=True, allow_null=True,
+        required=False)
+    cpusPerNode = serializers.IntegerField(
+        source='cpus_per_node', allow_null=True, required=False)
+    defaultNodeCount = serializers.IntegerField(
+        source='default_node_count', allow_null=True, required=False)
+    defaultCPUCount = serializers.IntegerField(
+        source='default_cpu_count', allow_null=True, required=False)
+    defaultWalltime = serializers.IntegerField(
+        source='default_walltime', allow_null=True, required=False)
 
 
 class ExperimentStatusSerializer(
@@ -2274,14 +2399,27 @@ class GatewayResourceProfileSerializer(serializers.Serializer):
         return self.create(validated_data)
 
 
-class StorageResourceSerializer(
-        thrift_utils.create_serializer_class(StorageResourceDescription)):
+class StorageResourceSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``StorageResourceDescription`` message."""
+
+    storageResourceId = serializers.CharField(
+        source='storage_resource_id', allow_blank=True, allow_null=True,
+        required=False)
+    hostName = serializers.CharField(
+        source='host_name', allow_blank=True, allow_null=True, required=False)
+    storageResourceDescription = serializers.CharField(
+        source='storage_resource_description', allow_blank=True, allow_null=True,
+        required=False)
+    enabled = serializers.BooleanField(required=False, default=False)
+    dataMovementInterfaces = DataMovementInterfaceSerializer(
+        source='data_movement_interfaces', many=True, required=False)
+    # top-level creation/update render as ISO (non-nullable UTC fields).
+    creationTime = ProtoTimestampField(source='creation_time', required=False)
+    updateTime = ProtoTimestampField(source='update_time', required=False)
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:storage-resource-detail',
-        lookup_field='storageResourceId',
+        lookup_field='storage_resource_id',
         lookup_url_kwarg='storage_resource_id')
-    creationTime = UTCPosixTimestampDateTimeField()
-    updateTime = UTCPosixTimestampDateTimeField()
 
 
 def _parser_pb2():
