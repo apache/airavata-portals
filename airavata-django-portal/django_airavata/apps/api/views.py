@@ -93,53 +93,49 @@ class GroupViewSet(APIBackedViewSet):
 
         class GroupResultsIterator(APIResultIterator):
             def get_results(self, limit=-1, offset=0):
-                group_manager = view.request.profile_service['group_manager']
-                groups = group_manager.getGroups(view.authz_token)
+                groups = [
+                    grpc_adapters.group(g)
+                    for g in view.request.airavata.sharing.gm_get_groups()
+                ]
                 end = offset + limit if limit > 0 else len(groups)
                 return groups[offset:end] if groups else []
 
         return GroupResultsIterator()
 
     def get_instance(self, lookup_value):
-        return self.request.profile_service['group_manager'].getGroup(
-            self.authz_token, lookup_value)
+        return grpc_adapters.group(
+            self.request.airavata.sharing.gm_get_group(lookup_value))
 
     def perform_create(self, serializer):
         group = serializer.save()
-        group_id = self.request.profile_service['group_manager'].createGroup(
-            self.authz_token, group)
+        group_id = self.request.airavata.sharing.gm_create_group(
+            grpc_requests.group(group))
         group.id = group_id
         users_added_to_group = set(group.members) - {group.ownerId}
         self._send_users_added_to_group(users_added_to_group, group)
 
     def perform_update(self, serializer):
         group = serializer.save()
-        group_manager_client = self.request.profile_service['group_manager']
+        sharing = self.request.airavata.sharing
         if len(group._added_members) > 0:
-            group_manager_client.addUsersToGroup(
-                self.authz_token, group._added_members, group.id)
+            sharing.gm_add_users_to_group(group._added_members, group.id)
             self._send_users_added_to_group(group._added_members, group)
         if len(group._removed_members) > 0:
-            group_manager_client.removeUsersFromGroup(
-                self.authz_token, group._removed_members, group.id)
+            sharing.gm_remove_users_from_group(group._removed_members, group.id)
         if len(group._added_admins) > 0:
-            group_manager_client.addGroupAdmins(
-                self.authz_token, group.id, group._added_admins)
+            sharing.gm_add_group_admins(group.id, group._added_admins)
         if len(group._removed_admins) > 0:
-            group_manager_client.removeGroupAdmins(
-                self.authz_token, group.id, group._removed_admins)
-        group_manager_client.updateGroup(self.authz_token, group)
+            sharing.gm_remove_group_admins(group.id, group._removed_admins)
+        sharing.gm_update_group(grpc_requests.group(group))
 
     def perform_destroy(self, group):
-        group_manager_client = self.request.profile_service['group_manager']
-        group_manager_client.deleteGroup(
-            self.authz_token, group.id, group.ownerId)
+        self.request.airavata.sharing.gm_delete_group(group.id, group.ownerId)
 
     def _send_users_added_to_group(self, internal_user_ids, group):
         for internal_user_id in internal_user_ids:
             user_id, gateway_id = internal_user_id.rsplit("@", maxsplit=1)
-            user_profile = self.request.profile_service['user_profile'].getUserProfileById(
-                self.authz_token, user_id, gateway_id)
+            user_profile = self.request.airavata.iam.get_user_profile_by_id(
+                user_id, gateway_id)
             signals.user_added_to_group.send(
                 sender=self.__class__,
                 user=user_profile,

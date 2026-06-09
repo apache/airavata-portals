@@ -34,7 +34,8 @@ def _gateway_groups_dict(request):
     """Fetch the gateway's admin group ids via the gRPC compute facade."""
     gg = request.airavata.compute.get_gateway_groups()
     return {'adminsGroupId': gg.admins_group_id,
-            'readOnlyAdminsGroupId': gg.read_only_admins_group_id}
+            'readOnlyAdminsGroupId': gg.read_only_admins_group_id,
+            'defaultGatewayUsersGroupId': gg.default_gateway_users_group_id}
 
 
 def set_admin_group_attributes(request, gateway_groups=None):

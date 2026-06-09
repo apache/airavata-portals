@@ -832,6 +832,18 @@ def experiment(pb):
     )
 
 
+def group(pb):
+    """gRPC ``GroupModel`` -> ``GroupSerializer`` shape."""
+    return SimpleNamespace(
+        id=pb.id,
+        name=pb.name,
+        ownerId=pb.owner_id,
+        description=pb.description or None,
+        members=list(pb.members),
+        admins=list(pb.admins),
+    )
+
+
 def notification(pb):
     """gRPC ``Notification`` -> ``NotificationSerializer`` shape."""
     return SimpleNamespace(

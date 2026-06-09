@@ -17,9 +17,9 @@ log = logging.getLogger(__name__)
 def email_user_added_to_group(sender, user, groups, request, **kwargs):
     context = Context({
         "email": user.emails[0],
-        "first_name": user.firstName,
-        "last_name": user.lastName,
-        "username": user.userId,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "username": user.user_id,
         "portal_title": settings.PORTAL_TITLE,
         "dashboard_url": request.build_absolute_uri(
             reverse("django_airavata_workspace:dashboard")),

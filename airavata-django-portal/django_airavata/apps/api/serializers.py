@@ -232,8 +232,7 @@ class GroupSerializer(thrift_utils.create_serializer_class(GroupModel)):
 
     def get_isAdmin(self, group):
         request = self.context['request']
-        return request.profile_service['group_manager'].hasAdminAccess(
-            request.authz_token,
+        return request.airavata.sharing.gm_has_admin_access(
             group.id,
             request.user.username + "@" + settings.GATEWAY_ID)
 
@@ -263,9 +262,12 @@ class GroupSerializer(thrift_utils.create_serializer_class(GroupModel)):
         if 'GATEWAY_GROUPS' in request.session:
             return request.session['GATEWAY_GROUPS']
         else:
-            gateway_groups = request.airavata_client.getGatewayGroups(
-                request.authz_token)
-            return copy.deepcopy(gateway_groups.__dict__)
+            gg = request.airavata.compute.get_gateway_groups()
+            return {
+                'adminsGroupId': gg.admins_group_id,
+                'readOnlyAdminsGroupId': gg.read_only_admins_group_id,
+                'defaultGatewayUsersGroupId': gg.default_gateway_users_group_id,
+            }
 
 
 class ProjectSerializer(
