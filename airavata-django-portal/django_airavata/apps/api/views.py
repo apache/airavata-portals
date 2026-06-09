@@ -731,8 +731,8 @@ class LocalJobSubmissionView(APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        local_job_submission = request.airavata_client.getLocalJobSubmission(
-            request.authz_token, job_submission_id)
+        local_job_submission = grpc_adapters.local_job_submission(
+            request.airavata.compute.get_local_job_submission(job_submission_id))
         return Response(
             thrift_utils.create_serializer(
                 LOCALSubmission,
@@ -744,8 +744,8 @@ class CloudJobSubmissionView(APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        job_submission = request.airavata_client.getCloudJobSubmission(
-            request.authz_token, job_submission_id)
+        job_submission = grpc_adapters.cloud_job_submission(
+            request.airavata.compute.get_cloud_job_submission(job_submission_id))
         return Response(
             thrift_utils.create_serializer(
                 CloudJobSubmission,
@@ -756,6 +756,9 @@ class GlobusJobSubmissionView(APIView):
     renderer_classes = (JSONRenderer,)
 
     def get(self, request, format=None):
+        # TODO: the gRPC compute facade has no Globus job-submission getter and
+        # the legacy Thrift call here (`getClo`) is broken, so this admin-only
+        # detail view stays unmigrated until backend support lands.
         job_submission_id = request.query_params["id"]
         job_submission = request.airavata_client.getClo(
             request.authz_token, job_submission_id)
@@ -770,8 +773,8 @@ class SshJobSubmissionView(APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        job_submission = request.airavata_client.getSSHJobSubmission(
-            request.authz_token, job_submission_id)
+        job_submission = grpc_adapters.ssh_job_submission(
+            request.airavata.compute.get_ssh_job_submission(job_submission_id))
         return Response(
             thrift_utils.create_serializer(
                 SSHJobSubmission,
@@ -783,8 +786,8 @@ class UnicoreJobSubmissionView(APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        job_submission = request.airavata_client.getUnicoreJobSubmission(
-            request.authz_token, job_submission_id)
+        job_submission = grpc_adapters.unicore_job_submission(
+            request.airavata.compute.get_unicore_job_submission(job_submission_id))
         return Response(
             thrift_utils.create_serializer(
                 UnicoreJobSubmission,
@@ -796,8 +799,8 @@ class GridFtpDataMovementView(APIView):
 
     def get(self, request, format=None):
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.getGridFTPDataMovement(
-            request.authz_token, data_movement_id)
+        data_movement = grpc_adapters.grid_ftp_data_movement(
+            request.airavata.storage.get_grid_ftp_data_movement(data_movement_id))
         return Response(
             thrift_utils.create_serializer(
                 GridFTPDataMovement,
@@ -809,8 +812,8 @@ class ScpDataMovementView(APIView):
 
     def get(self, request, format=None):
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.getSCPDataMovement(
-            request.authz_token, data_movement_id)
+        data_movement = grpc_adapters.scp_data_movement(
+            request.airavata.storage.get_scp_data_movement(data_movement_id))
         return Response(
             thrift_utils.create_serializer(
                 SCPDataMovement,
@@ -821,6 +824,8 @@ class UnicoreDataMovementView(APIView):
     renderer_classes = (JSONRenderer,)
 
     def get(self, request, format=None):
+        # TODO: the gRPC storage facade has no UNICORE data-movement getter yet,
+        # so this admin-only detail view stays on Thrift until the SDK adds one.
         data_movement_id = request.query_params["id"]
         data_movement = request.airavata_client.getUnicoreDataMovement(
             request.authz_token, data_movement_id)
@@ -835,8 +840,8 @@ class LocalDataMovementView(APIView):
 
     def get(self, request, format=None):
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.getLocalDataMovement(
-            request.authz_token, data_movement_id)
+        data_movement = grpc_adapters.local_data_movement(
+            request.airavata.storage.get_local_data_movement(data_movement_id))
         return Response(
             thrift_utils.create_serializer(
                 LOCALDataMovement,
