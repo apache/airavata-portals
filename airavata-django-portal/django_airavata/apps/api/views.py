@@ -1,4 +1,5 @@
 import base64
+import io
 import json
 import logging
 import os
@@ -38,7 +39,7 @@ from airavata_django_portal_sdk import (
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.decorators.gzip import gzip_page
@@ -349,8 +350,8 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
         experimentModel = self.request.airavata_client.getExperiment(
             self.authz_token, lookup_value)
         outputDataProducts = [
-            self.request.airavata_client.getDataProduct(self.authz_token,
-                                                        output.value)
+            grpc_adapters.data_product(
+                self.request.airavata.research.get_data_product(output.value))
             for output in experimentModel.experimentOutputs
             if (output.value and
                 output.value.startswith('airavata-dp') and
@@ -358,7 +359,8 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
                                 DataType.STDOUT,
                                 DataType.STDERR))]
         outputDataProducts += [
-            self.request.airavata_client.getDataProduct(self.authz_token, dp)
+            grpc_adapters.data_product(
+                self.request.airavata.research.get_data_product(dp))
             for output in experimentModel.experimentOutputs
             if (output.value and
                 output.type == DataType.URI_COLLECTION)
@@ -374,8 +376,8 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
         exp_output_views = output_views.get_output_views(
             self.request, experimentModel, applicationInterface)
         inputDataProducts = [
-            self.request.airavata_client.getDataProduct(self.authz_token,
-                                                        inp.value)
+            grpc_adapters.data_product(
+                self.request.airavata.research.get_data_product(inp.value))
             for inp in experimentModel.experimentInputs
             if (inp.value and
                 inp.value.startswith('airavata-dp') and
@@ -383,7 +385,8 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
                              DataType.STDOUT,
                              DataType.STDERR))]
         inputDataProducts += [
-            self.request.airavata_client.getDataProduct(self.authz_token, dp)
+            grpc_adapters.data_product(
+                self.request.airavata.research.get_data_product(dp))
             for inp in experimentModel.experimentInputs
             if (inp.value and
                 inp.type == DataType.URI_COLLECTION)
@@ -847,16 +850,16 @@ class DataProductView(APIView):
 
     def get(self, request, format=None):
         data_product_uri = request.query_params['product-uri']
-        data_product = request.airavata_client.getDataProduct(
-            request.authz_token, data_product_uri)
+        data_product = grpc_adapters.data_product(
+            request.airavata.research.get_data_product(data_product_uri))
         serializer = self.serializer_class(
             data_product, context={'request': request})
         return Response(serializer.data)
 
     def put(self, request, format=None):
         data_product_uri = request.query_params['product-uri']
-        data_product = request.airavata_client.getDataProduct(
-            request.authz_token, data_product_uri)
+        data_product = grpc_adapters.data_product(
+            request.airavata.research.get_data_product(data_product_uri))
         if request.data and "fileContentText" in request.data:
             user_storage.update_data_product_content(
                 request=request,
@@ -912,6 +915,36 @@ def download_file(request):
     return redirect(user_storage.get_download_url(request, data_product_uri=data_product_uri))
 
 
+@api_view()
+def download(request):
+    """Stream the bytes of a data product's first replica.
+
+    Resolves ``?data-product-uri=`` via the gRPC research registry and streams
+    the file from the gRPC storage facade. Replaces the legacy SDK
+    download-URL/redirect path. The DataProductSerializer's ``downloadURL``
+    field points here.
+    """
+    data_product_uri = request.GET.get('data-product-uri', '')
+    try:
+        data_product = grpc_adapters.data_product(
+            request.airavata.research.get_data_product(data_product_uri))
+    except Exception as e:
+        log.warning("Failed to load DataProduct for {}".format(
+            data_product_uri), exc_info=True, extra={'request': request})
+        raise Http404("data product does not exist") from e
+    file_path = grpc_adapters.data_product_file_path(data_product)
+    if file_path is None:
+        raise Http404("data product has no replica to download")
+    resp = request.airavata.storage.download_file(file_path)
+    file_name = resp.name or data_product.productName or os.path.basename(file_path)
+    response = FileResponse(
+        io.BytesIO(resp.content),
+        as_attachment=False,
+        filename=file_name,
+        content_type=resp.content_type or 'application/octet-stream')
+    return response
+
+
 @api_view(http_method_names=['DELETE'])
 @permission_classes([IsAuthenticated, DataProductSharedDirPermission])
 def delete_file(request):
@@ -919,8 +952,8 @@ def delete_file(request):
     data_product_uri = request.GET.get('data-product-uri', '')
     data_product = None
     try:
-        data_product = request.airavata_client.getDataProduct(
-            request.authz_token, data_product_uri)
+        data_product = grpc_adapters.data_product(
+            request.airavata.research.get_data_product(data_product_uri))
     except Exception as e:
         log.warning("Failed to load DataProduct for {}"
                     .format(data_product_uri), exc_info=True)
@@ -929,7 +962,10 @@ def delete_file(request):
         if (data_product.gatewayId != settings.GATEWAY_ID or
                 data_product.ownerName != request.user.username):
             raise PermissionDenied()
-        user_storage.delete(request, data_product)
+        file_path = grpc_adapters.data_product_file_path(data_product)
+        if file_path is None:
+            raise Http404("data product has no replica to delete")
+        request.airavata.storage.delete_file(file_path)
         return HttpResponse(status=204)
     except ObjectDoesNotExist as e:
         raise Http404(str(e)) from e

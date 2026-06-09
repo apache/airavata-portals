@@ -5,7 +5,6 @@ from datetime import datetime
 from pathlib import Path
 
 import pytz
-from airavata_django_portal_sdk import user_storage
 from django.conf import settings
 from django.http import Http404
 from django.http.request import QueryDict
@@ -14,6 +13,8 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.utils.urls import remove_query_param, replace_query_param
 from rest_framework.viewsets import GenericViewSet
+
+from . import grpc_adapters
 
 logger = logging.getLogger(__name__)
 
@@ -272,20 +273,12 @@ class BaseSharedDirPermission(permissions.BasePermission):
 
 class DataProductSharedDirPermission(BaseSharedDirPermission):
     def get_path(self, request, view) -> str:
-        data_product_uri = request.query_params.get('data-product-uri', request.query_params.get('product-uri', ''))
-        file_metadata = user_storage.get_data_product_metadata(request, data_product_uri=data_product_uri)
-        return file_metadata["path"]
-
-    def has_permission(self, request, view):
-        # Special handling for remote API, just get the userHasWriteAccess attribute and use that
-        if hasattr(settings, 'GATEWAY_DATA_STORE_REMOTE_API'):
-            if request.method in permissions.SAFE_METHODS:
-                return True
-            data_product_uri = request.query_params.get('data-product-uri', request.query_params.get('product-uri', ''))
-            file_metadata = user_storage.get_data_product_metadata(request, data_product_uri=data_product_uri)
-            return file_metadata["userHasWriteAccess"]
-        else:
-            return super().has_permission(request, view)
+        data_product_uri = request.query_params.get(
+            'data-product-uri', request.query_params.get('product-uri', ''))
+        data_product = grpc_adapters.data_product(
+            request.airavata.research.get_data_product(data_product_uri))
+        file_path = grpc_adapters.data_product_file_path(data_product)
+        return file_path or ""
 
 
 class UserStorageSharedDirPermission(BaseSharedDirPermission):

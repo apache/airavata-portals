@@ -2,6 +2,7 @@ import copy
 import datetime
 import json
 import logging
+import os
 from pathlib import Path
 from urllib.parse import quote
 from airavata.model.application.io.ttypes import DataType
@@ -78,6 +79,10 @@ from rest_framework import serializers
 from . import models, thrift_utils, view_utils
 
 log = logging.getLogger(__name__)
+
+# Directory under user storage where uploaded experiment input files are staged
+# (matches the legacy airavata_django_portal_sdk convention).
+TMP_INPUT_FILE_UPLOAD_DIR = "tmp"
 
 
 def user_has_access(request, resource_id, permission="WRITE"):
@@ -630,43 +635,53 @@ class DataProductSerializer(
     userHasWriteAccess = serializers.SerializerMethodField()
 
     def get_downloadURL(self, data_product):
-        """Getter for downloadURL field. Returns None if file is not available."""
+        """Lazy portal URL to the byte-streaming download endpoint.
+
+        Returns None when the data product has no replica. Resolving the bytes
+        is deferred to the endpoint, so this getter makes no backend call.
+        """
         request = self.context['request']
-        if user_storage.exists(request, data_product):
-            return user_storage.get_lazy_download_url(request, data_product)
-        else:
+        if not getattr(data_product, 'replicaLocations', None):
             return None
+        base = request.build_absolute_uri(
+            reverse('django_airavata_api:download-file'))
+        return base + '?data-product-uri=' + quote(data_product.productUri)
 
     def get_isInputFileUpload(self, data_product):
-        """Return True if this is an uploaded input file."""
-        request = self.context['request']
-        return user_storage.is_input_file(request, data_product)
+        """Return True if this is an uploaded input file.
+
+        Derived from the data product alone (no backend call): an uploaded
+        input file lives directly under the input-staging directory
+        (TMP_INPUT_FILE_UPLOAD_DIR == "tmp"), so the first replica's file path
+        has that directory as its immediate parent.
+        """
+        replicas = getattr(data_product, 'replicaLocations', None) or []
+        if not replicas or not replicas[0].filePath:
+            return False
+        parent = os.path.dirname(replicas[0].filePath)
+        return os.path.basename(parent) == TMP_INPUT_FILE_UPLOAD_DIR
 
     def get_filesize(self, data_product):
-        request = self.context['request']
-        # For backwards compatibility with older user_storage, can be eventually removed
-        if hasattr(user_storage, 'get_data_product_metadata') and user_storage.exists(request, data_product):
-            metadata = user_storage.get_data_product_metadata(request, data_product)
-            return metadata['size']
-        else:
-            return 0
+        # productSize comes from the data product registry; no backend call.
+        return getattr(data_product, 'productSize', None) or 0
 
     def get_userHasWriteAccess(self, data_product: DataProductModel):
+        """Whether the requesting user may write this data product.
+
+        Derived without a backend file-metadata call: the owner always has
+        write access; in a shared directory only gateway admins do; otherwise
+        (a user's own private storage) write is allowed.
+        """
         request = self.context['request']
-        if user_storage.exists(request, data_product):
-            file_metadata = user_storage.get_data_product_metadata(request, data_product=data_product)
-            # In remote API mode, "userHasWriteAccess" is returned so we just pass it through here
-            if "userHasWriteAccess" in file_metadata:
-                return file_metadata["userHasWriteAccess"]
-            else:
-                path = file_metadata["path"]
-                shared_path = view_utils.is_shared_path(path)
-                if shared_path:
-                    # Only admins can edit files/directories in a shared directory
-                    return request.is_gateway_admin
-                return True
-        else:
-            return False
+        owner = getattr(data_product, 'ownerName', None)
+        if owner and owner == request.user.username:
+            return True
+        replicas = getattr(data_product, 'replicaLocations', None) or []
+        if replicas and replicas[0].filePath:
+            if view_utils.is_shared_path(replicas[0].filePath):
+                # Only admins can edit files in a shared directory.
+                return request.is_gateway_admin
+        return True
 
 
 # TODO move this into airavata_sdk?

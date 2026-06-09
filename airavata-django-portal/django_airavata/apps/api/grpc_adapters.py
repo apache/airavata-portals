@@ -872,6 +872,26 @@ def _data_replica_location(pb):
     )
 
 
+def data_product_file_path(data_product):
+    """First replica's ``filePath`` from an adapted data product, or None.
+
+    The gRPC ``storage`` facade expects the FULL FILE PATH, absolute or
+    ``~/``-prefixed (a bare relative path NPEs server-side, as ``resolvePath``
+    expands ``~/`` to the storage root). Replica file paths are typically
+    absolute (e.g. ``/storage/tmp/<file>``); a relative one is ``~/``-prefixed.
+    Pass an adapted ``DataProductModel`` (``grpc_adapters.data_product``).
+    """
+    replicas = getattr(data_product, 'replicaLocations', None) or []
+    if not replicas:
+        return None
+    file_path = getattr(replicas[0], 'filePath', None)
+    if not file_path:
+        return None
+    if not (file_path.startswith('/') or file_path.startswith('~/')):
+        file_path = '~/' + file_path
+    return file_path
+
+
 def data_product(pb):
     """gRPC ``DataProductModel`` -> ``DataProductSerializer`` shape."""
     return SimpleNamespace(

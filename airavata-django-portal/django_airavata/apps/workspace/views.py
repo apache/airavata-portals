@@ -4,13 +4,12 @@ import logging
 from urllib.parse import urlparse
 
 from airavata.model.application.io.ttypes import DataType
-from airavata_django_portal_sdk import user_storage as user_storage_sdk
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.utils.module_loading import import_string
 from rest_framework.renderers import JSONRenderer
 
-from django_airavata.apps.api import models
+from django_airavata.apps.api import grpc_adapters, models
 from django_airavata.apps.api.views import (
     ApplicationModuleViewSet,
     ExperimentSearchViewSet,
@@ -94,9 +93,12 @@ def create_experiment(request, app_module_id):
                 if user_file_url.scheme == 'airavata-dp':
                     dp_uri = user_file_value
                     try:
-                        data_product = request.airavata_client.getDataProduct(
-                            request.authz_token, dp_uri)
-                        if user_storage_sdk.exists(request, data_product):
+                        data_product = grpc_adapters.data_product(
+                            request.airavata.research.get_data_product(dp_uri))
+                        file_path = grpc_adapters.data_product_file_path(
+                            data_product)
+                        if file_path and request.airavata.storage.file_exists(
+                                file_path):
                             user_input_values[app_input['name']] = dp_uri
                     except Exception:
                         logger.exception(

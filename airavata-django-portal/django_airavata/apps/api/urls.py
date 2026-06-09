@@ -53,6 +53,7 @@ urlpatterns = [
     re_path(r'^upload$', views.upload_input_file, name='upload_input_file'),
     re_path(r'^tus-upload-finish$', views.tus_upload_finish,
             name='tus_upload_finish'),
+    re_path(r'^download-file$', views.download, name='download-file'),
     re_path(r'^download', views.download_file, name='download_file'),
     re_path(r'^delete-file$', views.delete_file, name='delete_file'),
     re_path(r'^data-products', views.DataProductView.as_view(),

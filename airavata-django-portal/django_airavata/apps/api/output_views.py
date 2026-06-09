@@ -1,5 +1,6 @@
 import collections
 import inspect
+import io
 import json
 import logging
 import os
@@ -8,9 +9,10 @@ from functools import partial
 import nbformat
 import papermill as pm
 from airavata.model.application.io.ttypes import DataType
-from airavata_django_portal_sdk import user_storage
 from django.conf import settings
 from nbconvert import HTMLExporter
+
+from . import grpc_adapters
 
 logger = logging.getLogger(__name__)
 
@@ -216,13 +218,16 @@ def _generate_data(request,
                                      DataType.STDERR) and
             experiment_output.value.startswith("airavata-dp")):
         data_product_uris = experiment_output.value.split(",")
-        data_products = map(lambda dpid:
-                            request.airavata_client.getDataProduct(request.authz_token,
-                                                                   dpid),
-                            data_product_uris)
+        data_products = map(
+            lambda dpid: grpc_adapters.data_product(
+                request.airavata.research.get_data_product(dpid)),
+            data_product_uris)
         for data_product in data_products:
-            if user_storage.exists(request, data_product):
-                output_file = user_storage.open_file(request, data_product)
+            file_path = grpc_adapters.data_product_file_path(data_product)
+            if file_path and request.airavata.storage.file_exists(file_path):
+                resp = request.airavata.storage.download_file(file_path)
+                output_file = io.BytesIO(resp.content)
+                output_file.name = resp.name or os.path.basename(file_path)
                 output_files.append(output_file)
 
     generate_data_func = output_view_provider.generate_data
