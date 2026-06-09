@@ -458,18 +458,18 @@ class ApplicationModuleViewSet(APIBackedViewSet):
 
     def perform_create(self, serializer):
         app_module = serializer.save()
-        app_module_id = self.request.airavata_client.registerApplicationModule(
-            self.authz_token, self.gateway_id, app_module)
+        app_module_id = self.request.airavata.research.register_application_module(
+            self.gateway_id, grpc_requests.application_module(app_module))
         app_module.appModuleId = app_module_id
 
     def perform_update(self, serializer):
         app_module = serializer.save()
-        self.request.airavata_client.updateApplicationModule(
-            self.authz_token, app_module.appModuleId, app_module)
+        self.request.airavata.research.update_application_module(
+            app_module.appModuleId, grpc_requests.application_module(app_module))
 
     def perform_destroy(self, instance):
-        self.request.airavata_client.deleteApplicationModule(
-            self.authz_token, instance.appModuleId)
+        self.request.airavata.research.delete_application_module(
+            instance.appModuleId)
 
     @action(detail=True)
     def application_interface(self, request, app_module_id):
@@ -585,21 +585,20 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
         application_interface = serializer.save()
         self._update_input_metadata(application_interface)
         log.debug("application_interface: {}".format(application_interface))
-        app_interface_id = self.request.airavata_client.registerApplicationInterface(
-            self.authz_token, self.gateway_id, application_interface)
+        app_interface_id = self.request.airavata.research.register_application_interface(
+            self.gateway_id, grpc_requests.application_interface(application_interface))
         application_interface.applicationInterfaceId = app_interface_id
 
     def perform_update(self, serializer):
         application_interface = serializer.save()
         self._update_input_metadata(application_interface)
-        self.request.airavata_client.updateApplicationInterface(
-            self.authz_token,
+        self.request.airavata.research.update_application_interface(
             application_interface.applicationInterfaceId,
-            application_interface)
+            grpc_requests.application_interface(application_interface))
 
     def perform_destroy(self, instance):
-        self.request.airavata_client.deleteApplicationInterface(
-            self.authz_token, instance.applicationInterfaceId)
+        self.request.airavata.research.delete_application_interface(
+            instance.applicationInterfaceId)
 
     def _update_input_metadata(self, app_interface):
         for app_input in app_interface.applicationInputs:
@@ -649,18 +648,19 @@ class ApplicationDeploymentViewSet(APIBackedViewSet):
 
     def perform_create(self, serializer):
         application_deployment = serializer.save()
-        app_deployment_id = self.request.airavata_client.registerApplicationDeployment(
-            self.authz_token, self.gateway_id, application_deployment)
+        app_deployment_id = self.request.airavata.research.register_application_deployment(
+            self.gateway_id, grpc_requests.application_deployment(application_deployment))
         application_deployment.appDeploymentId = app_deployment_id
 
     def perform_update(self, serializer):
         application_deployment = serializer.save()
-        self.request.airavata_client.updateApplicationDeployment(
-            self.authz_token, application_deployment.appDeploymentId, application_deployment)
+        self.request.airavata.research.update_application_deployment(
+            application_deployment.appDeploymentId,
+            grpc_requests.application_deployment(application_deployment))
 
     def perform_destroy(self, instance):
-        self.request.airavata_client.deleteApplicationDeployment(
-            self.authz_token, instance.appDeploymentId)
+        self.request.airavata.research.delete_application_deployment(
+            instance.appDeploymentId)
 
     @action(detail=True)
     def queues(self, request, app_deployment_id):
