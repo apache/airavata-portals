@@ -1464,10 +1464,9 @@ class CurrentGatewayResourceProfile(APIView):
             data=request.data, context={'request': request})
         if serializer.is_valid():
             gateway_resource_profile = serializer.save()
-            request.airavata_client.updateGatewayResourceProfile(
-                request.authz_token,
+            request.airavata.compute.update_gateway_resource_profile(
                 settings.GATEWAY_ID,
-                gateway_resource_profile)
+                grpc_requests.gateway_resource_profile(gateway_resource_profile))
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1526,23 +1525,21 @@ class StoragePreferenceViewSet(APIBackedViewSet):
 
     def perform_create(self, serializer):
         storage_preference = serializer.save()
-        self.request.airavata_client.addGatewayStoragePreference(
-            self.authz_token,
+        self.request.airavata.compute.add_gateway_storage_preference(
             settings.GATEWAY_ID,
             storage_preference.storageResourceId,
-            storage_preference)
+            grpc_requests.storage_preference(storage_preference))
 
     def perform_update(self, serializer):
         storage_preference = serializer.save()
-        self.request.airavata_client.updateGatewayStoragePreference(
-            self.authz_token,
+        self.request.airavata.compute.update_gateway_storage_preference(
             settings.GATEWAY_ID,
             storage_preference.storageResourceId,
-            storage_preference)
+            grpc_requests.storage_preference(storage_preference))
 
     def perform_destroy(self, instance):
-        self.request.airavata_client.deleteGatewayStoragePreference(
-            self.authz_token, settings.GATEWAY_ID, instance.storageResourceId)
+        self.request.airavata.compute.delete_gateway_storage_preference(
+            settings.GATEWAY_ID, instance.storageResourceId)
 
 
 class ParserViewSet(mixins.CreateModelMixin,
@@ -1567,11 +1564,12 @@ class ParserViewSet(mixins.CreateModelMixin,
 
     def perform_create(self, serializer):
         parser = serializer.save()
-        self.request.airavata_client.saveParser(self.authz_token, parser)
+        parser.id = self.request.airavata.research.save_parser(
+            grpc_requests.parser(parser))
 
     def perform_update(self, serializer):
         parser = serializer.save()
-        self.request.airavata_client.saveParser(self.authz_token, parser)
+        self.request.airavata.research.save_parser(grpc_requests.parser(parser))
 
 
 class UserStoragePathView(APIView):
@@ -1745,21 +1743,20 @@ class ManageNotificationViewSet(APIBackedViewSet):
         ]
 
     def perform_destroy(self, instance):
-        self.request.airavata_client.deleteNotification(
-            self.authz_token, settings.GATEWAY_ID, instance.notificationId)
+        self.request.airavata.research.delete_notification(
+            settings.GATEWAY_ID, instance.notificationId)
 
     def perform_create(self, serializer):
         notification = serializer.save(gatewayId=self.gateway_id)
-        notificationId = self.request.airavata_client.createNotification(
-            self.authz_token, notification)
-        notification.notificationId = notificationId
+        notification.notificationId = self.request.airavata.research.create_notification(
+            grpc_requests.notification(notification))
 
         serializer.update_notification_extension(self.request, notification)
 
     def perform_update(self, serializer):
         notification = serializer.save()
-        self.request.airavata_client.updateNotification(
-            self.authz_token, notification)
+        self.request.airavata.research.update_notification(
+            grpc_requests.notification(notification))
 
         serializer.update_notification_extension(self.request, notification)
 
