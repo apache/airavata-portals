@@ -555,3 +555,33 @@ def group(t):
         members=list(t.members or []),
         admins=list(t.admins or []),
     )
+
+
+def data_product_for_upload(*, gateway_id, owner_name, product_name, file_path,
+                            storage_resource_id, content_type=None, product_size=0):
+    """Build a proto ``DataProductModel`` to register for a freshly uploaded file.
+
+    The gRPC ``storage.upload_file`` only transfers the bytes and returns a
+    minimal ``DataProductModel``; the portal registers the full data product via
+    ``research.register_data_product`` so the file gets a canonical product URI.
+    Mirrors the legacy ``user_storage._create_data_product`` shape: a single
+    GATEWAY_DATA_STORE / TRANSIENT replica pointing at ``file_path``, with the
+    content type recorded under ``mime-type`` metadata.
+    """
+    rc = _pb2("data.replica.replica_catalog_pb2")
+    product_metadata = {"mime-type": content_type} if content_type else {}
+    return rc.DataProductModel(
+        gateway_id=gateway_id,
+        owner_name=owner_name,
+        product_name=product_name,
+        data_product_type=rc.DataProductType.FILE,
+        product_size=product_size or 0,
+        product_metadata=product_metadata,
+        replica_locations=[rc.DataReplicaLocationModel(
+            replica_name="{} gateway data store copy".format(product_name),
+            replica_location_category=rc.ReplicaLocationCategory.GATEWAY_DATA_STORE,
+            replica_persistent_type=rc.ReplicaPersistentType.TRANSIENT,
+            storage_resource_id=storage_resource_id or '',
+            file_path=file_path,
+        )],
+    )

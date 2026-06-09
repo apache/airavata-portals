@@ -80,7 +80,47 @@ from . import (
 
 READ_PERMISSION_TYPE = '{}:READ'
 
+# Input files uploaded for an experiment are staged under this directory in the
+# user's storage (mirrors the legacy SDK's TMP_INPUT_FILE_UPLOAD_DIR).
+TMP_INPUT_FILE_UPLOAD_DIR = "tmp"
+
 log = logging.getLogger(__name__)
+
+
+def _storage_upload_and_register(request, dir_path, uploaded_file, name=None,
+                                 content_type=None):
+    """Upload a file to user storage and register a data product for it (gRPC).
+
+    Writes the bytes via the ``storage`` facade (the path is the full file path,
+    ``~/``-prefixed so the backend resolves it against the storage root), then
+    registers a data product via the ``research`` facade so the file has a
+    canonical product URI. Returns the registered data product adapted to the
+    ``DataProductSerializer`` shape. Replaces the legacy
+    ``user_storage.save``/``save_input_file`` (which transferred bytes and
+    registered the data product in one call).
+    """
+    storage = request.airavata.storage
+    name = name or os.path.basename(getattr(uploaded_file, 'name', '') or '')
+    # Full file path, ~/-prefixed so resolvePath expands it to the storage root.
+    upload_path = "~/" + os.path.join(dir_path, name).lstrip("/")
+    content = uploaded_file.read()
+    storage.upload_file(
+        path=upload_path, content=content, name=name,
+        content_type=content_type or '')
+    # The upload response is minimal; resolve the absolute path the backend wrote
+    # to and register the full data product.
+    metadata = storage.get_file_metadata(upload_path)
+    product_uri = request.airavata.research.register_data_product(
+        grpc_requests.data_product_for_upload(
+            gateway_id=settings.GATEWAY_ID,
+            owner_name=request.user.username,
+            product_name=name,
+            file_path=metadata.path,
+            storage_resource_id=storage.get_default_storage_resource_id(),
+            content_type=content_type,
+            product_size=metadata.size))
+    return grpc_adapters.data_product(
+        request.airavata.research.get_data_product(product_uri))
 
 
 class GroupViewSet(APIBackedViewSet):
@@ -861,10 +901,14 @@ class DataProductView(APIView):
         data_product = grpc_adapters.data_product(
             request.airavata.research.get_data_product(data_product_uri))
         if request.data and "fileContentText" in request.data:
-            user_storage.update_data_product_content(
-                request=request,
-                data_product=data_product,
-                fileContentText=request.data["fileContentText"])
+            file_path = grpc_adapters.data_product_file_path(data_product)
+            if file_path is None:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            # Overwrite the file content in place at the replica's path.
+            request.airavata.storage.upload_file(
+                path=file_path,
+                content=request.data["fileContentText"].encode("utf-8"),
+                name=data_product.productName or os.path.basename(file_path))
             return self.get(request=request, format=format)
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -874,8 +918,9 @@ class DataProductView(APIView):
 def upload_input_file(request):
     try:
         input_file = request.FILES['file']
-        data_product = user_storage.save_input_file(
-            request, input_file, content_type=input_file.content_type)
+        data_product = _storage_upload_and_register(
+            request, TMP_INPUT_FILE_UPLOAD_DIR, input_file,
+            content_type=input_file.content_type)
         serializer = serializers.DataProductSerializer(
             data_product, context={'request': request})
         return JsonResponse({'uploaded': True,
@@ -893,8 +938,9 @@ def tus_upload_finish(request):
 
     def save_upload(file_path, file_name, file_type):
         with open(file_path, 'rb') as uploaded_file:
-            return user_storage.save_input_file(request, uploaded_file,
-                                                name=file_name, content_type=file_type)
+            return _storage_upload_and_register(
+                request, TMP_INPUT_FILE_UPLOAD_DIR, uploaded_file,
+                name=file_name, content_type=file_type)
     try:
         data_product = tus.save_tus_upload(uploadURL, save_upload)
         serializer = serializers.DataProductSerializer(
