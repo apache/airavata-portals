@@ -8,7 +8,9 @@ from functools import partial
 
 import nbformat
 import papermill as pm
-from airavata.model.application.io.ttypes import DataType
+from airavata_sdk.generated.org.apache.airavata.model.application.io.application_io_pb2 import (  # noqa: E501
+    DataType,
+)
 from django.conf import settings
 from nbconvert import HTMLExporter
 
@@ -79,7 +81,7 @@ DEFAULT_VIEW_PROVIDERS = {
 
 def get_output_views(request, experiment, application_interface=None):
     output_views = {}
-    for output in experiment.experimentOutputs:
+    for output in experiment.experiment_outputs:
         output_views[output.name] = []
         output_view_provider_ids = _get_output_view_providers(
             output, application_interface)
@@ -123,9 +125,9 @@ def _get_output_view_provider(output_view_provider_id):
 def _get_output_view_providers(experiment_output, application_interface):
     output_view_providers = []
     logger.debug("experiment_output={}".format(experiment_output))
-    if experiment_output.metaData:
+    if experiment_output.meta_data:
         try:
-            output_metadata = json.loads(experiment_output.metaData)
+            output_metadata = json.loads(experiment_output.meta_data)
             logger.debug("output_metadata={}".format(output_metadata))
             if 'output-view-providers' in output_metadata:
                 output_view_providers.extend(
@@ -148,16 +150,16 @@ def _get_output_view_providers(experiment_output, application_interface):
 
 def _get_application_output_view_providers(application_interface, output_name):
     app_output = [o
-                  for o in application_interface.applicationOutputs
+                  for o in application_interface.application_outputs
                   if o.name == output_name]
     if len(app_output) == 1:
         logger.debug("{}: {}".format(output_name, app_output))
         app_output = app_output[0]
     else:
         return []
-    if app_output.metaData:
+    if app_output.meta_data:
         try:
-            output_metadata = json.loads(app_output.metaData)
+            output_metadata = json.loads(app_output.meta_data)
             if 'output-view-providers' in output_metadata:
                 return output_metadata['output-view-providers']
         except Exception:
@@ -175,10 +177,9 @@ def generate_data(request,
                   **kwargs):
     output_view_provider = _get_output_view_provider(output_view_provider_id)
     # TODO if output_view_provider is None, return 404
-    experiment = grpc_adapters.experiment(
-        request.airavata.research.get_experiment(experiment_id))
+    experiment = request.airavata.research.get_experiment(experiment_id)
     experiment_output = [o
-                         for o in experiment.experimentOutputs
+                         for o in experiment.experiment_outputs
                          if o.name == experiment_output_name]
     # TODO: handle experiment_output not found by name
     experiment_output = experiment_output[0]
@@ -216,7 +217,7 @@ def _generate_data(request,
                                      DataType.URI_COLLECTION,
                                      DataType.STDOUT,
                                      DataType.STDERR) and
-            experiment_output.value.startswith("airavata-dp")):
+          experiment_output.value.startswith("airavata-dp")):
         data_product_uris = experiment_output.value.split(",")
         data_products = map(
             lambda dpid: grpc_adapters.data_product(

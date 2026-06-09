@@ -7,9 +7,7 @@ import warnings
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
-from airavata.model.application.io.ttypes import DataType
 from airavata.model.experiment.ttypes import (
-    ExperimentModel,
     ExperimentSearchFields
 )
 from airavata.model.appcatalog.groupresourceprofile.ttypes import (
@@ -70,6 +68,13 @@ READ_PERMISSION_TYPE = '{}:READ'
 TMP_INPUT_FILE_UPLOAD_DIR = "tmp"
 
 log = logging.getLogger(__name__)
+
+
+def _data_type_pb2():
+    from airavata_sdk.generated.org.apache.airavata.model.application.io import (
+        application_io_pb2,
+    )
+    return application_io_pb2
 
 
 def _storage_upload_and_register(request, dir_path, uploaded_file, name=None,
@@ -217,11 +222,9 @@ class ProjectViewSet(APIBackedViewSet):
 
     @action(detail=True)
     def experiments(self, request, project_id=None):
-        experiments = [
-            grpc_adapters.experiment(e)
-            for e in request.airavata.research.get_experiments_in_project(
-                project_id, -1, 0)
-        ]
+        experiments = list(
+            request.airavata.research.get_experiments_in_project(
+                project_id, -1, 0))
         serializer = serializers.ExperimentSerializer(
             experiments, many=True, context={'request': request})
         return Response(serializer.data)
@@ -240,41 +243,39 @@ class ExperimentViewSet(mixins.CreateModelMixin,
     lookup_field = 'experiment_id'
 
     def get_instance(self, lookup_value):
-        return grpc_adapters.experiment(
-            self.request.airavata.research.get_experiment(lookup_value))
+        return self.request.airavata.research.get_experiment(lookup_value)
 
     def perform_create(self, serializer):
         experiment = serializer.save(
-            gatewayId=self.gateway_id,
-            userName=self.username)
+            gateway_id=self.gateway_id,
+            user_name=self.username)
         experiment_id = self.request.airavata.research.create_experiment(
-            self.gateway_id, grpc_requests.experiment(experiment))
+            self.gateway_id, experiment)
         self._update_workspace_preferences(
-            project_id=experiment.projectId,
-            group_resource_profile_id=experiment.userConfigurationData.groupResourceProfileId,
-            compute_resource_id=experiment.userConfigurationData.computationalResourceScheduling.resourceHostId)
-        experiment.experimentId = experiment_id
+            project_id=experiment.project_id,
+            group_resource_profile_id=experiment.user_configuration_data.group_resource_profile_id,
+            compute_resource_id=experiment.user_configuration_data.computational_resource_scheduling.resource_host_id)
+        experiment.experiment_id = experiment_id
 
     def perform_update(self, serializer):
         experiment = serializer.save(
-            gatewayId=self.gateway_id,
-            userName=self.username)
+            gateway_id=self.gateway_id,
+            user_name=self.username)
         self.request.airavata.research.update_experiment(
-            experiment.experimentId, grpc_requests.experiment(experiment))
+            experiment.experiment_id, experiment)
         self._update_workspace_preferences(
-            project_id=experiment.projectId,
-            group_resource_profile_id=experiment.userConfigurationData.groupResourceProfileId,
-            compute_resource_id=experiment.userConfigurationData.computationalResourceScheduling.resourceHostId)
+            project_id=experiment.project_id,
+            group_resource_profile_id=experiment.user_configuration_data.group_resource_profile_id,
+            compute_resource_id=experiment.user_configuration_data.computational_resource_scheduling.resource_host_id)
 
     @action(methods=['post'], detail=True)
     def launch(self, request, experiment_id=None):
         try:
-            experiment = grpc_adapters.experiment(
-                request.airavata.research.get_experiment(experiment_id))
-            if (experiment.enableEmailNotification):
-                experiment.emailAddresses = [request.user.email]
+            experiment = request.airavata.research.get_experiment(experiment_id)
+            if experiment.enable_email_notification:
+                experiment.email_addresses[:] = [request.user.email]
             request.airavata.research.update_experiment(
-                experiment_id, grpc_requests.experiment(experiment))
+                experiment_id, experiment)
             experiment_util.launch(request, experiment_id)
             return Response({'success': True})
         except Exception as e:
@@ -283,21 +284,18 @@ class ExperimentViewSet(mixins.CreateModelMixin,
 
     @action(methods=['get'], detail=True)
     def jobs(self, request, experiment_id=None):
-        jobs = [
-            grpc_adapters.job_model(j)
-            for j in request.airavata.research.get_job_details(experiment_id)
-        ]
+        jobs = list(request.airavata.research.get_job_details(experiment_id))
         serializer = serializers.JobSerializer(
             jobs, many=True, context={'request': request})
         return Response(serializer.data)
 
     @action(methods=['post'], detail=True)
     def clone(self, request, experiment_id=None):
-        # experiment_util.clone is the launch/clone orchestration (still Thrift);
-        # re-fetch the cloned experiment via gRPC.
+        # experiment_util.clone is the launch/clone orchestration (still on the
+        # legacy SDK); re-fetch the cloned experiment via gRPC.
         cloned_experiment_id = experiment_util.clone(request, experiment_id)
-        cloned_experiment = grpc_adapters.experiment(
-            request.airavata.research.get_experiment(cloned_experiment_id))
+        cloned_experiment = request.airavata.research.get_experiment(
+            cloned_experiment_id)
         serializer = self.serializer_class(
             cloned_experiment, context={'request': request})
         return Response(serializer.data)
@@ -370,28 +368,27 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
     def get_instance(self, lookup_value):
         """Get FullExperiment instance with resolved references."""
         # TODO: move loading experiment and references to airavata_sdk?
-        experimentModel = grpc_adapters.experiment(
-            self.request.airavata.research.get_experiment(lookup_value))
+        experimentModel = self.request.airavata.research.get_experiment(
+            lookup_value)
+        DT = _data_type_pb2().DataType
         outputDataProducts = [
             grpc_adapters.data_product(
                 self.request.airavata.research.get_data_product(output.value))
-            for output in experimentModel.experimentOutputs
+            for output in experimentModel.experiment_outputs
             if (output.value and
                 output.value.startswith('airavata-dp') and
-                output.type in (DataType.URI,
-                                DataType.STDOUT,
-                                DataType.STDERR))]
+                output.type in (DT.URI, DT.STDOUT, DT.STDERR))]
         outputDataProducts += [
             grpc_adapters.data_product(
                 self.request.airavata.research.get_data_product(dp))
-            for output in experimentModel.experimentOutputs
+            for output in experimentModel.experiment_outputs
             if (output.value and
-                output.type == DataType.URI_COLLECTION)
+                output.type == DT.URI_COLLECTION)
             for dp in output.value.split(',')
             if output.value.startswith('airavata-dp')]
-        appInterfaceId = experimentModel.executionId
+        appInterfaceId = experimentModel.execution_id
         try:
-            applicationInterface = grpc_adapters.application_interface(
+            applicationInterface = (
                 self.request.airavata.research.get_application_interface(
                     appInterfaceId))
         except Exception as e:
@@ -402,24 +399,22 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
         inputDataProducts = [
             grpc_adapters.data_product(
                 self.request.airavata.research.get_data_product(inp.value))
-            for inp in experimentModel.experimentInputs
+            for inp in experimentModel.experiment_inputs
             if (inp.value and
                 inp.value.startswith('airavata-dp') and
-                inp.type in (DataType.URI,
-                             DataType.STDOUT,
-                             DataType.STDERR))]
+                inp.type in (DT.URI, DT.STDOUT, DT.STDERR))]
         inputDataProducts += [
             grpc_adapters.data_product(
                 self.request.airavata.research.get_data_product(dp))
-            for inp in experimentModel.experimentInputs
+            for inp in experimentModel.experiment_inputs
             if (inp.value and
-                inp.type == DataType.URI_COLLECTION)
+                inp.type == DT.URI_COLLECTION)
             for dp in inp.value.split(',')
             if inp.value.startswith('airavata-dp')]
         applicationModule = None
         try:
             if applicationInterface is not None:
-                appModuleId = applicationInterface.applicationModules[0]
+                appModuleId = applicationInterface.application_modules[0]
                 applicationModule = (
                     self.request.airavata.research.get_application_module(
                         appModuleId))
@@ -430,10 +425,11 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
             log.exception("Failed to load app interface/module", extra={'request': self.request})
 
         compute_resource_id = None
-        user_conf = experimentModel.userConfigurationData
-        if user_conf and user_conf.computationalResourceScheduling:
-            comp_res_sched = user_conf.computationalResourceScheduling
-            compute_resource_id = comp_res_sched.resourceHostId
+        if experimentModel.HasField('user_configuration_data'):
+            user_conf = experimentModel.user_configuration_data
+            if user_conf.HasField('computational_resource_scheduling'):
+                compute_resource_id = (
+                    user_conf.computational_resource_scheduling.resource_host_id)
         try:
             compute_resource = (
                 self.request.airavata.compute.get_compute_resource(
@@ -444,15 +440,14 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
                 compute_resource_id), extra={'request': self.request})
             compute_resource = None
         if serializers.user_has_access(
-                self.request, experimentModel.projectId, 'READ'):
+                self.request, experimentModel.project_id, 'READ'):
             project = self.request.airavata.research.get_project(
-                experimentModel.projectId)
+                experimentModel.project_id)
         else:
             # User may not have access to project, only experiment
             project = None
-        job_details = [
-            grpc_adapters.job_model(j)
-            for j in self.request.airavata.research.get_job_details(lookup_value)]
+        job_details = list(
+            self.request.airavata.research.get_job_details(lookup_value))
         full_experiment = serializers.FullExperiment(
             experimentModel,
             project=project,
@@ -494,15 +489,14 @@ class ApplicationModuleViewSet(APIBackedViewSet):
 
     @action(detail=True)
     def application_interface(self, request, app_module_id):
-        all_app_interfaces = [
-            grpc_adapters.application_interface(i)
-            for i in request.airavata.research.get_all_application_interfaces(
-                self.gateway_id)]
+        all_app_interfaces = list(
+            request.airavata.research.get_all_application_interfaces(
+                self.gateway_id))
         app_interfaces = []
         for app_interface in all_app_interfaces:
-            if not app_interface.applicationModules:
+            if not app_interface.application_modules:
                 continue
-            if app_module_id in app_interface.applicationModules:
+            if app_module_id in app_interface.application_modules:
                 app_interfaces.append(app_interface)
         if len(app_interfaces) == 1:
             serializer = serializers.ApplicationInterfaceDescriptionSerializer(
@@ -581,17 +575,14 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
     lookup_field = 'app_interface_id'
 
     def get_list(self):
-        return [
-            grpc_adapters.application_interface(i)
-            for i in self.request.airavata.research.get_all_application_interfaces(
-                self.gateway_id)
-        ]
+        return list(
+            self.request.airavata.research.get_all_application_interfaces(
+                self.gateway_id))
 
     def get_instance(self, lookup_value):
         try:
-            return grpc_adapters.application_interface(
-                self.request.airavata.research.get_application_interface(
-                    lookup_value))
+            return self.request.airavata.research.get_application_interface(
+                lookup_value)
         except Exception:
             # If it failed to load, check to see if it exists at all
             all_interfaces = self.request.airavata.research.get_all_application_interfaces(
@@ -607,24 +598,24 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
         self._update_input_metadata(application_interface)
         log.debug("application_interface: {}".format(application_interface))
         app_interface_id = self.request.airavata.research.register_application_interface(
-            self.gateway_id, grpc_requests.application_interface(application_interface))
-        application_interface.applicationInterfaceId = app_interface_id
+            self.gateway_id, application_interface)
+        application_interface.application_interface_id = app_interface_id
 
     def perform_update(self, serializer):
         application_interface = serializer.save()
         self._update_input_metadata(application_interface)
         self.request.airavata.research.update_application_interface(
-            application_interface.applicationInterfaceId,
-            grpc_requests.application_interface(application_interface))
+            application_interface.application_interface_id,
+            application_interface)
 
     def perform_destroy(self, instance):
         self.request.airavata.research.delete_application_interface(
-            instance.applicationInterfaceId)
+            instance.application_interface_id)
 
     def _update_input_metadata(self, app_interface):
-        for app_input in app_interface.applicationInputs:
-            if app_input.metaData:
-                metadata = json.loads(app_input.metaData)
+        for app_input in app_interface.application_inputs:
+            if app_input.meta_data:
+                metadata = json.loads(app_input.meta_data)
                 # Automatically add {showOptions: {isRequired: true/false}} to
                 # toggle isRequired on hidden/shown inputs
                 if ("editor" in metadata and
@@ -633,8 +624,8 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
                     if "showOptions" not in metadata["editor"]["dependencies"]:
                         metadata["editor"]["dependencies"]["showOptions"] = {}
                     o = metadata["editor"]["dependencies"]["showOptions"]
-                    o["isRequired"] = app_input.isRequired
-                    app_input.metaData = json.dumps(metadata)
+                    o["isRequired"] = app_input.is_required
+                    app_input.meta_data = json.dumps(metadata)
 
     @action(detail=True)
     def compute_resources(self, request, app_interface_id):
@@ -1492,13 +1483,12 @@ class CurrentGatewayResourceProfile(APIView):
 class ExperimentArchiveView(APIView):
 
     def get(self, request, experiment_id=None, format=None):
-        experiment = grpc_adapters.experiment(
-            request.airavata.research.get_experiment(experiment_id))
+        experiment = request.airavata.research.get_experiment(experiment_id)
         result = dict(archived=False, archive_name=None, created_date=None,
                       max_age=settings.GATEWAY_USER_DATA_ARCHIVE_MAX_AGE_DAYS)
         try:
             archive_entry = UserDataArchiveEntry.objects.get(
-                entry_path=experiment.userConfigurationData.experimentDataDir,
+                entry_path=experiment.user_configuration_data.experiment_data_dir,
                 user_data_archive__rolled_back=False)
             result["archived"] = True
             result["archive_name"] = archive_entry.user_data_archive.archive_name
@@ -1590,10 +1580,10 @@ def _user_storage_path(path, experiment_id=None, request=None):
     """
     rel = (path or "").lstrip("/")
     if experiment_id:
-        experiment = grpc_adapters.experiment(
-            request.airavata.research.get_experiment(experiment_id))
-        data_dir = (experiment.userConfigurationData.experimentDataDir
-                    if experiment.userConfigurationData else None) or ""
+        experiment = request.airavata.research.get_experiment(experiment_id)
+        data_dir = (experiment.user_configuration_data.experiment_data_dir
+                    if experiment.HasField('user_configuration_data')
+                    else None) or ""
         base = data_dir.rstrip("/")
         full = base + ("/" + rel if rel else "")
         return full if (full.startswith("/") or full.startswith("~/")) else "~/" + full

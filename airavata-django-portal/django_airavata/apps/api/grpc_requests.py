@@ -20,12 +20,8 @@ from airavata.model.appcatalog.computeresource.ttypes import (
 from airavata.model.appcatalog.groupresourceprofile.ttypes import (
     ResourceType as _ThriftResourceType,
 )
-from airavata.model.application.io.ttypes import DataType as _ThriftDataType
 from airavata.model.data.movement.ttypes import (
     DataMovementProtocol as _ThriftDataMovementProtocol,
-)
-from airavata.model.experiment.ttypes import (
-    ExperimentType as _ThriftExperimentType,
 )
 
 _GEN = "airavata_sdk.generated.org.apache.airavata.model"
@@ -69,63 +65,19 @@ def password_credential(gateway_id, portal_user_name, login_user_name,
     )
 
 
-def _input_data_object(t):
-    io = _pb2("application.io.application_io_pb2")
-    return io.InputDataObjectType(
-        name=t.name or '',
-        value=t.value or '',
-        type=_proto_enum(io.DataType, _ThriftDataType, t.type),
-        application_argument=t.applicationArgument or '',
-        standard_input=bool(t.standardInput),
-        user_friendly_description=t.userFriendlyDescription or '',
-        # StoredJSONField.to_internal_value json.dumps()es metaData to a string.
-        meta_data=t.metaData or '',
-        input_order=t.inputOrder or 0,
-        is_required=bool(t.isRequired),
-        required_to_added_to_command_line=bool(t.requiredToAddedToCommandLine),
-        data_staged=bool(t.dataStaged),
-        storage_resource_id=t.storageResourceId or '',
-        is_read_only=bool(t.isReadOnly),
-        override_filename=t.overrideFilename or '',
-    )
+def _proto_enum_rev(proto_enum, rev_map, value):
+    """Thrift enum value -> proto enum value via an EXPLICIT inverse name map
+    (for protocol enums whose proto/Thrift member names diverge). None/unmapped
+    -> 0 (proto *_UNKNOWN)."""
+    if value is None:
+        return 0
+    name = rev_map.get(value)
+    return proto_enum.Value(name) if name is not None else 0
 
 
-def _output_data_object(t):
-    io = _pb2("application.io.application_io_pb2")
-    return io.OutputDataObjectType(
-        name=t.name or '',
-        value=t.value or '',
-        type=_proto_enum(io.DataType, _ThriftDataType, t.type),
-        application_argument=t.applicationArgument or '',
-        is_required=bool(t.isRequired),
-        required_to_added_to_command_line=bool(t.requiredToAddedToCommandLine),
-        data_movement=bool(t.dataMovement),
-        location=t.location or '',
-        search_query=t.searchQuery or '',
-        output_streaming=bool(t.outputStreaming),
-        storage_resource_id=t.storageResourceId or '',
-        meta_data=t.metaData or '',
-    )
-
-
-def application_interface(t):
-    """Thrift ``ApplicationInterfaceDescription`` -> proto message."""
-    return _pb2("appcatalog.appinterface.app_interface_pb2").ApplicationInterfaceDescription(
-        application_interface_id=t.applicationInterfaceId or '',
-        application_name=t.applicationName or '',
-        application_description=t.applicationDescription or '',
-        application_modules=list(t.applicationModules or []),
-        application_inputs=[_input_data_object(i) for i in (t.applicationInputs or [])],
-        application_outputs=[_output_data_object(o) for o in (t.applicationOutputs or [])],
-        archive_working_directory=bool(t.archiveWorkingDirectory),
-        has_optional_file_inputs=bool(t.hasOptionalFileInputs),
-    )
-
-
-# proto-name -> Thrift protocol value maps (mirror grpc_adapters); inverted
-# below to go Thrift value -> proto value, preserving the divergent name pairs
+# Thrift protocol value -> proto member name, preserving the divergent name pairs
 # (Thrift CLOUD <-> proto JSP_CLOUD; Thrift LOCAL <-> proto
-# DATA_MOVEMENT_PROTOCOL_LOCAL).
+# DATA_MOVEMENT_PROTOCOL_LOCAL). Used by the group-resource-profile write path.
 _JOB_SUBMISSION_PROTOCOL_REV = {
     _ThriftJobSubmissionProtocol.LOCAL: 'LOCAL',
     _ThriftJobSubmissionProtocol.SSH: 'SSH',
@@ -141,95 +93,6 @@ _DATA_MOVEMENT_PROTOCOL_REV = {
     _ThriftDataMovementProtocol.SFTP: 'SFTP',
     _ThriftDataMovementProtocol.UNICORE_STORAGE_SERVICE: 'UNICORE_STORAGE_SERVICE',
 }
-
-
-def _proto_enum_rev(proto_enum, rev_map, value):
-    """Thrift enum value -> proto enum value via an EXPLICIT inverse name map
-    (for protocol enums whose proto/Thrift member names diverge). None/unmapped
-    -> 0 (proto *_UNKNOWN)."""
-    if value is None:
-        return 0
-    name = rev_map.get(value)
-    return proto_enum.Value(name) if name is not None else 0
-
-
-# --- Experiment tree (write direction) -------------------------------------
-# Reverse of grpc_adapters.experiment. The write path carries only what the
-# user submitted; status/errors/processes/workflow are server-managed.
-
-
-def _computational_resource_scheduling(t):
-    """Thrift ``ComputationalResourceSchedulingModel`` -> proto message."""
-    return _pb2("scheduling.scheduling_pb2").ComputationalResourceSchedulingModel(
-        resource_host_id=t.resourceHostId or '',
-        total_cpu_count=t.totalCPUCount or 0,
-        node_count=t.nodeCount or 0,
-        number_of_threads=t.numberOfThreads or 0,
-        queue_name=t.queueName or '',
-        wall_time_limit=t.wallTimeLimit or 0,
-        total_physical_memory=t.totalPhysicalMemory or 0,
-        chessis_number=t.chessisNumber or '',
-        static_working_dir=t.staticWorkingDir or '',
-        override_login_user_name=t.overrideLoginUserName or '',
-        override_scratch_location=t.overrideScratchLocation or '',
-        override_allocation_project_number=t.overrideAllocationProjectNumber or '',
-        m_group_count=t.mGroupCount or 0,
-    )
-
-
-def _user_configuration_data(t):
-    """Thrift ``UserConfigurationDataModel`` -> proto message."""
-    ucd = _pb2("experiment.experiment_pb2").UserConfigurationDataModel(
-        airavata_auto_schedule=bool(t.airavataAutoSchedule),
-        override_manual_scheduled_params=bool(t.overrideManualScheduledParams),
-        share_experiment_publicly=bool(t.shareExperimentPublicly),
-        throttle_resources=bool(t.throttleResources),
-        user_dn=t.userDN or '',
-        generate_cert=bool(t.generateCert),
-        input_storage_resource_id=t.inputStorageResourceId or '',
-        output_storage_resource_id=t.outputStorageResourceId or '',
-        experiment_data_dir=t.experimentDataDir or '',
-        use_user_cr_pref=bool(t.useUserCRPref),
-        group_resource_profile_id=t.groupResourceProfileId or '',
-        auto_scheduled_comp_resource_scheduling_list=[
-            _computational_resource_scheduling(s)
-            for s in (t.autoScheduledCompResourceSchedulingList or [])],
-    )
-    if t.computationalResourceScheduling is not None:
-        ucd.computational_resource_scheduling.CopyFrom(
-            _computational_resource_scheduling(t.computationalResourceScheduling))
-    return ucd
-
-
-def experiment(t):
-    """Thrift ``ExperimentModel`` -> proto ``ExperimentModel`` request message.
-
-    Only the user-submitted fields are populated; experiment_status, errors and
-    processes are server-managed (left empty), workflow omitted.
-    """
-    exp_pb = _pb2("experiment.experiment_pb2")
-    e = exp_pb.ExperimentModel(
-        experiment_id=t.experimentId or '',
-        project_id=t.projectId or '',
-        gateway_id=t.gatewayId or '',
-        experiment_type=_proto_enum(
-            exp_pb.ExperimentType, _ThriftExperimentType, t.experimentType,
-            'EXPERIMENT_TYPE_'),
-        user_name=t.userName or '',
-        experiment_name=t.experimentName or '',
-        description=t.description or '',
-        execution_id=t.executionId or '',
-        enable_email_notification=bool(t.enableEmailNotification),
-        email_addresses=list(t.emailAddresses or []),
-        experiment_inputs=[
-            _input_data_object(i) for i in (t.experimentInputs or [])],
-        experiment_outputs=[
-            _output_data_object(o) for o in (t.experimentOutputs or [])],
-    )
-    if t.userConfigurationData is not None:
-        e.user_configuration_data.CopyFrom(
-            _user_configuration_data(t.userConfigurationData))
-    return e
 
 
 # --- Group resource profile (write direction) ------------------------------

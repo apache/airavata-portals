@@ -3,13 +3,9 @@ import datetime
 import json
 import logging
 import os
-from pathlib import Path
 from urllib.parse import quote
 from airavata.model.application.io.ttypes import DataType
 
-from airavata.model.appcatalog.appinterface.ttypes import (
-    ApplicationInterfaceDescription
-)
 from airavata.model.appcatalog.groupresourceprofile.ttypes import (
     ComputeResourceReservation,
     GroupComputeResourcePreference,
@@ -19,23 +15,13 @@ from airavata.model.appcatalog.groupresourceprofile.ttypes import (
     AwsComputeResourcePreference
 )
 from airavata.model.appcatalog.parser.ttypes import IOType as _ThriftIOType
-from airavata.model.application.io.ttypes import (
-    InputDataObjectType,
-    OutputDataObjectType
-)
 from airavata.model.data.replica.ttypes import (
     DataProductModel,
     DataReplicaLocationModel
 )
-from airavata.model.experiment.ttypes import (
-    ExperimentModel
-)
 from airavata.model.group.ttypes import GroupModel, ResourcePermissionType
-from airavata.model.job.ttypes import JobModel
 from airavata.model.status.ttypes import (
-    ExperimentState,
-    ExperimentStatus,
-    ProcessStatus
+    ExperimentState
 )
 from airavata.model.user.ttypes import UserProfile
 from airavata_django_portal_sdk import (
@@ -394,6 +380,16 @@ class StoredJSONField(serializers.JSONField):
             self.fail('invalid')
 
 
+class ProtoStoredJSONField(StoredJSONField):
+    """:class:`StoredJSONField` for a proto string field: the proto-empty default
+    ``''`` renders ``null`` (the old adapters mapped ``pb.meta_data or None``)."""
+
+    def to_representation(self, value):
+        if not value:
+            return None
+        return super().to_representation(value)
+
+
 class OrderedListField(serializers.ListField):
 
     def __init__(self, *args, **kwargs):
@@ -639,91 +635,155 @@ class EnumChoiceField(serializers.ChoiceField):
         return value.name
 
 
+def _application_io_pb2():
+    from airavata_sdk.generated.org.apache.airavata.model.application.io import (
+        application_io_pb2,
+    )
+    return application_io_pb2
+
+
+def _app_interface_pb2():
+    from airavata_sdk.generated.org.apache.airavata.model.appcatalog.appinterface import (  # noqa: E501
+        app_interface_pb2,
+    )
+    return app_interface_pb2
+
+
+def _data_type_field(**kwargs):
+    # DataType renders as the member NAME (proto STRING/INTEGER/... == Thrift names;
+    # proto prefixes only the zero DATA_TYPE_UNKNOWN sentinel).
+    return proto_enum_name_field(
+        _application_io_pb2().DataType.DESCRIPTOR,
+        proto_prefix='DATA_TYPE_', **kwargs)
+
+
+def _proto_input_data_object(d):
+    io = _application_io_pb2()
+    return io.InputDataObjectType(
+        name=d.get('name', '') or '',
+        value=d.get('value', '') or '',
+        type=d.get('type', 0) or 0,
+        application_argument=d.get('application_argument', '') or '',
+        standard_input=bool(d.get('standard_input', False)),
+        user_friendly_description=d.get('user_friendly_description', '') or '',
+        meta_data=d.get('meta_data', '') or '',
+        input_order=d.get('input_order', 0) or 0,
+        is_required=bool(d.get('is_required', False)),
+        required_to_added_to_command_line=bool(
+            d.get('required_to_added_to_command_line', False)),
+        data_staged=bool(d.get('data_staged', False)),
+        storage_resource_id=d.get('storage_resource_id', '') or '',
+        is_read_only=bool(d.get('is_read_only', False)),
+        override_filename=d.get('override_filename', '') or '',
+    )
+
+
+def _proto_output_data_object(d):
+    io = _application_io_pb2()
+    return io.OutputDataObjectType(
+        name=d.get('name', '') or '',
+        value=d.get('value', '') or '',
+        type=d.get('type', 0) or 0,
+        application_argument=d.get('application_argument', '') or '',
+        is_required=bool(d.get('is_required', False)),
+        required_to_added_to_command_line=bool(
+            d.get('required_to_added_to_command_line', False)),
+        data_movement=bool(d.get('data_movement', False)),
+        location=d.get('location', '') or '',
+        search_query=d.get('search_query', '') or '',
+        output_streaming=bool(d.get('output_streaming', False)),
+        storage_resource_id=d.get('storage_resource_id', '') or '',
+        meta_data=d.get('meta_data', '') or '',
+    )
+
+
 class InputDataObjectTypeSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``InputDataObjectType`` message."""
+
     name = serializers.CharField()
     value = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    type = EnumChoiceField(enum_class=DataType)
-    applicationArgument = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    standardInput = serializers.BooleanField(default=False)
-    userFriendlyDescription = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    metaData = StoredJSONField(allow_null=True, required=False)
-    inputOrder = serializers.IntegerField(required=False, allow_null=True)
-    isRequired = serializers.BooleanField(default=False)
-    requiredToAddedToCommandLine = serializers.BooleanField(default=False)
-    dataStaged = serializers.BooleanField(default=False)
-    storageResourceId = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    isReadOnly = serializers.BooleanField(default=False)
-    overrideFilename = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    type = _data_type_field(required=False)
+    applicationArgument = serializers.CharField(source='application_argument', allow_blank=True, allow_null=True, required=False)
+    standardInput = serializers.BooleanField(source='standard_input', default=False)
+    userFriendlyDescription = serializers.CharField(source='user_friendly_description', allow_blank=True, allow_null=True, required=False)
+    metaData = ProtoStoredJSONField(source='meta_data', allow_null=True, required=False)
+    inputOrder = serializers.IntegerField(source='input_order', required=False, allow_null=True)
+    isRequired = serializers.BooleanField(source='is_required', default=False)
+    requiredToAddedToCommandLine = serializers.BooleanField(source='required_to_added_to_command_line', default=False)
+    dataStaged = serializers.BooleanField(source='data_staged', default=False)
+    storageResourceId = serializers.CharField(source='storage_resource_id', allow_blank=True, allow_null=True, required=False)
+    isReadOnly = serializers.BooleanField(source='is_read_only', default=False)
+    overrideFilename = serializers.CharField(source='override_filename', allow_blank=True, allow_null=True, required=False)
 
     def create(self, validated_data):
-        return InputDataObjectType(**validated_data)
+        return _proto_input_data_object(validated_data)
 
-    def update(self, instance, validated_data):
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        return instance
 
 class OutputDataObjectTypeSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``OutputDataObjectType`` message."""
+
     name = serializers.CharField()
     value = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    type = EnumChoiceField(enum_class=DataType)
-    applicationArgument = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    isRequired = serializers.BooleanField(default=False)
-    requiredToAddedToCommandLine = serializers.BooleanField(default=False)
-    dataMovement = serializers.BooleanField(default=False)
+    type = _data_type_field(required=False)
+    applicationArgument = serializers.CharField(source='application_argument', allow_blank=True, allow_null=True, required=False)
+    isRequired = serializers.BooleanField(source='is_required', default=False)
+    requiredToAddedToCommandLine = serializers.BooleanField(source='required_to_added_to_command_line', default=False)
+    dataMovement = serializers.BooleanField(source='data_movement', default=False)
     location = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    searchQuery = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    outputStreaming = serializers.BooleanField(default=False)
-    storageResourceId = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    metaData = StoredJSONField(allow_null=True, required=False)
+    searchQuery = serializers.CharField(source='search_query', allow_blank=True, allow_null=True, required=False)
+    outputStreaming = serializers.BooleanField(source='output_streaming', default=False)
+    storageResourceId = serializers.CharField(source='storage_resource_id', allow_blank=True, allow_null=True, required=False)
+    metaData = ProtoStoredJSONField(source='meta_data', allow_null=True, required=False)
 
     def create(self, validated_data):
-        return OutputDataObjectType(**validated_data)
+        return _proto_output_data_object(validated_data)
 
-    def update(self, instance, validated_data):
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        return instance
 
 class ApplicationInterfaceDescriptionSerializer(serializers.Serializer):
-    applicationInterfaceId = serializers.CharField(required=False, allow_null=True, allow_blank=True)
-    applicationName = serializers.CharField()
-    applicationDescription = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    applicationModules = serializers.ListField(child=serializers.CharField(), allow_null=True, required=False)
-    applicationInputs = InputDataObjectTypeSerializer(many=True, allow_null=True, required=False)
-    applicationOutputs = OutputDataObjectTypeSerializer(many=True, allow_null=True, required=False)
-    archiveWorkingDirectory = serializers.BooleanField(default=False)
-    hasOptionalFileInputs = serializers.BooleanField(default=False, read_only=True)
+    """Proto-native serializer for the gRPC ``ApplicationInterfaceDescription``."""
+
+    applicationInterfaceId = serializers.CharField(source='application_interface_id', required=False, allow_null=True, allow_blank=True)
+    applicationName = serializers.CharField(source='application_name')
+    applicationDescription = serializers.CharField(source='application_description', allow_blank=True, allow_null=True, required=False)
+    applicationModules = serializers.ListField(source='application_modules', child=serializers.CharField(), allow_null=True, required=False)
+    applicationInputs = InputDataObjectTypeSerializer(source='application_inputs', many=True, allow_null=True, required=False)
+    applicationOutputs = OutputDataObjectTypeSerializer(source='application_outputs', many=True, allow_null=True, required=False)
+    archiveWorkingDirectory = serializers.BooleanField(source='archive_working_directory', default=False)
+    hasOptionalFileInputs = serializers.BooleanField(source='has_optional_file_inputs', default=False, read_only=True)
 
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:application-interface-detail',
-        lookup_field='applicationInterfaceId',
+        lookup_field='application_interface_id',
         lookup_url_kwarg='app_interface_id', read_only=True)
     userHasWriteAccess = serializers.SerializerMethodField()
     showQueueSettings = serializers.BooleanField(required=False)
     queueSettingsCalculatorId = serializers.CharField(allow_null=True, required=False)
 
     def create(self, validated_data):
-        # Convert inputs/outputs from dicts to Thrift objects
-        inputs_data = validated_data.pop('applicationInputs', None)
-        outputs_data = validated_data.pop('applicationOutputs', None)
-
-        # Remove Django specific fields
+        io = _application_io_pb2()  # noqa: F841 (imported for side-effect symmetry)
+        inputs_data = validated_data.pop('application_inputs', None)
+        outputs_data = validated_data.pop('application_outputs', None)
+        # Remove Django-specific (non-proto) fields.
         validated_data.pop('showQueueSettings', None)
         validated_data.pop('queueSettingsCalculatorId', None)
-        validated_data.pop('url', None)
-        validated_data.pop('userHasWriteAccess', None)
-
-        if 'applicationInterfaceId' in validated_data and validated_data['applicationInterfaceId'] is None:
-            validated_data['applicationInterfaceId'] = ""
-
-        application_interface = ApplicationInterfaceDescription(**validated_data)
-
+        ai = _app_interface_pb2()
+        application_interface = ai.ApplicationInterfaceDescription(
+            application_interface_id=validated_data.get(
+                'application_interface_id', '') or '',
+            application_name=validated_data.get('application_name', '') or '',
+            application_description=validated_data.get(
+                'application_description', '') or '',
+            application_modules=list(
+                validated_data.get('application_modules', []) or []),
+            archive_working_directory=bool(
+                validated_data.get('archive_working_directory', False)),
+        )
         if inputs_data is not None:
-            application_interface.applicationInputs = [InputDataObjectType(**inp) for inp in inputs_data]
+            application_interface.application_inputs.extend(
+                _proto_input_data_object(inp) for inp in inputs_data)
         if outputs_data is not None:
-            application_interface.applicationOutputs = [OutputDataObjectType(**out) for out in outputs_data]
-
+            application_interface.application_outputs.extend(
+                _proto_output_data_object(out) for out in outputs_data)
         return application_interface
 
     def update(self, instance, validated_data):
@@ -732,26 +792,40 @@ class ApplicationInterfaceDescriptionSerializer(serializers.Serializer):
             defaults["show_queue_settings"] = validated_data.pop("showQueueSettings")
         if "queueSettingsCalculatorId" in validated_data:
             defaults["queue_settings_calculator_id"] = validated_data.pop("queueSettingsCalculatorId")
-        application_module_id = instance.applicationModules[0]
+        application_module_id = instance.application_modules[0]
         if defaults:
             models.ApplicationSettings.objects.update_or_create(
                 application_module_id=application_module_id, defaults=defaults
             )
 
-        inputs_data = validated_data.pop('applicationInputs', None)
-        outputs_data = validated_data.pop('applicationOutputs', None)
+        inputs_data = validated_data.pop('application_inputs', None)
+        outputs_data = validated_data.pop('application_outputs', None)
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+        for proto_field in ('application_interface_id', 'application_name',
+                            'application_description', 'archive_working_directory'):
+            if proto_field in validated_data:
+                value = validated_data[proto_field]
+                if proto_field == 'archive_working_directory':
+                    value = bool(value)
+                else:
+                    value = value or ''
+                setattr(instance, proto_field, value)
+        if 'application_modules' in validated_data:
+            instance.application_modules[:] = list(
+                validated_data['application_modules'] or [])
 
         if inputs_data is not None:
-            instance.applicationInputs = [InputDataObjectType(**inp) for inp in inputs_data]
+            del instance.application_inputs[:]
+            instance.application_inputs.extend(
+                _proto_input_data_object(inp) for inp in inputs_data)
         if outputs_data is not None:
-            instance.applicationOutputs = [OutputDataObjectType(**out) for out in outputs_data]
+            del instance.application_outputs[:]
+            instance.application_outputs.extend(
+                _proto_output_data_object(out) for out in outputs_data)
 
         return instance
 
-    def get_userHasWriteAccess(self, appDeployment):
+    def get_userHasWriteAccess(self, appInterface):
         request = self.context['request']
         return request.is_gateway_admin
 
@@ -1216,68 +1290,341 @@ class GridFtpDataMovementSerializer(serializers.Serializer):
         required=False)
 
 
-class ExperimentStatusSerializer(
-        thrift_utils.create_serializer_class(ExperimentStatus)):
-    timeOfStateChange = UTCPosixTimestampDateTimeField()
+def _status_pb2():
+    from airavata_sdk.generated.org.apache.airavata.model.status import status_pb2
+    return status_pb2
 
 
-class ProcessStatusSerializer(
-        thrift_utils.create_serializer_class(ProcessStatus)):
-    timeOfStateChange = UTCPosixTimestampDateTimeField()
+def _experiment_state_field(**kwargs):
+    from airavata.model.status.ttypes import ExperimentState as _T
+    return proto_enum_int_field(
+        _status_pb2().ExperimentState.DESCRIPTOR, _T,
+        proto_prefix='EXPERIMENT_STATE_', **kwargs)
 
 
-class ExperimentSerializer(
-        thrift_utils.create_serializer_class(ExperimentModel)):
-    class Meta:
-        required = ('projectId', 'experimentType', 'experimentName')
-        read_only = ('userName', 'gatewayId')
+def _process_state_field(**kwargs):
+    from airavata.model.status.ttypes import ProcessState as _T
+    return proto_enum_int_field(
+        _status_pb2().ProcessState.DESCRIPTOR, _T,
+        proto_prefix='PROCESS_STATE_', **kwargs)
 
+
+def _task_state_field(**kwargs):
+    from airavata.model.status.ttypes import TaskState as _T
+    return proto_enum_int_field(
+        _status_pb2().TaskState.DESCRIPTOR, _T,
+        proto_prefix='TASK_STATE_', **kwargs)
+
+
+def _job_state_field(**kwargs):
+    from airavata.model.status.ttypes import JobState as _T
+    return proto_enum_int_field(
+        _status_pb2().JobState.DESCRIPTOR, _T,
+        proto_prefix='JOB_STATE_', **kwargs)
+
+
+class ExperimentStatusSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``ExperimentStatus`` message."""
+
+    state = _experiment_state_field(required=False, allow_null=True)
+    timeOfStateChange = UTCPosixTimestampDateTimeField(source='time_of_state_change')
+    reason = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    statusId = serializers.CharField(source='status_id', allow_blank=True, allow_null=True, required=False)
+
+
+class ProcessStatusSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``ProcessStatus`` message."""
+
+    state = _process_state_field(required=False, allow_null=True)
+    timeOfStateChange = UTCPosixTimestampDateTimeField(source='time_of_state_change')
+    reason = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    statusId = serializers.CharField(source='status_id', allow_blank=True, allow_null=True, required=False)
+    processId = serializers.CharField(source='process_id', allow_blank=True, allow_null=True, required=False)
+
+
+class _NestedProcessStatusSerializer(serializers.Serializer):
+    """``ProcessStatus`` nested in the experiment tree (timeOfStateChange is the
+    raw epoch-millis int, matching the old auto-generated field)."""
+
+    state = _process_state_field(required=False, allow_null=True)
+    timeOfStateChange = serializers.IntegerField(source='time_of_state_change', allow_null=True, required=False)
+    reason = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    statusId = serializers.CharField(source='status_id', allow_blank=True, allow_null=True, required=False)
+    processId = serializers.CharField(source='process_id', allow_blank=True, allow_null=True, required=False)
+
+
+class _TaskStatusSerializer(serializers.Serializer):
+    state = _task_state_field(required=False, allow_null=True)
+    timeOfStateChange = serializers.IntegerField(source='time_of_state_change', allow_null=True, required=False)
+    reason = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    statusId = serializers.CharField(source='status_id', allow_blank=True, allow_null=True, required=False)
+
+
+class _JobStatusSerializer(serializers.Serializer):
+    jobState = _job_state_field(source='job_state', required=False, allow_null=True)
+    timeOfStateChange = serializers.IntegerField(source='time_of_state_change', allow_null=True, required=False)
+    reason = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    statusId = serializers.CharField(source='status_id', allow_blank=True, allow_null=True, required=False)
+
+
+class _ErrorModelSerializer(serializers.Serializer):
+    errorId = serializers.CharField(source='error_id', allow_blank=True, allow_null=True, required=False)
+    creationTime = ProtoIntOrNoneField(source='creation_time')
+    actualErrorMessage = serializers.CharField(source='actual_error_message', allow_blank=True, allow_null=True, required=False)
+    userFriendlyMessage = serializers.CharField(source='user_friendly_message', allow_blank=True, allow_null=True, required=False)
+    transientOrPersistent = serializers.BooleanField(source='transient_or_persistent', required=False, default=False)
+    rootCauseErrorIdList = serializers.ListField(source='root_cause_error_id_list', child=serializers.CharField(), required=False)
+
+
+class _ComputationalResourceSchedulingSerializer(serializers.Serializer):
+    resourceHostId = serializers.CharField(source='resource_host_id', allow_blank=True, allow_null=True, required=False)
+    totalCPUCount = serializers.IntegerField(source='total_cpu_count', allow_null=True, required=False)
+    nodeCount = serializers.IntegerField(source='node_count', allow_null=True, required=False)
+    numberOfThreads = serializers.IntegerField(source='number_of_threads', allow_null=True, required=False)
+    queueName = serializers.CharField(source='queue_name', allow_blank=True, allow_null=True, required=False)
+    wallTimeLimit = serializers.IntegerField(source='wall_time_limit', allow_null=True, required=False)
+    totalPhysicalMemory = serializers.IntegerField(source='total_physical_memory', allow_null=True, required=False)
+    chessisNumber = serializers.CharField(source='chessis_number', allow_blank=True, allow_null=True, required=False)
+    staticWorkingDir = serializers.CharField(source='static_working_dir', allow_blank=True, allow_null=True, required=False)
+    overrideLoginUserName = serializers.CharField(source='override_login_user_name', allow_blank=True, allow_null=True, required=False)
+    overrideScratchLocation = serializers.CharField(source='override_scratch_location', allow_blank=True, allow_null=True, required=False)
+    overrideAllocationProjectNumber = serializers.CharField(source='override_allocation_project_number', allow_blank=True, allow_null=True, required=False)
+    mGroupCount = serializers.IntegerField(source='m_group_count', allow_null=True, required=False)
+
+    def create(self, validated_data):
+        from airavata_sdk.generated.org.apache.airavata.model.scheduling import (
+            scheduling_pb2,
+        )
+        d = validated_data
+        return scheduling_pb2.ComputationalResourceSchedulingModel(
+            resource_host_id=d.get('resource_host_id', '') or '',
+            total_cpu_count=d.get('total_cpu_count', 0) or 0,
+            node_count=d.get('node_count', 0) or 0,
+            number_of_threads=d.get('number_of_threads', 0) or 0,
+            queue_name=d.get('queue_name', '') or '',
+            wall_time_limit=d.get('wall_time_limit', 0) or 0,
+            total_physical_memory=d.get('total_physical_memory', 0) or 0,
+            chessis_number=d.get('chessis_number', '') or '',
+            static_working_dir=d.get('static_working_dir', '') or '',
+            override_login_user_name=d.get('override_login_user_name', '') or '',
+            override_scratch_location=d.get('override_scratch_location', '') or '',
+            override_allocation_project_number=d.get('override_allocation_project_number', '') or '',
+            m_group_count=d.get('m_group_count', 0) or 0,
+        )
+
+
+class _UserConfigurationDataSerializer(serializers.Serializer):
+    airavataAutoSchedule = serializers.BooleanField(source='airavata_auto_schedule', required=False, default=False)
+    overrideManualScheduledParams = serializers.BooleanField(source='override_manual_scheduled_params', required=False, default=False)
+    shareExperimentPublicly = serializers.BooleanField(source='share_experiment_publicly', required=False, default=False)
+    computationalResourceScheduling = _ComputationalResourceSchedulingSerializer(
+        source='computational_resource_scheduling', required=False)
+    throttleResources = serializers.BooleanField(source='throttle_resources', required=False, default=False)
+    userDN = serializers.CharField(source='user_dn', allow_blank=True, allow_null=True, required=False)
+    generateCert = serializers.BooleanField(source='generate_cert', required=False, default=False)
+    inputStorageResourceId = serializers.CharField(source='input_storage_resource_id', allow_blank=True, allow_null=True, required=False)
+    outputStorageResourceId = serializers.CharField(source='output_storage_resource_id', allow_blank=True, allow_null=True, required=False)
+    experimentDataDir = serializers.CharField(source='experiment_data_dir', allow_blank=True, allow_null=True, required=False)
+    useUserCRPref = serializers.BooleanField(source='use_user_cr_pref', required=False, default=False)
+    groupResourceProfileId = serializers.CharField(source='group_resource_profile_id', allow_blank=True, allow_null=True, required=False)
+    autoScheduledCompResourceSchedulingList = _ComputationalResourceSchedulingSerializer(source='auto_scheduled_comp_resource_scheduling_list', many=True, required=False)
+
+    def to_representation(self, ucd):
+        ret = super().to_representation(ucd)
+        # proto3 singular sub-message is always present; the old adapter rendered
+        # computationalResourceScheduling only when HasField, else None.
+        if not ucd.HasField('computational_resource_scheduling'):
+            ret['computationalResourceScheduling'] = None
+        return ret
+
+
+class JobSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``JobModel`` message."""
+
+    jobId = serializers.CharField(source='job_id', allow_blank=True, allow_null=True, required=False)
+    taskId = serializers.CharField(source='task_id', allow_blank=True, allow_null=True, required=False)
+    processId = serializers.CharField(source='process_id', allow_blank=True, allow_null=True, required=False)
+    jobDescription = serializers.CharField(source='job_description', allow_blank=True, allow_null=True, required=False)
+    creationTime = ProtoTimestampField(source='creation_time', null_if_zero=True)
+    jobStatuses = _JobStatusSerializer(source='job_statuses', many=True, required=False)
+    computeResourceConsumed = serializers.CharField(source='compute_resource_consumed', allow_blank=True, allow_null=True, required=False)
+    jobName = serializers.CharField(source='job_name', allow_blank=True, allow_null=True, required=False)
+    workingDir = serializers.CharField(source='working_dir', allow_blank=True, allow_null=True, required=False)
+    stdOut = serializers.CharField(source='std_out', allow_blank=True, allow_null=True, required=False)
+    stdErr = serializers.CharField(source='std_err', allow_blank=True, allow_null=True, required=False)
+    exitCode = serializers.IntegerField(source='exit_code', allow_null=True, required=False)
+
+
+class _NestedJobSerializer(JobSerializer):
+    """``JobModel`` nested in the process tree: ``creationTime`` is the raw
+    epoch-millis int (the old auto-generated field), unlike the standalone
+    ``JobSerializer`` (jobs action) which renders ISO."""
+
+    creationTime = ProtoIntOrNoneField(source='creation_time')
+
+
+class _TaskModelSerializer(serializers.Serializer):
+    taskId = serializers.CharField(source='task_id', allow_blank=True, allow_null=True, required=False)
+    taskType = serializers.SerializerMethodField()
+    parentProcessId = serializers.CharField(source='parent_process_id', allow_blank=True, allow_null=True, required=False)
+    creationTime = ProtoIntOrNoneField(source='creation_time')
+    lastUpdateTime = ProtoIntOrNoneField(source='last_update_time')
+    taskStatuses = _TaskStatusSerializer(source='task_statuses', many=True, required=False)
+    taskDetail = serializers.CharField(source='task_detail', allow_blank=True, allow_null=True, required=False)
+    subTaskModel = serializers.CharField(source='sub_task_model', allow_blank=True, allow_null=True, required=False)
+    taskErrors = _ErrorModelSerializer(source='task_errors', many=True, required=False)
+    jobs = _NestedJobSerializer(many=True, required=False)
+    maxRetry = serializers.IntegerField(source='max_retry', allow_null=True, required=False)
+    currentRetry = serializers.IntegerField(source='current_retry', allow_null=True, required=False)
+
+    def get_taskType(self, task):
+        from airavata.model.task.ttypes import TaskTypes as _T
+        from airavata_sdk.generated.org.apache.airavata.model.task import task_pb2
+        field = proto_enum_int_field(
+            task_pb2.TaskTypes.DESCRIPTOR, _T, proto_prefix='TASK_TYPES_')
+        return field.to_representation(task.task_type)
+
+
+class _ProcessModelSerializer(serializers.Serializer):
+    processId = serializers.CharField(source='process_id', allow_blank=True, allow_null=True, required=False)
+    experimentId = serializers.CharField(source='experiment_id', allow_blank=True, allow_null=True, required=False)
+    creationTime = ProtoIntOrNoneField(source='creation_time')
+    lastUpdateTime = ProtoIntOrNoneField(source='last_update_time')
+    processStatuses = _NestedProcessStatusSerializer(source='process_statuses', many=True, required=False)
+    processDetail = serializers.CharField(source='process_detail', allow_blank=True, allow_null=True, required=False)
+    applicationInterfaceId = serializers.CharField(source='application_interface_id', allow_blank=True, allow_null=True, required=False)
+    applicationDeploymentId = serializers.CharField(source='application_deployment_id', allow_blank=True, allow_null=True, required=False)
+    computeResourceId = serializers.CharField(source='compute_resource_id', allow_blank=True, allow_null=True, required=False)
+    processInputs = InputDataObjectTypeSerializer(source='process_inputs', many=True, required=False)
+    processOutputs = OutputDataObjectTypeSerializer(source='process_outputs', many=True, required=False)
+    processResourceSchedule = serializers.SerializerMethodField()
+    tasks = _TaskModelSerializer(many=True, required=False)
+    taskDag = serializers.CharField(source='task_dag', allow_blank=True, allow_null=True, required=False)
+    processErrors = _ErrorModelSerializer(source='process_errors', many=True, required=False)
+    gatewayExecutionId = serializers.CharField(source='gateway_execution_id', allow_blank=True, allow_null=True, required=False)
+    enableEmailNotification = serializers.BooleanField(source='enable_email_notification', required=False, default=False)
+    emailAddresses = serializers.ListField(source='email_addresses', child=serializers.CharField(), required=False)
+    inputStorageResourceId = serializers.CharField(source='input_storage_resource_id', allow_blank=True, allow_null=True, required=False)
+    outputStorageResourceId = serializers.CharField(source='output_storage_resource_id', allow_blank=True, allow_null=True, required=False)
+    userDn = serializers.CharField(source='user_dn', allow_blank=True, allow_null=True, required=False)
+    generateCert = serializers.BooleanField(source='generate_cert', required=False, default=False)
+    experimentDataDir = serializers.CharField(source='experiment_data_dir', allow_blank=True, allow_null=True, required=False)
+    userName = serializers.CharField(source='user_name', allow_blank=True, allow_null=True, required=False)
+    useUserCRPref = serializers.BooleanField(source='use_user_cr_pref', required=False, default=False)
+    groupResourceProfileId = serializers.CharField(source='group_resource_profile_id', allow_blank=True, allow_null=True, required=False)
+    processWorkflows = serializers.SerializerMethodField()
+
+    def get_processResourceSchedule(self, proc):
+        if not proc.HasField('process_resource_schedule'):
+            return None
+        return _ComputationalResourceSchedulingSerializer(
+            proc.process_resource_schedule, context=self.context).data
+
+    def get_processWorkflows(self, proc):
+        # The legacy workflow-engine subsystem is not adapted (rarely populated);
+        # an empty list matches the Thrift default for non-workflow processes.
+        return []
+
+
+def _experiment_type_field(**kwargs):
+    from airavata.model.experiment.ttypes import ExperimentType as _T
+    from airavata_sdk.generated.org.apache.airavata.model.experiment import (
+        experiment_pb2,
+    )
+    return proto_enum_int_field(
+        experiment_pb2.ExperimentType.DESCRIPTOR, _T,
+        proto_prefix='EXPERIMENT_TYPE_', **kwargs)
+
+
+def _experiment_pb2():
+    from airavata_sdk.generated.org.apache.airavata.model.experiment import (
+        experiment_pb2,
+    )
+    return experiment_pb2
+
+
+class ExperimentSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``ExperimentModel`` message.
+
+    The deepest read model: the processes -> tasks -> jobs tree (each with its
+    status list), user configuration + scheduling, inputs/outputs, status, and
+    errors. ``save()`` returns a proto ``ExperimentModel`` for the facade.
+    """
+
+    experimentId = serializers.CharField(source='experiment_id', read_only=True)
+    projectId = serializers.CharField(source='project_id')
+    gatewayId = serializers.CharField(source='gateway_id', read_only=True)
+    experimentType = _experiment_type_field(source='experiment_type', required=False, allow_null=True)
+    userName = serializers.CharField(source='user_name', read_only=True)
+    experimentName = serializers.CharField(source='experiment_name')
+    creationTime = ProtoTimestampField(source='creation_time', null_if_zero=True, read_only=True)
+    description = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    executionId = serializers.CharField(source='execution_id', allow_blank=True, allow_null=True, required=False)
+    gatewayExecutionId = serializers.CharField(source='gateway_execution_id', allow_blank=True, allow_null=True, required=False)
+    gatewayInstanceId = serializers.CharField(source='gateway_instance_id', allow_blank=True, allow_null=True, required=False)
+    enableEmailNotification = serializers.BooleanField(source='enable_email_notification', required=False, default=False)
+    emailAddresses = serializers.ListField(source='email_addresses', child=serializers.CharField(), required=False)
+    userConfigurationData = _UserConfigurationDataSerializer(
+        source='user_configuration_data', required=False)
+    experimentInputs = OrderedListField(
+        source='experiment_inputs', order_by='inputOrder',
+        child=InputDataObjectTypeSerializer(), required=False)
+    experimentOutputs = OutputDataObjectTypeSerializer(
+        source='experiment_outputs', many=True, required=False)
+    experimentStatus = ExperimentStatusSerializer(
+        source='experiment_status', many=True, required=False)
+    errors = _ErrorModelSerializer(many=True, required=False)
+    processes = _ProcessModelSerializer(many=True, required=False)
+    workflow = serializers.SerializerMethodField()
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:experiment-detail',
-        lookup_field='experimentId',
-        lookup_url_kwarg='experiment_id')
+        lookup_field='experiment_id', lookup_url_kwarg='experiment_id')
     full_experiment = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:full-experiment-detail',
-        lookup_field='experimentId',
-        lookup_url_kwarg='experiment_id')
+        lookup_field='experiment_id', lookup_url_kwarg='experiment_id')
     project = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:project-detail',
-        lookup_field='projectId',
-        lookup_url_kwarg='project_id')
+        lookup_field='project_id', lookup_url_kwarg='project_id')
     jobs = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:experiment-jobs',
-        lookup_field='experimentId',
-        lookup_url_kwarg='experiment_id')
+        lookup_field='experiment_id', lookup_url_kwarg='experiment_id')
     shared_entity = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:shared-entity-detail',
-        lookup_field='experimentId',
-        lookup_url_kwarg='entity_id')
-    experimentInputs = OrderedListField(
-        order_by='inputOrder',
-        child=InputDataObjectTypeSerializer(),
-        allow_null=True)
-    experimentOutputs = serializers.ListField(
-        child=OutputDataObjectTypeSerializer(),
-        allow_null=True)
-    creationTime = UTCPosixTimestampDateTimeField(allow_null=True)
-    experimentStatus = ExperimentStatusSerializer(many=True, allow_null=True)
+        lookup_field='experiment_id', lookup_url_kwarg='entity_id')
     userHasWriteAccess = serializers.SerializerMethodField()
 
+    def get_workflow(self, experiment):
+        # The legacy workflow-engine subsystem is not adapted (rarely populated).
+        return None
+
     def get_userHasWriteAccess(self, experiment):
-        return user_has_access(self.context['request'], experiment.experimentId)
+        return user_has_access(self.context['request'], experiment.experiment_id)
 
     def to_representation(self, experiment):
         result = super().to_representation(experiment)
+        # proto3 singular sub-message is always present; the old adapter rendered
+        # userConfigurationData only when HasField, else None.
+        if not experiment.HasField('user_configuration_data'):
+            result['userConfigurationData'] = None
         self._add_intermediate_output_information(experiment, result)
         return result
 
+    def create(self, validated_data):
+        return _experiment_request(validated_data)
+
+    def update(self, instance, validated_data):
+        return _experiment_request(validated_data)
+
     def _add_intermediate_output_information(self, experiment, representation):
         request = self.context['request']
-
+        from airavata_sdk.generated.org.apache.airavata.model.status import (
+            status_pb2,
+        )
         # If experiment is EXECUTING, add intermediateOutput information to
-        # experiment outputs
-        if (experiment.experimentStatus and
-                experiment.experimentStatus[-1].state == ExperimentState.EXECUTING):
+        # experiment outputs.
+        if (experiment.experiment_status and
+                experiment.experiment_status[-1].state ==
+                status_pb2.ExperimentState.EXPERIMENT_STATE_EXECUTING):
             for output in representation["experimentOutputs"]:
                 output["intermediateOutput"] = {"processStatus": None}
                 try:
@@ -1296,6 +1643,60 @@ class ExperimentSerializer(
                     output["intermediateOutput"]["dataProducts"] = data_product_serializer.data
                 except Exception:
                     log.debug("Failed to get intermediate output status", exc_info=True)
+
+
+def _experiment_request(validated_data):
+    """Build a proto ``ExperimentModel`` from validated write data.
+
+    Only the user-submittable fields are carried; status / errors / processes /
+    workflow are server-managed (the old write adapter dropped them too).
+    """
+    e = _experiment_pb2()
+    d = validated_data
+    ucd = d.get('user_configuration_data')
+    kwargs = dict(
+        experiment_id=d.get('experiment_id', '') or '',
+        project_id=d.get('project_id', '') or '',
+        gateway_id=d.get('gateway_id', '') or '',
+        experiment_type=d.get('experiment_type', 0) or 0,
+        user_name=d.get('user_name', '') or '',
+        experiment_name=d.get('experiment_name', '') or '',
+        description=d.get('description', '') or '',
+        execution_id=d.get('execution_id', '') or '',
+        enable_email_notification=bool(d.get('enable_email_notification', False)),
+        email_addresses=list(d.get('email_addresses', []) or []),
+        experiment_inputs=[
+            _proto_input_data_object(i)
+            for i in d.get('experiment_inputs', []) or []],
+        experiment_outputs=[
+            _proto_output_data_object(o)
+            for o in d.get('experiment_outputs', []) or []],
+    )
+    if ucd is not None:
+        kwargs['user_configuration_data'] = _user_configuration_request(ucd)
+    return e.ExperimentModel(**kwargs)
+
+
+def _user_configuration_request(d):
+    e = _experiment_pb2()
+    crs = d.get('computational_resource_scheduling')
+    kwargs = dict(
+        airavata_auto_schedule=bool(d.get('airavata_auto_schedule', False)),
+        override_manual_scheduled_params=bool(d.get('override_manual_scheduled_params', False)),
+        share_experiment_publicly=bool(d.get('share_experiment_publicly', False)),
+        throttle_resources=bool(d.get('throttle_resources', False)),
+        user_dn=d.get('user_dn', '') or '',
+        generate_cert=bool(d.get('generate_cert', False)),
+        input_storage_resource_id=d.get('input_storage_resource_id', '') or '',
+        output_storage_resource_id=d.get('output_storage_resource_id', '') or '',
+        experiment_data_dir=d.get('experiment_data_dir', '') or '',
+        use_user_cr_pref=bool(d.get('use_user_cr_pref', False)),
+        group_resource_profile_id=d.get('group_resource_profile_id', '') or '',
+    )
+    if crs is not None:
+        kwargs['computational_resource_scheduling'] = (
+            _ComputationalResourceSchedulingSerializer().create(crs))
+    return e.UserConfigurationDataModel(**kwargs)
 
 
 class DataReplicaLocationSerializer(
@@ -1373,7 +1774,7 @@ class FullExperiment:
                  inputDataProducts=None, applicationModule=None,
                  computeResource=None, jobDetails=None, outputViews=None):
         self.experiment = experimentModel
-        self.experimentId = experimentModel.experimentId
+        self.experimentId = experimentModel.experiment_id
         self.project = project
         self.outputDataProducts = outputDataProducts
         self.inputDataProducts = inputDataProducts
@@ -1381,10 +1782,6 @@ class FullExperiment:
         self.computeResource = computeResource
         self.jobDetails = jobDetails
         self.outputViews = outputViews
-
-
-class JobSerializer(thrift_utils.create_serializer_class(JobModel)):
-    creationTime = UTCPosixTimestampDateTimeField()
 
 
 class FullExperimentSerializer(serializers.Serializer):
