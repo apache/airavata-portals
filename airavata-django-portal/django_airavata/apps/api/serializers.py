@@ -15,11 +15,10 @@ from airavata.model.appcatalog.groupresourceprofile.ttypes import (
     AwsComputeResourcePreference
 )
 from airavata.model.appcatalog.parser.ttypes import IOType as _ThriftIOType
-from airavata.model.group.ttypes import GroupModel, ResourcePermissionType
+from airavata.model.group.ttypes import ResourcePermissionType
 from airavata.model.status.ttypes import (
     ExperimentState
 )
-from airavata.model.user.ttypes import UserProfile
 from airavata_django_portal_sdk import (
     experiment_util
 )
@@ -407,7 +406,30 @@ class OrderedListField(serializers.ListField):
         return validated_data
 
 
-class GroupSerializer(thrift_utils.create_serializer_class(GroupModel)):
+def _group_manager_pb2():
+    from airavata_sdk.generated.org.apache.airavata.model.group import (
+        group_manager_pb2,
+    )
+    return group_manager_pb2
+
+
+class GroupSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``GroupModel`` message.
+
+    On update the added/removed member/admin diffs the view needs are stashed on
+    the serializer instance (``self.added_members`` etc.) — a protobuf message
+    can't carry arbitrary attributes the way the old Thrift instance did.
+    """
+
+    id = serializers.CharField(read_only=True)
+    name = serializers.CharField()
+    ownerId = serializers.CharField(source='owner_id', read_only=True)
+    description = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False)
+    members = serializers.ListField(
+        child=serializers.CharField(), required=False)
+    admins = serializers.ListField(
+        child=serializers.CharField(), required=False)
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:group-detail',
         lookup_field='id',
@@ -419,39 +441,43 @@ class GroupSerializer(thrift_utils.create_serializer_class(GroupModel)):
     isReadOnlyGatewayAdminsGroup = serializers.SerializerMethodField()
     isDefaultGatewayUsersGroup = serializers.SerializerMethodField()
 
-    class Meta:
-        required = ('name',)
-        read_only = ('ownerId',)
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if ret.get('description') == '':
+            ret['description'] = None
+        return ret
 
     def create(self, validated_data):
-        group = super().create(validated_data)
-        group.ownerId = self.context['request'].user.username + \
-            "@" + settings.GATEWAY_ID
-        return group
+        return _group_manager_pb2().GroupModel(
+            name=validated_data.get('name', '') or '',
+            description=validated_data.get('description', '') or '',
+            members=list(validated_data.get('members', []) or []),
+            admins=list(validated_data.get('admins', []) or []),
+            owner_id=(self.context['request'].user.username + "@" +
+                      settings.GATEWAY_ID),
+        )
 
     def update(self, instance, validated_data):
-        instance.name = validated_data.get('name', instance.name)
-        instance.description = validated_data.get(
-            'description', instance.description)
-        # Calculate added and removed members
+        if 'name' in validated_data:
+            instance.name = validated_data['name'] or ''
+        if 'description' in validated_data:
+            instance.description = validated_data['description'] or ''
+        # Calculate added and removed members/admins; stash on the serializer for
+        # the view (a proto message can't carry the old Thrift ``_added_*`` attrs).
         old_members = set(instance.members)
         new_members = set(validated_data.get('members', instance.members))
-        removed_members = old_members - new_members
-        added_members = new_members - old_members
-        instance._removed_members = list(removed_members)
-        instance._added_members = list(added_members)
-        instance.members = validated_data.get('members', instance.members)
-        # Calculate added and removed admins
+        self.removed_members = list(old_members - new_members)
+        self.added_members = list(new_members - old_members)
+        instance.members[:] = list(validated_data.get('members', instance.members))
         old_admins = set(instance.admins)
         new_admins = set(validated_data.get('admins', instance.admins))
-        removed_admins = old_admins - new_admins
-        added_admins = new_admins - old_admins
-        instance._removed_admins = list(removed_admins)
-        instance._added_admins = list(added_admins)
-        instance.admins = validated_data.get('admins', instance.admins)
-        # Add new admins that aren't members to the added_members list
-        instance._added_members.extend(list(added_admins - new_members))
-        instance.members.extend(list(added_admins - new_members))
+        self.removed_admins = list(old_admins - new_admins)
+        self.added_admins = list(new_admins - old_admins)
+        instance.admins[:] = list(validated_data.get('admins', instance.admins))
+        # Add new admins that aren't members to the added_members list.
+        extra = list(new_admins - new_members)
+        self.added_members.extend(extra)
+        instance.members.extend(extra)
         return instance
 
     def get_isAdmin(self, group):
@@ -462,9 +488,9 @@ class GroupSerializer(thrift_utils.create_serializer_class(GroupModel)):
 
     def get_isOwner(self, group):
         request = self.context['request']
-        return group.ownerId == (request.user.username +
-                                 "@" +
-                                 settings.GATEWAY_ID)
+        return group.owner_id == (request.user.username +
+                                  "@" +
+                                  settings.GATEWAY_ID)
 
     def get_isMember(self, group):
         request = self.context['request']
@@ -1916,10 +1942,73 @@ class ExperimentSummarySerializer(BaseExperimentSummarySerializer):
             self.context['request'], experiment.experiment_id)
 
 
-class UserProfileSerializer(
-        thrift_utils.create_serializer_class(UserProfile)):
-    creationTime = UTCPosixTimestampDateTimeField()
-    lastAccessTime = UTCPosixTimestampDateTimeField()
+def _user_profile_pb2():
+    from airavata_sdk.generated.org.apache.airavata.model.user import (
+        user_profile_pb2,
+    )
+    return user_profile_pb2
+
+
+def _user_status_field(**kwargs):
+    from airavata.model.user.ttypes import Status as _T
+    return proto_enum_int_field(
+        _user_profile_pb2().Status.DESCRIPTOR, _T, proto_prefix='STATUS_',
+        **kwargs)
+
+
+class UserProfileSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``UserProfile`` message.
+
+    Preserves the Thrift serializer's attribute quirks byte-for-byte: ``State``
+    (capitalised), ``orginationAffiliation`` (the Thrift misspelling), and
+    ``labeledURI`` — a Thrift *list* field fed the proto string, so the old
+    auto-generated ListField iterated it character by character; reproduced here.
+    The ``nsfDemographics``/``customDashboard`` structs render null.
+    """
+
+    userModelVersion = serializers.CharField(source='user_model_version', allow_blank=True, allow_null=True, required=False)
+    airavataInternalUserId = serializers.CharField(source='airavata_internal_user_id', allow_blank=True, allow_null=True, required=False)
+    userId = serializers.CharField(source='user_id', allow_blank=True, allow_null=True, required=False)
+    gatewayId = serializers.CharField(source='gateway_id', allow_blank=True, allow_null=True, required=False)
+    emails = serializers.ListField(child=serializers.CharField(), required=False)
+    firstName = serializers.CharField(source='first_name', allow_blank=True, allow_null=True, required=False)
+    lastName = serializers.CharField(source='last_name', allow_blank=True, allow_null=True, required=False)
+    middleName = serializers.CharField(source='middle_name', allow_blank=True, allow_null=True, required=False)
+    namePrefix = serializers.CharField(source='name_prefix', allow_blank=True, allow_null=True, required=False)
+    nameSuffix = serializers.CharField(source='name_suffix', allow_blank=True, allow_null=True, required=False)
+    orcidId = serializers.CharField(source='orcid_id', allow_blank=True, allow_null=True, required=False)
+    phones = serializers.ListField(child=serializers.CharField(), required=False)
+    country = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    nationality = serializers.ListField(child=serializers.CharField(), required=False)
+    homeOrganization = serializers.CharField(source='home_organization', allow_blank=True, allow_null=True, required=False)
+    orginationAffiliation = serializers.CharField(source='origination_affiliation', allow_blank=True, allow_null=True, required=False)
+    creationTime = ProtoTimestampField(source='creation_time', null_if_zero=True)
+    lastAccessTime = ProtoTimestampField(source='last_access_time', null_if_zero=True)
+    validUntil = ProtoIntOrNoneField(source='valid_until')
+    State = _user_status_field(source='state', required=False, allow_null=True)
+    comments = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    labeledURI = serializers.ListField(source='labeled_uri', child=serializers.CharField(), required=False)
+    gpgKey = serializers.CharField(source='gpg_key', allow_blank=True, allow_null=True, required=False)
+    timeZone = serializers.CharField(source='time_zone', allow_blank=True, allow_null=True, required=False)
+    nsfDemographics = serializers.SerializerMethodField()
+    customDashboard = serializers.SerializerMethodField()
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        # The old adapter mapped optional proto strings to None when empty.
+        for f in ('userModelVersion', 'firstName', 'lastName', 'middleName',
+                  'namePrefix', 'nameSuffix', 'orcidId', 'country',
+                  'homeOrganization', 'orginationAffiliation', 'comments',
+                  'gpgKey', 'timeZone'):
+            if ret.get(f) == '':
+                ret[f] = None
+        return ret
+
+    def get_nsfDemographics(self, instance):
+        return None
+
+    def get_customDashboard(self, instance):
+        return None
 
 
 class ComputeResourceReservationSerializer(
@@ -2850,10 +2939,10 @@ class SharedEntitySerializer(serializers.Serializer):
         # Compute lists of ids to grant/revoke READ/WRITE/MANAGE_SHARING
         # permission
         existing_user_permissions = {
-            user['user'].airavataInternalUserId: user['permissionType']
+            user['user'].airavata_internal_user_id: user['permissionType']
             for user in instance['userPermissions']}
         new_user_permissions = {
-            user['user']['airavataInternalUserId']:
+            user['user']['airavata_internal_user_id']:
                 user['permissionType']
             for user in validated_data['userPermissions']}
 
@@ -2873,6 +2962,8 @@ class SharedEntitySerializer(serializers.Serializer):
         new_group_permissions = {
             group['group']['id']: group['permissionType']
             for group in validated_data['groupPermissions']}
+        UserProfile = _user_profile_pb2().UserProfile
+        GroupModel = _group_manager_pb2().GroupModel
 
         (
             group_grant_read_permission,
@@ -2972,7 +3063,7 @@ class SharedEntitySerializer(serializers.Serializer):
 
     def get_isOwner(self, shared_entity):
         request = self.context['request']
-        return shared_entity['owner'].userId == request.user.username
+        return shared_entity['owner'].user_id == request.user.username
 
     def get_hasSharingPermission(self, shared_entity):
         request = self.context['request']

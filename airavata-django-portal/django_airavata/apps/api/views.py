@@ -15,7 +15,6 @@ from airavata.model.appcatalog.groupresourceprofile.ttypes import (
     ResourceType
 )
 from airavata.model.group.ttypes import ResourcePermissionType
-from airavata.model.user.ttypes import Status
 from airavata_django_portal_sdk import (
     experiment_util,
     queue_settings_calculators
@@ -129,43 +128,39 @@ class GroupViewSet(APIBackedViewSet):
 
         class GroupResultsIterator(APIResultIterator):
             def get_results(self, limit=-1, offset=0):
-                groups = [
-                    grpc_adapters.group(g)
-                    for g in view.request.airavata.sharing.gm_get_groups()
-                ]
+                groups = list(view.request.airavata.sharing.gm_get_groups())
                 end = offset + limit if limit > 0 else len(groups)
                 return groups[offset:end] if groups else []
 
         return GroupResultsIterator()
 
     def get_instance(self, lookup_value):
-        return grpc_adapters.group(
-            self.request.airavata.sharing.gm_get_group(lookup_value))
+        return self.request.airavata.sharing.gm_get_group(lookup_value)
 
     def perform_create(self, serializer):
         group = serializer.save()
-        group_id = self.request.airavata.sharing.gm_create_group(
-            grpc_requests.group(group))
+        group_id = self.request.airavata.sharing.gm_create_group(group)
         group.id = group_id
-        users_added_to_group = set(group.members) - {group.ownerId}
+        users_added_to_group = set(group.members) - {group.owner_id}
         self._send_users_added_to_group(users_added_to_group, group)
 
     def perform_update(self, serializer):
         group = serializer.save()
         sharing = self.request.airavata.sharing
-        if len(group._added_members) > 0:
-            sharing.gm_add_users_to_group(group._added_members, group.id)
-            self._send_users_added_to_group(group._added_members, group)
-        if len(group._removed_members) > 0:
-            sharing.gm_remove_users_from_group(group._removed_members, group.id)
-        if len(group._added_admins) > 0:
-            sharing.gm_add_group_admins(group.id, group._added_admins)
-        if len(group._removed_admins) > 0:
-            sharing.gm_remove_group_admins(group.id, group._removed_admins)
-        sharing.gm_update_group(grpc_requests.group(group))
+        if len(serializer.added_members) > 0:
+            sharing.gm_add_users_to_group(serializer.added_members, group.id)
+            self._send_users_added_to_group(serializer.added_members, group)
+        if len(serializer.removed_members) > 0:
+            sharing.gm_remove_users_from_group(
+                serializer.removed_members, group.id)
+        if len(serializer.added_admins) > 0:
+            sharing.gm_add_group_admins(group.id, serializer.added_admins)
+        if len(serializer.removed_admins) > 0:
+            sharing.gm_remove_group_admins(group.id, serializer.removed_admins)
+        sharing.gm_update_group(group)
 
     def perform_destroy(self, group):
-        self.request.airavata.sharing.gm_delete_group(group.id, group.ownerId)
+        self.request.airavata.sharing.gm_delete_group(group.id, group.owner_id)
 
     def _send_users_added_to_group(self, internal_user_ids, group):
         for internal_user_id in internal_user_ids:
@@ -955,16 +950,12 @@ class UserProfileViewSet(mixins.RetrieveModelMixin,
     serializer_class = serializers.UserProfileSerializer
 
     def get_list(self):
-        return [
-            grpc_adapters.user_profile(p)
-            for p in self.request.airavata.iam.get_all_user_profiles_in_gateway(
-                self.gateway_id, 0, -1)
-        ]
+        return list(self.request.airavata.iam.get_all_user_profiles_in_gateway(
+            self.gateway_id, 0, -1))
 
     def get_instance(self, lookup_value):
-        return grpc_adapters.user_profile(
-            self.request.airavata.iam.get_user_profile_by_id(
-                self.request.user.username, self.gateway_id))
+        return self.request.airavata.iam.get_user_profile_by_id(
+            self.request.user.username, self.gateway_id)
 
 
 class GroupResourceProfileViewSet(APIBackedViewSet):
@@ -1223,9 +1214,8 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
 
     def _load_user_profile(self, user_id):
         username = user_id[0:user_id.rindex('@')]
-        return grpc_adapters.user_profile(
-            self.request.airavata.iam.get_user_profile_by_id(
-                username, settings.GATEWAY_ID))
+        return self.request.airavata.iam.get_user_profile_by_id(
+            username, settings.GATEWAY_ID)
 
     def _load_accessible_groups(self, entity_id, permission_type):
         groups = self.request.airavata.sharing.get_all_accessible_groups(
@@ -1238,8 +1228,7 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
         return {group_id: permission_type for group_id in groups}
 
     def _load_group(self, group_id):
-        return grpc_adapters.group(
-            self.request.airavata.sharing.gm_get_group(group_id))
+        return self.request.airavata.sharing.gm_get_group(group_id)
 
     def perform_update(self, serializer):
         shared_entity = serializer.save()
@@ -1840,7 +1829,7 @@ class IAMUserViewSet(mixins.RetrieveModelMixin,
         user_id = managed_user_profile['airavataInternalUserId']
         added_groups = []
         for group_id in managed_user_profile['_added_group_ids']:
-            group = grpc_adapters.group(sharing.gm_get_group(group_id))
+            group = sharing.gm_get_group(group_id)
             sharing.gm_add_users_to_group([user_id], group_id)
             added_groups.append(group)
         if len(added_groups) > 0:
@@ -1887,31 +1876,31 @@ class IAMUserViewSet(mixins.RetrieveModelMixin,
         return Response(serializer.data)
 
     def _convert_user_profile(self, user_profile):
-        # iam_admin_client returns a protobuf UserProfile; adapt it to the Thrift
-        # attribute shape so the field reads and ``State`` comparison below are
-        # unchanged.
-        user_profile = grpc_adapters.user_profile(user_profile)
+        # iam_admin_client returns a protobuf UserProfile; read proto fields
+        # directly and build the dict the IAMUserProfile serializer consumes.
+        from airavata_sdk.generated.org.apache.airavata.model.user import (
+            user_profile_pb2,
+        )
+        Status = user_profile_pb2.Status
         airavata_user_profile_exists = self.request.airavata.iam.does_user_exist(
-            user_profile.userId, self.gateway_id)
+            user_profile.user_id, self.gateway_id)
         groups = []
         if airavata_user_profile_exists:
-            groups = [
-                grpc_adapters.group(g)
-                for g in self.request.airavata.sharing.gm_get_all_groups_user_belongs(
-                    user_profile.airavataInternalUserId)
-            ]
+            groups = list(
+                self.request.airavata.sharing.gm_get_all_groups_user_belongs(
+                    user_profile.airavata_internal_user_id))
         return {
-            'airavataInternalUserId': user_profile.airavataInternalUserId,
-            'userId': user_profile.userId,
-            'gatewayId': user_profile.gatewayId,
+            'airavataInternalUserId': user_profile.airavata_internal_user_id,
+            'userId': user_profile.user_id,
+            'gatewayId': user_profile.gateway_id,
             'email': user_profile.emails[0],
-            'firstName': user_profile.firstName,
-            'lastName': user_profile.lastName,
-            'enabled': user_profile.State == Status.ACTIVE,
-            'emailVerified': (user_profile.State == Status.CONFIRMED or
-                              user_profile.State == Status.ACTIVE),
+            'firstName': user_profile.first_name,
+            'lastName': user_profile.last_name,
+            'enabled': user_profile.state == Status.ACTIVE,
+            'emailVerified': (user_profile.state == Status.CONFIRMED or
+                              user_profile.state == Status.ACTIVE),
             'airavataUserProfileExists': airavata_user_profile_exists,
-            'creationTime': user_profile.creationTime,
+            'creationTime': user_profile.creation_time,
             'groups': groups
         }
 
@@ -1985,6 +1974,10 @@ class UnverifiedEmailUserViewSet(mixins.ListModelMixin,
 
     def _get_unverified_email_user_profiles(
             self, limit=-1, offset=0, username=None):
+        from airavata_sdk.generated.org.apache.airavata.model.user import (
+            user_profile_pb2,
+        )
+        Status = user_profile_pb2.Status
         unverified_emails = EmailVerification.objects.filter(
             verified=False).order_by('username').values('username').distinct()
         if username is not None:
@@ -1996,23 +1989,23 @@ class UnverifiedEmailUserViewSet(mixins.ListModelMixin,
             unverified_username = unverified_email['username']
             if iam_admin_client.is_user_exist(unverified_username):
                 user_profile = iam_admin_client.get_user(unverified_username)
-                if (user_profile.State == Status.CONFIRMED or
-                        user_profile.State == Status.ACTIVE):
+                if (user_profile.state == Status.CONFIRMED or
+                        user_profile.state == Status.ACTIVE):
                     # TODO: test this
                     EmailVerification.objects.filter(
                         username=unverified_username).update(
                         verified=True)
                     continue
                 results.append({
-                    'userId': user_profile.userId,
-                    'gatewayId': user_profile.gatewayId,
+                    'userId': user_profile.user_id,
+                    'gatewayId': user_profile.gateway_id,
                     'email': user_profile.emails[0],
-                    'firstName': user_profile.firstName,
-                    'lastName': user_profile.lastName,
-                    'enabled': user_profile.State == Status.ACTIVE,
-                    'emailVerified': (user_profile.State == Status.CONFIRMED or
-                                      user_profile.State == Status.ACTIVE),
-                    'creationTime': user_profile.creationTime,
+                    'firstName': user_profile.first_name,
+                    'lastName': user_profile.last_name,
+                    'enabled': user_profile.state == Status.ACTIVE,
+                    'emailVerified': (user_profile.state == Status.CONFIRMED or
+                                      user_profile.state == Status.ACTIVE),
+                    'creationTime': user_profile.creation_time,
                 })
             else:
                 # Delete the EmailVerification records since that user no

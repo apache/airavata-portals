@@ -223,18 +223,6 @@ def group_resource_profile(t):
     )
 
 
-def group(t):
-    """Thrift ``GroupModel`` -> proto ``GroupModel`` request message."""
-    return _pb2("group.group_manager_pb2").GroupModel(
-        id=t.id or '',
-        name=t.name or '',
-        owner_id=t.ownerId or '',
-        description=t.description or '',
-        members=list(t.members or []),
-        admins=list(t.admins or []),
-    )
-
-
 def data_product_for_upload(*, gateway_id, owner_name, product_name, file_path,
                             storage_resource_id, content_type=None, product_size=0):
     """Build a proto ``DataProductModel`` to register for a freshly uploaded file.
