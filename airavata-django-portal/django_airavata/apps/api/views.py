@@ -941,14 +941,16 @@ class UserProfileViewSet(mixins.RetrieveModelMixin,
     serializer_class = serializers.UserProfileSerializer
 
     def get_list(self):
-        user_profile_client = self.request.profile_service['user_profile']
-        return user_profile_client.getAllUserProfilesInGateway(
-            self.authz_token, self.gateway_id, 0, -1)
+        return [
+            grpc_adapters.user_profile(p)
+            for p in self.request.airavata.iam.get_all_user_profiles_in_gateway(
+                self.gateway_id, 0, -1)
+        ]
 
     def get_instance(self, lookup_value):
-        user_profile_client = self.request.profile_service['user_profile']
-        return user_profile_client.getUserProfileById(
-            self.authz_token, self.request.user.username, self.gateway_id)
+        return grpc_adapters.user_profile(
+            self.request.airavata.iam.get_user_profile_by_id(
+                self.request.user.username, self.gateway_id))
 
 
 class GroupResourceProfileViewSet(APIBackedViewSet):
@@ -1795,28 +1797,23 @@ class IAMUserViewSet(mixins.RetrieveModelMixin,
 
     def perform_update(self, serializer):
         managed_user_profile = serializer.save()
-        group_manager_client = self.request.profile_service['group_manager']
-        user_profile_client = self.request.profile_service['user_profile']
+        sharing = self.request.airavata.sharing
         user_id = managed_user_profile['airavataInternalUserId']
         added_groups = []
         for group_id in managed_user_profile['_added_group_ids']:
-            group = group_manager_client.getGroup(self.authz_token, group_id)
-            group_manager_client.addUsersToGroup(
-                self.authz_token, [user_id], group_id)
+            group = grpc_adapters.group(sharing.gm_get_group(group_id))
+            sharing.gm_add_users_to_group([user_id], group_id)
             added_groups.append(group)
         if len(added_groups) > 0:
-            user_profile = user_profile_client.getUserProfileById(
-                self.authz_token,
-                managed_user_profile['userId'],
-                settings.GATEWAY_ID)
+            user_profile = self.request.airavata.iam.get_user_profile_by_id(
+                managed_user_profile['userId'], settings.GATEWAY_ID)
             signals.user_added_to_group.send(
                 sender=self.__class__,
                 user=user_profile,
                 groups=added_groups,
                 request=self.request)
         for group_id in managed_user_profile['_removed_group_ids']:
-            group_manager_client.removeUsersFromGroup(
-                self.authz_token, [user_id], group_id)
+            sharing.gm_remove_users_from_group([user_id], group_id)
 
     def perform_destroy(self, instance):
         iam_admin_client.delete_user(instance['userId'])
@@ -1851,14 +1848,19 @@ class IAMUserViewSet(mixins.RetrieveModelMixin,
         return Response(serializer.data)
 
     def _convert_user_profile(self, user_profile):
-        user_profile_client = self.request.profile_service['user_profile']
-        group_manager_client = self.request.profile_service['group_manager']
-        airavata_user_profile_exists = user_profile_client.doesUserExist(
-            self.authz_token, user_profile.userId, self.gateway_id)
+        # iam_admin_client returns a protobuf UserProfile; adapt it to the Thrift
+        # attribute shape so the field reads and ``State`` comparison below are
+        # unchanged.
+        user_profile = grpc_adapters.user_profile(user_profile)
+        airavata_user_profile_exists = self.request.airavata.iam.does_user_exist(
+            user_profile.userId, self.gateway_id)
         groups = []
         if airavata_user_profile_exists:
-            groups = group_manager_client.getAllGroupsUserBelongs(
-                self.authz_token, user_profile.airavataInternalUserId)
+            groups = [
+                grpc_adapters.group(g)
+                for g in self.request.airavata.sharing.gm_get_all_groups_user_belongs(
+                    user_profile.airavataInternalUserId)
+            ]
         return {
             'airavataInternalUserId': user_profile.airavataInternalUserId,
             'userId': user_profile.userId,
@@ -2019,11 +2021,11 @@ class APIServerStatusCheckView(APIView):
 
     def get(self, request, format=None):
         try:
-            request.airavata_client.getUserProjects(request.authz_token,
-                                                    settings.GATEWAY_ID,
-                                                    request.user.username,
-                                                    1,  # limit
-                                                    0)  # offset
+            request.airavata.research.get_user_projects(
+                gateway_id=settings.GATEWAY_ID,
+                user_name=request.user.username,
+                limit=1,
+                offset=0)
             data = {
                 "apiServerUp": True
             }
