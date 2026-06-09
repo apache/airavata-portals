@@ -7,10 +7,7 @@ import warnings
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
-from airavata_django_portal_sdk import (
-    experiment_util,
-    queue_settings_calculators
-)
+from airavata_sdk.helpers import experiment_orchestration, queue_settings
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
@@ -266,7 +263,8 @@ class ExperimentViewSet(mixins.CreateModelMixin,
                 experiment.email_addresses[:] = [request.user.email]
             request.airavata.research.update_experiment(
                 experiment_id, experiment)
-            experiment_util.launch(request, experiment_id)
+            experiment_orchestration.launch(
+                request.airavata, experiment_id, username=request.user.username)
             return Response({'success': True})
         except Exception as e:
             log.exception(f"Failed to launch experiment {experiment_id}", extra={'request': request})
@@ -281,9 +279,10 @@ class ExperimentViewSet(mixins.CreateModelMixin,
 
     @action(methods=['post'], detail=True)
     def clone(self, request, experiment_id=None):
-        # experiment_util.clone is the launch/clone orchestration (still on the
-        # legacy SDK); re-fetch the cloned experiment via gRPC.
-        cloned_experiment_id = experiment_util.clone(request, experiment_id)
+        # clone() stages the input files (download+re-upload to tmp) and returns
+        # the new experiment id; re-fetch the cloned experiment via gRPC.
+        cloned_experiment_id = experiment_orchestration.clone(
+            request.airavata, experiment_id, username=request.user.username)
         cloned_experiment = request.airavata.research.get_experiment(
             cloned_experiment_id)
         serializer = self.serializer_class(
@@ -305,8 +304,8 @@ class ExperimentViewSet(mixins.CreateModelMixin,
         if "outputNames" not in request.data:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         try:
-            experiment_util.intermediate_output.fetch_intermediate_output(
-                request, experiment_id, *request.data["outputNames"])
+            experiment_orchestration.fetch_intermediate_output(
+                request.airavata, experiment_id, *request.data["outputNames"])
             return Response({'success': True})
         except Exception as e:
             log.exception("fetchIntermediateOutputs failed with the following error", extra={'request': request})
@@ -1969,10 +1968,10 @@ class QueueSettingsCalculatorViewSet(mixins.ListModelMixin, mixins.RetrieveModel
     serializer_class = serializers.QueueSettingsCalculatorSerializer
 
     def get_list(self):
-        return queue_settings_calculators.get_all()
+        return queue_settings.get_all()
 
     def get_instance(self, lookup_value):
-        calcs = queue_settings_calculators.get_all()
+        calcs = queue_settings.get_all()
         calc = [calc for calc in calcs if calc.id == lookup_value]
         if len(calc) == 0:
             return None
@@ -1986,5 +1985,5 @@ class QueueSettingsCalculatorViewSet(mixins.ListModelMixin, mixins.RetrieveModel
         # Just ignore invalid experiment model since likely caused by late initialization
         if serializer.is_valid():
             experiment_model = serializer.save()
-            result = queue_settings_calculators.calculate_queue_settings(pk, request, experiment_model)
+            result = queue_settings.calculate_queue_settings(pk, request, experiment_model)
         return Response(result)

@@ -25,11 +25,15 @@ setup(
             'djangorestframework',
             'requests',
             'requests-oauthlib',
-            'thrift',
-            'thrift_connector',
             'jupyter',
             'papermill',
-            "airavata-django-portal-sdk",
+            'zipstream-new',
+            # The gRPC Airavata SDK is the portal's sole Airavata dependency. It
+            # is not yet on PyPI (the published 2.2.7 is the retired Thrift SDK),
+            # so for development install it editable from a local apache/airavata
+            # checkout: pip install -e <airavata>/airavata-python-sdk
+            # The release version (2.2.8 / 2.3.0 / 3.x) is TBD; bump this pin with it.
+            'airavata-python-sdk>=3.0.0',
     ],
     extras_require={
         'dev': [

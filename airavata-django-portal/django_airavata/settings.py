@@ -52,9 +52,6 @@ INSTALLED_APPS = [
 
     # django-webpack-loader
     'webpack_loader',
-
-    # Airavata Django Portal SDK
-    'airavata_django_portal_sdk',
 ]
 
 # List of app labels for Airavata apps that should be hidden from menus

@@ -779,7 +779,7 @@ import os
 import numpy as np from cclib.parser import ccopen from django.conf import
 settings from matplotlib.figure import Figure
 
-from airavata_django_portal_sdk import user_storage
+# File operations use the gRPC storage facade: request.airavata.storage
 
 class GaussianEigenvaluesViewProvider: display_type = 'image' name = "Gaussian
 Eigenvalues"
@@ -845,7 +845,7 @@ from cclib.parser import ccopen
 from django.conf import settings
 from matplotlib.figure import Figure
 
-from airavata_django_portal_sdk import user_storage
+# File operations use the gRPC storage facade: request.airavata.storage
 ```
 
 6.  Next we implemented the
@@ -942,7 +942,7 @@ which the `GaussianEigenvaluesViewProvider` output view provider class is found.
 ```
 install_requires =
     django >= 2.2
-    airavata-django-portal-sdk
+    airavata-python-sdk >= 3.0.0
     cclib
     numpy
     matplotlib

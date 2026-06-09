@@ -28,14 +28,14 @@ You'll use this to mark the queue settings calculator functions (you can define
 more than one).
 
 ```python
-from airavata.model.experiment.ttypes import ExperimentModel
-from airavata_django_portal_sdk.decorators import queue_settings_calculator
+from airavata_sdk.helpers.queue_settings import queue_settings_calculator
 
 @queue_settings_calculator(
     id="gateway_name-queue-settings-for-my-app", name="My Gateway: Queue Settings for My App"
 )
-def my_queue_settings_calculator(request, experiment_model: ExperimentModel):
-    # See https://airavata.apache.org/api-docs/master/experiment_model.html#Struct_ExperimentModel for ExperimentModel fields
+def my_queue_settings_calculator(request, experiment_model):
+    # experiment_model is a proto ExperimentModel
+    # (airavata_sdk.generated...model.experiment.experiment_pb2.ExperimentModel)
 
     total_core_count = 4
     queue_name = "shared"

@@ -9,10 +9,7 @@ This repository contains the following sub-projects and templates:
 ### Portals and SDKs
 
 - **airavata-django-portal**  
-  The reference web-based user interface for interacting with Airavata services, supporting job submissions, project management, and monitoring.
-
-- **airavata-django-portal-sdk**  
-  A pluggable SDK enabling custom Django-based science gateways with minimal setup.
+  The reference web-based user interface for interacting with Airavata services, supporting job submissions, project management, and monitoring. Talks to Airavata over gRPC via the `airavata-python-sdk`.
 
 ### Starter Templates
 

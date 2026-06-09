@@ -130,7 +130,6 @@ urlpatterns = [
     # ... Add the app urls here
     re_path(r'^myapp/', include('django_airavata.apps.myapp.urls')),
     # ...
-    path('sdk/', include('airavata_django_portal_sdk.urls')),
     re_path(r'^home$', views.home, name='home'),
     re_path(r'^cms/', include(wagtailadmin_urls)),
     re_path(r'^documents/', include(wagtaildocs_urls)),

@@ -2,7 +2,6 @@
 Django==5.2.15
 requests==2.25.1
 requests-oauthlib==0.7.0
-thrift==0.22.0
 djangorestframework==3.16.1
 django-webpack-loader==0.6.0
 logging-formatter-anticrlf==1.2
@@ -21,16 +20,14 @@ grpcio-tools>=1.60.0
 protobuf>=5.26.0,<7.0.0
 googleapis-common-protos>=1.62.0
 
-# Legacy Thrift SDK — still required while apps/api views are repointed from
-# Thrift (request.airavata_client) to gRPC (request.airavata) resource family by
-# resource family. The NEW gRPC SDK (import name airavata_sdk) cannot be pip
-# co-installed because it shares this PyPI/import name; during the Track D
-# transition it is provided on PYTHONPATH from the local apache/airavata checkout
-# (PYTHONPATH=/path/to/airavata/airavata-python-sdk). Both are dropped at D6.
-# NOTE: protobuf>=4 breaks the legacy MFT storage stubs (airavata-django-portal-sdk,
-# generated for protobuf<=3.20); the dev DjangoFileSystemProvider path is
-# unaffected and MFT regen is part of D4 (storage).
-airavata-django-portal-sdk==1.8.4
-airavata-python-sdk==2.2.7
+# The gRPC Airavata SDK (import name airavata_sdk) is the portal's SOLE Airavata
+# dependency — it replaces both the retired Thrift airavata-python-sdk==2.2.7 and
+# the deleted airavata-django-portal-sdk. It is not yet published to PyPI (the
+# published 2.2.7 is the old Thrift SDK), so install it editable from a local
+# apache/airavata checkout BEFORE installing this file:
+#     pip install -e <airavata>/airavata-python-sdk
+# setup.py pins airavata-python-sdk>=3.0.0 so the editable 3.0.0 satisfies it and
+# pip never falls back to the old 2.2.7 on PyPI. Release version (2.2.8/2.3.0/3.x)
+# is TBD; bump the pin with it.
 
 -e "."

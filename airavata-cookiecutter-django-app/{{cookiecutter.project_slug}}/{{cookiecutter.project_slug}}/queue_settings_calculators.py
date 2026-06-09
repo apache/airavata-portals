@@ -1,12 +1,12 @@
-from airavata.model.experiment.ttypes import ExperimentModel
-from airavata_django_portal_sdk.decorators import queue_settings_calculator
+from airavata_sdk.helpers.queue_settings import queue_settings_calculator
 
 # See https://apache-airavata-django-portal.readthedocs.io/en/latest/dev/queue_settings_calculator/ for more information
 @queue_settings_calculator(
     id="{{ cookiecutter.project_slug}}-my-queue-settings-calculator", name="{{ cookiecutter.project_name}}: My Queue Settings Calculator"
 )
-def my_queue_settings_calculator(request, experiment_model: ExperimentModel):
-    # See https://airavata.apache.org/api-docs/master/experiment_model.html#Struct_ExperimentModel for ExperimentModel fields
+def my_queue_settings_calculator(request, experiment_model):
+    # experiment_model is a proto ExperimentModel
+    # (airavata_sdk.generated...model.experiment.experiment_pb2.ExperimentModel)
 
     # TODO: Implement logic here to determine appropriate queue settings for experiment_model
     total_core_count = 4

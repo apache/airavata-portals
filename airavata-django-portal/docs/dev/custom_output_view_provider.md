@@ -301,15 +301,15 @@ user can access the default output view provider from the drop down menu.
 
 The output view provider is associated with a particular output file, but your
 output view provider can access other files in the experiment data directory. To
-access those files use the `list_experiment_dir` of the
-[user_storage module](https://airavata-django-portal-sdk.readthedocs.io/en/latest/#module-user_storage)
-in the Airavata Django Portal SDK.
+access those files use the `list_experiment_dir` method of the gRPC storage
+facade (`request.airavata.storage`).
 
 ```python
-from airavata_django_portal_sdk import user_storage
 def generate_data(self, request, experiment_output, experiment, output_file=None, **kwargs):
 
-    dirs, files = user_storage.list_experiment_dir(request, experiment.experimentId)
+    listing = request.airavata.storage.list_experiment_dir(experiment.experiment_id)
+    # listing.files / listing.directories; read a file's bytes with
+    # request.airavata.storage.download_file(listing.files[0].path).content
     # ...
 ```
 

@@ -19,6 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, re_path
 
+from .apps.api import downloads as api_downloads
 from . import views
 
 urlpatterns = [
@@ -29,7 +30,12 @@ urlpatterns = [
     re_path(r'^api/', include('django_airavata.apps.api.urls')),
     re_path(r'^groups/', include('django_airavata.apps.groups.urls')),
     re_path(r'^dataparsers/', include('django_airavata.apps.dataparsers.urls')),
-    path('sdk/', include('airavata_django_portal_sdk.urls')),
+    # Directory zip downloads the file browser links to (paths kept under /sdk/
+    # so the built frontend's hardcoded hrefs keep working). Single-file
+    # downloads go through the api app's download/download-file views.
+    path('sdk/download-dir/', api_downloads.download_dir, name='download_dir'),
+    path('sdk/download-experiment-dir/<experiment_id>/',
+         api_downloads.download_experiment_dir, name='download_experiment_dir'),
     re_path(r'^home$', views.home, name='home'),
     # For testing, developing error pages
     re_path(r'^400/', views.error400),

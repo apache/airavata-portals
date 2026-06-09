@@ -5,9 +5,7 @@ import logging
 import os
 from urllib.parse import quote
 
-from airavata_django_portal_sdk import (
-    experiment_util
-)
+from airavata_sdk.helpers import experiment_orchestration
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -1655,16 +1653,16 @@ class ExperimentSerializer(serializers.Serializer):
             for output in representation["experimentOutputs"]:
                 output["intermediateOutput"] = {"processStatus": None}
                 try:
-                    can_fetch = experiment_util.intermediate_output.can_fetch_intermediate_output(request, experiment, output["name"])
+                    can_fetch = experiment_orchestration.can_fetch_intermediate_output(request.airavata, experiment, output["name"])
                     output["intermediateOutput"]["canFetch"] = can_fetch
-                    process_status = experiment_util.intermediate_output.get_intermediate_output_process_status(
-                        request, experiment, output["name"])
+                    process_status = experiment_orchestration.get_intermediate_output_process_status(
+                        request.airavata, experiment, output["name"])
                     if process_status:
                         serializer = ProcessStatusSerializer(
                             process_status, context={'request': request})
                         output["intermediateOutput"]["processStatus"] = serializer.data
-                    data_products = experiment_util.intermediate_output.get_intermediate_output_data_products(
-                        request, experiment=experiment, output_name=output["name"])
+                    data_products = experiment_orchestration.get_intermediate_output_data_products(
+                        request.airavata, experiment, output["name"])
                     data_product_serializer = DataProductSerializer(
                         data_products, context={'request': request}, many=True)
                     output["intermediateOutput"]["dataProducts"] = data_product_serializer.data

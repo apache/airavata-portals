@@ -11,7 +11,6 @@ Monorepo of web portals, SDKs, and tools built on top of Apache Airavata. Contai
 | Project | Stack | Purpose |
 |---------|-------|---------|
 | `airavata-django-portal` | Django 3.2 + Vue 2 | Reference science gateway (main portal) |
-| `airavata-django-portal-sdk` | Python | Reusable library for custom Django app extensions (PyPI) |
 | `airavata-research-portal` | React 19 + Vite + TypeScript | CyberShuttle research platform (newest) |
 | `airavata-custos-portal` | Django + Vue 2 | Identity, group, and permissions management UI |
 | `airavata-mft-portal` | Django + Webpack | Managed File Transfer dashboard |
@@ -91,17 +90,6 @@ npm run lint                                      # ESLint
 ```
 
 React 19 + TypeScript + Vite + Chakra UI 3. OIDC auth via `oidc-client-ts`.
-
-## airavata-django-portal-sdk
-
-```bash
-cd airavata-django-portal-sdk
-pip install -e .
-pytest                                            # Tests
-mkdocs serve                                      # Docs
-```
-
-Provides: experiment submission utilities, user storage management, queue settings calculators, base API views, and DRF serializers for Airavata models.
 
 ## Root pyrightconfig.json
 

@@ -5,8 +5,6 @@ import io
 from django.template.loader import render_to_string
 {% endif %}
 
-from airavata_django_portal_sdk import user_storage
-
 
 class {{ cookiecutter.output_view_provider_class_name }}:
     display_type = "{{ cookiecutter.output_view_display_type }}"
@@ -26,46 +24,29 @@ class {{ cookiecutter.output_view_provider_class_name }}:
         # entire_file = output_file.read()
 
 
-        # Example code: user_storage module
-        # To find other files in the experiment data directory, use the
-        # user_storage module of the airavata_django_portal_sdk. You can use the
-        # following to list the files and directories in the experiment data
-        # directory:
+        # Example code: user storage
+        # To find other files in the experiment data directory, use the storage
+        # facade to list the experiment's data directory:
         #
-        # dirs, files = user_storage.list_experiment_dir(request, experiment.experimentId)
+        # listing = request.airavata.storage.list_experiment_dir(experiment.experiment_id)
         #
-        # The 'files' variable is a list of dictionaries, each one will have a
-        # 'data-product-uri' key. Use the data-product-uri to open the file:
+        # Each entry carries a path you can read the bytes of:
         #
-        # data_product_uri = files[0]['data-product-uri']
-        # data = user_storage.open_file(request, data_product_uri=data_product_uri)
-        #
-        # See https://airavata-django-portal-sdk.readthedocs.io/en/latest/#module-user_storage
-        # for more information.
+        # data = request.airavata.storage.download_file(listing.files[0].path).content
 
 
         # Example code: Airavata API client
-        # Make calls to the Airavata API from the output view provider, for example:
+        # Make calls to the Airavata API via the gRPC facades, for example load
+        # the DataProduct for this output file:
         #
-        # data_product = request.airavata_client.getDataProduct(
-        #        request.authz_token, experiment_output.value)
+        # data_product = request.airavata.research.get_data_product(experiment_output.value)
         #
-        # In this example, the DataProduct object is loaded for the output file.
-        # 'experiment_output.value' has the Data Product URI for the output
-        # file, the unique identifier in the Airavata API for this output file.
-        # The returned DataProduct object contains metadata about the output
-        # file and the location(s) where it is stored. See
-        # http://airavata.apache.org/api-docs/master/replica_catalog_models.html#Struct_DataProductModel
-        # for more information.
-        #
-        # The authorization token is always the first argument of Airavata API calls
-        # and is available as 'request.authz_token'. Some API methods require a
-        # 'gatewayID' argument and that is available on the Django settings object
-        # as 'settings.GATEWAY_ID'.
-        # For documentation on other Airavata API methods, see
-        # https://docs.airavata.org/en/master/technical-documentation/airavata-api/.
-        # The Airavata Django Portal uses the Airavata Python Client SDK:
-        # https://github.com/apache/airavata/tree/master/airavata-api/airavata-client-sdks/airavata-python-sdk
+        # 'experiment_output.value' is the Data Product URI for the output file.
+        # The returned DataProductModel carries metadata about the output file and
+        # the location(s) where it is stored. The gRPC client is 'request.airavata'
+        # with one facade per service (research / compute / storage / ...);
+        # authentication is carried automatically and 'settings.GATEWAY_ID' is the
+        # gateway id.
 
 
     {% if cookiecutter.output_view_display_type == "link" %}
