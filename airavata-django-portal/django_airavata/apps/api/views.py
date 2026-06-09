@@ -10,10 +10,6 @@ from urllib.parse import quote
 from airavata.model.experiment.ttypes import (
     ExperimentSearchFields
 )
-from airavata.model.appcatalog.groupresourceprofile.ttypes import (
-    GroupComputeResourcePreference,
-    ResourceType
-)
 from airavata.model.group.ttypes import ResourcePermissionType
 from airavata_django_portal_sdk import (
     experiment_util,
@@ -963,196 +959,49 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
     lookup_field = 'group_resource_profile_id'
 
     def get_list(self):
-        return [
-            grpc_adapters.group_resource_profile(p)
-            for p in self.request.airavata.compute.get_group_resource_list()
-        ]
+        return list(self.request.airavata.compute.get_group_resource_list())
 
     def get_instance(self, lookup_value):
-        return grpc_adapters.group_resource_profile(
-            self.request.airavata.compute.get_group_resource_profile(lookup_value))
+        return self.request.airavata.compute.get_group_resource_profile(
+            lookup_value)
 
     def perform_create(self, serializer):
-        group_resource_profile = serializer.save()
-        group_resource_profile.gatewayId = self.gateway_id
+        group_resource_profile = serializer.save(gateway_id=self.gateway_id)
         created = self.request.airavata.compute.create_group_resource_profile(
-            grpc_requests.group_resource_profile(group_resource_profile))
-        group_resource_profile.groupResourceProfileId = created.group_resource_profile_id
-        group_resource_profile.creationTime = created.creation_time
+            group_resource_profile)
+        group_resource_profile.group_resource_profile_id = (
+            created.group_resource_profile_id)
+        group_resource_profile.creation_time = created.creation_time
 
     def perform_update(self, serializer):
-        original_instance = serializer.instance
-
+        original = serializer.instance
         grp = serializer.save()
-        for removed_compute_resource_preference \
-                in grp._removed_compute_resource_preferences:
-            self.request.airavata.compute.remove_group_compute_prefs(
-                removed_compute_resource_preference.groupResourceProfileId,
-                removed_compute_resource_preference.computeResourceId)
-        for removed_compute_resource_policy \
-                in grp._removed_compute_resource_policies:
-            self.request.airavata.compute.remove_group_compute_resource_policy(
-                removed_compute_resource_policy.resourcePolicyId)
-        for removed_batch_queue_resource_policy \
-                in grp._removed_batch_queue_resource_policies:
-            self.request.airavata.compute.remove_group_batch_queue_resource_policy(
-                removed_batch_queue_resource_policy.resourcePolicyId)
-        if hasattr(grp, 'computePreferences') and grp.computePreferences:
-            from collections import OrderedDict
-            from django_airavata.apps.api.serializers import GroupComputeResourcePreferenceSerializer
-
-            for pref in grp.computePreferences:
-                if isinstance(pref, GroupComputeResourcePreference):
-                    if not hasattr(pref, 'resourceType') or pref.resourceType is None:
-                        resource_type = None
-                        if hasattr(pref, 'specificPreferences') and pref.specificPreferences:
-                            if isinstance(pref.specificPreferences, (dict, OrderedDict)):
-                                specific_prefs_dict = pref.specificPreferences
-                                if 'slurm' in specific_prefs_dict or 'allocationProjectNumber' in specific_prefs_dict:
-                                    resource_type = ResourceType.SLURM
-                                elif 'aws' in specific_prefs_dict or 'region' in specific_prefs_dict:
-                                    resource_type = ResourceType.AWS
-                                else:
-                                    resource_type = ResourceType.SLURM
-                            elif hasattr(pref.specificPreferences, 'slurm') and pref.specificPreferences.slurm:
-                                resource_type = ResourceType.SLURM
-                            elif hasattr(pref.specificPreferences, 'aws') and pref.specificPreferences.aws:
-                                resource_type = ResourceType.AWS
-                            else:
-                                resource_type = ResourceType.SLURM
-                        else:
-                            resource_type = ResourceType.SLURM
-                        pref.resourceType = resource_type
-
-                    resource_type = pref.resourceType if hasattr(pref, 'resourceType') and pref.resourceType else None
-                    if resource_type:
-                        if hasattr(pref, 'specificPreferences') and isinstance(pref.specificPreferences, (dict, OrderedDict)):
-                            GroupComputeResourcePreferenceSerializer._convert_specific_preferences_dict_to_thrift(
-                                pref, resource_type
-                            )
-                        elif hasattr(pref, 'specificPreferences') and pref.specificPreferences:
-                            GroupComputeResourcePreferenceSerializer._convert_specific_preferences_dict_to_thrift(
-                                pref, resource_type
-                            )
-
-        from collections import OrderedDict
-        from airavata.model.appcatalog.groupresourceprofile.ttypes import (
-            ComputeResourcePolicy,
-            BatchQueueResourcePolicy
-        )
-
-        if hasattr(grp, 'computeResourcePolicies') and grp.computeResourcePolicies:
-            existing_policies_by_resource_id = {}
-            if original_instance and hasattr(original_instance, 'computeResourcePolicies'):
-                for existing_policy in original_instance.computeResourcePolicies:
-                    if hasattr(existing_policy, 'computeResourceId') and hasattr(existing_policy, 'resourcePolicyId'):
-                        existing_policies_by_resource_id[existing_policy.computeResourceId] = existing_policy
-
-            indices_to_remove = []
-            for idx, policy in enumerate(grp.computeResourcePolicies):
-                if isinstance(policy, (dict, OrderedDict)):
-                    try:
-                        if isinstance(policy, OrderedDict):
-                            policy = dict(policy)
-
-                        compute_resource_id = policy.get('computeResourceId')
-                        current_resource_policy_id = policy.get('resourcePolicyId')
-
-                        if not current_resource_policy_id:
-                            if compute_resource_id and compute_resource_id in existing_policies_by_resource_id:
-                                existing_policy = existing_policies_by_resource_id[compute_resource_id]
-                                policy['resourcePolicyId'] = existing_policy.resourcePolicyId
-                            elif original_instance and hasattr(original_instance, 'computeResourcePolicies') and idx < len(original_instance.computeResourcePolicies):
-                                existing_policy_by_idx = original_instance.computeResourcePolicies[idx]
-                                if hasattr(existing_policy_by_idx, 'resourcePolicyId') and existing_policy_by_idx.resourcePolicyId:
-                                    policy['resourcePolicyId'] = existing_policy_by_idx.resourcePolicyId
-
-                        if not policy.get('resourcePolicyId'):
-                            indices_to_remove.append(idx)
-                            continue
-
-                        grp.computeResourcePolicies[idx] = ComputeResourcePolicy(**policy)
-                    except Exception as e:
-                        log.error(
-                            "GCPreference perform_update: Failed to convert computeResourcePolicies[%d] OrderedDict to Thrift: %s, policy keys: %s",
-                            idx,
-                            str(e),
-                            list(policy.keys()) if isinstance(policy, dict) else list(policy.keys()),
-                            exc_info=True,
-                        )
-                        raise
-
-            for idx in reversed(indices_to_remove):
-                grp.computeResourcePolicies.pop(idx)
-
-        if hasattr(grp, 'batchQueueResourcePolicies') and grp.batchQueueResourcePolicies:
-            existing_bq_policies_by_key = {}
-            if original_instance and hasattr(original_instance, 'batchQueueResourcePolicies'):
-                for existing_bq_policy in original_instance.batchQueueResourcePolicies:
-                    if (hasattr(existing_bq_policy, 'computeResourceId') and
-                        hasattr(existing_bq_policy, 'queuename') and
-                        hasattr(existing_bq_policy, 'resourcePolicyId')):
-                        key = (existing_bq_policy.computeResourceId, existing_bq_policy.queuename)
-                        existing_bq_policies_by_key[key] = existing_bq_policy
-
-            for idx, policy in enumerate(grp.batchQueueResourcePolicies):
-                if isinstance(policy, (dict, OrderedDict)):
-                    try:
-                        compute_resource_id = policy.get('computeResourceId')
-                        queuename = policy.get('queuename')
-                        if compute_resource_id and queuename:
-                            key = (compute_resource_id, queuename)
-                            if key in existing_bq_policies_by_key:
-                                existing_bq_policy = existing_bq_policies_by_key[key]
-                                if 'resourcePolicyId' not in policy or policy.get('resourcePolicyId') is None:
-                                    policy['resourcePolicyId'] = existing_bq_policy.resourcePolicyId
-                        grp.batchQueueResourcePolicies[idx] = BatchQueueResourcePolicy(**policy)
-                    except Exception as e:
-                        log.error(
-                            "GCPreference perform_update: Failed to convert batchQueueResourcePolicies[%d] OrderedDict to Thrift: %s",
-                            idx,
-                            str(e),
-                            exc_info=True,
-                        )
-
-        if hasattr(grp, 'computePreferences') and grp.computePreferences:
-            for idx, pref in enumerate(grp.computePreferences):
-                if isinstance(pref, (dict, OrderedDict)):
-                    from django_airavata.apps.api.serializers import GroupComputeResourcePreferenceSerializer
-                    serializer = GroupComputeResourcePreferenceSerializer()
-                    try:
-                        pref = serializer.create(pref)
-                        grp.computePreferences[idx] = pref
-                    except Exception as e:
-                        log.error(
-                            "GCPreference perform_update: Failed to convert OrderedDict to Thrift: %s",
-                            str(e),
-                            exc_info=True,
-                        )
-
-                if isinstance(pref, GroupComputeResourcePreference):
-                    if hasattr(pref, 'specificPreferences') and pref.specificPreferences:
-                        if hasattr(pref.specificPreferences, 'slurm') and pref.specificPreferences.slurm:
-                            GroupComputeResourcePreferenceSerializer._convert_nested_list_fields_to_thrift(
-                                pref.specificPreferences.slurm
-                            )
-                            if hasattr(pref.specificPreferences.slurm, 'reservations') and pref.specificPreferences.slurm.reservations:
-                                for res_idx, res in enumerate(pref.specificPreferences.slurm.reservations):
-                                    if isinstance(res, (dict, OrderedDict)):
-                                        from airavata.model.appcatalog.groupresourceprofile.ttypes import ComputeResourceReservation
-                                        pref.specificPreferences.slurm.reservations[res_idx] = ComputeResourceReservation(**res)
-                            if hasattr(pref.specificPreferences.slurm, 'groupSSHAccountProvisionerConfigs') and pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs:
-                                for cfg_idx, cfg in enumerate(pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs):
-                                    if isinstance(cfg, (dict, OrderedDict)):
-                                        from airavata.model.appcatalog.groupresourceprofile.ttypes import GroupAccountSSHProvisionerConfig
-                                        pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs[cfg_idx] = GroupAccountSSHProvisionerConfig(**cfg)
-
-        self.request.airavata.compute.update_group_resource_profile(
-            grp.groupResourceProfileId, grpc_requests.group_resource_profile(grp))
+        compute = self.request.airavata.compute
+        # Remove compute prefs / policies that are no longer present.
+        new_pref_ids = {
+            cp.compute_resource_id for cp in grp.compute_preferences}
+        for cp in original.compute_preferences:
+            if cp.compute_resource_id not in new_pref_ids:
+                compute.remove_group_compute_prefs(
+                    cp.group_resource_profile_id, cp.compute_resource_id)
+        new_policy_ids = {
+            p.resource_policy_id for p in grp.compute_resource_policies}
+        for p in original.compute_resource_policies:
+            if p.resource_policy_id and p.resource_policy_id not in new_policy_ids:
+                compute.remove_group_compute_resource_policy(
+                    p.resource_policy_id)
+        new_bq_ids = {
+            p.resource_policy_id for p in grp.batch_queue_resource_policies}
+        for p in original.batch_queue_resource_policies:
+            if p.resource_policy_id and p.resource_policy_id not in new_bq_ids:
+                compute.remove_group_batch_queue_resource_policy(
+                    p.resource_policy_id)
+        compute.update_group_resource_profile(
+            grp.group_resource_profile_id, grp)
 
     def perform_destroy(self, instance):
         self.request.airavata.compute.remove_group_resource_profile(
-            instance.groupResourceProfileId)
+            instance.group_resource_profile_id)
 
 
 class SharedEntityViewSet(mixins.RetrieveModelMixin,
