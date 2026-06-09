@@ -1545,12 +1545,16 @@ class ParserViewSet(mixins.CreateModelMixin,
     lookup_field = 'parser_id'
 
     def get_list(self):
-        return self.request.airavata_client.listAllParsers(
-            self.authz_token, settings.GATEWAY_ID)
+        return [
+            grpc_adapters.parser(p)
+            for p in self.request.airavata.research.list_all_parsers(
+                settings.GATEWAY_ID)
+        ]
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getParser(
-            self.authz_token, lookup_value, settings.GATEWAY_ID)
+        return grpc_adapters.parser(
+            self.request.airavata.research.get_parser(
+                lookup_value, settings.GATEWAY_ID))
 
     def perform_create(self, serializer):
         parser = serializer.save()
@@ -1720,12 +1724,16 @@ class ManageNotificationViewSet(APIBackedViewSet):
     lookup_field = 'notification_id'
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getNotification(
-            self.authz_token, settings.GATEWAY_ID, lookup_value)
+        return grpc_adapters.notification(
+            self.request.airavata.research.get_notification(
+                settings.GATEWAY_ID, lookup_value))
 
     def get_list(self):
-        return self.request.airavata_client.getAllNotifications(
-            self.authz_token, self.gateway_id)
+        return [
+            grpc_adapters.notification(n)
+            for n in self.request.airavata.research.get_all_notifications(
+                self.gateway_id)
+        ]
 
     def perform_destroy(self, instance):
         self.request.airavata_client.deleteNotification(
