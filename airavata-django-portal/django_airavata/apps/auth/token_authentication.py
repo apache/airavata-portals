@@ -65,9 +65,18 @@ class KeycloakTokenAuthentication(authentication.BaseAuthentication):
 
     def authenticate(self, request):
         header = request.META.get('HTTP_AUTHORIZATION', '')
-        if not header.startswith('Bearer '):
-            return None
-        token = header[len('Bearer '):].strip()
+        if header.startswith('Bearer '):
+            token = header[len('Bearer '):].strip()
+        else:
+            # Browser bridge: the session login flow stores the Keycloak access
+            # token in the session; use it when no Authorization header is sent
+            # so the existing browser session authenticates against the
+            # token-only API. (Final state: the frontend sends the token as a
+            # Bearer header and the session login is removed.)
+            session = getattr(request, 'session', None)
+            token = session.get('ACCESS_TOKEN') if session is not None else None
+            if not token:
+                return None
         try:
             signing_key = _jwks().get_signing_key_from_jwt(token)
             claims = jwt.decode(

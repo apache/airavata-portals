@@ -1,5 +1,4 @@
 """Django Airavata Auth Middleware."""
-import copy
 import logging
 
 from django.conf import settings
@@ -31,16 +30,21 @@ def authz_token_middleware(get_response):
     return middleware
 
 
+def _gateway_groups_dict(request):
+    """Fetch the gateway's admin group ids via the gRPC compute facade."""
+    gg = request.airavata.compute.get_gateway_groups()
+    return {'adminsGroupId': gg.admins_group_id,
+            'readOnlyAdminsGroupId': gg.read_only_admins_group_id}
+
+
 def set_admin_group_attributes(request, gateway_groups=None):
     """Set is_gateway_admin and is_read_only_gateway_admin request attrs."""
     if gateway_groups is None:
-        gateway_groups = request.airavata_client.getGatewayGroups(request.authz_token)
-        gateway_groups = copy.deepcopy(gateway_groups.__dict__)
+        gateway_groups = _gateway_groups_dict(request)
     admins_group_id = gateway_groups['adminsGroupId']
     read_only_admins_group_id = gateway_groups['readOnlyAdminsGroupId']
-    group_manager_client = request.profile_service['group_manager']
-    group_memberships = group_manager_client.getAllGroupsUserBelongs(
-        request.authz_token, request.user.username + "@" + settings.GATEWAY_ID)
+    group_memberships = request.airavata.sharing.gm_get_all_groups_user_belongs(
+        request.user.username + "@" + settings.GATEWAY_ID)
     group_ids = [group.id for group in group_memberships]
     request.is_gateway_admin = admins_group_id in group_ids
     request.is_read_only_gateway_admin = read_only_admins_group_id in group_ids
@@ -63,10 +67,7 @@ def gateway_groups_middleware(get_response):
             # Load the GatewayGroups and check if user is in the Admins and/or
             # Read Only Admins groups
             if not request.session.get('GATEWAY_GROUPS'):
-                gateway_groups = request.airavata_client.getGatewayGroups(
-                    request.authz_token)
-                gateway_groups_dict = copy.deepcopy(gateway_groups.__dict__)
-                request.session['GATEWAY_GROUPS'] = gateway_groups_dict
+                request.session['GATEWAY_GROUPS'] = _gateway_groups_dict(request)
             set_admin_group_attributes(request, gateway_groups=request.session.get("GATEWAY_GROUPS"))
             # Gateway Admins are made 'superuser' in Django so they can edit
             # pages in the CMS

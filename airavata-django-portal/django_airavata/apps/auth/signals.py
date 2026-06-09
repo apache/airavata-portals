@@ -7,7 +7,6 @@ from django.shortcuts import reverse
 from django.template import Context
 
 from django_airavata.apps.api.signals import user_added_to_group
-from django_airavata.utils import user_profile_client_pool
 
 from . import models, utils
 
@@ -38,20 +37,27 @@ def initialize_user_profile(sender, request, user, **kwargs):
     # have an Airavata user profile (See IAMAdminServices.enableUser). The
     # following is necessary for users coming from federated login who don't
     # need to verify their email.
-    if request.authz_token is not None:
-        if not user_profile_client_pool.doesUserExist(request.authz_token,
-                                                      user.username,
-                                                      settings.GATEWAY_ID):
-            if user.user_profile.is_complete:
-                user_profile_client_pool.initializeUserProfile(request.authz_token)
-                log.info("initialized user profile for {}".format(user.username))
-                # Since user profile created, inform admins of new user
-                utils.send_new_user_email(
-                    request, user.username, user.email, user.first_name, user.last_name)
-                log.info("sent new user email for user {}".format(user.username))
-            else:
-                log.info(f"user profile not complete for {user.username}, "
-                         "skipping initializing Airavata user profile")
+    if request.authz_token is None:
+        return
+    try:
+        exists = request.airavata.iam.does_user_exist(
+            user.username, settings.GATEWAY_ID)
+    except Exception:
+        log.warning("Could not check Airavata user existence for %s",
+                    user.username, exc_info=True)
+        return
+    if not exists:
+        if user.user_profile.is_complete:
+            # New federated-login user with a complete profile. Inform admins;
+            # the Airavata user profile is provisioned server-side on first
+            # authenticated request.
+            utils.send_new_user_email(
+                request, user.username, user.email, user.first_name,
+                user.last_name)
+            log.info("sent new user email for user {}".format(user.username))
+        else:
+            log.info(f"user profile not complete for {user.username}, "
+                     "skipping initializing Airavata user profile")
 
     else:
         log.warning(f"Logged in user {user.username} has no access token")
