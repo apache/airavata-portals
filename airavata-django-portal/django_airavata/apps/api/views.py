@@ -9,7 +9,6 @@ from urllib.parse import quote
 
 from airavata.model.appcatalog.computeresource.ttypes import (
     CloudJobSubmission,
-    GlobusJobSubmission,
     LOCALSubmission,
     SSHJobSubmission,
     UnicoreJobSubmission
@@ -19,8 +18,7 @@ from airavata.model.credential.store.ttypes import SummaryType
 from airavata.model.data.movement.ttypes import (
     GridFTPDataMovement,
     LOCALDataMovement,
-    SCPDataMovement,
-    UnicoreDataMovement
+    SCPDataMovement
 )
 from airavata.model.experiment.ttypes import (
     ExperimentModel,
@@ -803,22 +801,6 @@ class CloudJobSubmissionView(APIView):
                 instance=job_submission).data)
 
 
-class GlobusJobSubmissionView(APIView):
-    renderer_classes = (JSONRenderer,)
-
-    def get(self, request, format=None):
-        # TODO: the gRPC compute facade has no Globus job-submission getter and
-        # the legacy Thrift call here (`getClo`) is broken, so this admin-only
-        # detail view stays unmigrated until backend support lands.
-        job_submission_id = request.query_params["id"]
-        job_submission = request.airavata_client.getClo(
-            request.authz_token, job_submission_id)
-        return Response(
-            thrift_utils.create_serializer(
-                GlobusJobSubmission,
-                instance=job_submission).data)
-
-
 class SshJobSubmissionView(APIView):
     renderer_classes = (JSONRenderer,)
 
@@ -868,21 +850,6 @@ class ScpDataMovementView(APIView):
         return Response(
             thrift_utils.create_serializer(
                 SCPDataMovement,
-                instance=data_movement).data)
-
-
-class UnicoreDataMovementView(APIView):
-    renderer_classes = (JSONRenderer,)
-
-    def get(self, request, format=None):
-        # TODO: the gRPC storage facade has no UNICORE data-movement getter yet,
-        # so this admin-only detail view stays on Thrift until the SDK adds one.
-        data_movement_id = request.query_params["id"]
-        data_movement = request.airavata_client.getUnicoreDataMovement(
-            request.authz_token, data_movement_id)
-        return Response(
-            thrift_utils.create_serializer(
-                UnicoreDataMovement,
                 instance=data_movement).data)
 
 

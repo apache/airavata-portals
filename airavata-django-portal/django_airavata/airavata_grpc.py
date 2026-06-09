@@ -1,12 +1,9 @@
-"""New-stack gRPC Airavata client (airavata-python-sdk ``AiravataClient``).
+"""gRPC Airavata client (airavata-python-sdk ``AiravataClient``).
 
-Track D: the portal is migrating from the legacy Thrift API to the new Airavata
-gRPC/REST server. This module builds the gRPC ``AiravataClient`` from a request's
-Keycloak access token. It is intentionally additive — the gRPC client
-(``request.airavata``) coexists with the legacy Thrift client
-(``request.airavata_client``) while ``apps/api`` views are repointed resource
-family by resource family. The Thrift client and ``thrift_utils`` are removed once
-nothing depends on them.
+Builds the gRPC ``AiravataClient`` (``request.airavata``) from a request's Keycloak
+access token. The ``apps/api`` views/serializers talk to Airavata through this
+client's facade sub-clients; the interim ``thrift_utils`` serializer layer (which
+still reads Thrift model types) is removed in the later serializer/terminology pass.
 
 Per the migration principle, the "talk to Airavata + transform" grunt belongs in
 ``airavata-python-sdk`` (the facade sub-clients on ``AiravataClient``), keeping the

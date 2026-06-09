@@ -70,12 +70,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_airavata.apps.auth.middleware.authz_token_middleware',
-    'django_airavata.middleware.AiravataClientMiddleware',
-    # Track D: new gRPC AiravataClient (request.airavata), additive alongside the
-    # Thrift request.airavata_client. Must come after authz_token_middleware (uses
-    # request.authz_token for the access token).
+    # gRPC AiravataClient (request.airavata). Must come after authz_token_middleware
+    # (uses request.authz_token for the access token).
     'django_airavata.middleware.airavata_grpc_client',
-    # Needs to come after authz_token_middleware and airavata_client.
+    # Needs to come after authz_token_middleware and airavata_grpc_client.
     'django_airavata.apps.auth.middleware.gateway_groups_middleware',
     'django_airavata.apps.auth.middleware.user_profile_completeness_check',
 ]
@@ -261,11 +259,6 @@ AUTHENTICATION_OPTIONS = {
 # and the optional key 'PARAM_NAME' allows specifying the query parameter name
 # for the access token parameter (defaults to 'access_token').
 ACCESS_TOKEN_REDIRECT_ALLOWED_URIS = []
-
-# Seconds each connection in the pool is able to stay alive. If open connection
-# has lived longer than this period, it will be closed.
-# (https://github.com/Thriftpy/thrift_connector)
-THRIFT_CLIENT_POOL_KEEPALIVE = 5
 
 # Webpack loader
 WEBPACK_LOADER = {

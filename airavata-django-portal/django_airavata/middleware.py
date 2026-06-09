@@ -1,63 +1,16 @@
 import logging
 
-import thrift
-import thrift.transport.TTransport
-from django.shortcuts import render
-
-from . import utils
-
 logger = logging.getLogger(__name__)
 
 
-class AiravataClientMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        # Track D: attach the Thrift client lazily so requests that only use the
-        # gRPC client (request.airavata) never open a Thrift connection. The
-        # connection is acquired from the pool on first access and released after
-        # the response. Views/serializers still on Thrift work unchanged.
-        from django.utils.functional import SimpleLazyObject
-
-        opened = []
-
-        def _client():
-            ctx = utils.airavata_api_client_pool.connection()
-            client = ctx.__enter__()
-            opened.append(ctx)
-            return client
-
-        request.airavata_client = SimpleLazyObject(_client)
-        try:
-            return self.get_response(request)
-        finally:
-            for ctx in opened:
-                ctx.__exit__(None, None, None)
-
-    def process_exception(self, request, exception):
-        if isinstance(exception, thrift.transport.TTransport.TTransportException):
-            return render(
-                request,
-                'django_airavata/error_page.html',
-                status=500,
-                context={
-                    'title': 'Airavata is down',
-                    'text': """The Airavata API server is not reachable. Please try again."""})
-        else:
-            return None
-
-
 def airavata_grpc_client(get_response):
-    """Attach the new-stack gRPC ``AiravataClient`` as ``request.airavata``.
+    """Attach the gRPC ``AiravataClient`` as ``request.airavata``.
 
-    Track D: additive — coexists with the legacy Thrift ``request.airavata_client``
-    while ``apps/api`` views are repointed from Thrift to gRPC. ``request.airavata``
-    is a lazy object: the client (and the ``airavata_sdk`` import) is built only
-    when a view first accesses it, carrying the user's Keycloak token from
-    ``request.authz_token``. The channel is closed after the response if it was
-    used. Views that never touch ``request.airavata`` incur no cost and do not
-    require the SDK to be importable.
+    ``request.airavata`` is a lazy object: the client (and the ``airavata_sdk``
+    import) is built only when a view first accesses it, carrying the user's
+    Keycloak token from ``request.authz_token``. The channel is closed after the
+    response if it was used. Views that never touch ``request.airavata`` incur no
+    cost and do not require the SDK to be importable.
 
     Usage in a view::
 
