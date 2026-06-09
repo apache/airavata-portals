@@ -77,6 +77,10 @@ def _data_type_pb2():
     return application_io_pb2
 
 
+# First replica's ~/-prefixed file path from a proto DataProductModel.
+_data_product_file_path = view_utils.data_product_file_path
+
+
 def _storage_upload_and_register(request, dir_path, uploaded_file, name=None,
                                  content_type=None, experiment_id=None):
     """Upload a file to user storage and register a data product for it (gRPC).
@@ -111,8 +115,7 @@ def _storage_upload_and_register(request, dir_path, uploaded_file, name=None,
             storage_resource_id=storage.get_default_storage_resource_id(),
             content_type=content_type,
             product_size=metadata.size))
-    return grpc_adapters.data_product(
-        request.airavata.research.get_data_product(product_uri))
+    return request.airavata.research.get_data_product(product_uri)
 
 
 class GroupViewSet(APIBackedViewSet):
@@ -372,15 +375,13 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
             lookup_value)
         DT = _data_type_pb2().DataType
         outputDataProducts = [
-            grpc_adapters.data_product(
-                self.request.airavata.research.get_data_product(output.value))
+            self.request.airavata.research.get_data_product(output.value)
             for output in experimentModel.experiment_outputs
             if (output.value and
                 output.value.startswith('airavata-dp') and
                 output.type in (DT.URI, DT.STDOUT, DT.STDERR))]
         outputDataProducts += [
-            grpc_adapters.data_product(
-                self.request.airavata.research.get_data_product(dp))
+            self.request.airavata.research.get_data_product(dp)
             for output in experimentModel.experiment_outputs
             if (output.value and
                 output.type == DT.URI_COLLECTION)
@@ -397,15 +398,13 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
         exp_output_views = output_views.get_output_views(
             self.request, experimentModel, applicationInterface)
         inputDataProducts = [
-            grpc_adapters.data_product(
-                self.request.airavata.research.get_data_product(inp.value))
+            self.request.airavata.research.get_data_product(inp.value)
             for inp in experimentModel.experiment_inputs
             if (inp.value and
                 inp.value.startswith('airavata-dp') and
                 inp.type in (DT.URI, DT.STDOUT, DT.STDERR))]
         inputDataProducts += [
-            grpc_adapters.data_product(
-                self.request.airavata.research.get_data_product(dp))
+            self.request.airavata.research.get_data_product(dp)
             for inp in experimentModel.experiment_inputs
             if (inp.value and
                 inp.type == DT.URI_COLLECTION)
@@ -825,25 +824,23 @@ class DataProductView(APIView):
 
     def get(self, request, format=None):
         data_product_uri = request.query_params['product-uri']
-        data_product = grpc_adapters.data_product(
-            request.airavata.research.get_data_product(data_product_uri))
+        data_product = request.airavata.research.get_data_product(data_product_uri)
         serializer = self.serializer_class(
             data_product, context={'request': request})
         return Response(serializer.data)
 
     def put(self, request, format=None):
         data_product_uri = request.query_params['product-uri']
-        data_product = grpc_adapters.data_product(
-            request.airavata.research.get_data_product(data_product_uri))
+        data_product = request.airavata.research.get_data_product(data_product_uri)
         if request.data and "fileContentText" in request.data:
-            file_path = grpc_adapters.data_product_file_path(data_product)
+            file_path = _data_product_file_path(data_product)
             if file_path is None:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             # Overwrite the file content in place at the replica's path.
             request.airavata.storage.upload_file(
                 path=file_path,
                 content=request.data["fileContentText"].encode("utf-8"),
-                name=data_product.productName or os.path.basename(file_path))
+                name=data_product.product_name or os.path.basename(file_path))
             return self.get(request=request, format=format)
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -909,17 +906,16 @@ def download(request):
     """
     data_product_uri = request.GET.get('data-product-uri', '')
     try:
-        data_product = grpc_adapters.data_product(
-            request.airavata.research.get_data_product(data_product_uri))
+        data_product = request.airavata.research.get_data_product(data_product_uri)
     except Exception as e:
         log.warning("Failed to load DataProduct for {}".format(
             data_product_uri), exc_info=True, extra={'request': request})
         raise Http404("data product does not exist") from e
-    file_path = grpc_adapters.data_product_file_path(data_product)
+    file_path = _data_product_file_path(data_product)
     if file_path is None:
         raise Http404("data product has no replica to download")
     resp = request.airavata.storage.download_file(file_path)
-    file_name = resp.name or data_product.productName or os.path.basename(file_path)
+    file_name = resp.name or data_product.product_name or os.path.basename(file_path)
     response = FileResponse(
         io.BytesIO(resp.content),
         as_attachment=False,
@@ -935,8 +931,7 @@ def delete_file(request):
     data_product_uri = request.GET.get('data-product-uri', '')
     data_product = None
     try:
-        data_product = grpc_adapters.data_product(
-            request.airavata.research.get_data_product(data_product_uri))
+        data_product = request.airavata.research.get_data_product(data_product_uri)
     except Exception as e:
         log.warning("Failed to load DataProduct for {}"
                     .format(data_product_uri), exc_info=True)
@@ -945,7 +940,7 @@ def delete_file(request):
         if (data_product.gatewayId != settings.GATEWAY_ID or
                 data_product.ownerName != request.user.username):
             raise PermissionDenied()
-        file_path = grpc_adapters.data_product_file_path(data_product)
+        file_path = _data_product_file_path(data_product)
         if file_path is None:
             raise Http404("data product has no replica to delete")
         request.airavata.storage.delete_file(file_path)

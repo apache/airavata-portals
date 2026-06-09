@@ -14,7 +14,7 @@ from airavata_sdk.generated.org.apache.airavata.model.application.io.application
 from django.conf import settings
 from nbconvert import HTMLExporter
 
-from . import grpc_adapters
+from . import view_utils
 
 logger = logging.getLogger(__name__)
 
@@ -220,11 +220,10 @@ def _generate_data(request,
           experiment_output.value.startswith("airavata-dp")):
         data_product_uris = experiment_output.value.split(",")
         data_products = map(
-            lambda dpid: grpc_adapters.data_product(
-                request.airavata.research.get_data_product(dpid)),
+            lambda dpid: request.airavata.research.get_data_product(dpid),
             data_product_uris)
         for data_product in data_products:
-            file_path = grpc_adapters.data_product_file_path(data_product)
+            file_path = view_utils.data_product_file_path(data_product)
             if file_path and request.airavata.storage.file_exists(file_path):
                 resp = request.airavata.storage.download_file(file_path)
                 output_file = io.BytesIO(resp.content)

@@ -16,11 +16,6 @@ from types import SimpleNamespace
 from airavata.model.appcatalog.computeresource.ttypes import (
     JobSubmissionProtocol as _ThriftJobSubmissionProtocol,
 )
-from airavata.model.data.replica.ttypes import (
-    DataProductType as _ThriftDataProductType,
-    ReplicaLocationCategory as _ThriftReplicaLocationCategory,
-    ReplicaPersistentType as _ThriftReplicaPersistentType,
-)
 from airavata.model.data.movement.ttypes import (
     DataMovementProtocol as _ThriftDataMovementProtocol,
 )
@@ -102,71 +97,6 @@ def group(pb):
         description=pb.description or None,
         members=list(pb.members),
         admins=list(pb.admins),
-    )
-
-
-def _data_replica_location(pb):
-    """gRPC ``DataReplicaLocationModel`` -> serializer shape."""
-    return SimpleNamespace(
-        replicaId=pb.replica_id or None,
-        productUri=pb.product_uri or None,
-        replicaName=pb.replica_name or None,
-        replicaDescription=pb.replica_description or None,
-        creationTime=pb.creation_time or None,
-        lastModifiedTime=pb.last_modified_time or None,
-        validUntilTime=pb.valid_until_time or None,
-        replicaLocationCategory=_thrift_enum_prefixed(
-            pb, 'replica_location_category', _ThriftReplicaLocationCategory,
-            'REPLICA_LOCATION_CATEGORY_'),
-        replicaPersistentType=_thrift_enum_prefixed(
-            pb, 'replica_persistent_type', _ThriftReplicaPersistentType,
-            'REPLICA_PERSISTENT_TYPE_'),
-        storageResourceId=pb.storage_resource_id or None,
-        filePath=pb.file_path or None,
-        replicaMetadata=dict(pb.replica_metadata),
-    )
-
-
-def data_product_file_path(data_product):
-    """First replica's ``filePath`` from an adapted data product, or None.
-
-    The gRPC ``storage`` facade expects the FULL FILE PATH, absolute or
-    ``~/``-prefixed (a bare relative path NPEs server-side, as ``resolvePath``
-    expands ``~/`` to the storage root). Replica file paths are typically
-    absolute (e.g. ``/storage/tmp/<file>``); a relative one is ``~/``-prefixed.
-    Pass an adapted ``DataProductModel`` (``grpc_adapters.data_product``).
-    """
-    replicas = getattr(data_product, 'replicaLocations', None) or []
-    if not replicas:
-        return None
-    file_path = getattr(replicas[0], 'filePath', None)
-    if not file_path:
-        return None
-    if not (file_path.startswith('/') or file_path.startswith('~/')):
-        file_path = '~/' + file_path
-    return file_path
-
-
-def data_product(pb):
-    """gRPC ``DataProductModel`` -> ``DataProductSerializer`` shape."""
-    return SimpleNamespace(
-        productUri=pb.product_uri,
-        gatewayId=pb.gateway_id,
-        parentProductUri=pb.parent_product_uri or None,
-        productName=pb.product_name or None,
-        productDescription=pb.product_description or None,
-        ownerName=pb.owner_name or None,
-        dataProductType=_thrift_enum_prefixed(
-            pb, 'data_product_type', _ThriftDataProductType,
-            'DATA_PRODUCT_TYPE_'),
-        productSize=pb.product_size or None,
-        creationTime=pb.creation_time or None,
-        # the serializer declares both modifiedTime and lastModifiedTime
-        modifiedTime=pb.last_modified_time or None,
-        lastModifiedTime=pb.last_modified_time or None,
-        productMetadata=dict(pb.product_metadata),
-        replicaLocations=[
-            _data_replica_location(r) for r in pb.replica_locations],
     )
 
 

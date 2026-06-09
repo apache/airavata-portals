@@ -9,7 +9,7 @@ from django.shortcuts import render
 from django.utils.module_loading import import_string
 from rest_framework.renderers import JSONRenderer
 
-from django_airavata.apps.api import grpc_adapters, models
+from django_airavata.apps.api import models, view_utils
 from django_airavata.apps.api.views import (
     ApplicationModuleViewSet,
     ExperimentSearchViewSet,
@@ -93,9 +93,9 @@ def create_experiment(request, app_module_id):
                 if user_file_url.scheme == 'airavata-dp':
                     dp_uri = user_file_value
                     try:
-                        data_product = grpc_adapters.data_product(
+                        data_product = (
                             request.airavata.research.get_data_product(dp_uri))
-                        file_path = grpc_adapters.data_product_file_path(
+                        file_path = view_utils.data_product_file_path(
                             data_product)
                         if file_path and request.airavata.storage.file_exists(
                                 file_path):

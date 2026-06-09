@@ -14,8 +14,6 @@ from rest_framework.reverse import reverse
 from rest_framework.utils.urls import remove_query_param, replace_query_param
 from rest_framework.viewsets import GenericViewSet
 
-from . import grpc_adapters
-
 logger = logging.getLogger(__name__)
 
 
@@ -271,13 +269,32 @@ class BaseSharedDirPermission(permissions.BasePermission):
         return True
 
 
+def data_product_file_path(data_product):
+    """First replica's ``file_path`` from a proto ``DataProductModel``, or None.
+
+    The gRPC ``storage`` facade expects the FULL FILE PATH, absolute or
+    ``~/``-prefixed (a bare relative path NPEs server-side, as ``resolvePath``
+    expands ``~/`` to the storage root). Replica file paths are typically
+    absolute (e.g. ``/storage/tmp/<file>``); a relative one is ``~/``-prefixed.
+    """
+    replicas = data_product.replica_locations
+    if not replicas:
+        return None
+    file_path = replicas[0].file_path
+    if not file_path:
+        return None
+    if not (file_path.startswith('/') or file_path.startswith('~/')):
+        file_path = '~/' + file_path
+    return file_path
+
+
 class DataProductSharedDirPermission(BaseSharedDirPermission):
     def get_path(self, request, view) -> str:
         data_product_uri = request.query_params.get(
             'data-product-uri', request.query_params.get('product-uri', ''))
-        data_product = grpc_adapters.data_product(
-            request.airavata.research.get_data_product(data_product_uri))
-        file_path = grpc_adapters.data_product_file_path(data_product)
+        data_product = request.airavata.research.get_data_product(
+            data_product_uri)
+        file_path = data_product_file_path(data_product)
         return file_path or ""
 
 

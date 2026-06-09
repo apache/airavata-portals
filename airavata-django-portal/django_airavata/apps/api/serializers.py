@@ -15,10 +15,6 @@ from airavata.model.appcatalog.groupresourceprofile.ttypes import (
     AwsComputeResourcePreference
 )
 from airavata.model.appcatalog.parser.ttypes import IOType as _ThriftIOType
-from airavata.model.data.replica.ttypes import (
-    DataProductModel,
-    DataReplicaLocationModel
-)
 from airavata.model.group.ttypes import GroupModel, ResourcePermissionType
 from airavata.model.status.ttypes import (
     ExperimentState
@@ -1699,22 +1695,90 @@ def _user_configuration_request(d):
     return e.UserConfigurationDataModel(**kwargs)
 
 
-class DataReplicaLocationSerializer(
-        thrift_utils.create_serializer_class(DataReplicaLocationModel)):
-    creationTime = UTCPosixTimestampDateTimeField()
-    lastModifiedTime = UTCPosixTimestampDateTimeField()
+def _replica_catalog_pb2():
+    from airavata_sdk.generated.org.apache.airavata.model.data.replica import (
+        replica_catalog_pb2,
+    )
+    return replica_catalog_pb2
 
 
-class DataProductSerializer(
-        thrift_utils.create_serializer_class(DataProductModel)):
-    creationTime = UTCPosixTimestampDateTimeField()
-    modifiedTime = UTCPosixTimestampDateTimeField()
-    lastModifiedTime = UTCPosixTimestampDateTimeField()
-    replicaLocations = DataReplicaLocationSerializer(many=True)
+def _data_product_type_field(**kwargs):
+    from airavata.model.data.replica.ttypes import DataProductType as _T
+    return proto_enum_int_field(
+        _replica_catalog_pb2().DataProductType.DESCRIPTOR, _T,
+        proto_prefix='DATA_PRODUCT_TYPE_', **kwargs)
+
+
+def _replica_location_category_field(**kwargs):
+    from airavata.model.data.replica.ttypes import ReplicaLocationCategory as _T
+    return proto_enum_int_field(
+        _replica_catalog_pb2().ReplicaLocationCategory.DESCRIPTOR, _T,
+        proto_prefix='REPLICA_LOCATION_CATEGORY_', **kwargs)
+
+
+def _replica_persistent_type_field(**kwargs):
+    from airavata.model.data.replica.ttypes import ReplicaPersistentType as _T
+    return proto_enum_int_field(
+        _replica_catalog_pb2().ReplicaPersistentType.DESCRIPTOR, _T,
+        proto_prefix='REPLICA_PERSISTENT_TYPE_', **kwargs)
+
+
+class DataReplicaLocationSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``DataReplicaLocationModel``."""
+
+    replicaId = serializers.CharField(source='replica_id', allow_blank=True, allow_null=True, required=False)
+    productUri = serializers.CharField(source='product_uri', allow_blank=True, allow_null=True, required=False)
+    replicaName = serializers.CharField(source='replica_name', allow_blank=True, allow_null=True, required=False)
+    replicaDescription = serializers.CharField(source='replica_description', allow_blank=True, allow_null=True, required=False)
+    creationTime = ProtoTimestampField(source='creation_time', null_if_zero=True)
+    lastModifiedTime = ProtoTimestampField(source='last_modified_time', null_if_zero=True)
+    validUntilTime = ProtoIntOrNoneField(source='valid_until_time')
+    replicaLocationCategory = _replica_location_category_field(source='replica_location_category', required=False, allow_null=True)
+    replicaPersistentType = _replica_persistent_type_field(source='replica_persistent_type', required=False, allow_null=True)
+    storageResourceId = serializers.CharField(source='storage_resource_id', allow_blank=True, allow_null=True, required=False)
+    filePath = serializers.CharField(source='file_path', allow_blank=True, allow_null=True, required=False)
+    replicaMetadata = serializers.DictField(source='replica_metadata', required=False)
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        # The old adapter mapped these optional proto strings to None when empty.
+        for f in ('replicaId', 'productUri', 'replicaName', 'replicaDescription',
+                  'storageResourceId', 'filePath'):
+            if ret.get(f) == '':
+                ret[f] = None
+        return ret
+
+
+class DataProductSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``DataProductModel``."""
+
+    productUri = serializers.CharField(source='product_uri', allow_blank=True, allow_null=True, required=False)
+    gatewayId = serializers.CharField(source='gateway_id', allow_blank=True, allow_null=True, required=False)
+    parentProductUri = serializers.CharField(source='parent_product_uri', allow_blank=True, allow_null=True, required=False)
+    productName = serializers.CharField(source='product_name', allow_blank=True, allow_null=True, required=False)
+    productDescription = serializers.CharField(source='product_description', allow_blank=True, allow_null=True, required=False)
+    ownerName = serializers.CharField(source='owner_name', allow_blank=True, allow_null=True, required=False)
+    dataProductType = _data_product_type_field(source='data_product_type', required=False, allow_null=True)
+    productSize = ProtoIntOrNoneField(source='product_size')
+    creationTime = ProtoTimestampField(source='creation_time', null_if_zero=True)
+    # The serializer declares both modifiedTime and lastModifiedTime; both map to
+    # the proto last_modified_time.
+    modifiedTime = ProtoTimestampField(source='last_modified_time', null_if_zero=True)
+    lastModifiedTime = ProtoTimestampField(source='last_modified_time', null_if_zero=True)
+    productMetadata = serializers.DictField(source='product_metadata', required=False)
+    replicaLocations = DataReplicaLocationSerializer(source='replica_locations', many=True, required=False)
     downloadURL = serializers.SerializerMethodField()
     isInputFileUpload = serializers.SerializerMethodField()
     filesize = serializers.SerializerMethodField()
     userHasWriteAccess = serializers.SerializerMethodField()
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        for f in ('parentProductUri', 'productName', 'productDescription',
+                  'ownerName'):
+            if ret.get(f) == '':
+                ret[f] = None
+        return ret
 
     def get_downloadURL(self, data_product):
         """Lazy portal URL to the byte-streaming download endpoint.
@@ -1723,11 +1787,11 @@ class DataProductSerializer(
         is deferred to the endpoint, so this getter makes no backend call.
         """
         request = self.context['request']
-        if not getattr(data_product, 'replicaLocations', None):
+        if not data_product.replica_locations:
             return None
         base = request.build_absolute_uri(
             reverse('django_airavata_api:download-file'))
-        return base + '?data-product-uri=' + quote(data_product.productUri)
+        return base + '?data-product-uri=' + quote(data_product.product_uri)
 
     def get_isInputFileUpload(self, data_product):
         """Return True if this is an uploaded input file.
@@ -1737,17 +1801,17 @@ class DataProductSerializer(
         (TMP_INPUT_FILE_UPLOAD_DIR == "tmp"), so the first replica's file path
         has that directory as its immediate parent.
         """
-        replicas = getattr(data_product, 'replicaLocations', None) or []
-        if not replicas or not replicas[0].filePath:
+        replicas = data_product.replica_locations
+        if not replicas or not replicas[0].file_path:
             return False
-        parent = os.path.dirname(replicas[0].filePath)
+        parent = os.path.dirname(replicas[0].file_path)
         return os.path.basename(parent) == TMP_INPUT_FILE_UPLOAD_DIR
 
     def get_filesize(self, data_product):
-        # productSize comes from the data product registry; no backend call.
-        return getattr(data_product, 'productSize', None) or 0
+        # product_size comes from the data product registry; no backend call.
+        return data_product.product_size or 0
 
-    def get_userHasWriteAccess(self, data_product: DataProductModel):
+    def get_userHasWriteAccess(self, data_product):
         """Whether the requesting user may write this data product.
 
         Derived without a backend file-metadata call: the owner always has
@@ -1755,12 +1819,12 @@ class DataProductSerializer(
         (a user's own private storage) write is allowed.
         """
         request = self.context['request']
-        owner = getattr(data_product, 'ownerName', None)
+        owner = data_product.owner_name
         if owner and owner == request.user.username:
             return True
-        replicas = getattr(data_product, 'replicaLocations', None) or []
-        if replicas and replicas[0].filePath:
-            if view_utils.is_shared_path(replicas[0].filePath):
+        replicas = data_product.replica_locations
+        if replicas and replicas[0].file_path:
+            if view_utils.is_shared_path(replicas[0].file_path):
                 # Only admins can edit files in a shared directory.
                 return request.is_gateway_admin
         return True
