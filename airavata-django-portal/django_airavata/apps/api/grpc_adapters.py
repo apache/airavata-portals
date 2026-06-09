@@ -28,7 +28,6 @@ from airavata.model.appcatalog.parallelism.ttypes import (
 )
 from airavata.model.appcatalog.parser.ttypes import IOType as _ThriftIOType
 from airavata.model.application.io.ttypes import DataType as _ThriftDataType
-from airavata.model.credential.store.ttypes import SummaryType as _ThriftSummaryType
 from airavata.model.data.replica.ttypes import (
     DataProductType as _ThriftDataProductType,
     ReplicaLocationCategory as _ThriftReplicaLocationCategory,
@@ -240,22 +239,6 @@ def compute_resource(pb):
     )
 
 
-def proto_summary_type(thrift_summary_type):
-    """Thrift ``SummaryType`` -> proto ``SummaryType`` enum value (by name).
-
-    The credential facade's request messages take the proto enum value, so views
-    that still speak in Thrift ``SummaryType`` (e.g. for delete dispatch) convert
-    through here. Imported lazily so this module stays importable without the
-    gRPC SDK on the path (the SDK is required only once ``request.airavata`` is
-    actually used).
-    """
-    from airavata_sdk.generated.org.apache.airavata.model.credential.store import (
-        credential_store_pb2,
-    )
-    return credential_store_pb2.SummaryType.Value(
-        _ThriftSummaryType(thrift_summary_type).name)
-
-
 def experiment_summary(pb):
     """gRPC ``ExperimentSummaryModel`` protobuf -> ``ExperimentSummarySerializer`` shape."""
     return SimpleNamespace(
@@ -292,24 +275,6 @@ def experiment_statistics(pb):
         cancelledExperiments=[experiment_summary(s) for s in pb.cancelled_experiments],
         createdExperiments=[experiment_summary(s) for s in pb.created_experiments],
         runningExperiments=[experiment_summary(s) for s in pb.running_experiments],
-    )
-
-
-def credential_summary(pb):
-    """gRPC ``CredentialSummary`` protobuf -> ``CredentialSummarySerializer`` shape."""
-    return SimpleNamespace(
-        # proto/Thrift SummaryType have different ints per name -> bridge by name
-        # so the serializer's ThriftEnumField labels it correctly and
-        # perform_destroy's ``instance.type == SummaryType.SSH`` (Thrift) holds.
-        type=_thrift_enum(pb, 'type', _ThriftSummaryType),
-        gatewayId=pb.gateway_id,
-        username=pb.username,
-        publicKey=pb.public_key,
-        # int64 epoch millis, like the Thrift field; the serializer's
-        # UTCPosixTimestampDateTimeField divides by 1000, so keep it an int.
-        persistedTime=pb.persisted_time,
-        token=pb.token,
-        description=pb.description,
     )
 
 

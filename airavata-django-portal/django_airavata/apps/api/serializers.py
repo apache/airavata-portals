@@ -39,10 +39,6 @@ from airavata.model.application.io.ttypes import (
     InputDataObjectType,
     OutputDataObjectType
 )
-from airavata.model.credential.store.ttypes import (
-    CredentialSummary,
-    SummaryType
-)
 from airavata.model.data.replica.ttypes import (
     DataProductModel,
     DataReplicaLocationModel
@@ -164,6 +160,58 @@ class ProtoTimestampField(UTCPosixTimestampDateTimeField):
         if self.null_if_zero and not obj:
             return None
         return super().to_representation(obj)
+
+
+class ProtoEnumNameField(serializers.Field):
+    """Renders a protobuf enum field as the enum member NAME, the same string the
+    Thrift-generated ``ThriftEnumField`` / ``EnumChoiceField`` emitted.
+
+    The instance is the protobuf message and ``source`` is the proto enum field
+    name; ``to_representation`` receives that field's integer value and resolves
+    it to the member name. Construct via :func:`proto_enum_name_field`, which
+    snapshots the proto enum descriptor into the plain ``by_number``/``by_name``
+    dicts this field holds (the descriptor itself cannot be deep-copied, and DRF
+    deep-copies field instances when binding them). ``proto_prefix`` strips a
+    proto-only member prefix (proto3 namespaces members that would otherwise
+    collide, e.g. ``NOTIFICATION_PRIORITY_LOW`` -> ``LOW``); the bare-named
+    ``*_UNKNOWN`` zero sentinel renders ``None`` to match the old nullable fields.
+    """
+
+    def __init__(self, by_number, by_name, proto_prefix='', **kwargs):
+        self._by_number = by_number
+        self._by_name = by_name
+        self.proto_prefix = proto_prefix
+        super().__init__(**kwargs)
+
+    def to_representation(self, value):
+        name = self._by_number[value]
+        if self.proto_prefix and name.startswith(self.proto_prefix):
+            name = name[len(self.proto_prefix):]
+        if name.endswith('UNKNOWN') and value == 0:
+            return None
+        return name
+
+    def to_internal_value(self, data):
+        # Writes pass the member name; map back to the proto integer value.
+        name = data
+        if self.proto_prefix and (self.proto_prefix + name) in self._by_name:
+            name = self.proto_prefix + name
+        try:
+            return self._by_name[name]
+        except KeyError:
+            self.fail('invalid_choice', input=data)
+
+
+def proto_enum_name_field(enum_descriptor, proto_prefix='', **kwargs):
+    """Build a :class:`ProtoEnumNameField` from a proto enum descriptor.
+
+    Snapshots the descriptor into plain int<->name dicts so the resulting field
+    is deep-copyable (DRF deep-copies fields when binding them to a serializer).
+    """
+    return ProtoEnumNameField(
+        by_number={v.number: v.name for v in enum_descriptor.values},
+        by_name={v.name: v.number for v in enum_descriptor.values},
+        proto_prefix=proto_prefix, **kwargs)
 
 
 class StoredJSONField(serializers.JSONField):
@@ -1889,10 +1937,25 @@ class SharedEntitySerializer(serializers.Serializer):
             request, shared_entity['entityId'], "MANAGE_SHARING")
 
 
-class CredentialSummarySerializer(
-        thrift_utils.create_serializer_class(CredentialSummary)):
-    type = thrift_utils.ThriftEnumField(SummaryType)
-    persistedTime = UTCPosixTimestampDateTimeField()
+def _credential_store_pb2():
+    from airavata_sdk.generated.org.apache.airavata.model.credential.store import (
+        credential_store_pb2,
+    )
+    return credential_store_pb2
+
+
+class CredentialSummarySerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``CredentialSummary`` message."""
+
+    type = proto_enum_name_field(
+        _credential_store_pb2().SummaryType.DESCRIPTOR, read_only=True)
+    gatewayId = serializers.CharField(source='gateway_id', read_only=True)
+    username = serializers.CharField(read_only=True)
+    publicKey = serializers.CharField(source='public_key', read_only=True)
+    persistedTime = ProtoTimestampField(
+        source='persisted_time', read_only=True)
+    token = serializers.CharField(read_only=True)
+    description = serializers.CharField(read_only=True)
     userHasWriteAccess = serializers.SerializerMethodField()
 
     def get_userHasWriteAccess(self, credential_summary):

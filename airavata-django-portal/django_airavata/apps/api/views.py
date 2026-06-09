@@ -14,7 +14,6 @@ from airavata.model.appcatalog.computeresource.ttypes import (
     UnicoreJobSubmission
 )
 from airavata.model.application.io.ttypes import DataType
-from airavata.model.credential.store.ttypes import SummaryType
 from airavata.model.data.movement.ttypes import (
     GridFTPDataMovement,
     LOCALDataMovement,
@@ -1426,31 +1425,31 @@ class CredentialSummaryViewSet(APIBackedViewSet):
     serializer_class = serializers.CredentialSummarySerializer
 
     def _credential_summaries(self, summary_type):
-        return [
-            grpc_adapters.credential_summary(s)
-            for s in self.request.airavata.credential.get_all_credential_summaries(
-                self.gateway_id, grpc_adapters.proto_summary_type(summary_type))
-        ]
+        return list(
+            self.request.airavata.credential.get_all_credential_summaries(
+                self.gateway_id, summary_type))
 
     def get_list(self):
-        return (self._credential_summaries(SummaryType.SSH) +
-                self._credential_summaries(SummaryType.PASSWD))
+        pb2 = serializers._credential_store_pb2()
+        return (self._credential_summaries(pb2.SummaryType.SSH) +
+                self._credential_summaries(pb2.SummaryType.PASSWD))
 
     def get_instance(self, lookup_value):
-        return grpc_adapters.credential_summary(
-            self.request.airavata.credential.get_credential_summary(
-                lookup_value, self.gateway_id))
+        return self.request.airavata.credential.get_credential_summary(
+            lookup_value, self.gateway_id)
 
     @action(detail=False)
     def ssh(self, request):
+        pb2 = serializers._credential_store_pb2()
         serializer = self.get_serializer(
-            self._credential_summaries(SummaryType.SSH), many=True)
+            self._credential_summaries(pb2.SummaryType.SSH), many=True)
         return Response(serializer.data)
 
     @action(detail=False)
     def password(self, request):
+        pb2 = serializers._credential_store_pb2()
         serializer = self.get_serializer(
-            self._credential_summaries(SummaryType.PASSWD), many=True)
+            self._credential_summaries(pb2.SummaryType.PASSWD), many=True)
         return Response(serializer.data)
 
     @action(methods=['post'], detail=False)
@@ -1460,9 +1459,8 @@ class CredentialSummaryViewSet(APIBackedViewSet):
         description = request.data.get('description')
         token_id = request.airavata.credential.generate_and_register_ssh_keys(
             self.gateway_id, self.username, description)
-        credential_summary = grpc_adapters.credential_summary(
-            request.airavata.credential.get_credential_summary(
-                token_id, self.gateway_id))
+        credential_summary = request.airavata.credential.get_credential_summary(
+            token_id, self.gateway_id)
         serializer = self.get_serializer(credential_summary)
         return Response(serializer.data)
 
@@ -1480,17 +1478,17 @@ class CredentialSummaryViewSet(APIBackedViewSet):
             self.gateway_id,
             grpc_requests.password_credential(
                 self.gateway_id, self.username, username, password, description))
-        credential_summary = grpc_adapters.credential_summary(
-            request.airavata.credential.get_credential_summary(
-                token_id, self.gateway_id))
+        credential_summary = request.airavata.credential.get_credential_summary(
+            token_id, self.gateway_id)
         serializer = self.get_serializer(credential_summary)
         return Response(serializer.data)
 
     def perform_destroy(self, instance):
-        if instance.type == SummaryType.SSH:
+        pb2 = serializers._credential_store_pb2()
+        if instance.type == pb2.SummaryType.SSH:
             self.request.airavata.credential.delete_ssh_pub_key(
                 instance.token, self.gateway_id)
-        elif instance.type == SummaryType.PASSWD:
+        elif instance.type == pb2.SummaryType.PASSWD:
             self.request.airavata.credential.delete_pwd_credential(
                 instance.token, self.gateway_id)
 
