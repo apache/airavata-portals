@@ -10,17 +10,21 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
 
 from django_airavata.app_config import AiravataAppConfig
+from django_airavata.apps.api import grpc_adapters
 from django_airavata.apps.api.models import User_Notifications
 
 logger = logging.getLogger(__name__)
 
 
 def get_notifications(request):
-    if request.user.is_authenticated and hasattr(request, 'airavata_client'):
+    if request.user.is_authenticated and getattr(request, 'authz_token', None):
         unread_notifications = 0
         try:
-            notifications = request.airavata_client.getAllNotifications(
-                request.authz_token, settings.GATEWAY_ID)
+            notifications = [
+                grpc_adapters.notification(n)
+                for n in request.airavata.research.get_all_notifications(
+                    settings.GATEWAY_ID)
+            ]
         except Exception:
             logger.warning("Failed to load notifications")
             notifications = []
