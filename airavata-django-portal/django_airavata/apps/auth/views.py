@@ -260,8 +260,8 @@ def verify_email(request, code):
             iam_admin_client.enable_user(username)
             user_profile = iam_admin_client.get_user(username)
             email_address = user_profile.emails[0]
-            first_name = user_profile.firstName
-            last_name = user_profile.lastName
+            first_name = user_profile.first_name
+            last_name = user_profile.last_name
             utils.send_new_user_email(request,
                                       username,
                                       email_address,
@@ -305,8 +305,8 @@ def resend_email_link(request):
                         request,
                         username,
                         email_address,
-                        user_profile.firstName,
-                        user_profile.lastName)
+                        user_profile.first_name,
+                        user_profile.last_name)
                     messages.success(
                         request,
                         "Email verification link sent successfully. Please "
@@ -414,8 +414,8 @@ def _create_and_send_password_reset_request_link(request, username):
     context = Context({
         "username": username,
         "email": user.emails[0],
-        "first_name": user.firstName,
-        "last_name": user.lastName,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
         "portal_title": settings.PORTAL_TITLE,
         "url": verification_uri,
     })
@@ -622,14 +622,12 @@ class UserViewSet(viewsets.ModelViewSet):
 
         try:
             # only update the airavata profile if it exists
-            user_profile_client = request.profile_service['user_profile']
-            if user_profile_client.doesUserExist(request.authz_token,
-                                                 request.user.username,
-                                                 settings.GATEWAY_ID):
-                airavata_user_profile = user_profile_client.getUserProfileById(
-                    request.authz_token, user.username, settings.GATEWAY_ID)
-                airavata_user_profile.emails = [pending_email_change.email_address]
-                user_profile_client.updateUserProfile(request.authz_token, airavata_user_profile)
+            iam = request.airavata.iam
+            if iam.does_user_exist(request.user.username, settings.GATEWAY_ID):
+                airavata_user_profile = iam.get_user_profile_by_id(
+                    user.username, settings.GATEWAY_ID)
+                airavata_user_profile.emails[:] = [pending_email_change.email_address]
+                iam.update_user_profile(airavata_user_profile)
             # otherwise, update the user's email in the Keycloak user store
             else:
                 iam_admin_client.update_user(request.user.username,

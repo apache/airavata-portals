@@ -68,17 +68,15 @@ class UserSerializer(serializers.ModelSerializer):
             self._send_email_verification_link(request, pending_email_change)
         instance.save()
         # save in the user profile service too
-        user_profile_client = request.profile_service['user_profile']
+        iam = request.airavata.iam
 
         # update the Airavata profile if it exists
-        if user_profile_client.doesUserExist(request.authz_token,
-                                             request.user.username,
-                                             settings.GATEWAY_ID):
-            airavata_user_profile = user_profile_client.getUserProfileById(
-                request.authz_token, request.user.username, settings.GATEWAY_ID)
-            airavata_user_profile.firstName = instance.first_name
-            airavata_user_profile.lastName = instance.last_name
-            user_profile_client.updateUserProfile(request.authz_token, airavata_user_profile)
+        if iam.does_user_exist(request.user.username, settings.GATEWAY_ID):
+            airavata_user_profile = iam.get_user_profile_by_id(
+                request.user.username, settings.GATEWAY_ID)
+            airavata_user_profile.first_name = instance.first_name
+            airavata_user_profile.last_name = instance.last_name
+            iam.update_user_profile(airavata_user_profile)
         # otherwise, update in Keycloak user store
         else:
             iam_admin_client.update_user(request.user.username,

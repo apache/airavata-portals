@@ -1,70 +1,91 @@
-"""
-Wrapper around the IAM Admin Services client.
+"""IAM admin operations via the gRPC ``iam`` facade.
+
+These operations (username availability, user registration, enable/reset) run in
+unauthenticated contexts — account creation, email verification, password reset —
+so they use a Keycloak **service-account** token rather than a logged-in user's
+token. Each call builds a short-lived ``AiravataClient`` scoped to that token and
+talks to the gRPC ``iam`` facade; callers consume the returned protobuf
+``UserProfile`` directly (``user_id``/``first_name``/``last_name``/``emails``).
+
+``update_user``/``update_username`` talk to the Keycloak admin REST API directly
+(not the gRPC backend) and are unchanged.
 """
 
 import logging
+from contextlib import contextmanager
 from urllib.parse import urlparse
 
 import requests
 from django.conf import settings
 
-from django_airavata.utils import iamadmin_client_pool
+from django_airavata.airavata_grpc import build_airavata_client
 
 from . import utils
 
 logger = logging.getLogger(__name__)
 
 
+@contextmanager
+def _iam():
+    """Yield the gRPC ``iam`` facade scoped to the Keycloak service account.
+
+    The IAM admin operations resolve the Keycloak realm from the request's
+    gateway claim, so the service-account client carries ``gatewayID`` in its
+    ``x-claims`` metadata (mirroring the legacy service-account ``AuthzToken``).
+    """
+    access_token = utils.get_service_account_authz_token().accessToken
+    client = build_airavata_client(
+        access_token, claims={'gatewayID': settings.GATEWAY_ID})
+    try:
+        yield client.iam
+    finally:
+        client.close()
+
+
 def is_username_available(username):
-    authz_token = utils.get_service_account_authz_token()
-    return iamadmin_client_pool.isUsernameAvailable(authz_token, username)
+    with _iam() as iam:
+        return iam.is_username_available(username)
 
 
 def register_user(username, email_address, first_name, last_name, password):
-    authz_token = utils.get_service_account_authz_token()
-    return iamadmin_client_pool.registerUser(
-        authz_token,
-        username,
-        email_address,
-        first_name,
-        last_name,
-        password)
+    with _iam() as iam:
+        return iam.register_user(
+            username, email_address, first_name, last_name, password)
 
 
 def is_user_enabled(username):
-    authz_token = utils.get_service_account_authz_token()
-    return iamadmin_client_pool.isUserEnabled(authz_token, username)
+    with _iam() as iam:
+        return iam.is_user_enabled(username)
 
 
 def enable_user(username):
-    authz_token = utils.get_service_account_authz_token()
-    return iamadmin_client_pool.enableUser(authz_token, username)
+    with _iam() as iam:
+        return iam.enable_user(username)
 
 
 def delete_user(username):
-    authz_token = utils.get_service_account_authz_token()
-    return iamadmin_client_pool.deleteUser(authz_token, username)
+    with _iam() as iam:
+        return iam.delete_iam_user(username)
 
 
 def is_user_exist(username):
-    authz_token = utils.get_service_account_authz_token()
-    return iamadmin_client_pool.isUserExist(authz_token, username)
+    with _iam() as iam:
+        return iam.is_user_exist(username)
 
 
 def get_user(username):
-    authz_token = utils.get_service_account_authz_token()
-    return iamadmin_client_pool.getUser(authz_token, username)
+    with _iam() as iam:
+        return iam.get_iam_user(username)
 
 
 def get_users(offset, limit, search=None):
-    authz_token = utils.get_service_account_authz_token()
-    return iamadmin_client_pool.getUsers(authz_token, offset, limit, search)
+    with _iam() as iam:
+        return iam.get_iam_users(offset, limit, search or "")
 
 
 def reset_user_password(username, new_password):
-    authz_token = utils.get_service_account_authz_token()
-    return iamadmin_client_pool.resetUserPassword(
-        authz_token, username, new_password)
+    with _iam() as iam:
+        return iam.reset_user_password(username, new_password)
 
 
 def update_username(username, new_username):
