@@ -3,7 +3,6 @@ import json
 import logging
 from urllib.parse import urlparse
 
-from airavata.model.application.io.ttypes import DataType
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.utils.module_loading import import_string
@@ -84,9 +83,15 @@ def create_experiment(request, app_module_id):
         raise Exception("Failed to load application module data: {}".format(
             app_interface.data['detail']))
     user_input_values = {}
+    # The serialized application-input `type` is the DataType member NAME; the
+    # historical Thrift DataType integers are kept here so the comparisons below
+    # behave exactly as before (a string never equals an int, as was already the
+    # case with the Thrift IntEnum members).
+    DataType_URI = 3
+    DataType_STRING = 0
     for app_input in app_interface.data['applicationInputs']:
         if (app_input['type'] ==
-                DataType.URI and app_input['name'] in request.GET):
+                DataType_URI and app_input['name'] in request.GET):
             user_file_value = request.GET[app_input['name']]
             try:
                 user_file_url = urlparse(user_file_value)
@@ -105,7 +110,7 @@ def create_experiment(request, app_module_id):
                             f"Failed checking data product uri: {dp_uri}", extra={'request': request})
             except ValueError:
                 logger.exception(f"Invalid user file value: {user_file_value}", extra={'request': request})
-        elif (app_input['type'] == DataType.STRING and
+        elif (app_input['type'] == DataType_STRING and
               app_input['name'] in request.GET):
             name = app_input['name']
             user_input_values[name] = request.GET[name]

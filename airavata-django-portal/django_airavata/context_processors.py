@@ -23,15 +23,17 @@ _notification_priority_proto_to_thrift = None
 def _notification_priority(value):
     global _notification_priority_proto_to_thrift
     if _notification_priority_proto_to_thrift is None:
-        from airavata.model.workspace.ttypes import NotificationPriority
         from airavata_sdk.generated.org.apache.airavata.model.workspace import (
             workspace_pb2,
         )
         proto = workspace_pb2.NotificationPriority
+        # Historical Thrift NotificationPriority integers (LOW/NORMAL/HIGH =
+        # 0/1/2) the dashboard expects; proto assigns 1/2/3 (0 = UNKNOWN).
+        thrift_ints = {'LOW': 0, 'NORMAL': 1, 'HIGH': 2}
         _notification_priority_proto_to_thrift = {
-            v.number: int(getattr(NotificationPriority, v.name))
+            v.number: thrift_ints[v.name]
             for v in proto.DESCRIPTOR.values
-            if hasattr(NotificationPriority, v.name)
+            if v.name in thrift_ints
         }
     return _notification_priority_proto_to_thrift.get(value)
 

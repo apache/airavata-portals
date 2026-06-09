@@ -1,11 +1,10 @@
 import datetime
+import enum
 import json
 import logging
 import os
 from urllib.parse import quote
 
-from airavata.model.appcatalog.parser.ttypes import IOType as _ThriftIOType
-from airavata.model.group.ttypes import ResourcePermissionType
 from airavata_django_portal_sdk import (
     experiment_util
 )
@@ -21,6 +20,45 @@ log = logging.getLogger(__name__)
 # Directory under user storage where uploaded experiment input files are staged
 # (matches the legacy airavata_django_portal_sdk convention).
 TMP_INPUT_FILE_UPLOAD_DIR = "tmp"
+
+
+# Historical Thrift enum member -> integer tables. The REST contract emits
+# these Thrift enum integers (e.g. dataProductType FILE == 0), which differ from
+# the proto enum integers; the proto-native serializers bridge by member NAME via
+# proto_enum_int_field / proto_enum_keyed_map_field. Hardcoded so the portal no
+# longer depends on the legacy Thrift model types for the enum values.
+_THRIFT_ENUM_INTS = {
+    'ApplicationParallelismType': {'CCM': 4, 'CRAY_MPI': 5, 'MPI': 1, 'OPENMP': 2, 'OPENMP_MPI': 3, 'SERIAL': 0},
+    'DataMovementProtocol': {'GridFTP': 3, 'LOCAL': 0, 'SCP': 1, 'SFTP': 2, 'UNICORE_STORAGE_SERVICE': 4},
+    'DataProductType': {'COLLECTION': 1, 'FILE': 0},
+    'DataType': {'FLOAT': 2, 'INTEGER': 1, 'STDERR': 6, 'STDOUT': 5, 'STRING': 0, 'URI': 3, 'URI_COLLECTION': 4},
+    'ExperimentState': {'CANCELED': 6, 'CANCELING': 5, 'COMPLETED': 7, 'CREATED': 0, 'EXECUTING': 4, 'FAILED': 8, 'LAUNCHED': 3, 'SCHEDULED': 2, 'VALIDATED': 1},
+    'ExperimentType': {'SINGLE_APPLICATION': 0, 'WORKFLOW': 1},
+    'FileSystems': {'ARCHIVE': 4, 'HOME': 0, 'LOCALTMP': 2, 'SCRATCH': 3, 'WORK': 1},
+    'IOType': {'FILE': 0, 'PROPERTY': 1},
+    'JobManagerCommand': {'CHECK_JOB': 3, 'DELETION': 2, 'JOB_MONITORING': 1, 'SHOW_CLUSTER_INFO': 7, 'SHOW_NO_OF_PENDING_JOBS': 9, 'SHOW_NO_OF_RUNNING_JOBS': 8, 'SHOW_QUEUE': 4, 'SHOW_RESERVATION': 5, 'SHOW_START': 6, 'SUBMISSION': 0},
+    'JobState': {'ACTIVE': 2, 'CANCELED': 4, 'COMPLETE': 3, 'FAILED': 5, 'NON_CRITICAL_FAIL': 8, 'QUEUED': 1, 'SUBMITTED': 0, 'SUSPENDED': 6, 'UNKNOWN': 7},
+    'JobSubmissionProtocol': {'CLOUD': 4, 'GLOBUS': 2, 'LOCAL': 0, 'LOCAL_FORK': 6, 'SSH': 1, 'SSH_FORK': 5, 'UNICORE': 3},
+    'MonitorMode': {'CLOUD_JOB_MONITOR': 1, 'FORK': 4, 'JOB_EMAIL_NOTIFICATION_MONITOR': 2, 'LOCAL': 5, 'POLL_JOB_MANAGER': 0, 'XSEDE_AMQP_SUBSCRIBE': 3},
+    'ProcessState': {'CANCELED': 13, 'CANCELLING': 12, 'COMPLETED': 10, 'CONFIGURING_WORKSPACE': 4, 'CREATED': 0, 'DEQUEUING': 15, 'EXECUTING': 6, 'FAILED': 11, 'INPUT_DATA_STAGING': 5, 'MONITORING': 7, 'OUTPUT_DATA_STAGING': 8, 'POST_PROCESSING': 9, 'PRE_PROCESSING': 3, 'QUEUED': 14, 'REQUEUED': 16, 'STARTED': 2, 'VALIDATED': 1},
+    'ProviderName': {'AWSEC2': 1, 'EC2': 0, 'RACKSPACE': 2},
+    'ReplicaLocationCategory': {'COMPUTE_RESOURCE': 1, 'GATEWAY_DATA_STORE': 0, 'LONG_TERM_STORAGE_RESOURCE': 2, 'OTHER': 3},
+    'ReplicaPersistentType': {'PERSISTENT': 1, 'TRANSIENT': 0},
+    'ResourceJobManagerType': {'AIRAVATA_CUSTOM': 6, 'CLOUD': 5, 'FORK': 0, 'HTCONDOR': 7, 'LSF': 3, 'PBS': 1, 'SLURM': 2, 'UGE': 4},
+    'ResourcePermissionType': {'MANAGE_SHARING': 3, 'OWNER': 2, 'READ': 1, 'WRITE': 0},
+    'ResourceType': {'AWS': 1, 'SLURM': 0},
+    'SecurityProtocol': {'GSI': 2, 'KERBEROS': 3, 'LOCAL': 5, 'OAUTH': 4, 'SSH_KEYS': 1, 'USERNAME_PASSWORD': 0},
+    'Status': {'ACTIVE': 0, 'APPROVED': 2, 'CONFIRMED': 1, 'DECLINED': 12, 'DELETED': 3, 'DENIED': 7, 'DUPLICATE': 4, 'EXPIRED': 13, 'GRACE_PERIOD': 5, 'INVITED': 6, 'PENDING': 8, 'PENDING_APPROVAL': 9, 'PENDING_CONFIRMATION': 10, 'SUSPENDED': 11},
+    'TaskState': {'CANCELED': 4, 'COMPLETED': 2, 'CREATED': 0, 'EXECUTING': 1, 'FAILED': 3},
+    'TaskTypes': {'DATA_STAGING': 1, 'ENV_CLEANUP': 3, 'ENV_SETUP': 0, 'JOB_SUBMISSION': 2, 'MONITORING': 4, 'OUTPUT_FETCHING': 5},
+}
+
+
+# The share/revoke set logic uses these as comparable sentinels (the sharing
+# facade is addressed by the member NAME, e.g. "WRITE"); a plain IntEnum mirroring
+# the historical Thrift values keeps the portal free of the Thrift model type.
+ResourcePermissionType = enum.IntEnum(
+    'ResourcePermissionType', _THRIFT_ENUM_INTS['ResourcePermissionType'])
 
 
 def user_has_access(request, resource_id, permission="WRITE"):
@@ -202,11 +240,12 @@ class ProtoEnumIntField(serializers.Field):
         return self._thrift_to_proto.get(int(data), 0)
 
 
-def proto_enum_int_field(enum_descriptor, thrift_enum, proto_prefix='',
+def proto_enum_int_field(enum_descriptor, thrift_ints, proto_prefix='',
                          name_map=None, **kwargs):
-    """Build a :class:`ProtoEnumIntField` bridging a proto enum to the Thrift enum
-    integer by member NAME (stripping ``proto_prefix`` from proto-namespaced
-    members). Members absent from the Thrift enum map to ``None``.
+    """Build a :class:`ProtoEnumIntField` bridging a proto enum to the historical
+    Thrift enum INTEGER by member NAME (stripping ``proto_prefix`` from
+    proto-namespaced members). ``thrift_ints`` is the ``{member name: thrift int}``
+    table (see :data:`_THRIFT_ENUM_INTS`); members absent from it map to ``None``.
 
     ``name_map`` overrides the proto-member-name -> Thrift-member-name mapping for
     enums whose member names diverge beyond a simple prefix (proto3 namespacing of
@@ -223,10 +262,10 @@ def proto_enum_int_field(enum_descriptor, thrift_enum, proto_prefix='',
             name = v.name
             if proto_prefix and name.startswith(proto_prefix):
                 name = name[len(proto_prefix):]
-        thrift_member = getattr(thrift_enum, name, None)
-        if thrift_member is not None:
-            proto_to_thrift[v.number] = int(thrift_member)
-            thrift_to_proto[int(thrift_member)] = v.number
+        thrift_int = thrift_ints.get(name)
+        if thrift_int is not None:
+            proto_to_thrift[v.number] = thrift_int
+            thrift_to_proto[thrift_int] = v.number
         else:
             proto_to_thrift[v.number] = None
     return ProtoEnumIntField(
@@ -244,15 +283,13 @@ _DATA_MOVEMENT_PROTOCOL_NAME_MAP = {'DATA_MOVEMENT_PROTOCOL_LOCAL': 'LOCAL'}
 def job_submission_protocol_field(**kwargs):
     """A :class:`ProtoEnumIntField` rendering proto ``JobSubmissionProtocol`` as
     the Thrift integer (proto ``JSP_CLOUD`` -> Thrift ``CLOUD``)."""
-    from airavata.model.appcatalog.computeresource.ttypes import (
-        JobSubmissionProtocol as _ThriftJobSubmissionProtocol,
-    )
     from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
         compute_resource_pb2,
     )
     return proto_enum_int_field(
         compute_resource_pb2.JobSubmissionProtocol.DESCRIPTOR,
-        _ThriftJobSubmissionProtocol, proto_prefix='JOB_SUBMISSION_PROTOCOL_',
+        _THRIFT_ENUM_INTS['JobSubmissionProtocol'],
+        proto_prefix='JOB_SUBMISSION_PROTOCOL_',
         name_map=_JOB_SUBMISSION_PROTOCOL_NAME_MAP, **kwargs)
 
 
@@ -260,15 +297,13 @@ def data_movement_protocol_field(**kwargs):
     """A :class:`ProtoEnumIntField` rendering proto ``DataMovementProtocol`` as
     the Thrift integer (proto ``DATA_MOVEMENT_PROTOCOL_LOCAL`` -> Thrift ``LOCAL``;
     proto-only ``GRID_FTP`` -> None)."""
-    from airavata.model.data.movement.ttypes import (
-        DataMovementProtocol as _ThriftDataMovementProtocol,
-    )
     from airavata_sdk.generated.org.apache.airavata.model.data.movement import (
         data_movement_pb2,
     )
     return proto_enum_int_field(
         data_movement_pb2.DataMovementProtocol.DESCRIPTOR,
-        _ThriftDataMovementProtocol, proto_prefix='DATA_MOVEMENT_PROTOCOL_',
+        _THRIFT_ENUM_INTS['DataMovementProtocol'],
+        proto_prefix='DATA_MOVEMENT_PROTOCOL_',
         name_map=_DATA_MOVEMENT_PROTOCOL_NAME_MAP, **kwargs)
 
 
@@ -289,16 +324,14 @@ class ProtoFileSystemsMapField(serializers.Field):
 
     def _key_map(self):
         if self._proto_to_thrift is None:
-            from airavata.model.appcatalog.computeresource.ttypes import (
-                FileSystems,
-            )
             from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
                 compute_resource_pb2,
             )
             proto_fs = compute_resource_pb2.FileSystems
+            thrift_fs = _THRIFT_ENUM_INTS['FileSystems']
             self._proto_to_thrift = {
-                proto_fs.Value(name): int(getattr(FileSystems, name))
-                for name in proto_fs.keys() if hasattr(FileSystems, name)
+                proto_fs.Value(name): thrift_fs[name]
+                for name in proto_fs.keys() if name in thrift_fs
             }
         return self._proto_to_thrift
 
@@ -330,15 +363,17 @@ class ProtoEnumKeyedMapField(serializers.Field):
             for k, v in value.items() if k in self._key_labels}
 
 
-def proto_enum_keyed_map_field(proto_enum_descriptor, thrift_enum, **kwargs):
+def proto_enum_keyed_map_field(proto_enum_descriptor, thrift_enum_name,
+                               thrift_ints, **kwargs):
     """Build a :class:`ProtoEnumKeyedMapField` mapping each proto enum int key to
-    ``str(Thrift enum member)`` by member name (proto and Thrift assign different
-    ints; unknown/zero-sentinel keys are dropped)."""
+    ``"<ThriftEnum>.<member>"`` — the string the old enum-keyed Thrift map's
+    ``DictField`` rendered (``str`` of a Thrift ``IntEnum`` member) — by member
+    name; members absent from ``thrift_ints`` (unknown/zero sentinels) are dropped.
+    """
     key_labels = {}
     for v in proto_enum_descriptor.values:
-        thrift_member = getattr(thrift_enum, v.name, None)
-        if thrift_member is not None:
-            key_labels[v.number] = str(thrift_member)
+        if v.name in thrift_ints:
+            key_labels[v.number] = "{}.{}".format(thrift_enum_name, v.name)
     return ProtoEnumKeyedMapField(key_labels=key_labels, **kwargs)
 
 
@@ -847,16 +882,13 @@ def _app_deployment_pb2():
 
 
 def _parallelism_field(**kwargs):
-    from airavata.model.appcatalog.parallelism.ttypes import (
-        ApplicationParallelismType as _ThriftParallelismType,
-    )
     from airavata_sdk.generated.org.apache.airavata.model.parallelism import (
         parallelism_pb2,
     )
     return proto_enum_int_field(
         parallelism_pb2.ApplicationParallelismType.DESCRIPTOR,
-        _ThriftParallelismType, proto_prefix='APPLICATION_PARALLELISM_TYPE_',
-        **kwargs)
+        _THRIFT_ENUM_INTS['ApplicationParallelismType'],
+        proto_prefix='APPLICATION_PARALLELISM_TYPE_', **kwargs)
 
 
 class CommandObjectSerializer(serializers.Serializer):
@@ -1110,51 +1142,42 @@ _MONITOR_MODE_NAME_MAP = {'MONITOR_FORK': 'FORK', 'MONITOR_LOCAL': 'LOCAL'}
 
 
 def _security_protocol_field(**kwargs):
-    from airavata.model.data.movement.ttypes import (
-        SecurityProtocol as _ThriftSecurityProtocol,
-    )
     from airavata_sdk.generated.org.apache.airavata.model.data.movement import (
         data_movement_pb2,
     )
     return proto_enum_int_field(
-        data_movement_pb2.SecurityProtocol.DESCRIPTOR, _ThriftSecurityProtocol,
+        data_movement_pb2.SecurityProtocol.DESCRIPTOR,
+        _THRIFT_ENUM_INTS['SecurityProtocol'],
         proto_prefix='SECURITY_PROTOCOL_', **kwargs)
 
 
 def _resource_job_manager_type_field(**kwargs):
-    from airavata.model.appcatalog.computeresource.ttypes import (
-        ResourceJobManagerType as _ThriftResourceJobManagerType,
-    )
     from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
         compute_resource_pb2,
     )
     return proto_enum_int_field(
         compute_resource_pb2.ResourceJobManagerType.DESCRIPTOR,
-        _ThriftResourceJobManagerType,
+        _THRIFT_ENUM_INTS['ResourceJobManagerType'],
         proto_prefix='RESOURCE_JOB_MANAGER_TYPE_', **kwargs)
 
 
 def _provider_name_field(**kwargs):
-    from airavata.model.appcatalog.computeresource.ttypes import (
-        ProviderName as _ThriftProviderName,
-    )
     from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
         compute_resource_pb2,
     )
     return proto_enum_int_field(
-        compute_resource_pb2.ProviderName.DESCRIPTOR, _ThriftProviderName,
+        compute_resource_pb2.ProviderName.DESCRIPTOR,
+        _THRIFT_ENUM_INTS['ProviderName'],
         proto_prefix='PROVIDER_NAME_', **kwargs)
 
 
 def _monitor_mode_field(**kwargs):
-    from airavata.model.appcatalog.computeresource.ttypes import (
-        MonitorMode as _ThriftMonitorMode,
-    )
     from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
         compute_resource_pb2,
     )
     return proto_enum_int_field(
-        compute_resource_pb2.MonitorMode.DESCRIPTOR, _ThriftMonitorMode,
+        compute_resource_pb2.MonitorMode.DESCRIPTOR,
+        _THRIFT_ENUM_INTS['MonitorMode'],
         name_map=_MONITOR_MODE_NAME_MAP, **kwargs)
 
 
@@ -1176,26 +1199,23 @@ class ResourceJobManagerSerializer(serializers.Serializer):
     parallelismPrefix = serializers.SerializerMethodField()
 
     def get_jobManagerCommands(self, pb):
-        from airavata.model.appcatalog.computeresource.ttypes import (
-            JobManagerCommand as _ThriftJobManagerCommand,
-        )
         from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
             compute_resource_pb2,
         )
         return proto_enum_keyed_map_field(
             compute_resource_pb2.JobManagerCommand.DESCRIPTOR,
-            _ThriftJobManagerCommand).to_representation(pb.job_manager_commands)
+            'JobManagerCommand', _THRIFT_ENUM_INTS['JobManagerCommand'],
+        ).to_representation(pb.job_manager_commands)
 
     def get_parallelismPrefix(self, pb):
-        from airavata.model.appcatalog.parallelism.ttypes import (
-            ApplicationParallelismType as _ThriftParallelismType,
-        )
         from airavata_sdk.generated.org.apache.airavata.model.parallelism import (
             parallelism_pb2,
         )
         return proto_enum_keyed_map_field(
             parallelism_pb2.ApplicationParallelismType.DESCRIPTOR,
-            _ThriftParallelismType).to_representation(pb.parallelism_prefix)
+            'ApplicationParallelismType',
+            _THRIFT_ENUM_INTS['ApplicationParallelismType'],
+        ).to_representation(pb.parallelism_prefix)
 
 
 class LocalJobSubmissionSerializer(serializers.Serializer):
@@ -1305,30 +1325,28 @@ def _status_pb2():
 
 
 def _experiment_state_field(**kwargs):
-    from airavata.model.status.ttypes import ExperimentState as _T
     return proto_enum_int_field(
-        _status_pb2().ExperimentState.DESCRIPTOR, _T,
+        _status_pb2().ExperimentState.DESCRIPTOR,
+        _THRIFT_ENUM_INTS['ExperimentState'],
         proto_prefix='EXPERIMENT_STATE_', **kwargs)
 
 
 def _process_state_field(**kwargs):
-    from airavata.model.status.ttypes import ProcessState as _T
     return proto_enum_int_field(
-        _status_pb2().ProcessState.DESCRIPTOR, _T,
+        _status_pb2().ProcessState.DESCRIPTOR,
+        _THRIFT_ENUM_INTS['ProcessState'],
         proto_prefix='PROCESS_STATE_', **kwargs)
 
 
 def _task_state_field(**kwargs):
-    from airavata.model.status.ttypes import TaskState as _T
     return proto_enum_int_field(
-        _status_pb2().TaskState.DESCRIPTOR, _T,
+        _status_pb2().TaskState.DESCRIPTOR, _THRIFT_ENUM_INTS['TaskState'],
         proto_prefix='TASK_STATE_', **kwargs)
 
 
 def _job_state_field(**kwargs):
-    from airavata.model.status.ttypes import JobState as _T
     return proto_enum_int_field(
-        _status_pb2().JobState.DESCRIPTOR, _T,
+        _status_pb2().JobState.DESCRIPTOR, _THRIFT_ENUM_INTS['JobState'],
         proto_prefix='JOB_STATE_', **kwargs)
 
 
@@ -1487,10 +1505,10 @@ class _TaskModelSerializer(serializers.Serializer):
     currentRetry = serializers.IntegerField(source='current_retry', allow_null=True, required=False)
 
     def get_taskType(self, task):
-        from airavata.model.task.ttypes import TaskTypes as _T
         from airavata_sdk.generated.org.apache.airavata.model.task import task_pb2
         field = proto_enum_int_field(
-            task_pb2.TaskTypes.DESCRIPTOR, _T, proto_prefix='TASK_TYPES_')
+            task_pb2.TaskTypes.DESCRIPTOR, _THRIFT_ENUM_INTS['TaskTypes'],
+            proto_prefix='TASK_TYPES_')
         return field.to_representation(task.task_type)
 
 
@@ -1536,12 +1554,12 @@ class _ProcessModelSerializer(serializers.Serializer):
 
 
 def _experiment_type_field(**kwargs):
-    from airavata.model.experiment.ttypes import ExperimentType as _T
     from airavata_sdk.generated.org.apache.airavata.model.experiment import (
         experiment_pb2,
     )
     return proto_enum_int_field(
-        experiment_pb2.ExperimentType.DESCRIPTOR, _T,
+        experiment_pb2.ExperimentType.DESCRIPTOR,
+        _THRIFT_ENUM_INTS['ExperimentType'],
         proto_prefix='EXPERIMENT_TYPE_', **kwargs)
 
 
@@ -1716,23 +1734,23 @@ def _replica_catalog_pb2():
 
 
 def _data_product_type_field(**kwargs):
-    from airavata.model.data.replica.ttypes import DataProductType as _T
     return proto_enum_int_field(
-        _replica_catalog_pb2().DataProductType.DESCRIPTOR, _T,
+        _replica_catalog_pb2().DataProductType.DESCRIPTOR,
+        _THRIFT_ENUM_INTS['DataProductType'],
         proto_prefix='DATA_PRODUCT_TYPE_', **kwargs)
 
 
 def _replica_location_category_field(**kwargs):
-    from airavata.model.data.replica.ttypes import ReplicaLocationCategory as _T
     return proto_enum_int_field(
-        _replica_catalog_pb2().ReplicaLocationCategory.DESCRIPTOR, _T,
+        _replica_catalog_pb2().ReplicaLocationCategory.DESCRIPTOR,
+        _THRIFT_ENUM_INTS['ReplicaLocationCategory'],
         proto_prefix='REPLICA_LOCATION_CATEGORY_', **kwargs)
 
 
 def _replica_persistent_type_field(**kwargs):
-    from airavata.model.data.replica.ttypes import ReplicaPersistentType as _T
     return proto_enum_int_field(
-        _replica_catalog_pb2().ReplicaPersistentType.DESCRIPTOR, _T,
+        _replica_catalog_pb2().ReplicaPersistentType.DESCRIPTOR,
+        _THRIFT_ENUM_INTS['ReplicaPersistentType'],
         proto_prefix='REPLICA_PERSISTENT_TYPE_', **kwargs)
 
 
@@ -1937,10 +1955,9 @@ def _user_profile_pb2():
 
 
 def _user_status_field(**kwargs):
-    from airavata.model.user.ttypes import Status as _T
     return proto_enum_int_field(
-        _user_profile_pb2().Status.DESCRIPTOR, _T, proto_prefix='STATUS_',
-        **kwargs)
+        _user_profile_pb2().Status.DESCRIPTOR, _THRIFT_ENUM_INTS['Status'],
+        proto_prefix='STATUS_', **kwargs)
 
 
 class UserProfileSerializer(serializers.Serializer):
@@ -2006,12 +2023,9 @@ def _grp_pb2():
 
 
 def _resource_type_field(**kwargs):
-    from airavata.model.appcatalog.groupresourceprofile.ttypes import (
-        ResourceType as _T,
-    )
     return proto_enum_int_field(
-        _grp_pb2().ResourceType.DESCRIPTOR, _T, proto_prefix='RESOURCE_TYPE_',
-        **kwargs)
+        _grp_pb2().ResourceType.DESCRIPTOR, _THRIFT_ENUM_INTS['ResourceType'],
+        proto_prefix='RESOURCE_TYPE_', **kwargs)
 
 
 class ComputeResourceReservationSerializer(serializers.Serializer):
@@ -2753,7 +2767,7 @@ class ParserInputSerializer(serializers.Serializer):
         source='parser_id', allow_blank=True, allow_null=True, required=False)
     # IOType renders as the Thrift integer (proto FILE=1 -> Thrift FILE=0).
     type = proto_enum_int_field(
-        _parser_pb2().IOType.DESCRIPTOR, _ThriftIOType, 'IO_TYPE_',
+        _parser_pb2().IOType.DESCRIPTOR, _THRIFT_ENUM_INTS['IOType'], 'IO_TYPE_',
         required=False, allow_null=True)
 
 
@@ -2767,7 +2781,7 @@ class ParserOutputSerializer(serializers.Serializer):
     parserId = serializers.CharField(
         source='parser_id', allow_blank=True, allow_null=True, required=False)
     type = proto_enum_int_field(
-        _parser_pb2().IOType.DESCRIPTOR, _ThriftIOType, 'IO_TYPE_',
+        _parser_pb2().IOType.DESCRIPTOR, _THRIFT_ENUM_INTS['IOType'], 'IO_TYPE_',
         required=False, allow_null=True)
 
 

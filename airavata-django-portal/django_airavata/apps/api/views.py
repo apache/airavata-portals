@@ -7,10 +7,6 @@ import warnings
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
-from airavata.model.experiment.ttypes import (
-    ExperimentSearchFields
-)
-from airavata.model.group.ttypes import ResourcePermissionType
 from airavata_django_portal_sdk import (
     experiment_util,
     queue_settings_calculators
@@ -336,9 +332,14 @@ class ExperimentSearchViewSet(mixins.ListModelMixin, GenericAPIBackedViewSet):
 
         # gRPC SearchExperiments takes filters as a map<string, string> keyed by
         # ExperimentSearchFields member name (the query-param key already is one).
+        from airavata_sdk.generated.org.apache.airavata.model.experiment import (
+            experiment_pb2,
+        )
+        valid_fields = {
+            v.name for v in experiment_pb2.ExperimentSearchFields.DESCRIPTOR.values}
         filters = {}
         for key, value in self.request.query_params.items():
-            if key in ExperimentSearchFields.__members__:
+            if key in valid_fields:
                 filters[key] = value
 
         class ExperimentSearchResultIterator(APIResultIterator):
@@ -1017,13 +1018,13 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
         # Load accessible users in order of permission precedence: users that
         # have WRITE permission should also have READ
         users.update(self._load_directly_accessible_users(
-            lookup_value, ResourcePermissionType.READ))
+            lookup_value, serializers.ResourcePermissionType.READ))
         users.update(self._load_directly_accessible_users(
-            lookup_value, ResourcePermissionType.WRITE))
+            lookup_value, serializers.ResourcePermissionType.WRITE))
         users.update(self._load_directly_accessible_users(
-            lookup_value, ResourcePermissionType.MANAGE_SHARING))
+            lookup_value, serializers.ResourcePermissionType.MANAGE_SHARING))
         owner_ids = self._load_directly_accessible_users(
-            lookup_value, ResourcePermissionType.OWNER)
+            lookup_value, serializers.ResourcePermissionType.OWNER)
         # Assume that there is one and only one DIRECT owner (there may be one
         # or more INDIRECT cascading owners, which would the owners of the
         # ancestor entities, but getAllDirectlyAccessibleUsers does not return
@@ -1037,11 +1038,11 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
                               'permissionType': users[user_id]})
         groups = {}
         groups.update(self._load_directly_accessible_groups(
-            lookup_value, ResourcePermissionType.READ))
+            lookup_value, serializers.ResourcePermissionType.READ))
         groups.update(self._load_directly_accessible_groups(
-            lookup_value, ResourcePermissionType.WRITE))
+            lookup_value, serializers.ResourcePermissionType.WRITE))
         groups.update(self._load_directly_accessible_groups(
-            lookup_value, ResourcePermissionType.MANAGE_SHARING))
+            lookup_value, serializers.ResourcePermissionType.MANAGE_SHARING))
         group_list = []
         for group_id in groups:
             group_list.append({'group': self._load_group(group_id),
@@ -1053,12 +1054,12 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
 
     def _load_accessible_users(self, entity_id, permission_type):
         users = self.request.airavata.sharing.get_all_accessible_users(
-            entity_id, ResourcePermissionType(permission_type).name)
+            entity_id, serializers.ResourcePermissionType(permission_type).name)
         return {user_id: permission_type for user_id in users}
 
     def _load_directly_accessible_users(self, entity_id, permission_type):
         users = self.request.airavata.sharing.get_all_directly_accessible_users(
-            entity_id, ResourcePermissionType(permission_type).name)
+            entity_id, serializers.ResourcePermissionType(permission_type).name)
         return {user_id: permission_type for user_id in users}
 
     def _load_user_profile(self, user_id):
@@ -1068,12 +1069,12 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
 
     def _load_accessible_groups(self, entity_id, permission_type):
         groups = self.request.airavata.sharing.get_all_accessible_groups(
-            entity_id, ResourcePermissionType(permission_type).name)
+            entity_id, serializers.ResourcePermissionType(permission_type).name)
         return {group_id: permission_type for group_id in groups}
 
     def _load_directly_accessible_groups(self, entity_id, permission_type):
         groups = self.request.airavata.sharing.get_all_directly_accessible_groups(
-            entity_id, ResourcePermissionType(permission_type).name)
+            entity_id, serializers.ResourcePermissionType(permission_type).name)
         return {group_id: permission_type for group_id in groups}
 
     def _load_group(self, group_id):
@@ -1084,70 +1085,70 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
         entity_id = shared_entity['entityId']
         if len(shared_entity['_user_grant_read_permission']) > 0:
             self._share_with_users(
-                entity_id, ResourcePermissionType.READ,
+                entity_id, serializers.ResourcePermissionType.READ,
                 shared_entity['_user_grant_read_permission'])
         if len(shared_entity['_user_grant_write_permission']) > 0:
             self._share_with_users(
-                entity_id, ResourcePermissionType.WRITE,
+                entity_id, serializers.ResourcePermissionType.WRITE,
                 shared_entity['_user_grant_write_permission'])
         if len(shared_entity['_user_grant_manage_sharing_permission']) > 0:
             self._share_with_users(
-                entity_id, ResourcePermissionType.MANAGE_SHARING,
+                entity_id, serializers.ResourcePermissionType.MANAGE_SHARING,
                 shared_entity['_user_grant_manage_sharing_permission'])
         if len(shared_entity['_user_revoke_read_permission']) > 0:
             self._revoke_from_users(
-                entity_id, ResourcePermissionType.READ,
+                entity_id, serializers.ResourcePermissionType.READ,
                 shared_entity['_user_revoke_read_permission'])
         if len(shared_entity['_user_revoke_write_permission']) > 0:
             self._revoke_from_users(
-                entity_id, ResourcePermissionType.WRITE,
+                entity_id, serializers.ResourcePermissionType.WRITE,
                 shared_entity['_user_revoke_write_permission'])
         if len(shared_entity['_user_revoke_manage_sharing_permission']) > 0:
             self._revoke_from_users(
-                entity_id, ResourcePermissionType.MANAGE_SHARING,
+                entity_id, serializers.ResourcePermissionType.MANAGE_SHARING,
                 shared_entity['_user_revoke_manage_sharing_permission'])
         if len(shared_entity['_group_grant_read_permission']) > 0:
             self._share_with_groups(
-                entity_id, ResourcePermissionType.READ,
+                entity_id, serializers.ResourcePermissionType.READ,
                 shared_entity['_group_grant_read_permission'])
         if len(shared_entity['_group_grant_write_permission']) > 0:
             self._share_with_groups(
-                entity_id, ResourcePermissionType.WRITE,
+                entity_id, serializers.ResourcePermissionType.WRITE,
                 shared_entity['_group_grant_write_permission'])
         if len(shared_entity['_group_grant_manage_sharing_permission']) > 0:
             self._share_with_groups(
-                entity_id, ResourcePermissionType.MANAGE_SHARING,
+                entity_id, serializers.ResourcePermissionType.MANAGE_SHARING,
                 shared_entity['_group_grant_manage_sharing_permission'])
         if len(shared_entity['_group_revoke_read_permission']) > 0:
             self._revoke_from_groups(
-                entity_id, ResourcePermissionType.READ,
+                entity_id, serializers.ResourcePermissionType.READ,
                 shared_entity['_group_revoke_read_permission'])
         if len(shared_entity['_group_revoke_write_permission']) > 0:
             self._revoke_from_groups(
-                entity_id, ResourcePermissionType.WRITE,
+                entity_id, serializers.ResourcePermissionType.WRITE,
                 shared_entity['_group_revoke_write_permission'])
         if len(shared_entity['_group_revoke_manage_sharing_permission']) > 0:
             self._revoke_from_groups(
-                entity_id, ResourcePermissionType.MANAGE_SHARING,
+                entity_id, serializers.ResourcePermissionType.MANAGE_SHARING,
                 shared_entity['_group_revoke_manage_sharing_permission'])
 
     def _share_with_users(self, entity_id, permission_type, user_ids):
-        name = ResourcePermissionType(permission_type).name
+        name = serializers.ResourcePermissionType(permission_type).name
         self.request.airavata.sharing.share_resource_with_users(
             entity_id, {user_id: name for user_id in user_ids})
 
     def _revoke_from_users(self, entity_id, permission_type, user_ids):
-        name = ResourcePermissionType(permission_type).name
+        name = serializers.ResourcePermissionType(permission_type).name
         self.request.airavata.sharing.revoke_sharing_of_resource_from_users(
             entity_id, {user_id: name for user_id in user_ids})
 
     def _share_with_groups(self, entity_id, permission_type, group_ids):
-        name = ResourcePermissionType(permission_type).name
+        name = serializers.ResourcePermissionType(permission_type).name
         self.request.airavata.sharing.share_resource_with_groups(
             entity_id, {group_id: name for group_id in group_ids})
 
     def _revoke_from_groups(self, entity_id, permission_type, group_ids):
-        name = ResourcePermissionType(permission_type).name
+        name = serializers.ResourcePermissionType(permission_type).name
         self.request.airavata.sharing.revoke_sharing_of_resource_from_groups(
             entity_id, {group_id: name for group_id in group_ids})
 
@@ -1181,13 +1182,13 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
         # Load accessible users in order of permission precedence: users that
         # have WRITE permission should also have READ
         users.update(self._load_accessible_users(
-            entity_id, ResourcePermissionType.READ))
+            entity_id, serializers.ResourcePermissionType.READ))
         users.update(self._load_accessible_users(
-            entity_id, ResourcePermissionType.WRITE))
+            entity_id, serializers.ResourcePermissionType.WRITE))
         users.update(self._load_accessible_users(
-            entity_id, ResourcePermissionType.MANAGE_SHARING))
+            entity_id, serializers.ResourcePermissionType.MANAGE_SHARING))
         owner_ids = self._load_accessible_users(
-            entity_id, ResourcePermissionType.OWNER)
+            entity_id, serializers.ResourcePermissionType.OWNER)
         # Assume that there is one and only one DIRECT owner (there may be one
         # or more INDIRECT cascading owners, which would the owners of the
         # ancestor entities, but getAllAccessibleUsers does not return
@@ -1201,11 +1202,11 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
                               'permissionType': users[user_id]})
         groups = {}
         groups.update(self._load_accessible_groups(
-            entity_id, ResourcePermissionType.READ))
+            entity_id, serializers.ResourcePermissionType.READ))
         groups.update(self._load_accessible_groups(
-            entity_id, ResourcePermissionType.WRITE))
+            entity_id, serializers.ResourcePermissionType.WRITE))
         groups.update(self._load_accessible_groups(
-            entity_id, ResourcePermissionType.MANAGE_SHARING))
+            entity_id, serializers.ResourcePermissionType.MANAGE_SHARING))
         group_list = []
         for group_id in groups:
             group_list.append({'group': self._load_group(group_id),
