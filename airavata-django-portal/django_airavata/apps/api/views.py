@@ -228,8 +228,8 @@ class ExperimentViewSet(mixins.CreateModelMixin,
         experiment = serializer.save(
             gatewayId=self.gateway_id,
             userName=self.username)
-        experiment_id = self.request.airavata_client.createExperiment(
-            self.authz_token, self.gateway_id, experiment)
+        experiment_id = self.request.airavata.research.create_experiment(
+            self.gateway_id, grpc_requests.experiment(experiment))
         self._update_workspace_preferences(
             project_id=experiment.projectId,
             group_resource_profile_id=experiment.userConfigurationData.groupResourceProfileId,
@@ -240,8 +240,8 @@ class ExperimentViewSet(mixins.CreateModelMixin,
         experiment = serializer.save(
             gatewayId=self.gateway_id,
             userName=self.username)
-        self.request.airavata_client.updateExperiment(
-            self.authz_token, experiment.experimentId, experiment)
+        self.request.airavata.research.update_experiment(
+            experiment.experimentId, grpc_requests.experiment(experiment))
         self._update_workspace_preferences(
             project_id=experiment.projectId,
             group_resource_profile_id=experiment.userConfigurationData.groupResourceProfileId,
@@ -250,12 +250,12 @@ class ExperimentViewSet(mixins.CreateModelMixin,
     @action(methods=['post'], detail=True)
     def launch(self, request, experiment_id=None):
         try:
-            experiment = request.airavata_client.getExperiment(
-                self.authz_token, experiment_id)
+            experiment = grpc_adapters.experiment(
+                request.airavata.research.get_experiment(experiment_id))
             if (experiment.enableEmailNotification):
                 experiment.emailAddresses = [request.user.email]
-            request.airavata_client.updateExperiment(
-                self.authz_token, experiment_id, experiment)
+            request.airavata.research.update_experiment(
+                experiment_id, grpc_requests.experiment(experiment))
             experiment_util.launch(request, experiment_id)
             return Response({'success': True})
         except Exception as e:
@@ -284,8 +284,8 @@ class ExperimentViewSet(mixins.CreateModelMixin,
     @action(methods=['post'], detail=True)
     def cancel(self, request, experiment_id=None):
         try:
-            request.airavata_client.terminateExperiment(
-                request.authz_token, experiment_id, self.gateway_id)
+            request.airavata.research.terminate_experiment(
+                experiment_id, self.gateway_id)
             return Response({'success': True})
         except Exception as e:
             log.exception("Cancel action has thrown the following error", extra={'request': request})
@@ -972,13 +972,10 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
     def perform_create(self, serializer):
         group_resource_profile = serializer.save()
         group_resource_profile.gatewayId = self.gateway_id
-        group_resource_profile_id = self.request.airavata_client.createGroupResourceProfile(
-            authzToken=self.authz_token, groupResourceProfile=group_resource_profile)
-        group_resource_profile.groupResourceProfileId = group_resource_profile_id
-        # Update the creationTime field on the group resource profile
-        new_group_resource_profile = self.request.airavata_client.getGroupResourceProfile(
-            self.authz_token, group_resource_profile_id)
-        group_resource_profile.creationTime = new_group_resource_profile.creationTime
+        created = self.request.airavata.compute.create_group_resource_profile(
+            grpc_requests.group_resource_profile(group_resource_profile))
+        group_resource_profile.groupResourceProfileId = created.group_resource_profile_id
+        group_resource_profile.creationTime = created.creation_time
 
     def perform_update(self, serializer):
         original_instance = serializer.instance
@@ -986,19 +983,16 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
         grp = serializer.save()
         for removed_compute_resource_preference \
                 in grp._removed_compute_resource_preferences:
-            self.request.airavata_client.removeGroupComputePrefs(
-                self.authz_token,
-                removed_compute_resource_preference.computeResourceId,
-                removed_compute_resource_preference.groupResourceProfileId)
+            self.request.airavata.compute.remove_group_compute_prefs(
+                removed_compute_resource_preference.groupResourceProfileId,
+                removed_compute_resource_preference.computeResourceId)
         for removed_compute_resource_policy \
                 in grp._removed_compute_resource_policies:
-            self.request.airavata_client.removeGroupComputeResourcePolicy(
-                self.authz_token,
+            self.request.airavata.compute.remove_group_compute_resource_policy(
                 removed_compute_resource_policy.resourcePolicyId)
         for removed_batch_queue_resource_policy \
                 in grp._removed_batch_queue_resource_policies:
-            self.request.airavata_client.removeGroupBatchQueueResourcePolicy(
-                self.authz_token,
+            self.request.airavata.compute.remove_group_batch_queue_resource_policy(
                 removed_batch_queue_resource_policy.resourcePolicyId)
         if hasattr(grp, 'computePreferences') and grp.computePreferences:
             from collections import OrderedDict
@@ -1150,12 +1144,12 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
                                         from airavata.model.appcatalog.groupresourceprofile.ttypes import GroupAccountSSHProvisionerConfig
                                         pref.specificPreferences.slurm.groupSSHAccountProvisionerConfigs[cfg_idx] = GroupAccountSSHProvisionerConfig(**cfg)
 
-        self.request.airavata_client.updateGroupResourceProfile(
-            self.authz_token, grp)
+        self.request.airavata.compute.update_group_resource_profile(
+            grp.groupResourceProfileId, grpc_requests.group_resource_profile(grp))
 
     def perform_destroy(self, instance):
-        self.request.airavata_client.removeGroupResourceProfile(
-            self.authz_token, instance.groupResourceProfileId)
+        self.request.airavata.compute.remove_group_resource_profile(
+            instance.groupResourceProfileId)
 
 
 class SharedEntityViewSet(mixins.RetrieveModelMixin,
