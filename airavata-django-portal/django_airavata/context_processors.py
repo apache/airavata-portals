@@ -10,21 +10,39 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
 
 from django_airavata.app_config import AiravataAppConfig
-from django_airavata.apps.api import grpc_adapters
 from django_airavata.apps.api.models import User_Notifications
 
 logger = logging.getLogger(__name__)
+
+# proto NotificationPriority value -> the Thrift NotificationPriority integer the
+# frontend dashboard expects (proto LOW=1/NORMAL=2/HIGH=3 vs Thrift 0/1/2). Built
+# lazily so this module stays importable without the gRPC SDK on the path.
+_notification_priority_proto_to_thrift = None
+
+
+def _notification_priority(value):
+    global _notification_priority_proto_to_thrift
+    if _notification_priority_proto_to_thrift is None:
+        from airavata.model.workspace.ttypes import NotificationPriority
+        from airavata_sdk.generated.org.apache.airavata.model.workspace import (
+            workspace_pb2,
+        )
+        proto = workspace_pb2.NotificationPriority
+        _notification_priority_proto_to_thrift = {
+            v.number: int(getattr(NotificationPriority, v.name))
+            for v in proto.DESCRIPTOR.values
+            if hasattr(NotificationPriority, v.name)
+        }
+    return _notification_priority_proto_to_thrift.get(value)
 
 
 def get_notifications(request):
     if request.user.is_authenticated and getattr(request, 'authz_token', None):
         unread_notifications = 0
         try:
-            notifications = [
-                grpc_adapters.notification(n)
-                for n in request.airavata.research.get_all_notifications(
-                    settings.GATEWAY_ID)
-            ]
+            notifications = list(
+                request.airavata.research.get_all_notifications(
+                    settings.GATEWAY_ID))
         except Exception:
             logger.warning("Failed to load notifications")
             notifications = []
@@ -32,25 +50,34 @@ def get_notifications(request):
         valid_notifications = []
         for notification in notifications:
 
-            notification_data = notification.__dict__
+            notification_data = {
+                "notificationId": notification.notification_id,
+                "gatewayId": notification.gateway_id,
+                "title": notification.title,
+                "notificationMessage": notification.notification_message,
+                "creationTime": notification.creation_time,
+                "publishedTime": notification.published_time,
+                "expirationTime": notification.expiration_time,
+                "priority": _notification_priority(notification.priority),
+            }
             expirationTime = datetime.datetime.fromtimestamp(
-                notification.expirationTime / 1000)
+                notification.expiration_time / 1000)
             publishedTime = datetime.datetime.fromtimestamp(
-                notification.publishedTime / 1000)
+                notification.published_time / 1000)
 
             if(expirationTime > current_time and publishedTime < current_time):
                 notification_data['url'] = request.build_absolute_uri(
                     reverse('django_airavata_api:ack-notifications'))\
-                    + "?id=" + str(notification.notificationId)
+                    + "?id=" + str(notification.notification_id)
 
                 try:
                     notification_status = User_Notifications.objects.get(
-                        notification_id=notification.notificationId,
+                        notification_id=notification.notification_id,
                         username=request.user.username)
                 except ObjectDoesNotExist:
                     notification_status = User_Notifications.objects.create(
                         username=request.user.username,
-                        notification_id=notification.notificationId)
+                        notification_id=notification.notification_id)
                 notification_data['is_read'] = notification_status.is_read
                 if not notification_status.is_read:
                     unread_notifications += 1

@@ -23,7 +23,6 @@ from airavata.model.appcatalog.parallelism.ttypes import (
 from airavata.model.appcatalog.groupresourceprofile.ttypes import (
     ResourceType as _ThriftResourceType,
 )
-from airavata.model.appcatalog.parser.ttypes import IOType as _ThriftIOType
 from airavata.model.application.io.ttypes import DataType as _ThriftDataType
 from airavata.model.data.movement.ttypes import (
     DataMovementProtocol as _ThriftDataMovementProtocol,
@@ -31,19 +30,12 @@ from airavata.model.data.movement.ttypes import (
 from airavata.model.experiment.ttypes import (
     ExperimentType as _ThriftExperimentType,
 )
-from airavata.model.workspace.ttypes import (
-    NotificationPriority as _ThriftNotificationPriority,
-)
 
 _GEN = "airavata_sdk.generated.org.apache.airavata.model"
 
 
 def _pb2(path):
     return importlib.import_module(f"{_GEN}.{path}")
-
-
-def _workspace_pb2():
-    return _pb2("workspace.workspace_pb2")
 
 
 def _proto_enum(proto_enum, thrift_enum, value, prefix=''):
@@ -171,60 +163,6 @@ def application_deployment(t):
         default_cpu_count=t.defaultCPUCount or 0,
         default_walltime=t.defaultWalltime or 0,
         editable_by_user=bool(t.editableByUser),
-    )
-
-
-def notification(t):
-    """Thrift ``Notification`` -> proto ``Notification`` request message."""
-    return _workspace_pb2().Notification(
-        notification_id=t.notificationId or '',
-        gateway_id=t.gatewayId or '',
-        title=t.title or '',
-        notification_message=t.notificationMessage or '',
-        creation_time=t.creationTime or 0,
-        published_time=t.publishedTime or 0,
-        expiration_time=t.expirationTime or 0,
-        priority=_proto_enum(
-            _workspace_pb2().NotificationPriority, _ThriftNotificationPriority,
-            t.priority, 'NOTIFICATION_PRIORITY_'),
-    )
-
-
-def _parser_input(t):
-    """Thrift ``ParserInput`` -> proto ``ParserInput``."""
-    pp = _pb2("appcatalog.parser.parser_pb2")
-    return pp.ParserInput(
-        id=t.id or '',
-        name=t.name or '',
-        required_input=bool(t.requiredInput),
-        parser_id=t.parserId or '',
-        type=_proto_enum(pp.IOType, _ThriftIOType, t.type, 'IO_TYPE_'),
-    )
-
-
-def _parser_output(t):
-    """Thrift ``ParserOutput`` -> proto ``ParserOutput``."""
-    pp = _pb2("appcatalog.parser.parser_pb2")
-    return pp.ParserOutput(
-        id=t.id or '',
-        name=t.name or '',
-        required_output=bool(t.requiredOutput),
-        parser_id=t.parserId or '',
-        type=_proto_enum(pp.IOType, _ThriftIOType, t.type, 'IO_TYPE_'),
-    )
-
-
-def parser(t):
-    """Thrift ``Parser`` -> proto ``Parser`` request message."""
-    return _pb2("appcatalog.parser.parser_pb2").Parser(
-        id=t.id or '',
-        image_name=t.imageName or '',
-        output_dir_path=t.outputDirPath or '',
-        input_dir_path=t.inputDirPath or '',
-        execution_command=t.executionCommand or '',
-        input_files=[_parser_input(i) for i in (t.inputFiles or [])],
-        output_files=[_parser_output(o) for o in (t.outputFiles or [])],
-        gateway_id=t.gatewayId or '',
     )
 
 

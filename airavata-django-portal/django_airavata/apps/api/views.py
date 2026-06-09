@@ -1594,25 +1594,20 @@ class ParserViewSet(mixins.CreateModelMixin,
     lookup_field = 'parser_id'
 
     def get_list(self):
-        return [
-            grpc_adapters.parser(p)
-            for p in self.request.airavata.research.list_all_parsers(
-                settings.GATEWAY_ID)
-        ]
+        return list(self.request.airavata.research.list_all_parsers(
+            settings.GATEWAY_ID))
 
     def get_instance(self, lookup_value):
-        return grpc_adapters.parser(
-            self.request.airavata.research.get_parser(
-                lookup_value, settings.GATEWAY_ID))
+        return self.request.airavata.research.get_parser(
+            lookup_value, settings.GATEWAY_ID)
 
     def perform_create(self, serializer):
         parser = serializer.save()
-        parser.id = self.request.airavata.research.save_parser(
-            grpc_requests.parser(parser))
+        parser.id = self.request.airavata.research.save_parser(parser)
 
     def perform_update(self, serializer):
         parser = serializer.save()
-        self.request.airavata.research.save_parser(grpc_requests.parser(parser))
+        self.request.airavata.research.save_parser(parser)
 
 
 def _user_storage_path(path, experiment_id=None, request=None):
@@ -1816,32 +1811,27 @@ class ManageNotificationViewSet(APIBackedViewSet):
     lookup_field = 'notification_id'
 
     def get_instance(self, lookup_value):
-        return grpc_adapters.notification(
-            self.request.airavata.research.get_notification(
-                settings.GATEWAY_ID, lookup_value))
+        return self.request.airavata.research.get_notification(
+            settings.GATEWAY_ID, lookup_value)
 
     def get_list(self):
-        return [
-            grpc_adapters.notification(n)
-            for n in self.request.airavata.research.get_all_notifications(
-                self.gateway_id)
-        ]
+        return list(self.request.airavata.research.get_all_notifications(
+            self.gateway_id))
 
     def perform_destroy(self, instance):
         self.request.airavata.research.delete_notification(
-            settings.GATEWAY_ID, instance.notificationId)
+            settings.GATEWAY_ID, instance.notification_id)
 
     def perform_create(self, serializer):
-        notification = serializer.save(gatewayId=self.gateway_id)
-        notification.notificationId = self.request.airavata.research.create_notification(
-            grpc_requests.notification(notification))
+        notification = serializer.save(gateway_id=self.gateway_id)
+        notification.notification_id = (
+            self.request.airavata.research.create_notification(notification))
 
         serializer.update_notification_extension(self.request, notification)
 
     def perform_update(self, serializer):
         notification = serializer.save()
-        self.request.airavata.research.update_notification(
-            grpc_requests.notification(notification))
+        self.request.airavata.research.update_notification(notification)
 
         serializer.update_notification_extension(self.request, notification)
 

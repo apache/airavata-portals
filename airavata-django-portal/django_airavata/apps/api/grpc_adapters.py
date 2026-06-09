@@ -26,7 +26,6 @@ from airavata.model.appcatalog.groupresourceprofile.ttypes import (
 from airavata.model.appcatalog.parallelism.ttypes import (
     ApplicationParallelismType as _ThriftParallelismType,
 )
-from airavata.model.appcatalog.parser.ttypes import IOType as _ThriftIOType
 from airavata.model.application.io.ttypes import DataType as _ThriftDataType
 from airavata.model.data.replica.ttypes import (
     DataProductType as _ThriftDataProductType,
@@ -48,9 +47,6 @@ from airavata.model.status.ttypes import (
 )
 from airavata.model.task.ttypes import TaskTypes as _ThriftTaskTypes
 from airavata.model.user.ttypes import Status as _ThriftStatus
-from airavata.model.workspace.ttypes import (
-    NotificationPriority as _ThriftNotificationPriority,
-)
 
 
 def _thrift_enum(pb, field, thrift_enum):
@@ -855,62 +851,6 @@ def user_profile(pb):
         timeZone=pb.time_zone or None,
         nsfDemographics=None,
         customDashboard=None,
-    )
-
-
-def notification(pb):
-    """gRPC ``Notification`` -> ``NotificationSerializer`` shape."""
-    return SimpleNamespace(
-        notificationId=pb.notification_id,
-        gatewayId=pb.gateway_id,
-        title=pb.title,
-        notificationMessage=pb.notification_message,
-        creationTime=pb.creation_time or None,
-        # publishedTime/expirationTime use non-nullable UTC fields -> keep int.
-        publishedTime=pb.published_time,
-        expirationTime=pb.expiration_time,
-        # priority renders via ThriftEnumField (the NAME), so produce the Thrift
-        # member; proto prefixes only the zero UNKNOWN sentinel.
-        priority=_thrift_enum_prefixed(
-            pb, 'priority', _ThriftNotificationPriority, 'NOTIFICATION_PRIORITY_'),
-    )
-
-
-def _parser_input(pb):
-    """gRPC ``ParserInput`` -> auto-generated serializer shape."""
-    return SimpleNamespace(
-        id=pb.id,
-        name=pb.name,
-        requiredInput=pb.required_input,
-        parserId=pb.parser_id,
-        # type (IOType) renders as a raw int; bridge by name (proto FILE/PROPERTY
-        # align, only IO_TYPE_UNKNOWN is prefixed).
-        type=_thrift_enum_prefixed(pb, 'type', _ThriftIOType, 'IO_TYPE_'),
-    )
-
-
-def _parser_output(pb):
-    """gRPC ``ParserOutput`` -> auto-generated serializer shape."""
-    return SimpleNamespace(
-        id=pb.id,
-        name=pb.name,
-        requiredOutput=pb.required_output,
-        parserId=pb.parser_id,
-        type=_thrift_enum_prefixed(pb, 'type', _ThriftIOType, 'IO_TYPE_'),
-    )
-
-
-def parser(pb):
-    """gRPC ``Parser`` -> ``ParserSerializer`` shape."""
-    return SimpleNamespace(
-        id=pb.id,
-        imageName=pb.image_name,
-        outputDirPath=pb.output_dir_path,
-        inputDirPath=pb.input_dir_path,
-        executionCommand=pb.execution_command,
-        inputFiles=[_parser_input(i) for i in pb.input_files],
-        outputFiles=[_parser_output(o) for o in pb.output_files],
-        gatewayId=pb.gateway_id,
     )
 
 

@@ -31,7 +31,7 @@ from airavata.model.appcatalog.groupresourceprofile.ttypes import (
     SlurmComputeResourcePreference,
     AwsComputeResourcePreference
 )
-from airavata.model.appcatalog.parser.ttypes import Parser
+from airavata.model.appcatalog.parser.ttypes import IOType as _ThriftIOType
 from airavata.model.appcatalog.storageresource.ttypes import (
     StorageResourceDescription
 )
@@ -54,10 +54,6 @@ from airavata.model.status.ttypes import (
     ProcessStatus
 )
 from airavata.model.user.ttypes import UserProfile
-from airavata.model.workspace.ttypes import (
-    Notification,
-    NotificationPriority
-)
 from airavata_django_portal_sdk import (
     experiment_util
 )
@@ -227,6 +223,53 @@ class ProtoIntOrNoneField(serializers.IntegerField):
         if not value:
             return None
         return super().to_representation(value)
+
+
+class ProtoEnumIntField(serializers.Field):
+    """Renders a protobuf enum field as the corresponding THRIFT enum integer.
+
+    Many serializers historically rendered an enum as a raw integer (an
+    auto-generated ``IntegerField``, not a name). proto and Thrift assign
+    different integers to the same member, so the adapter bridged by NAME to the
+    Thrift integer; this field does the same in one step via the
+    ``proto_to_thrift`` map (proto int -> Thrift int) built by
+    :func:`proto_enum_int_field`. proto-only members and the zero sentinel map to
+    ``None`` (these fields were nullable).
+    """
+
+    def __init__(self, proto_to_thrift, thrift_to_proto, **kwargs):
+        self._proto_to_thrift = proto_to_thrift
+        self._thrift_to_proto = thrift_to_proto
+        super().__init__(**kwargs)
+
+    def to_representation(self, value):
+        return self._proto_to_thrift.get(value)
+
+    def to_internal_value(self, data):
+        # Writes pass the Thrift integer; map it back to the proto integer.
+        return self._thrift_to_proto.get(int(data), 0)
+
+
+def proto_enum_int_field(enum_descriptor, thrift_enum, proto_prefix='', **kwargs):
+    """Build a :class:`ProtoEnumIntField` bridging a proto enum to the Thrift enum
+    integer by member NAME (stripping ``proto_prefix`` from proto-namespaced
+    members). Members absent from the Thrift enum map to ``None``.
+    """
+    proto_to_thrift = {}
+    thrift_to_proto = {}
+    for v in enum_descriptor.values:
+        name = v.name
+        if proto_prefix and name.startswith(proto_prefix):
+            name = name[len(proto_prefix):]
+        thrift_member = getattr(thrift_enum, name, None)
+        if thrift_member is not None:
+            proto_to_thrift[v.number] = int(thrift_member)
+            thrift_to_proto[int(thrift_member)] = v.number
+        else:
+            proto_to_thrift[v.number] = None
+    return ProtoEnumIntField(
+        proto_to_thrift=proto_to_thrift, thrift_to_proto=thrift_to_proto,
+        **kwargs)
 
 
 class StoredJSONField(serializers.JSONField):
@@ -2038,11 +2081,97 @@ class StorageResourceSerializer(
     updateTime = UTCPosixTimestampDateTimeField()
 
 
-class ParserSerializer(thrift_utils.create_serializer_class(Parser)):
+def _parser_pb2():
+    from airavata_sdk.generated.org.apache.airavata.model.appcatalog.parser import (
+        parser_pb2,
+    )
+    return parser_pb2
+
+
+class ParserInputSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``ParserInput`` message."""
+
+    id = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    name = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    requiredInput = serializers.BooleanField(
+        source='required_input', required=False, default=False)
+    parserId = serializers.CharField(
+        source='parser_id', allow_blank=True, allow_null=True, required=False)
+    # IOType renders as the Thrift integer (proto FILE=1 -> Thrift FILE=0).
+    type = proto_enum_int_field(
+        _parser_pb2().IOType.DESCRIPTOR, _ThriftIOType, 'IO_TYPE_',
+        required=False, allow_null=True)
+
+
+class ParserOutputSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``ParserOutput`` message."""
+
+    id = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    name = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    requiredOutput = serializers.BooleanField(
+        source='required_output', required=False, default=False)
+    parserId = serializers.CharField(
+        source='parser_id', allow_blank=True, allow_null=True, required=False)
+    type = proto_enum_int_field(
+        _parser_pb2().IOType.DESCRIPTOR, _ThriftIOType, 'IO_TYPE_',
+        required=False, allow_null=True)
+
+
+class ParserSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``Parser`` message."""
+
+    id = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    imageName = serializers.CharField(
+        source='image_name', allow_blank=True, allow_null=True, required=False)
+    outputDirPath = serializers.CharField(
+        source='output_dir_path', allow_blank=True, allow_null=True,
+        required=False)
+    inputDirPath = serializers.CharField(
+        source='input_dir_path', allow_blank=True, allow_null=True,
+        required=False)
+    executionCommand = serializers.CharField(
+        source='execution_command', allow_blank=True, allow_null=True,
+        required=False)
+    inputFiles = ParserInputSerializer(
+        source='input_files', many=True, required=False)
+    outputFiles = ParserOutputSerializer(
+        source='output_files', many=True, required=False)
+    gatewayId = serializers.CharField(
+        source='gateway_id', allow_blank=True, allow_null=True, required=False)
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:parser-detail',
         lookup_field='id',
         lookup_url_kwarg='parser_id')
+
+    def create(self, validated_data):
+        pp = _parser_pb2()
+        return pp.Parser(
+            id=validated_data.get('id', '') or '',
+            image_name=validated_data.get('image_name', '') or '',
+            output_dir_path=validated_data.get('output_dir_path', '') or '',
+            input_dir_path=validated_data.get('input_dir_path', '') or '',
+            execution_command=validated_data.get('execution_command', '') or '',
+            gateway_id=validated_data.get('gateway_id', '') or '',
+            input_files=[
+                pp.ParserInput(
+                    id=i.get('id', '') or '',
+                    name=i.get('name', '') or '',
+                    required_input=bool(i.get('required_input', False)),
+                    parser_id=i.get('parser_id', '') or '',
+                    type=i.get('type', 0) or 0,
+                ) for i in validated_data.get('input_files', []) or []],
+            output_files=[
+                pp.ParserOutput(
+                    id=o.get('id', '') or '',
+                    name=o.get('name', '') or '',
+                    required_output=bool(o.get('required_output', False)),
+                    parser_id=o.get('parser_id', '') or '',
+                    type=o.get('type', 0) or 0,
+                ) for o in validated_data.get('output_files', []) or []],
+        )
+
+    def update(self, instance, validated_data):
+        return self.create(validated_data)
 
 
 class UserHasWriteAccessToPathSerializer(serializers.Serializer):
@@ -2227,38 +2356,83 @@ class AckNotificationSerializer(serializers.ModelSerializer):
         model = models.User_Notifications
 
 
-class NotificationSerializer(thrift_utils.create_serializer_class(Notification)):
+def _notification_workspace_pb2():
+    from airavata_sdk.generated.org.apache.airavata.model.workspace import (
+        workspace_pb2,
+    )
+    return workspace_pb2
+
+
+class NotificationSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``Notification`` message."""
+
+    notificationId = serializers.CharField(
+        source='notification_id', read_only=True)
+    gatewayId = serializers.CharField(
+        source='gateway_id', allow_blank=True, allow_null=True, required=False)
+    title = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False)
+    notificationMessage = serializers.CharField(
+        source='notification_message', allow_blank=True, allow_null=True,
+        required=False)
+    creationTime = ProtoTimestampField(
+        source='creation_time', null_if_zero=True, required=False)
+    publishedTime = ProtoTimestampField(source='published_time', required=False)
+    expirationTime = ProtoTimestampField(source='expiration_time', required=False)
+    # priority renders as the member NAME (proto LOW/NORMAL/HIGH == Thrift names).
+    priority = proto_enum_name_field(
+        _notification_workspace_pb2().NotificationPriority.DESCRIPTOR,
+        proto_prefix='NOTIFICATION_PRIORITY_', required=False)
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:manage-notifications-detail',
-        lookup_field='notificationId',
+        lookup_field='notification_id',
         lookup_url_kwarg='notification_id')
-    priority = thrift_utils.ThriftEnumField(NotificationPriority)
-    creationTime = UTCPosixTimestampDateTimeField(allow_null=True)
-    publishedTime = UTCPosixTimestampDateTimeField()
-    expirationTime = UTCPosixTimestampDateTimeField()
     userHasWriteAccess = serializers.SerializerMethodField()
-    showInDashboard = serializers.BooleanField(default=False)
+    showInDashboard = serializers.SerializerMethodField()
 
-    def get_userHasWriteAccess(self, userProfile):
+    def get_userHasWriteAccess(self, notification):
         request = self.context['request']
         return request.is_gateway_admin
 
-    def validate(self, attrs):
-        del attrs["showInDashboard"]
+    def get_showInDashboard(self, notification):
+        extensions = models.NotificationExtension.objects.filter(
+            notification_id=notification.notification_id)
+        return bool(extensions) and extensions[0].showInDashboard
 
+    def validate(self, attrs):
+        attrs.pop("showInDashboard", None)
         return attrs
 
-    def to_representation(self, notification):
-        notification_extension_list = models.NotificationExtension.objects.filter(
-            notification_id=notification.notificationId)
-        setattr(notification, "showInDashboard",
-                False if len(notification_extension_list) == 0 else notification_extension_list[0].showInDashboard)
+    def create(self, validated_data):
+        w = _notification_workspace_pb2()
+        return w.Notification(
+            gateway_id=validated_data.get('gateway_id', '') or '',
+            title=validated_data.get('title', '') or '',
+            notification_message=validated_data.get(
+                'notification_message', '') or '',
+            creation_time=validated_data.get('creation_time', 0) or 0,
+            published_time=validated_data.get('published_time', 0) or 0,
+            expiration_time=validated_data.get('expiration_time', 0) or 0,
+            priority=validated_data.get('priority', 0) or 0,
+        )
 
-        return super().to_representation(notification)
+    def update(self, instance, validated_data):
+        for proto_field in ('gateway_id', 'title', 'notification_message',
+                            'creation_time', 'published_time', 'expiration_time',
+                            'priority'):
+            if proto_field in validated_data:
+                value = validated_data[proto_field]
+                if proto_field.endswith('_time') or proto_field == 'priority':
+                    value = value or 0
+                else:
+                    value = value or ''
+                setattr(instance, proto_field, value)
+        return instance
 
     def update_notification_extension(self, request, notification):
         if "showInDashboard" in request.data:
-            existing_entries = models.NotificationExtension.objects.filter(notification_id=notification.notificationId)
+            existing_entries = models.NotificationExtension.objects.filter(
+                notification_id=notification.notification_id)
 
             if len(existing_entries) > 0:
                 existing_entries.update(
@@ -2266,7 +2440,7 @@ class NotificationSerializer(thrift_utils.create_serializer_class(Notification))
                 )
             else:
                 models.NotificationExtension.objects.create(
-                    notification_id=notification.notificationId,
+                    notification_id=notification.notification_id,
                     showInDashboard=request.data["showInDashboard"]
                 )
 
