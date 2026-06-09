@@ -2,7 +2,6 @@
 
 import time
 
-from airavata.model.security.ttypes import AuthzToken
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.mail import EmailMessage
@@ -12,6 +11,19 @@ from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
 from . import models
+
+
+class AuthzToken:
+    """Plain carrier for the Keycloak access token + gateway/user claims.
+
+    Replaces the legacy Thrift ``AuthzToken`` value type; keeps the same
+    ``accessToken`` / ``claimsMap`` attribute names so existing consumers (the
+    gRPC client factory, IAM admin REST helpers, ...) are unchanged.
+    """
+
+    def __init__(self, accessToken, claimsMap=None):
+        self.accessToken = accessToken
+        self.claimsMap = claimsMap or {}
 
 
 def get_authz_token(request, user=None, access_token=None):

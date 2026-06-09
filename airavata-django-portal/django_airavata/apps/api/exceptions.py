@@ -2,23 +2,17 @@ import logging
 import sys
 
 import grpc
-from airavata.api.error.ttypes import (
-    AuthorizationException,
-    ExperimentNotFoundException
-)
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
-from thrift.Thrift import TException
-from thrift.transport import TTransport
 
 log = logging.getLogger(__name__)
 
-# Track D: map new-stack gRPC status codes to HTTP responses, mirroring the
-# Thrift exception handling below so migrated views behave identically.
+# Map gRPC status codes to HTTP responses (the portal talks only to the gRPC
+# facade now; the legacy Thrift exception handlers are gone).
 GRPC_STATUS_TO_HTTP = {
     grpc.StatusCode.NOT_FOUND: status.HTTP_404_NOT_FOUND,
     grpc.StatusCode.PERMISSION_DENIED: status.HTTP_403_FORBIDDEN,
@@ -51,32 +45,6 @@ def custom_exception_handler(exc, context):
         else:
             log.warning("gRPC error %s", code, exc_info=exc)
         return Response({'detail': detail}, status=http_status)
-
-    if isinstance(exc, AuthorizationException):
-        log.warning("AuthorizationException", exc_info=exc)
-        return Response(
-            {'detail': str(exc)},
-            status=status.HTTP_403_FORBIDDEN)
-
-    if isinstance(exc, ExperimentNotFoundException):
-        log.warning("ExperimentNotFoundException", exc_info=exc)
-        return Response(
-            {'detail': str(exc)},
-            status=status.HTTP_404_NOT_FOUND)
-
-    if isinstance(exc, TTransport.TTransportException):
-        log.warning("TTransportException", exc_info=exc)
-        return Response(
-            {'detail': str(exc), 'apiServerDown': True},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # Default TException handler, should come after more specific subclasses of
-    # TException
-    if isinstance(exc, TException):
-        log.error("TException", exc_info=exc, extra={'request': context['request']})
-        return Response(
-            {'detail': str(exc)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     if isinstance(exc, ObjectDoesNotExist):
         log.warning("ObjectDoesNotExist", exc_info=exc)

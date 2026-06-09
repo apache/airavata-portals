@@ -11,9 +11,10 @@ import logging
 import ssl
 
 import jwt
-from airavata.model.security.ttypes import AuthzToken
 from django.conf import settings
 from rest_framework import authentication, exceptions
+
+from .utils import AuthzToken
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,14 @@
 from unittest.mock import MagicMock, call, patch
 
-from airavata.model.appcatalog.gatewaygroups.ttypes import GatewayGroups
-from airavata.model.group.ttypes import GroupModel
-from airavata.model.user.ttypes import UserProfile
+from airavata_sdk.generated.org.apache.airavata.model.appcatalog.gatewaygroups.gateway_groups_pb2 import (  # noqa: E501
+    GatewayGroups,
+)
+from airavata_sdk.generated.org.apache.airavata.model.group.group_manager_pb2 import (  # noqa: E501
+    GroupModel,
+)
+from airavata_sdk.generated.org.apache.airavata.model.user.user_profile_pb2 import (
+    UserProfile,
+)
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -49,19 +55,19 @@ class GroupViewSetTests(TestCase):
         }
         request.airavata_client = MagicMock(name="airavata_client")
         request.airavata_client.getGatewayGroups.return_value = GatewayGroups(
-            gatewayId=GATEWAY_ID,
-            adminsGroupId="adminsGroupId",
-            readOnlyAdminsGroupId="readOnlyAdminsGroupId",
-            defaultGatewayUsersGroupId="defaultGatewayUsersGroupId"
+            gateway_id=GATEWAY_ID,
+            admins_group_id="adminsGroupId",
+            read_only_admins_group_id="readOnlyAdminsGroupId",
+            default_gateway_users_group_id="defaultGatewayUsersGroupId"
         )
         request.authz_token = "dummy"
         request.session = {}
         group_manager_mock.createGroup.return_value = "abc123"
         user_profile = UserProfile(
-            airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
-            userId="testuser1",
-            firstName="Test",
-            lastName="User1",
+            airavata_internal_user_id=f"testuser1@{GATEWAY_ID}",
+            user_id="testuser1",
+            first_name="Test",
+            last_name="User1",
             emails=["testuser1@example.com"]
         )
         user_profile_mock.getUserProfileById.return_value = user_profile
@@ -105,10 +111,10 @@ class GroupViewSetTests(TestCase):
         }
         request.airavata_client = MagicMock(name="airavata_client")
         request.airavata_client.getGatewayGroups.return_value = GatewayGroups(
-            gatewayId=GATEWAY_ID,
-            adminsGroupId="adminsGroupId",
-            readOnlyAdminsGroupId="readOnlyAdminsGroupId",
-            defaultGatewayUsersGroupId="defaultGatewayUsersGroupId"
+            gateway_id=GATEWAY_ID,
+            admins_group_id="adminsGroupId",
+            read_only_admins_group_id="readOnlyAdminsGroupId",
+            default_gateway_users_group_id="defaultGatewayUsersGroupId"
         )
         request.authz_token = "dummy"
         request.session = {}
@@ -127,10 +133,10 @@ class GroupViewSetTests(TestCase):
         # Only user added is testuser3, so getUserProfileById will be called
         # for that user
         user_profile = UserProfile(
-            airavataInternalUserId=f"testuser3@{GATEWAY_ID}",
-            userId="testuser3",
-            firstName="Test",
-            lastName="User3",
+            airavata_internal_user_id=f"testuser3@{GATEWAY_ID}",
+            user_id="testuser3",
+            first_name="Test",
+            last_name="User3",
             emails=["testuser3@example.com"]
         )
         user_profile_mock.getUserProfileById.return_value = user_profile
@@ -203,10 +209,10 @@ class IAMUserViewSetTests(TestCase):
 
         # Mock api clients
         iam_user_profile = UserProfile(
-            airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
-            userId="testuser1",
-            firstName="Test",
-            lastName="User1",
+            airavata_internal_user_id=f"testuser1@{GATEWAY_ID}",
+            user_id="testuser1",
+            first_name="Test",
+            last_name="User1",
             emails=["testuser1@example.com"]
         )
         iam_admin_client.get_user.return_value = iam_user_profile
@@ -219,10 +225,10 @@ class IAMUserViewSetTests(TestCase):
         request.authz_token = "dummy"
         user_profile_mock.doesUserExist.return_value = True
         user_profile = UserProfile(
-            airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
-            userId="testuser1",
-            firstName="Test",
-            lastName="User1",
+            airavata_internal_user_id=f"testuser1@{GATEWAY_ID}",
+            user_id="testuser1",
+            first_name="Test",
+            last_name="User1",
             emails=["testuser1@example.com"]
         )
         user_profile_mock.getUserProfileById.return_value = user_profile
@@ -234,10 +240,10 @@ class IAMUserViewSetTests(TestCase):
         group_manager_mock.getGroup.return_value = group
         request.airavata_client = MagicMock(name="airavata_client")
         request.airavata_client.getGatewayGroups.return_value = GatewayGroups(
-            gatewayId=GATEWAY_ID,
-            adminsGroupId="adminsGroupId",
-            readOnlyAdminsGroupId="readOnlyAdminsGroupId",
-            defaultGatewayUsersGroupId="defaultGatewayUsersGroupId"
+            gateway_id=GATEWAY_ID,
+            admins_group_id="adminsGroupId",
+            read_only_admins_group_id="readOnlyAdminsGroupId",
+            default_gateway_users_group_id="defaultGatewayUsersGroupId"
         )
         request.session = {}
 
@@ -305,10 +311,10 @@ class IAMUserViewSetTests(TestCase):
 
         # Mock api clients
         iam_user_profile = UserProfile(
-            airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
-            userId="testuser1",
-            firstName="Test",
-            lastName="User1",
+            airavata_internal_user_id=f"testuser1@{GATEWAY_ID}",
+            user_id="testuser1",
+            first_name="Test",
+            last_name="User1",
             emails=["testuser1@example.com"]
         )
         iam_admin_client.get_user.return_value = iam_user_profile
@@ -321,10 +327,10 @@ class IAMUserViewSetTests(TestCase):
         request.authz_token = "dummy"
         user_profile_mock.doesUserExist.return_value = True
         user_profile = UserProfile(
-            airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
-            userId="testuser1",
-            firstName="Test",
-            lastName="User1",
+            airavata_internal_user_id=f"testuser1@{GATEWAY_ID}",
+            user_id="testuser1",
+            first_name="Test",
+            last_name="User1",
             emails=["testuser1@example.com"]
         )
         user_profile_mock.getUserProfileById.return_value = user_profile
@@ -342,10 +348,10 @@ class IAMUserViewSetTests(TestCase):
         group_manager_mock.getGroup.side_effect = side_effect
         request.airavata_client = MagicMock(name="airavata_client")
         request.airavata_client.getGatewayGroups.return_value = GatewayGroups(
-            gatewayId=GATEWAY_ID,
-            adminsGroupId="adminsGroupId",
-            readOnlyAdminsGroupId="readOnlyAdminsGroupId",
-            defaultGatewayUsersGroupId="defaultGatewayUsersGroupId"
+            gateway_id=GATEWAY_ID,
+            admins_group_id="adminsGroupId",
+            read_only_admins_group_id="readOnlyAdminsGroupId",
+            default_gateway_users_group_id="defaultGatewayUsersGroupId"
         )
         request.session = {}
 
@@ -414,10 +420,10 @@ class IAMUserViewSetTests(TestCase):
 
         # Mock api clients
         iam_user_profile = UserProfile(
-            airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
-            userId="testuser1",
-            firstName="Test",
-            lastName="User1",
+            airavata_internal_user_id=f"testuser1@{GATEWAY_ID}",
+            user_id="testuser1",
+            first_name="Test",
+            last_name="User1",
             emails=["testuser1@example.com"]
         )
         iam_admin_client.get_user.return_value = iam_user_profile
@@ -430,10 +436,10 @@ class IAMUserViewSetTests(TestCase):
         request.authz_token = "dummy"
         user_profile_mock.doesUserExist.return_value = True
         user_profile = UserProfile(
-            airavataInternalUserId=f"testuser1@{GATEWAY_ID}",
-            userId="testuser1",
-            firstName="Test",
-            lastName="User1",
+            airavata_internal_user_id=f"testuser1@{GATEWAY_ID}",
+            user_id="testuser1",
+            first_name="Test",
+            last_name="User1",
             emails=["testuser1@example.com"]
         )
         user_profile_mock.getUserProfileById.return_value = user_profile
@@ -442,10 +448,10 @@ class IAMUserViewSetTests(TestCase):
 
         request.airavata_client = MagicMock(name="airavata_client")
         request.airavata_client.getGatewayGroups.return_value = GatewayGroups(
-            gatewayId=GATEWAY_ID,
-            adminsGroupId="adminsGroupId",
-            readOnlyAdminsGroupId="readOnlyAdminsGroupId",
-            defaultGatewayUsersGroupId="defaultGatewayUsersGroupId"
+            gateway_id=GATEWAY_ID,
+            admins_group_id="adminsGroupId",
+            read_only_admins_group_id="readOnlyAdminsGroupId",
+            default_gateway_users_group_id="defaultGatewayUsersGroupId"
         )
         request.session = {}
 

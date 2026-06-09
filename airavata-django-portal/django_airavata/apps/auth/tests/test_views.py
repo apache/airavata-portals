@@ -1,7 +1,9 @@
 from unittest.mock import patch
 from urllib.parse import urlencode
 
-from airavata.model.user.ttypes import UserProfile
+from airavata_sdk.generated.org.apache.airavata.model.user.user_profile_pb2 import (
+    UserProfile,
+)
 from django.contrib import messages
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.messages.middleware import MessageMiddleware
@@ -223,10 +225,10 @@ class VerifyEmailViewTestCase(TestCase):
         views_iam_admin_client.is_user_enabled.return_value = False
         views_iam_admin_client.enable_user.return_value = True
         user_profile = UserProfile(
-            airavataInternalUserId=f"testuser@{GATEWAY_ID}",
-            userId="testuser",
-            firstName="Test",
-            lastName="User1",
+            airavata_internal_user_id=f"testuser@{GATEWAY_ID}",
+            user_id="testuser",
+            first_name="Test",
+            last_name="User1",
             emails=["testuser1@example.com"]
         )
         views_iam_admin_client.get_user.return_value = user_profile
@@ -270,10 +272,10 @@ class ResendEmailLinkTestCase(TestCase):
 
         views_iam_admin_client.is_user_exist.return_value = True
         user_profile = UserProfile(
-            airavataInternalUserId=f"testuser@{GATEWAY_ID}",
-            userId="testuser",
-            firstName="Test",
-            lastName="User1",
+            airavata_internal_user_id=f"testuser@{GATEWAY_ID}",
+            user_id="testuser",
+            first_name="Test",
+            last_name="User1",
             emails=["testuser1@example.com"]
         )
         views_iam_admin_client.get_user.return_value = user_profile

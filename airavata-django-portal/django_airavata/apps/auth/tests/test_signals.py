@@ -1,5 +1,9 @@
-from airavata.model.group.ttypes import GroupModel
-from airavata.model.user.ttypes import UserProfile
+from airavata_sdk.generated.org.apache.airavata.model.group.group_manager_pb2 import (  # noqa: E501
+    GroupModel,
+)
+from airavata_sdk.generated.org.apache.airavata.model.user.user_profile_pb2 import (
+    UserProfile,
+)
 from django.core import mail
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase, override_settings
@@ -25,12 +29,12 @@ class EmailUserAddedToGroupSignalReceiverTests(TestCase):
         factory = RequestFactory()
         self.request = factory.get("/")
         self.user = UserProfile(
-            airavataInternalUserId=f"testuser@{GATEWAY_ID}",
-            userId="testuser",
-            gatewayId=GATEWAY_ID,
+            airavata_internal_user_id=f"testuser@{GATEWAY_ID}",
+            user_id="testuser",
+            gateway_id=GATEWAY_ID,
             emails=["testuser@example.com"],
-            firstName="Test",
-            lastName="User")
+            first_name="Test",
+            last_name="User")
 
     def test(self):
         group = GroupModel(id="abc123", name="Test Group")
@@ -68,7 +72,7 @@ class EmailUserAddedToGroupSignalReceiverTests(TestCase):
             msg.reply_to,
             [f"\"{PORTAL_ADMINS[0][0]}\" <{PORTAL_ADMINS[0][1]}>"])
         self.assertSequenceEqual(
-            msg.to, [f"\"{self.user.firstName} {self.user.lastName}\" "
+            msg.to, [f"\"{self.user.first_name} {self.user.last_name}\" "
                      f"<{self.user.emails[0]}>"])
         self.assertIn(
             self.request.build_absolute_uri(
@@ -78,4 +82,4 @@ class EmailUserAddedToGroupSignalReceiverTests(TestCase):
             self.request.build_absolute_uri(
                 reverse("django_airavata_workspace:experiments")),
             msg.body)
-        self.assertIn(self.user.userId, msg.body)
+        self.assertIn(self.user.user_id, msg.body)
