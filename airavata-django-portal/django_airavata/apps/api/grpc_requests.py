@@ -80,16 +80,6 @@ def password_credential(gateway_id, portal_user_name, login_user_name,
     )
 
 
-def application_module(t):
-    """Thrift ``ApplicationModule`` -> proto ``ApplicationModule``."""
-    return _pb2("appcatalog.appdeployment.app_deployment_pb2").ApplicationModule(
-        app_module_id=t.appModuleId or '',
-        app_module_name=t.appModuleName or '',
-        app_module_version=t.appModuleVersion or '',
-        app_module_description=t.appModuleDescription or '',
-    )
-
-
 def _input_data_object(t):
     io = _pb2("application.io.application_io_pb2")
     return io.InputDataObjectType(

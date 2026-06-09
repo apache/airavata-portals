@@ -9,7 +9,6 @@ from airavata.model.application.io.ttypes import DataType
 
 from airavata.model.appcatalog.appdeployment.ttypes import (
     ApplicationDeploymentDescription,
-    ApplicationModule,
     CommandObject,
     SetEnvPaths
 )
@@ -355,26 +354,58 @@ class ProjectSerializer(serializers.Serializer):
         return project.owner == request.user.username
 
 
-class ApplicationModuleSerializer(
-        thrift_utils.create_serializer_class(ApplicationModule)):
+class ApplicationModuleSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``ApplicationModule`` message.
+
+    Reads the protobuf directly and emits the historical Thrift-named JSON keys.
+    ``save()`` returns a proto ``ApplicationModule`` the view passes to the facade.
+    """
+
+    appModuleId = serializers.CharField(source='app_module_id', read_only=True)
+    appModuleName = serializers.CharField(source='app_module_name')
+    appModuleVersion = serializers.CharField(
+        source='app_module_version', allow_blank=True, allow_null=True,
+        required=False)
+    appModuleDescription = serializers.CharField(
+        source='app_module_description', allow_blank=True, allow_null=True,
+        required=False)
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:application-detail',
-        lookup_field='appModuleId',
+        lookup_field='app_module_id',
         lookup_url_kwarg='app_module_id')
     applicationInterface = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:application-application-interface',
-        lookup_field='appModuleId',
+        lookup_field='app_module_id',
         lookup_url_kwarg='app_module_id')
     applicationDeployments = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:application-application-deployments',
-        lookup_field='appModuleId',
+        lookup_field='app_module_id',
         lookup_url_kwarg='app_module_id')
     userHasWriteAccess = serializers.SerializerMethodField()
 
-    class Meta:
-        required = ('appModuleName',)
+    def create(self, validated_data):
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.appdeployment import (  # noqa: E501
+            app_deployment_pb2,
+        )
+        return app_deployment_pb2.ApplicationModule(
+            app_module_name=validated_data.get('app_module_name', '') or '',
+            app_module_version=validated_data.get('app_module_version', '') or '',
+            app_module_description=validated_data.get(
+                'app_module_description', '') or '',
+        )
 
-    def get_userHasWriteAccess(self, appDeployment):
+    def update(self, instance, validated_data):
+        if 'app_module_name' in validated_data:
+            instance.app_module_name = validated_data['app_module_name'] or ''
+        if 'app_module_version' in validated_data:
+            instance.app_module_version = (
+                validated_data['app_module_version'] or '')
+        if 'app_module_description' in validated_data:
+            instance.app_module_description = (
+                validated_data['app_module_description'] or '')
+        return instance
+
+    def get_userHasWriteAccess(self, appModule):
         request = self.context['request']
         return request.is_gateway_admin
 

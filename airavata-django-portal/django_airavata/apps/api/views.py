@@ -434,7 +434,7 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
         try:
             if applicationInterface is not None:
                 appModuleId = applicationInterface.applicationModules[0]
-                applicationModule = grpc_adapters.application_module(
+                applicationModule = (
                     self.request.airavata.research.get_application_module(
                         appModuleId))
             else:
@@ -484,30 +484,27 @@ class ApplicationModuleViewSet(APIBackedViewSet):
     lookup_field = 'app_module_id'
 
     def get_list(self):
-        return [
-            grpc_adapters.application_module(m)
-            for m in self.request.airavata.research.get_accessible_app_modules(
-                gateway_id=self.gateway_id)
-        ]
+        return list(self.request.airavata.research.get_accessible_app_modules(
+            gateway_id=self.gateway_id))
 
     def get_instance(self, lookup_value):
-        return grpc_adapters.application_module(
-            self.request.airavata.research.get_application_module(lookup_value))
+        return self.request.airavata.research.get_application_module(
+            lookup_value)
 
     def perform_create(self, serializer):
         app_module = serializer.save()
         app_module_id = self.request.airavata.research.register_application_module(
-            self.gateway_id, grpc_requests.application_module(app_module))
-        app_module.appModuleId = app_module_id
+            self.gateway_id, app_module)
+        app_module.app_module_id = app_module_id
 
     def perform_update(self, serializer):
         app_module = serializer.save()
         self.request.airavata.research.update_application_module(
-            app_module.appModuleId, grpc_requests.application_module(app_module))
+            app_module.app_module_id, app_module)
 
     def perform_destroy(self, instance):
         self.request.airavata.research.delete_application_module(
-            instance.appModuleId)
+            instance.app_module_id)
 
     @action(detail=True)
     def application_interface(self, request, app_module_id):
@@ -587,11 +584,8 @@ class ApplicationModuleViewSet(APIBackedViewSet):
 
     @action(detail=False)
     def list_all(self, request, format=None):
-        all_modules = [
-            grpc_adapters.application_module(m)
-            for m in self.request.airavata.research.get_all_app_modules(
-                gateway_id=self.gateway_id)
-        ]
+        all_modules = list(self.request.airavata.research.get_all_app_modules(
+            gateway_id=self.gateway_id))
         serializer = self.serializer_class(
             all_modules, many=True, context={'request': request})
         return Response(serializer.data)
