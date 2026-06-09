@@ -6,21 +6,6 @@ from contextlib import contextmanager
 
 import thrift_connector.connection_pool as connection_pool
 from airavata.api import Airavata
-from airavata.service.profile.groupmanager.cpi import GroupManagerService
-from airavata.service.profile.groupmanager.cpi.constants import (
-    GROUP_MANAGER_CPI_NAME
-)
-from airavata.service.profile.iam.admin.services.cpi import IamAdminServices
-from airavata.service.profile.iam.admin.services.cpi.constants import (
-    IAM_ADMIN_SERVICES_CPI_NAME
-)
-from airavata.service.profile.tenant.cpi import TenantProfileService
-from airavata.service.profile.tenant.cpi.constants import (
-    TENANT_PROFILE_CPI_NAME
-)
-from airavata.service.profile.user.cpi import UserProfileService
-from airavata.service.profile.user.cpi.constants import USER_PROFILE_CPI_NAME
-from django.conf import settings
 from thrift.protocol import TBinaryProtocol
 from thrift.protocol.TMultiplexedProtocol import TMultiplexedProtocol
 from thrift.transport import TSocket, TSSLSocket, TTransport
@@ -79,69 +64,12 @@ def get_binary_protocol(transport):
     return TBinaryProtocol.TBinaryProtocol(transport)
 
 
-def create_group_manager_client(transport):
-    protocol = get_binary_protocol(transport)
-    multiplex_prot = TMultiplexedProtocol(protocol, GROUP_MANAGER_CPI_NAME)
-    return GroupManagerService.Client(multiplex_prot)
-
-
-def create_iamadmin_client(transport):
-    protocol = get_binary_protocol(transport)
-    multiplex_prot = TMultiplexedProtocol(protocol,
-                                          IAM_ADMIN_SERVICES_CPI_NAME)
-    return IamAdminServices.Client(multiplex_prot)
-
-
-def create_tenant_profile_client(transport):
-    protocol = get_binary_protocol(transport)
-    multiplex_prot = TMultiplexedProtocol(protocol, TENANT_PROFILE_CPI_NAME)
-    return TenantProfileService.Client(multiplex_prot)
-
-
-def create_user_profile_client(transport):
-    protocol = get_binary_protocol(transport)
-    multiplex_prot = TMultiplexedProtocol(protocol, USER_PROFILE_CPI_NAME)
-    return UserProfileService.Client(multiplex_prot)
-
-
 def get_airavata_client():
     """Get Airavata API client as context manager (use in `with statement`)."""
     return get_thrift_client(settings.AIRAVATA_API_HOST,
                              settings.AIRAVATA_API_PORT,
                              settings.AIRAVATA_API_SECURE,
                              create_airavata_client)
-
-
-def get_group_manager_client():
-    """Group Manager client as context manager (use in `with statement`)."""
-    return get_thrift_client(settings.PROFILE_SERVICE_HOST,
-                             settings.PROFILE_SERVICE_PORT,
-                             settings.PROFILE_SERVICE_SECURE,
-                             create_group_manager_client)
-
-
-def get_iam_admin_client():
-    """IAM Admin client as context manager (use in `with statement`)."""
-    return get_thrift_client(settings.PROFILE_SERVICE_HOST,
-                             settings.PROFILE_SERVICE_PORT,
-                             settings.PROFILE_SERVICE_SECURE,
-                             create_iamadmin_client)
-
-
-def get_tenant_profile_client():
-    """Tenant Profile client as context manager (use in `with statement`)."""
-    return get_thrift_client(settings.PROFILE_SERVICE_HOST,
-                             settings.PROFILE_SERVICE_PORT,
-                             settings.PROFILE_SERVICE_SECURE,
-                             create_tenant_profile_client)
-
-
-def get_user_profile_client():
-    """User Profile client as context manager (use in `with statement`)."""
-    return get_thrift_client(settings.PROFILE_SERVICE_HOST,
-                             settings.PROFILE_SERVICE_PORT,
-                             settings.PROFILE_SERVICE_SECURE,
-                             create_user_profile_client)
 
 
 @contextmanager
@@ -294,62 +222,10 @@ class AiravataAPIThriftClient(CustomThriftClient):
     secure = settings.AIRAVATA_API_SECURE
 
 
-class GroupManagerServiceThriftClient(MultiplexThriftClientMixin,
-                                      CustomThriftClient):
-    service_name = GROUP_MANAGER_CPI_NAME
-    secure = settings.PROFILE_SERVICE_SECURE
-
-
-class IAMAdminServiceThriftClient(MultiplexThriftClientMixin,
-                                  CustomThriftClient):
-    service_name = IAM_ADMIN_SERVICES_CPI_NAME
-    secure = settings.PROFILE_SERVICE_SECURE
-
-
-class TenantProfileServiceThriftClient(MultiplexThriftClientMixin,
-                                       CustomThriftClient):
-    service_name = TENANT_PROFILE_CPI_NAME
-    secure = settings.PROFILE_SERVICE_SECURE
-
-
-class UserProfileServiceThriftClient(MultiplexThriftClientMixin,
-                                     CustomThriftClient):
-    service_name = USER_PROFILE_CPI_NAME
-    secure = settings.PROFILE_SERVICE_SECURE
-
-
 airavata_api_client_pool = SimpleThriftPool(
     Airavata,
     settings.AIRAVATA_API_HOST,
     settings.AIRAVATA_API_PORT,
     secure=settings.AIRAVATA_API_SECURE,
     ca_certs=settings.CA_CERTS_PATH,
-)
-group_manager_client_pool = connection_pool.ClientPool(
-    GroupManagerService,
-    settings.PROFILE_SERVICE_HOST,
-    settings.PROFILE_SERVICE_PORT,
-    connection_class=GroupManagerServiceThriftClient,
-    keepalive=settings.THRIFT_CLIENT_POOL_KEEPALIVE
-)
-iamadmin_client_pool = connection_pool.ClientPool(
-    IamAdminServices,
-    settings.PROFILE_SERVICE_HOST,
-    settings.PROFILE_SERVICE_PORT,
-    connection_class=IAMAdminServiceThriftClient,
-    keepalive=settings.THRIFT_CLIENT_POOL_KEEPALIVE
-)
-tenant_profile_client_pool = connection_pool.ClientPool(
-    TenantProfileService,
-    settings.PROFILE_SERVICE_HOST,
-    settings.PROFILE_SERVICE_PORT,
-    connection_class=TenantProfileServiceThriftClient,
-    keepalive=settings.THRIFT_CLIENT_POOL_KEEPALIVE
-)
-user_profile_client_pool = connection_pool.ClientPool(
-    UserProfileService,
-    settings.PROFILE_SERVICE_HOST,
-    settings.PROFILE_SERVICE_PORT,
-    connection_class=UserProfileServiceThriftClient,
-    keepalive=settings.THRIFT_CLIENT_POOL_KEEPALIVE
 )

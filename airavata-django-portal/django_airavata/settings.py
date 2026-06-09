@@ -71,13 +71,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_airavata.apps.auth.middleware.authz_token_middleware',
     'django_airavata.middleware.AiravataClientMiddleware',
-    'django_airavata.middleware.profile_service_client',
     # Track D: new gRPC AiravataClient (request.airavata), additive alongside the
     # Thrift request.airavata_client. Must come after authz_token_middleware (uses
     # request.authz_token for the access token).
     'django_airavata.middleware.airavata_grpc_client',
-    # Needs to come after authz_token_middleware, airavata_client and
-    # profile_service_client
+    # Needs to come after authz_token_middleware and airavata_client.
     'django_airavata.apps.auth.middleware.gateway_groups_middleware',
     'django_airavata.apps.auth.middleware.user_profile_completeness_check',
 ]

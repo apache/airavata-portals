@@ -81,25 +81,3 @@ def airavata_grpc_client(get_response):
                     client.close()
 
     return middleware
-
-
-def profile_service_client(get_response):
-    """Open and close Profile Service client for each request.
-
-    Usage:
-        request.profile_service['group_manager'].getGroup(
-            request.authz_token, groupId)
-    """
-
-    def middleware(request):
-        request.profile_service = {
-            'group_manager': utils.group_manager_client_pool,
-            'iam_admin': utils.iamadmin_client_pool,
-            'tenant_profile': utils.tenant_profile_client_pool,
-            'user_profile': utils.user_profile_client_pool,
-        }
-        response = get_response(request)
-
-        return response
-
-    return middleware
