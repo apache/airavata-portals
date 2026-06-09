@@ -522,12 +522,11 @@ class ApplicationModuleViewSet(APIBackedViewSet):
 
     @action(detail=True)
     def application_deployments(self, request, app_module_id):
-        all_deployments = [
-            grpc_adapters.application_deployment(d)
-            for d in self.request.airavata.research
-            .get_accessible_application_deployments(self.gateway_id)]
+        all_deployments = (
+            self.request.airavata.research
+            .get_accessible_application_deployments(self.gateway_id))
         app_deployments = [
-            dep for dep in all_deployments if dep.appModuleId == app_module_id]
+            dep for dep in all_deployments if dep.app_module_id == app_module_id]
         serializer = serializers.ApplicationDeploymentDescriptionSerializer(
             app_deployments, many=True, context={'request': request})
         return Response(serializer.data)
@@ -662,48 +661,48 @@ class ApplicationDeploymentViewSet(APIBackedViewSet):
         else:
             deployments = self.request.airavata.research.get_accessible_application_deployments(
                 self.gateway_id)
-        return [grpc_adapters.application_deployment(d) for d in deployments]
+        return list(deployments)
 
     def get_instance(self, lookup_value):
-        return grpc_adapters.application_deployment(
-            self.request.airavata.research.get_application_deployment(lookup_value))
+        return self.request.airavata.research.get_application_deployment(
+            lookup_value)
 
     def perform_create(self, serializer):
         application_deployment = serializer.save()
         app_deployment_id = self.request.airavata.research.register_application_deployment(
-            self.gateway_id, grpc_requests.application_deployment(application_deployment))
-        application_deployment.appDeploymentId = app_deployment_id
+            self.gateway_id, application_deployment)
+        application_deployment.app_deployment_id = app_deployment_id
 
     def perform_update(self, serializer):
         application_deployment = serializer.save()
         self.request.airavata.research.update_application_deployment(
-            application_deployment.appDeploymentId,
-            grpc_requests.application_deployment(application_deployment))
+            application_deployment.app_deployment_id,
+            application_deployment)
 
     def perform_destroy(self, instance):
         self.request.airavata.research.delete_application_deployment(
-            instance.appDeploymentId)
+            instance.app_deployment_id)
 
     @action(detail=True)
     def queues(self, request, app_deployment_id):
         """Return queues for this deployment with defaults overridden by deployment defaults if they exist"""
-        app_deployment = grpc_adapters.application_deployment(
+        app_deployment = (
             self.request.airavata.research.get_application_deployment(
                 app_deployment_id))
         compute_resource = request.airavata.compute.get_compute_resource(
-            app_deployment.computeHostId)
+            app_deployment.compute_host_id)
         # Override defaults with app deployment default queue, if defined
         batch_queues = []
         for batch_queue in compute_resource.batch_queues:
-            if app_deployment.defaultQueueName:
-                if app_deployment.defaultQueueName == batch_queue.queue_name:
+            if app_deployment.default_queue_name:
+                if app_deployment.default_queue_name == batch_queue.queue_name:
                     batch_queue.is_default_queue = True
                     batch_queue.default_node_count = (
-                        app_deployment.defaultNodeCount or 0)
+                        app_deployment.default_node_count or 0)
                     batch_queue.default_cpu_count = (
-                        app_deployment.defaultCPUCount or 0)
+                        app_deployment.default_cpu_count or 0)
                     batch_queue.default_walltime = (
-                        app_deployment.defaultWalltime or 0)
+                        app_deployment.default_walltime or 0)
                 else:
                     batch_queue.is_default_queue = False
             batch_queues.append(batch_queue)

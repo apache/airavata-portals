@@ -7,11 +7,6 @@ from pathlib import Path
 from urllib.parse import quote
 from airavata.model.application.io.ttypes import DataType
 
-from airavata.model.appcatalog.appdeployment.ttypes import (
-    ApplicationDeploymentDescription,
-    CommandObject,
-    SetEnvPaths
-)
 from airavata.model.appcatalog.appinterface.ttypes import (
     ApplicationInterfaceDescription
 )
@@ -761,58 +756,162 @@ class ApplicationInterfaceDescriptionSerializer(serializers.Serializer):
         return request.is_gateway_admin
 
 
-class CommandObjectSerializer(
-        thrift_utils.create_serializer_class(CommandObject)):
-    pass
+def _app_deployment_pb2():
+    from airavata_sdk.generated.org.apache.airavata.model.appcatalog.appdeployment import (  # noqa: E501
+        app_deployment_pb2,
+    )
+    return app_deployment_pb2
 
 
-class SetEnvPathsSerializer(
-        thrift_utils.create_serializer_class(SetEnvPaths)):
-    pass
+def _parallelism_field(**kwargs):
+    from airavata.model.appcatalog.parallelism.ttypes import (
+        ApplicationParallelismType as _ThriftParallelismType,
+    )
+    from airavata_sdk.generated.org.apache.airavata.model.parallelism import (
+        parallelism_pb2,
+    )
+    return proto_enum_int_field(
+        parallelism_pb2.ApplicationParallelismType.DESCRIPTOR,
+        _ThriftParallelismType, proto_prefix='APPLICATION_PARALLELISM_TYPE_',
+        **kwargs)
 
 
-class ApplicationDeploymentDescriptionSerializer(
-    thrift_utils.create_serializer_class(
-        ApplicationDeploymentDescription)):
+class CommandObjectSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``CommandObject`` message."""
+
+    command = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False)
+    commandOrder = serializers.IntegerField(
+        source='command_order', allow_null=True, required=False)
+
+    def create(self, validated_data):
+        return _app_deployment_pb2().CommandObject(
+            command=validated_data.get('command', '') or '',
+            command_order=validated_data.get('command_order', 0) or 0,
+        )
+
+
+class SetEnvPathsSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``SetEnvPaths`` message."""
+
+    name = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False)
+    value = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False)
+    envPathOrder = serializers.IntegerField(
+        source='env_path_order', allow_null=True, required=False)
+
+    def create(self, validated_data):
+        return _app_deployment_pb2().SetEnvPaths(
+            name=validated_data.get('name', '') or '',
+            value=validated_data.get('value', '') or '',
+            env_path_order=validated_data.get('env_path_order', 0) or 0,
+        )
+
+
+class ApplicationDeploymentDescriptionSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``ApplicationDeploymentDescription``."""
+
+    appDeploymentId = serializers.CharField(
+        source='app_deployment_id', allow_blank=True, allow_null=True,
+        required=False)
+    appModuleId = serializers.CharField(
+        source='app_module_id', allow_blank=True, allow_null=True,
+        required=False)
+    computeHostId = serializers.CharField(
+        source='compute_host_id', allow_blank=True, allow_null=True,
+        required=False)
+    executablePath = serializers.CharField(
+        source='executable_path', allow_blank=True, allow_null=True,
+        required=False)
+    parallelism = _parallelism_field(required=False, allow_null=True)
+    appDeploymentDescription = serializers.CharField(
+        source='app_deployment_description', allow_blank=True, allow_null=True,
+        required=False)
+    moduleLoadCmds = OrderedListField(
+        source='module_load_cmds', order_by='commandOrder',
+        child=CommandObjectSerializer(), allow_null=True, required=False)
+    libPrependPaths = OrderedListField(
+        source='lib_prepend_paths', order_by='envPathOrder',
+        child=SetEnvPathsSerializer(), allow_null=True, required=False)
+    libAppendPaths = OrderedListField(
+        source='lib_append_paths', order_by='envPathOrder',
+        child=SetEnvPathsSerializer(), allow_null=True, required=False)
+    setEnvironment = OrderedListField(
+        source='set_environment', order_by='envPathOrder',
+        child=SetEnvPathsSerializer(), allow_null=True, required=False)
+    preJobCommands = OrderedListField(
+        source='pre_job_commands', order_by='commandOrder',
+        child=CommandObjectSerializer(), allow_null=True, required=False)
+    postJobCommands = OrderedListField(
+        source='post_job_commands', order_by='commandOrder',
+        child=CommandObjectSerializer(), allow_null=True, required=False)
+    defaultQueueName = serializers.CharField(
+        source='default_queue_name', allow_blank=True, allow_null=True,
+        required=False)
+    defaultNodeCount = ProtoIntOrNoneField(source='default_node_count')
+    defaultCPUCount = ProtoIntOrNoneField(source='default_cpu_count')
+    defaultWalltime = ProtoIntOrNoneField(source='default_walltime')
+    editableByUser = serializers.BooleanField(
+        source='editable_by_user', required=False, default=False)
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:application-deployment-detail',
-        lookup_field='appDeploymentId',
+        lookup_field='app_deployment_id',
         lookup_url_kwarg='app_deployment_id')
-    # Default values returned in these results have been overridden with app
-    # deployment defaults for any that exist
     queues = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:application-deployment-queues',
-        lookup_field='appDeploymentId',
+        lookup_field='app_deployment_id',
         lookup_url_kwarg='app_deployment_id')
     userHasWriteAccess = serializers.SerializerMethodField()
-    moduleLoadCmds = OrderedListField(
-        order_by='commandOrder',
-        child=CommandObjectSerializer(),
-        allow_null=True)
-    preJobCommands = OrderedListField(
-        order_by='commandOrder',
-        child=CommandObjectSerializer(),
-        allow_null=True)
-    postJobCommands = OrderedListField(
-        order_by='commandOrder',
-        child=CommandObjectSerializer(),
-        allow_null=True)
-    libPrependPaths = OrderedListField(
-        order_by='envPathOrder',
-        child=SetEnvPathsSerializer(),
-        allow_null=True)
-    libAppendPaths = OrderedListField(
-        order_by='envPathOrder',
-        child=SetEnvPathsSerializer(),
-        allow_null=True)
-    setEnvironment = OrderedListField(
-        order_by='envPathOrder',
-        child=SetEnvPathsSerializer(),
-        allow_null=True)
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        # The proto string default '' must render as null for the optional
+        # default-queue-name field (the old adapter mapped pb.<f> or None).
+        if ret.get('defaultQueueName') == '':
+            ret['defaultQueueName'] = None
+        return ret
 
     def get_userHasWriteAccess(self, appDeployment):
         return user_has_access(
-            self.context['request'], appDeployment.appDeploymentId)
+            self.context['request'], appDeployment.app_deployment_id)
+
+    def create(self, validated_data):
+        a = _app_deployment_pb2()
+        return a.ApplicationDeploymentDescription(
+            app_module_id=validated_data.get('app_module_id', '') or '',
+            compute_host_id=validated_data.get('compute_host_id', '') or '',
+            executable_path=validated_data.get('executable_path', '') or '',
+            parallelism=validated_data.get('parallelism', 0) or 0,
+            app_deployment_description=validated_data.get(
+                'app_deployment_description', '') or '',
+            module_load_cmds=[
+                CommandObjectSerializer().create(c)
+                for c in validated_data.get('module_load_cmds', []) or []],
+            lib_prepend_paths=[
+                SetEnvPathsSerializer().create(p)
+                for p in validated_data.get('lib_prepend_paths', []) or []],
+            lib_append_paths=[
+                SetEnvPathsSerializer().create(p)
+                for p in validated_data.get('lib_append_paths', []) or []],
+            set_environment=[
+                SetEnvPathsSerializer().create(p)
+                for p in validated_data.get('set_environment', []) or []],
+            pre_job_commands=[
+                CommandObjectSerializer().create(c)
+                for c in validated_data.get('pre_job_commands', []) or []],
+            post_job_commands=[
+                CommandObjectSerializer().create(c)
+                for c in validated_data.get('post_job_commands', []) or []],
+            default_queue_name=validated_data.get('default_queue_name', '') or '',
+            default_node_count=validated_data.get('default_node_count', 0) or 0,
+            default_cpu_count=validated_data.get('default_cpu_count', 0) or 0,
+            default_walltime=validated_data.get('default_walltime', 0) or 0,
+            editable_by_user=bool(validated_data.get('editable_by_user', False)),
+        )
+
+    def update(self, instance, validated_data):
+        return self.create(validated_data)
 
 
 class BatchQueueSerializer(serializers.Serializer):

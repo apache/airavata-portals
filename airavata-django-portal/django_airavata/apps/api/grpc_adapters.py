@@ -19,9 +19,6 @@ from airavata.model.appcatalog.computeresource.ttypes import (
 from airavata.model.appcatalog.groupresourceprofile.ttypes import (
     ResourceType as _ThriftResourceType,
 )
-from airavata.model.appcatalog.parallelism.ttypes import (
-    ApplicationParallelismType as _ThriftParallelismType,
-)
 from airavata.model.application.io.ttypes import DataType as _ThriftDataType
 from airavata.model.data.replica.ttypes import (
     DataProductType as _ThriftDataProductType,
@@ -166,46 +163,6 @@ def application_interface(pb):
         applicationOutputs=[_output_data_object(o) for o in pb.application_outputs],
         archiveWorkingDirectory=pb.archive_working_directory,
         hasOptionalFileInputs=pb.has_optional_file_inputs,
-    )
-
-
-def _command_object(pb):
-    """gRPC ``CommandObject`` -> ``CommandObjectSerializer`` shape."""
-    return SimpleNamespace(command=pb.command, commandOrder=pb.command_order)
-
-
-def _set_env_paths(pb):
-    """gRPC ``SetEnvPaths`` -> ``SetEnvPathsSerializer`` shape."""
-    return SimpleNamespace(
-        name=pb.name, value=pb.value, envPathOrder=pb.env_path_order)
-
-
-def application_deployment(pb):
-    """gRPC ``ApplicationDeploymentDescription`` -> ``ApplicationDeploymentDescriptionSerializer`` shape.
-
-    Recursively adapts the nested command/env-path lists. ``parallelism`` is an
-    enum with the proto/Thrift integer mismatch (proto SERIAL=1 vs Thrift
-    SERIAL=0) -> bridged by name. The queue-default cluster maps the proto-zero
-    "unset" sentinels back to None so the serializer renders null as Thrift did.
-    """
-    return SimpleNamespace(
-        appDeploymentId=pb.app_deployment_id,
-        appModuleId=pb.app_module_id,
-        computeHostId=pb.compute_host_id,
-        executablePath=pb.executable_path,
-        parallelism=_thrift_enum(pb, 'parallelism', _ThriftParallelismType),
-        appDeploymentDescription=pb.app_deployment_description,
-        moduleLoadCmds=[_command_object(c) for c in pb.module_load_cmds],
-        libPrependPaths=[_set_env_paths(p) for p in pb.lib_prepend_paths],
-        libAppendPaths=[_set_env_paths(p) for p in pb.lib_append_paths],
-        setEnvironment=[_set_env_paths(p) for p in pb.set_environment],
-        preJobCommands=[_command_object(c) for c in pb.pre_job_commands],
-        postJobCommands=[_command_object(c) for c in pb.post_job_commands],
-        defaultQueueName=pb.default_queue_name or None,
-        defaultNodeCount=pb.default_node_count or None,
-        defaultCPUCount=pb.default_cpu_count or None,
-        defaultWalltime=pb.default_walltime or None,
-        editableByUser=pb.editable_by_user,
     )
 
 
