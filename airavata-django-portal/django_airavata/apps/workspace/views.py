@@ -132,8 +132,10 @@ def create_experiment(request, app_module_id):
 def edit_experiment(request, experiment_id):
     request.active_nav_item = 'experiments'
 
-    experiment = request.airavata_client.getExperiment(request.authz_token, experiment_id)
-    applicationInterface = request.airavata_client.getApplicationInterface(request.authz_token, experiment.executionId)
+    experiment = grpc_adapters.experiment(
+        request.airavata.research.get_experiment(experiment_id))
+    applicationInterface = grpc_adapters.application_interface(
+        request.airavata.research.get_application_interface(experiment.executionId))
     app_module_id = applicationInterface.applicationModules[0]
     context = {
         'bundle_name': 'edit-experiment',

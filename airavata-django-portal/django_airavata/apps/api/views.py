@@ -271,9 +271,11 @@ class ExperimentViewSet(mixins.CreateModelMixin,
 
     @action(methods=['post'], detail=True)
     def clone(self, request, experiment_id=None):
+        # experiment_util.clone is the launch/clone orchestration (still Thrift);
+        # re-fetch the cloned experiment via gRPC.
         cloned_experiment_id = experiment_util.clone(request, experiment_id)
-        cloned_experiment = request.airavata_client.getExperiment(
-            self.authz_token, cloned_experiment_id)
+        cloned_experiment = grpc_adapters.experiment(
+            request.airavata.research.get_experiment(cloned_experiment_id))
         serializer = self.serializer_class(
             cloned_experiment, context={'request': request})
         return Response(serializer.data)
@@ -347,8 +349,8 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
     def get_instance(self, lookup_value):
         """Get FullExperiment instance with resolved references."""
         # TODO: move loading experiment and references to airavata_sdk?
-        experimentModel = self.request.airavata_client.getExperiment(
-            self.authz_token, lookup_value)
+        experimentModel = grpc_adapters.experiment(
+            self.request.airavata.research.get_experiment(lookup_value))
         outputDataProducts = [
             grpc_adapters.data_product(
                 self.request.airavata.research.get_data_product(output.value))
@@ -368,8 +370,9 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
             if output.value.startswith('airavata-dp')]
         appInterfaceId = experimentModel.executionId
         try:
-            applicationInterface = self.request.airavata_client \
-                .getApplicationInterface(self.authz_token, appInterfaceId)
+            applicationInterface = grpc_adapters.application_interface(
+                self.request.airavata.research.get_application_interface(
+                    appInterfaceId))
         except Exception as e:
             log.warning(f"Failed to load app interface: {e}")
             applicationInterface = None
@@ -396,8 +399,9 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
         try:
             if applicationInterface is not None:
                 appModuleId = applicationInterface.applicationModules[0]
-                applicationModule = self.request.airavata_client \
-                    .getApplicationModule(self.authz_token, appModuleId)
+                applicationModule = grpc_adapters.application_module(
+                    self.request.airavata.research.get_application_module(
+                        appModuleId))
             else:
                 log.warning(
                     "Cannot load application model since app interface failed to load")
@@ -410,24 +414,25 @@ class FullExperimentViewSet(mixins.RetrieveModelMixin,
             comp_res_sched = user_conf.computationalResourceScheduling
             compute_resource_id = comp_res_sched.resourceHostId
         try:
-            compute_resource = self.request.airavata_client.getComputeResource(
-                self.authz_token, compute_resource_id) \
+            compute_resource = grpc_adapters.compute_resource(
+                self.request.airavata.compute.get_compute_resource(
+                    compute_resource_id)) \
                 if compute_resource_id else None
         except Exception:
             log.exception("Failed to load compute resource for {}".format(
                 compute_resource_id), extra={'request': self.request})
             compute_resource = None
-        if self.request.airavata_client.userHasAccess(
-                self.authz_token,
-                experimentModel.projectId,
-                ResourcePermissionType.READ):
-            project = self.request.airavata_client.getProject(
-                self.authz_token, experimentModel.projectId)
+        if serializers.user_has_access(
+                self.request, experimentModel.projectId, 'READ'):
+            project = grpc_adapters.project(
+                self.request.airavata.research.get_project(
+                    experimentModel.projectId))
         else:
             # User may not have access to project, only experiment
             project = None
-        job_details = self.request.airavata_client.getJobDetails(
-            self.authz_token, lookup_value)
+        job_details = [
+            grpc_adapters.job_model(j)
+            for j in self.request.airavata.research.get_job_details(lookup_value)]
         full_experiment = serializers.FullExperiment(
             experimentModel,
             project=project,
@@ -472,8 +477,10 @@ class ApplicationModuleViewSet(APIBackedViewSet):
 
     @action(detail=True)
     def application_interface(self, request, app_module_id):
-        all_app_interfaces = request.airavata_client.getAllApplicationInterfaces(
-            self.authz_token, self.gateway_id)
+        all_app_interfaces = [
+            grpc_adapters.application_interface(i)
+            for i in request.airavata.research.get_all_application_interfaces(
+                self.gateway_id)]
         app_interfaces = []
         for app_interface in all_app_interfaces:
             if not app_interface.applicationModules:
@@ -498,8 +505,10 @@ class ApplicationModuleViewSet(APIBackedViewSet):
 
     @action(detail=True)
     def application_deployments(self, request, app_module_id):
-        all_deployments = self.request.airavata_client.getAllApplicationDeployments(
-            self.authz_token, self.gateway_id)
+        all_deployments = [
+            grpc_adapters.application_deployment(d)
+            for d in self.request.airavata.research
+            .get_accessible_application_deployments(self.gateway_id)]
         app_deployments = [
             dep for dep in all_deployments if dep.appModuleId == app_module_id]
         serializer = serializers.ApplicationDeploymentDescriptionSerializer(
