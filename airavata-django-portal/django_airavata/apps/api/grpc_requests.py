@@ -197,61 +197,6 @@ def _proto_enum_rev(proto_enum, rev_map, value):
     return proto_enum.Value(name) if name is not None else 0
 
 
-def _compute_resource_preference(t):
-    """Thrift ``ComputeResourcePreference`` -> proto message."""
-    gp = _pb2("appcatalog.gatewayprofile.gateway_profile_pb2")
-    cr = _pb2("appcatalog.computeresource.compute_resource_pb2")
-    dm = _pb2("data.movement.data_movement_pb2")
-    return gp.ComputeResourcePreference(
-        compute_resource_id=t.computeResourceId or '',
-        override_by_airavata=bool(t.overridebyAiravata),
-        login_user_name=t.loginUserName or '',
-        preferred_job_submission_protocol=_proto_enum_rev(
-            cr.JobSubmissionProtocol, _JOB_SUBMISSION_PROTOCOL_REV,
-            t.preferredJobSubmissionProtocol),
-        preferred_data_movement_protocol=_proto_enum_rev(
-            dm.DataMovementProtocol, _DATA_MOVEMENT_PROTOCOL_REV,
-            t.preferredDataMovementProtocol),
-        preferred_batch_queue=t.preferredBatchQueue or '',
-        scratch_location=t.scratchLocation or '',
-        allocation_project_number=t.allocationProjectNumber or '',
-        resource_specific_credential_store_token=t.resourceSpecificCredentialStoreToken or '',
-        usage_reporting_gateway_id=t.usageReportingGatewayId or '',
-        quality_of_service=t.qualityOfService or '',
-        reservation=t.reservation or '',
-        reservation_start_time=t.reservationStartTime or 0,
-        reservation_end_time=t.reservationEndTime or 0,
-        ssh_account_provisioner=t.sshAccountProvisioner or '',
-        ssh_account_provisioner_config=dict(t.sshAccountProvisionerConfig or {}),
-        ssh_account_provisioner_additional_info=t.sshAccountProvisionerAdditionalInfo or '',
-    )
-
-
-def storage_preference(t):
-    """Thrift ``StoragePreference`` -> proto ``StoragePreference``."""
-    return _pb2("appcatalog.gatewayprofile.gateway_profile_pb2").StoragePreference(
-        storage_resource_id=t.storageResourceId or '',
-        login_user_name=t.loginUserName or '',
-        file_system_root_location=t.fileSystemRootLocation or '',
-        resource_specific_credential_store_token=t.resourceSpecificCredentialStoreToken or '',
-    )
-
-
-def gateway_resource_profile(t):
-    """Thrift ``GatewayResourceProfile`` -> proto message."""
-    return _pb2("appcatalog.gatewayprofile.gateway_profile_pb2").GatewayResourceProfile(
-        gateway_id=t.gatewayID or '',
-        credential_store_token=t.credentialStoreToken or '',
-        compute_resource_preferences=[
-            _compute_resource_preference(p)
-            for p in (t.computeResourcePreferences or [])],
-        storage_preferences=[
-            storage_preference(p) for p in (t.storagePreferences or [])],
-        identity_server_tenant=t.identityServerTenant or '',
-        identity_server_pwd_cred_token=t.identityServerPwdCredToken or '',
-    )
-
-
 # --- Experiment tree (write direction) -------------------------------------
 # Reverse of grpc_adapters.experiment. The write path carries only what the
 # user submitted; status/errors/processes/workflow are server-managed.

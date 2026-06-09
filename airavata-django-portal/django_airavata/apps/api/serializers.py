@@ -19,10 +19,6 @@ from airavata.model.appcatalog.computeresource.ttypes import (
     BatchQueue,
     ComputeResourceDescription
 )
-from airavata.model.appcatalog.gatewayprofile.ttypes import (
-    GatewayResourceProfile,
-    StoragePreference
-)
 from airavata.model.appcatalog.groupresourceprofile.ttypes import (
     ComputeResourceReservation,
     GroupComputeResourcePreference,
@@ -250,17 +246,27 @@ class ProtoEnumIntField(serializers.Field):
         return self._thrift_to_proto.get(int(data), 0)
 
 
-def proto_enum_int_field(enum_descriptor, thrift_enum, proto_prefix='', **kwargs):
+def proto_enum_int_field(enum_descriptor, thrift_enum, proto_prefix='',
+                         name_map=None, **kwargs):
     """Build a :class:`ProtoEnumIntField` bridging a proto enum to the Thrift enum
     integer by member NAME (stripping ``proto_prefix`` from proto-namespaced
     members). Members absent from the Thrift enum map to ``None``.
+
+    ``name_map`` overrides the proto-member-name -> Thrift-member-name mapping for
+    enums whose member names diverge beyond a simple prefix (proto3 namespacing of
+    colliding members, e.g. proto ``DATA_MOVEMENT_PROTOCOL_LOCAL`` -> Thrift
+    ``LOCAL``, proto ``JSP_CLOUD`` -> Thrift ``CLOUD``).
     """
+    name_map = name_map or {}
     proto_to_thrift = {}
     thrift_to_proto = {}
     for v in enum_descriptor.values:
-        name = v.name
-        if proto_prefix and name.startswith(proto_prefix):
-            name = name[len(proto_prefix):]
+        if v.name in name_map:
+            name = name_map[v.name]
+        else:
+            name = v.name
+            if proto_prefix and name.startswith(proto_prefix):
+                name = name[len(proto_prefix):]
         thrift_member = getattr(thrift_enum, name, None)
         if thrift_member is not None:
             proto_to_thrift[v.number] = int(thrift_member)
@@ -270,6 +276,44 @@ def proto_enum_int_field(enum_descriptor, thrift_enum, proto_prefix='', **kwargs
     return ProtoEnumIntField(
         proto_to_thrift=proto_to_thrift, thrift_to_proto=thrift_to_proto,
         **kwargs)
+
+
+# proto enum member name -> Thrift member name for the protocol enums whose names
+# diverge beyond a simple prefix (proto3 namespaces colliding members). Used by
+# the compute/storage resource and resource-preference serializers.
+_JOB_SUBMISSION_PROTOCOL_NAME_MAP = {'JSP_CLOUD': 'CLOUD'}
+_DATA_MOVEMENT_PROTOCOL_NAME_MAP = {'DATA_MOVEMENT_PROTOCOL_LOCAL': 'LOCAL'}
+
+
+def job_submission_protocol_field(**kwargs):
+    """A :class:`ProtoEnumIntField` rendering proto ``JobSubmissionProtocol`` as
+    the Thrift integer (proto ``JSP_CLOUD`` -> Thrift ``CLOUD``)."""
+    from airavata.model.appcatalog.computeresource.ttypes import (
+        JobSubmissionProtocol as _ThriftJobSubmissionProtocol,
+    )
+    from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
+        compute_resource_pb2,
+    )
+    return proto_enum_int_field(
+        compute_resource_pb2.JobSubmissionProtocol.DESCRIPTOR,
+        _ThriftJobSubmissionProtocol, proto_prefix='JOB_SUBMISSION_PROTOCOL_',
+        name_map=_JOB_SUBMISSION_PROTOCOL_NAME_MAP, **kwargs)
+
+
+def data_movement_protocol_field(**kwargs):
+    """A :class:`ProtoEnumIntField` rendering proto ``DataMovementProtocol`` as
+    the Thrift integer (proto ``DATA_MOVEMENT_PROTOCOL_LOCAL`` -> Thrift ``LOCAL``;
+    proto-only ``GRID_FTP`` -> None)."""
+    from airavata.model.data.movement.ttypes import (
+        DataMovementProtocol as _ThriftDataMovementProtocol,
+    )
+    from airavata_sdk.generated.org.apache.airavata.model.data.movement import (
+        data_movement_pb2,
+    )
+    return proto_enum_int_field(
+        data_movement_pb2.DataMovementProtocol.DESCRIPTOR,
+        _ThriftDataMovementProtocol, proto_prefix='DATA_MOVEMENT_PROTOCOL_',
+        name_map=_DATA_MOVEMENT_PROTOCOL_NAME_MAP, **kwargs)
 
 
 class StoredJSONField(serializers.JSONField):
@@ -2046,29 +2090,188 @@ class CredentialSummarySerializer(serializers.Serializer):
             self.context['request'], credential_summary.token)
 
 
-class StoragePreferenceSerializer(
-        thrift_utils.create_serializer_class(StoragePreference)):
+def _gateway_profile_pb2():
+    from airavata_sdk.generated.org.apache.airavata.model.appcatalog.gatewayprofile import (  # noqa: E501
+        gateway_profile_pb2,
+    )
+    return gateway_profile_pb2
+
+
+class StoragePreferenceSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``StoragePreference`` message."""
+
+    storageResourceId = serializers.CharField(
+        source='storage_resource_id', allow_blank=True, allow_null=True,
+        required=False)
+    loginUserName = serializers.CharField(
+        source='login_user_name', allow_blank=True, allow_null=True,
+        required=False)
+    fileSystemRootLocation = serializers.CharField(
+        source='file_system_root_location', allow_blank=True, allow_null=True,
+        required=False)
+    resourceSpecificCredentialStoreToken = serializers.CharField(
+        source='resource_specific_credential_store_token', allow_blank=True,
+        allow_null=True, required=False)
     url = FullyEncodedHyperlinkedIdentityField(
         view_name='django_airavata_api:storage-preference-detail',
-        lookup_field='storageResourceId',
+        lookup_field='storage_resource_id',
         lookup_url_kwarg='storage_resource_id')
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
-        # Convert empty string to null
+        # Convert empty string to null (preserves the old serializer's behavior)
         if ret['resourceSpecificCredentialStoreToken'] == '':
             ret['resourceSpecificCredentialStoreToken'] = None
         return ret
 
+    def create(self, validated_data):
+        gp = _gateway_profile_pb2()
+        return gp.StoragePreference(
+            storage_resource_id=validated_data.get(
+                'storage_resource_id', '') or '',
+            login_user_name=validated_data.get('login_user_name', '') or '',
+            file_system_root_location=validated_data.get(
+                'file_system_root_location', '') or '',
+            resource_specific_credential_store_token=validated_data.get(
+                'resource_specific_credential_store_token', '') or '',
+        )
 
-class GatewayResourceProfileSerializer(
-        thrift_utils.create_serializer_class(GatewayResourceProfile)):
-    storagePreferences = StoragePreferenceSerializer(many=True)
+    def update(self, instance, validated_data):
+        return self.create(validated_data)
+
+
+class ComputeResourcePreferenceSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``ComputeResourcePreference`` message."""
+
+    computeResourceId = serializers.CharField(
+        source='compute_resource_id', allow_blank=True, allow_null=True,
+        required=False)
+    overridebyAiravata = serializers.BooleanField(
+        source='override_by_airavata', required=False, default=False)
+    loginUserName = serializers.CharField(
+        source='login_user_name', allow_blank=True, allow_null=True,
+        required=False)
+    preferredJobSubmissionProtocol = job_submission_protocol_field(
+        source='preferred_job_submission_protocol', required=False,
+        allow_null=True)
+    preferredDataMovementProtocol = data_movement_protocol_field(
+        source='preferred_data_movement_protocol', required=False,
+        allow_null=True)
+    preferredBatchQueue = serializers.CharField(
+        source='preferred_batch_queue', allow_blank=True, allow_null=True,
+        required=False)
+    scratchLocation = serializers.CharField(
+        source='scratch_location', allow_blank=True, allow_null=True,
+        required=False)
+    allocationProjectNumber = serializers.CharField(
+        source='allocation_project_number', allow_blank=True, allow_null=True,
+        required=False)
+    resourceSpecificCredentialStoreToken = serializers.CharField(
+        source='resource_specific_credential_store_token', allow_blank=True,
+        allow_null=True, required=False)
+    usageReportingGatewayId = serializers.CharField(
+        source='usage_reporting_gateway_id', allow_blank=True, allow_null=True,
+        required=False)
+    qualityOfService = serializers.CharField(
+        source='quality_of_service', allow_blank=True, allow_null=True,
+        required=False)
+    reservation = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False)
+    reservationStartTime = ProtoIntOrNoneField(source='reservation_start_time')
+    reservationEndTime = ProtoIntOrNoneField(source='reservation_end_time')
+    sshAccountProvisioner = serializers.CharField(
+        source='ssh_account_provisioner', allow_blank=True, allow_null=True,
+        required=False)
+    sshAccountProvisionerConfig = serializers.DictField(
+        source='ssh_account_provisioner_config', required=False)
+    sshAccountProvisionerAdditionalInfo = serializers.CharField(
+        source='ssh_account_provisioner_additional_info', allow_blank=True,
+        allow_null=True, required=False)
+
+    def create(self, validated_data):
+        gp = _gateway_profile_pb2()
+        return gp.ComputeResourcePreference(
+            compute_resource_id=validated_data.get(
+                'compute_resource_id', '') or '',
+            override_by_airavata=bool(
+                validated_data.get('override_by_airavata', False)),
+            login_user_name=validated_data.get('login_user_name', '') or '',
+            preferred_job_submission_protocol=validated_data.get(
+                'preferred_job_submission_protocol', 0) or 0,
+            preferred_data_movement_protocol=validated_data.get(
+                'preferred_data_movement_protocol', 0) or 0,
+            preferred_batch_queue=validated_data.get(
+                'preferred_batch_queue', '') or '',
+            scratch_location=validated_data.get('scratch_location', '') or '',
+            allocation_project_number=validated_data.get(
+                'allocation_project_number', '') or '',
+            resource_specific_credential_store_token=validated_data.get(
+                'resource_specific_credential_store_token', '') or '',
+            usage_reporting_gateway_id=validated_data.get(
+                'usage_reporting_gateway_id', '') or '',
+            quality_of_service=validated_data.get('quality_of_service', '') or '',
+            reservation=validated_data.get('reservation', '') or '',
+            reservation_start_time=validated_data.get(
+                'reservation_start_time', 0) or 0,
+            reservation_end_time=validated_data.get(
+                'reservation_end_time', 0) or 0,
+            ssh_account_provisioner=validated_data.get(
+                'ssh_account_provisioner', '') or '',
+            ssh_account_provisioner_config=dict(
+                validated_data.get('ssh_account_provisioner_config', {}) or {}),
+            ssh_account_provisioner_additional_info=validated_data.get(
+                'ssh_account_provisioner_additional_info', '') or '',
+        )
+
+    def update(self, instance, validated_data):
+        return self.create(validated_data)
+
+
+class GatewayResourceProfileSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``GatewayResourceProfile`` message."""
+
+    gatewayID = serializers.CharField(
+        source='gateway_id', allow_blank=True, allow_null=True, required=False)
+    credentialStoreToken = serializers.CharField(
+        source='credential_store_token', allow_blank=True, allow_null=True,
+        required=False)
+    computeResourcePreferences = ComputeResourcePreferenceSerializer(
+        source='compute_resource_preferences', many=True, required=False)
+    storagePreferences = StoragePreferenceSerializer(
+        source='storage_preferences', many=True, required=False)
+    identityServerTenant = serializers.CharField(
+        source='identity_server_tenant', allow_blank=True, allow_null=True,
+        required=False)
+    identityServerPwdCredToken = serializers.CharField(
+        source='identity_server_pwd_cred_token', allow_blank=True,
+        allow_null=True, required=False)
     userHasWriteAccess = serializers.SerializerMethodField()
 
     def get_userHasWriteAccess(self, gatewayResourceProfile):
         request = self.context['request']
         return request.is_gateway_admin
+
+    def create(self, validated_data):
+        gp = _gateway_profile_pb2()
+        return gp.GatewayResourceProfile(
+            gateway_id=validated_data.get('gateway_id', '') or '',
+            credential_store_token=validated_data.get(
+                'credential_store_token', '') or '',
+            compute_resource_preferences=[
+                ComputeResourcePreferenceSerializer().create(p)
+                for p in validated_data.get(
+                    'compute_resource_preferences', []) or []],
+            storage_preferences=[
+                StoragePreferenceSerializer().create(p)
+                for p in validated_data.get('storage_preferences', []) or []],
+            identity_server_tenant=validated_data.get(
+                'identity_server_tenant', '') or '',
+            identity_server_pwd_cred_token=validated_data.get(
+                'identity_server_pwd_cred_token', '') or '',
+        )
+
+    def update(self, instance, validated_data):
+        return self.create(validated_data)
 
 
 class StorageResourceSerializer(

@@ -1495,7 +1495,7 @@ class CredentialSummaryViewSet(APIBackedViewSet):
 class CurrentGatewayResourceProfile(APIView):
 
     def get(self, request, format=None):
-        gateway_resource_profile = grpc_adapters.gateway_resource_profile(
+        gateway_resource_profile = (
             request.airavata.compute.get_gateway_resource_profile(
                 settings.GATEWAY_ID))
         serializer = serializers.GatewayResourceProfileSerializer(
@@ -1508,8 +1508,7 @@ class CurrentGatewayResourceProfile(APIView):
         if serializer.is_valid():
             gateway_resource_profile = serializer.save()
             request.airavata.compute.update_gateway_resource_profile(
-                settings.GATEWAY_ID,
-                grpc_requests.gateway_resource_profile(gateway_resource_profile))
+                settings.GATEWAY_ID, gateway_resource_profile)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1555,34 +1554,31 @@ class StoragePreferenceViewSet(APIBackedViewSet):
     lookup_field = 'storage_resource_id'
 
     def get_list(self):
-        return [
-            grpc_adapters.storage_preference(p)
-            for p in self.request.airavata.compute.get_all_gateway_storage_preferences(
-                settings.GATEWAY_ID)
-        ]
+        return list(
+            self.request.airavata.compute.get_all_gateway_storage_preferences(
+                settings.GATEWAY_ID))
 
     def get_instance(self, lookup_value):
-        return grpc_adapters.storage_preference(
-            self.request.airavata.compute.get_gateway_storage_preference(
-                settings.GATEWAY_ID, lookup_value))
+        return self.request.airavata.compute.get_gateway_storage_preference(
+            settings.GATEWAY_ID, lookup_value)
 
     def perform_create(self, serializer):
         storage_preference = serializer.save()
         self.request.airavata.compute.add_gateway_storage_preference(
             settings.GATEWAY_ID,
-            storage_preference.storageResourceId,
-            grpc_requests.storage_preference(storage_preference))
+            storage_preference.storage_resource_id,
+            storage_preference)
 
     def perform_update(self, serializer):
         storage_preference = serializer.save()
         self.request.airavata.compute.update_gateway_storage_preference(
             settings.GATEWAY_ID,
-            storage_preference.storageResourceId,
-            grpc_requests.storage_preference(storage_preference))
+            storage_preference.storage_resource_id,
+            storage_preference)
 
     def perform_destroy(self, instance):
         self.request.airavata.compute.delete_gateway_storage_preference(
-            settings.GATEWAY_ID, instance.storageResourceId)
+            settings.GATEWAY_ID, instance.storage_resource_id)
 
 
 class ParserViewSet(mixins.CreateModelMixin,

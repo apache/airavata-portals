@@ -471,55 +471,6 @@ def group_resource_profile(pb):
     )
 
 
-def storage_preference(pb):
-    """gRPC ``StoragePreference`` -> ``StoragePreferenceSerializer`` shape."""
-    return SimpleNamespace(
-        storageResourceId=pb.storage_resource_id,
-        loginUserName=pb.login_user_name,
-        fileSystemRootLocation=pb.file_system_root_location,
-        resourceSpecificCredentialStoreToken=pb.resource_specific_credential_store_token,
-    )
-
-
-def _compute_resource_preference(pb):
-    """gRPC ``ComputeResourcePreference`` -> auto-generated serializer shape."""
-    return SimpleNamespace(
-        computeResourceId=pb.compute_resource_id,
-        overridebyAiravata=pb.override_by_airavata,
-        loginUserName=pb.login_user_name,
-        # rendered as raw ints; bridge by name (name-divergent maps).
-        preferredJobSubmissionProtocol=_thrift_enum_mapped(
-            pb, 'preferred_job_submission_protocol', _JOB_SUBMISSION_PROTOCOL),
-        preferredDataMovementProtocol=_thrift_enum_mapped(
-            pb, 'preferred_data_movement_protocol', _DATA_MOVEMENT_PROTOCOL),
-        preferredBatchQueue=pb.preferred_batch_queue,
-        scratchLocation=pb.scratch_location,
-        allocationProjectNumber=pb.allocation_project_number,
-        resourceSpecificCredentialStoreToken=pb.resource_specific_credential_store_token,
-        usageReportingGatewayId=pb.usage_reporting_gateway_id,
-        qualityOfService=pb.quality_of_service,
-        reservation=pb.reservation,
-        reservationStartTime=pb.reservation_start_time or None,
-        reservationEndTime=pb.reservation_end_time or None,
-        sshAccountProvisioner=pb.ssh_account_provisioner,
-        sshAccountProvisionerConfig=dict(pb.ssh_account_provisioner_config),
-        sshAccountProvisionerAdditionalInfo=pb.ssh_account_provisioner_additional_info,
-    )
-
-
-def gateway_resource_profile(pb):
-    """gRPC ``GatewayResourceProfile`` -> ``GatewayResourceProfileSerializer`` shape."""
-    return SimpleNamespace(
-        gatewayID=pb.gateway_id,
-        credentialStoreToken=pb.credential_store_token,
-        computeResourcePreferences=[
-            _compute_resource_preference(p) for p in pb.compute_resource_preferences],
-        storagePreferences=[storage_preference(p) for p in pb.storage_preferences],
-        identityServerTenant=pb.identity_server_tenant,
-        identityServerPwdCredToken=pb.identity_server_pwd_cred_token,
-    )
-
-
 # --- Experiment tree -------------------------------------------------------
 #
 # getExperiment returns the full ExperimentModel including the processes tree
