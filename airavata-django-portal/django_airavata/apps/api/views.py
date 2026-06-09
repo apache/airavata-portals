@@ -1196,35 +1196,34 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
                 'owner': self._load_user_profile(owner_id)}
 
     def _load_accessible_users(self, entity_id, permission_type):
-        users = self.request.airavata_client.getAllAccessibleUsers(
-            self.authz_token, entity_id, permission_type)
+        users = self.request.airavata.sharing.get_all_accessible_users(
+            entity_id, ResourcePermissionType(permission_type).name)
         return {user_id: permission_type for user_id in users}
 
     def _load_directly_accessible_users(self, entity_id, permission_type):
-        users = self.request.airavata_client.getAllDirectlyAccessibleUsers(
-            self.authz_token, entity_id, permission_type)
+        users = self.request.airavata.sharing.get_all_directly_accessible_users(
+            entity_id, ResourcePermissionType(permission_type).name)
         return {user_id: permission_type for user_id in users}
 
     def _load_user_profile(self, user_id):
-        user_profile_client = self.request.profile_service['user_profile']
         username = user_id[0:user_id.rindex('@')]
-        return user_profile_client.getUserProfileById(self.authz_token,
-                                                      username,
-                                                      settings.GATEWAY_ID)
+        return grpc_adapters.user_profile(
+            self.request.airavata.iam.get_user_profile_by_id(
+                username, settings.GATEWAY_ID))
 
     def _load_accessible_groups(self, entity_id, permission_type):
-        groups = self.request.airavata_client.getAllAccessibleGroups(
-            self.authz_token, entity_id, permission_type)
+        groups = self.request.airavata.sharing.get_all_accessible_groups(
+            entity_id, ResourcePermissionType(permission_type).name)
         return {group_id: permission_type for group_id in groups}
 
     def _load_directly_accessible_groups(self, entity_id, permission_type):
-        groups = self.request.airavata_client.getAllDirectlyAccessibleGroups(
-            self.authz_token, entity_id, permission_type)
+        groups = self.request.airavata.sharing.get_all_directly_accessible_groups(
+            entity_id, ResourcePermissionType(permission_type).name)
         return {group_id: permission_type for group_id in groups}
 
     def _load_group(self, group_id):
-        group_manager_client = self.request.profile_service['group_manager']
-        return group_manager_client.getGroup(self.authz_token, group_id)
+        return grpc_adapters.group(
+            self.request.airavata.sharing.gm_get_group(group_id))
 
     def perform_update(self, serializer):
         shared_entity = serializer.save()
@@ -1279,24 +1278,24 @@ class SharedEntityViewSet(mixins.RetrieveModelMixin,
                 shared_entity['_group_revoke_manage_sharing_permission'])
 
     def _share_with_users(self, entity_id, permission_type, user_ids):
-        self.request.airavata_client.shareResourceWithUsers(
-            self.authz_token, entity_id,
-            {user_id: permission_type for user_id in user_ids})
+        name = ResourcePermissionType(permission_type).name
+        self.request.airavata.sharing.share_resource_with_users(
+            entity_id, {user_id: name for user_id in user_ids})
 
     def _revoke_from_users(self, entity_id, permission_type, user_ids):
-        self.request.airavata_client.revokeSharingOfResourceFromUsers(
-            self.authz_token, entity_id,
-            {user_id: permission_type for user_id in user_ids})
+        name = ResourcePermissionType(permission_type).name
+        self.request.airavata.sharing.revoke_sharing_of_resource_from_users(
+            entity_id, {user_id: name for user_id in user_ids})
 
     def _share_with_groups(self, entity_id, permission_type, group_ids):
-        self.request.airavata_client.shareResourceWithGroups(
-            self.authz_token, entity_id,
-            {group_id: permission_type for group_id in group_ids})
+        name = ResourcePermissionType(permission_type).name
+        self.request.airavata.sharing.share_resource_with_groups(
+            entity_id, {group_id: name for group_id in group_ids})
 
     def _revoke_from_groups(self, entity_id, permission_type, group_ids):
-        self.request.airavata_client.revokeSharingOfResourceFromGroups(
-            self.authz_token, entity_id,
-            {group_id: permission_type for group_id in group_ids})
+        name = ResourcePermissionType(permission_type).name
+        self.request.airavata.sharing.revoke_sharing_of_resource_from_groups(
+            entity_id, {group_id: name for group_id in group_ids})
 
     @action(methods=['put'], detail=True)
     def merge(self, request, entity_id=None):

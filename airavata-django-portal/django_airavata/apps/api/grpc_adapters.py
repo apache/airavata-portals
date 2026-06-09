@@ -38,6 +38,7 @@ from airavata.model.status.ttypes import (
     TaskState as _ThriftTaskState,
 )
 from airavata.model.task.ttypes import TaskTypes as _ThriftTaskTypes
+from airavata.model.user.ttypes import Status as _ThriftStatus
 from airavata.model.workspace.ttypes import (
     NotificationPriority as _ThriftNotificationPriority,
 )
@@ -841,6 +842,44 @@ def group(pb):
         description=pb.description or None,
         members=list(pb.members),
         admins=list(pb.admins),
+    )
+
+
+def user_profile(pb):
+    """gRPC ``UserProfile`` -> ``UserProfileSerializer`` shape.
+
+    Note the Thrift attribute quirks the serializer expects: ``State`` (capital),
+    ``orginationAffiliation`` (Thrift's spelling), ``labeledURI``. The nested
+    ``nsfDemographics``/``customDashboard`` structs are not surfaced in the
+    sharing UI, so they render null.
+    """
+    return SimpleNamespace(
+        userModelVersion=pb.user_model_version or None,
+        airavataInternalUserId=pb.airavata_internal_user_id,
+        userId=pb.user_id,
+        gatewayId=pb.gateway_id,
+        emails=list(pb.emails),
+        firstName=pb.first_name or None,
+        lastName=pb.last_name or None,
+        middleName=pb.middle_name or None,
+        namePrefix=pb.name_prefix or None,
+        nameSuffix=pb.name_suffix or None,
+        orcidId=pb.orcid_id or None,
+        phones=list(pb.phones),
+        country=pb.country or None,
+        nationality=list(pb.nationality),
+        homeOrganization=pb.home_organization or None,
+        orginationAffiliation=pb.origination_affiliation or None,
+        creationTime=pb.creation_time or None,
+        lastAccessTime=pb.last_access_time or None,
+        validUntil=pb.valid_until or None,
+        State=_thrift_enum_prefixed(pb, 'state', _ThriftStatus, 'STATUS_'),
+        comments=pb.comments or None,
+        labeledURI=pb.labeled_uri or None,
+        gpgKey=pb.gpg_key or None,
+        timeZone=pb.time_zone or None,
+        nsfDemographics=None,
+        customDashboard=None,
     )
 
 

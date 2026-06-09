@@ -1794,9 +1794,8 @@ class SharedEntitySerializer(serializers.Serializer):
 
     def get_hasSharingPermission(self, shared_entity):
         request = self.context['request']
-        return request.airavata_client.userHasAccess(
-            request.authz_token, shared_entity['entityId'],
-            ResourcePermissionType.MANAGE_SHARING)
+        return user_has_access(
+            request, shared_entity['entityId'], "MANAGE_SHARING")
 
 
 class CredentialSummarySerializer(
