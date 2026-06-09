@@ -7,18 +7,7 @@ import warnings
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
-from airavata.model.appcatalog.computeresource.ttypes import (
-    CloudJobSubmission,
-    LOCALSubmission,
-    SSHJobSubmission,
-    UnicoreJobSubmission
-)
 from airavata.model.application.io.ttypes import DataType
-from airavata.model.data.movement.ttypes import (
-    GridFTPDataMovement,
-    LOCALDataMovement,
-    SCPDataMovement
-)
 from airavata.model.experiment.ttypes import (
     ExperimentModel,
     ExperimentSearchFields
@@ -70,7 +59,6 @@ from . import (
     output_views,
     serializers,
     signals,
-    thrift_utils,
     tus,
     view_utils
 )
@@ -767,12 +755,11 @@ class LocalJobSubmissionView(APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        local_job_submission = grpc_adapters.local_job_submission(
+        local_job_submission = (
             request.airavata.compute.get_local_job_submission(job_submission_id))
         return Response(
-            thrift_utils.create_serializer(
-                LOCALSubmission,
-                instance=local_job_submission).data)
+            serializers.LocalJobSubmissionSerializer(
+                local_job_submission).data)
 
 
 class CloudJobSubmissionView(APIView):
@@ -780,12 +767,10 @@ class CloudJobSubmissionView(APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        job_submission = grpc_adapters.cloud_job_submission(
-            request.airavata.compute.get_cloud_job_submission(job_submission_id))
+        job_submission = request.airavata.compute.get_cloud_job_submission(
+            job_submission_id)
         return Response(
-            thrift_utils.create_serializer(
-                CloudJobSubmission,
-                instance=job_submission).data)
+            serializers.CloudJobSubmissionSerializer(job_submission).data)
 
 
 class SshJobSubmissionView(APIView):
@@ -793,12 +778,10 @@ class SshJobSubmissionView(APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        job_submission = grpc_adapters.ssh_job_submission(
-            request.airavata.compute.get_ssh_job_submission(job_submission_id))
+        job_submission = request.airavata.compute.get_ssh_job_submission(
+            job_submission_id)
         return Response(
-            thrift_utils.create_serializer(
-                SSHJobSubmission,
-                instance=job_submission).data)
+            serializers.SshJobSubmissionSerializer(job_submission).data)
 
 
 class UnicoreJobSubmissionView(APIView):
@@ -806,12 +789,10 @@ class UnicoreJobSubmissionView(APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        job_submission = grpc_adapters.unicore_job_submission(
-            request.airavata.compute.get_unicore_job_submission(job_submission_id))
+        job_submission = request.airavata.compute.get_unicore_job_submission(
+            job_submission_id)
         return Response(
-            thrift_utils.create_serializer(
-                UnicoreJobSubmission,
-                instance=job_submission).data)
+            serializers.UnicoreJobSubmissionSerializer(job_submission).data)
 
 
 class GridFtpDataMovementView(APIView):
@@ -819,12 +800,10 @@ class GridFtpDataMovementView(APIView):
 
     def get(self, request, format=None):
         data_movement_id = request.query_params["id"]
-        data_movement = grpc_adapters.grid_ftp_data_movement(
-            request.airavata.storage.get_grid_ftp_data_movement(data_movement_id))
+        data_movement = request.airavata.storage.get_grid_ftp_data_movement(
+            data_movement_id)
         return Response(
-            thrift_utils.create_serializer(
-                GridFTPDataMovement,
-                instance=data_movement).data)
+            serializers.GridFtpDataMovementSerializer(data_movement).data)
 
 
 class ScpDataMovementView(APIView):
@@ -832,12 +811,10 @@ class ScpDataMovementView(APIView):
 
     def get(self, request, format=None):
         data_movement_id = request.query_params["id"]
-        data_movement = grpc_adapters.scp_data_movement(
-            request.airavata.storage.get_scp_data_movement(data_movement_id))
+        data_movement = request.airavata.storage.get_scp_data_movement(
+            data_movement_id)
         return Response(
-            thrift_utils.create_serializer(
-                SCPDataMovement,
-                instance=data_movement).data)
+            serializers.ScpDataMovementSerializer(data_movement).data)
 
 
 class LocalDataMovementView(APIView):
@@ -845,12 +822,10 @@ class LocalDataMovementView(APIView):
 
     def get(self, request, format=None):
         data_movement_id = request.query_params["id"]
-        data_movement = grpc_adapters.local_data_movement(
-            request.airavata.storage.get_local_data_movement(data_movement_id))
+        data_movement = request.airavata.storage.get_local_data_movement(
+            data_movement_id)
         return Response(
-            thrift_utils.create_serializer(
-                LOCALDataMovement,
-                instance=data_movement).data)
+            serializers.LocalDataMovementSerializer(data_movement).data)
 
 
 class DataProductView(APIView):

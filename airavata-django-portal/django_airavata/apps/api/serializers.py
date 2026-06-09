@@ -345,6 +345,40 @@ class ProtoFileSystemsMapField(serializers.Field):
             str(key_map[k]): v for k, v in value.items() if k in key_map}
 
 
+class ProtoEnumKeyedMapField(serializers.Field):
+    """Renders a proto ``map<int32, string>`` whose int key holds a proto enum
+    value as the ``{str(Thrift enum member): value}`` dict the old enum-keyed
+    Thrift map produced (e.g. ``{'JobManagerCommand.SUBMISSION': 'sbatch'}``).
+
+    Build via :func:`proto_enum_keyed_map_field`, which snapshots the proto-int ->
+    Thrift-member-str mapping. (Unlike ``ProtoFileSystemsMapField``, which mirrors
+    an i32-keyed Thrift map and emits the digit, this mirrors an enum-keyed Thrift
+    map and emits ``str(member)``.)
+    """
+
+    def __init__(self, key_labels, **kwargs):
+        self._key_labels = key_labels
+        kwargs.setdefault('read_only', True)
+        super().__init__(**kwargs)
+
+    def to_representation(self, value):
+        return {
+            self._key_labels[k]: v
+            for k, v in value.items() if k in self._key_labels}
+
+
+def proto_enum_keyed_map_field(proto_enum_descriptor, thrift_enum, **kwargs):
+    """Build a :class:`ProtoEnumKeyedMapField` mapping each proto enum int key to
+    ``str(Thrift enum member)`` by member name (proto and Thrift assign different
+    ints; unknown/zero-sentinel keys are dropped)."""
+    key_labels = {}
+    for v in proto_enum_descriptor.values:
+        thrift_member = getattr(thrift_enum, v.name, None)
+        if thrift_member is not None:
+            key_labels[v.number] = str(thrift_member)
+    return ProtoEnumKeyedMapField(key_labels=key_labels, **kwargs)
+
+
 class StoredJSONField(serializers.JSONField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -884,6 +918,203 @@ class ComputeResourceDescriptionSerializer(serializers.Serializer):
         source='default_cpu_count', allow_null=True, required=False)
     defaultWalltime = serializers.IntegerField(
         source='default_walltime', allow_null=True, required=False)
+
+
+# --- Per-protocol job-submission / data-movement interface details ----------
+# Admin-only detail views rendering a single protocol's submission/movement model.
+# SecurityProtocol/ResourceJobManagerType/ProviderName are prefix-aligned; MonitorMode
+# names diverge (proto MONITOR_FORK/MONITOR_LOCAL -> Thrift FORK/LOCAL).
+_MONITOR_MODE_NAME_MAP = {'MONITOR_FORK': 'FORK', 'MONITOR_LOCAL': 'LOCAL'}
+
+
+def _security_protocol_field(**kwargs):
+    from airavata.model.data.movement.ttypes import (
+        SecurityProtocol as _ThriftSecurityProtocol,
+    )
+    from airavata_sdk.generated.org.apache.airavata.model.data.movement import (
+        data_movement_pb2,
+    )
+    return proto_enum_int_field(
+        data_movement_pb2.SecurityProtocol.DESCRIPTOR, _ThriftSecurityProtocol,
+        proto_prefix='SECURITY_PROTOCOL_', **kwargs)
+
+
+def _resource_job_manager_type_field(**kwargs):
+    from airavata.model.appcatalog.computeresource.ttypes import (
+        ResourceJobManagerType as _ThriftResourceJobManagerType,
+    )
+    from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
+        compute_resource_pb2,
+    )
+    return proto_enum_int_field(
+        compute_resource_pb2.ResourceJobManagerType.DESCRIPTOR,
+        _ThriftResourceJobManagerType,
+        proto_prefix='RESOURCE_JOB_MANAGER_TYPE_', **kwargs)
+
+
+def _provider_name_field(**kwargs):
+    from airavata.model.appcatalog.computeresource.ttypes import (
+        ProviderName as _ThriftProviderName,
+    )
+    from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
+        compute_resource_pb2,
+    )
+    return proto_enum_int_field(
+        compute_resource_pb2.ProviderName.DESCRIPTOR, _ThriftProviderName,
+        proto_prefix='PROVIDER_NAME_', **kwargs)
+
+
+def _monitor_mode_field(**kwargs):
+    from airavata.model.appcatalog.computeresource.ttypes import (
+        MonitorMode as _ThriftMonitorMode,
+    )
+    from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
+        compute_resource_pb2,
+    )
+    return proto_enum_int_field(
+        compute_resource_pb2.MonitorMode.DESCRIPTOR, _ThriftMonitorMode,
+        name_map=_MONITOR_MODE_NAME_MAP, **kwargs)
+
+
+class ResourceJobManagerSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``ResourceJobManager`` message."""
+
+    resourceJobManagerId = serializers.CharField(
+        source='resource_job_manager_id', allow_blank=True, allow_null=True,
+        required=False)
+    resourceJobManagerType = _resource_job_manager_type_field(
+        source='resource_job_manager_type', required=False, allow_null=True)
+    pushMonitoringEndpoint = serializers.CharField(
+        source='push_monitoring_endpoint', allow_blank=True, allow_null=True,
+        required=False)
+    jobManagerBinPath = serializers.CharField(
+        source='job_manager_bin_path', allow_blank=True, allow_null=True,
+        required=False)
+    jobManagerCommands = serializers.SerializerMethodField()
+    parallelismPrefix = serializers.SerializerMethodField()
+
+    def get_jobManagerCommands(self, pb):
+        from airavata.model.appcatalog.computeresource.ttypes import (
+            JobManagerCommand as _ThriftJobManagerCommand,
+        )
+        from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
+            compute_resource_pb2,
+        )
+        return proto_enum_keyed_map_field(
+            compute_resource_pb2.JobManagerCommand.DESCRIPTOR,
+            _ThriftJobManagerCommand).to_representation(pb.job_manager_commands)
+
+    def get_parallelismPrefix(self, pb):
+        from airavata.model.appcatalog.parallelism.ttypes import (
+            ApplicationParallelismType as _ThriftParallelismType,
+        )
+        from airavata_sdk.generated.org.apache.airavata.model.parallelism import (
+            parallelism_pb2,
+        )
+        return proto_enum_keyed_map_field(
+            parallelism_pb2.ApplicationParallelismType.DESCRIPTOR,
+            _ThriftParallelismType).to_representation(pb.parallelism_prefix)
+
+
+class LocalJobSubmissionSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``LOCALSubmission`` message."""
+
+    jobSubmissionInterfaceId = serializers.CharField(
+        source='job_submission_interface_id', allow_blank=True, allow_null=True,
+        required=False)
+    resourceJobManager = ResourceJobManagerSerializer(
+        source='resource_job_manager', required=False)
+    securityProtocol = _security_protocol_field(
+        source='security_protocol', required=False, allow_null=True)
+
+
+class SshJobSubmissionSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``SSHJobSubmission`` message."""
+
+    jobSubmissionInterfaceId = serializers.CharField(
+        source='job_submission_interface_id', allow_blank=True, allow_null=True,
+        required=False)
+    securityProtocol = _security_protocol_field(
+        source='security_protocol', required=False, allow_null=True)
+    resourceJobManager = ResourceJobManagerSerializer(
+        source='resource_job_manager', required=False)
+    alternativeSSHHostName = serializers.CharField(
+        source='alternative_ssh_host_name', allow_blank=True, allow_null=True,
+        required=False)
+    sshPort = ProtoIntOrNoneField(source='ssh_port')
+    monitorMode = _monitor_mode_field(
+        source='monitor_mode', required=False, allow_null=True)
+    batchQueueEmailSenders = serializers.ListField(
+        source='batch_queue_email_senders', child=serializers.CharField(),
+        required=False)
+
+
+class CloudJobSubmissionSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``CloudJobSubmission`` message."""
+
+    jobSubmissionInterfaceId = serializers.CharField(
+        source='job_submission_interface_id', allow_blank=True, allow_null=True,
+        required=False)
+    securityProtocol = _security_protocol_field(
+        source='security_protocol', required=False, allow_null=True)
+    nodeId = serializers.CharField(
+        source='node_id', allow_blank=True, allow_null=True, required=False)
+    executableType = serializers.CharField(
+        source='executable_type', allow_blank=True, allow_null=True,
+        required=False)
+    providerName = _provider_name_field(
+        source='provider_name', required=False, allow_null=True)
+    userAccountName = serializers.CharField(
+        source='user_account_name', allow_blank=True, allow_null=True,
+        required=False)
+
+
+class UnicoreJobSubmissionSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``UnicoreJobSubmission`` message."""
+
+    jobSubmissionInterfaceId = serializers.CharField(
+        source='job_submission_interface_id', allow_blank=True, allow_null=True,
+        required=False)
+    securityProtocol = _security_protocol_field(
+        source='security_protocol', required=False, allow_null=True)
+    unicoreEndPointURL = serializers.CharField(
+        source='unicore_end_point_url', allow_blank=True, allow_null=True,
+        required=False)
+
+
+class LocalDataMovementSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``LOCALDataMovement`` message."""
+
+    dataMovementInterfaceId = serializers.CharField(
+        source='data_movement_interface_id', allow_blank=True, allow_null=True,
+        required=False)
+
+
+class ScpDataMovementSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``SCPDataMovement`` message."""
+
+    dataMovementInterfaceId = serializers.CharField(
+        source='data_movement_interface_id', allow_blank=True, allow_null=True,
+        required=False)
+    securityProtocol = _security_protocol_field(
+        source='security_protocol', required=False, allow_null=True)
+    alternativeSCPHostName = serializers.CharField(
+        source='alternative_scp_host_name', allow_blank=True, allow_null=True,
+        required=False)
+    sshPort = ProtoIntOrNoneField(source='ssh_port')
+
+
+class GridFtpDataMovementSerializer(serializers.Serializer):
+    """Proto-native serializer for the gRPC ``GridFTPDataMovement`` message."""
+
+    dataMovementInterfaceId = serializers.CharField(
+        source='data_movement_interface_id', allow_blank=True, allow_null=True,
+        required=False)
+    securityProtocol = _security_protocol_field(
+        source='security_protocol', required=False, allow_null=True)
+    gridFTPEndPoints = serializers.ListField(
+        source='grid_ftp_end_points', child=serializers.CharField(),
+        required=False)
 
 
 class ExperimentStatusSerializer(

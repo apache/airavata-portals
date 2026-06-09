@@ -14,11 +14,7 @@ serializers are made protobuf-native.
 from types import SimpleNamespace
 
 from airavata.model.appcatalog.computeresource.ttypes import (
-    JobManagerCommand as _ThriftJobManagerCommand,
     JobSubmissionProtocol as _ThriftJobSubmissionProtocol,
-    MonitorMode as _ThriftMonitorMode,
-    ProviderName as _ThriftProviderName,
-    ResourceJobManagerType as _ThriftResourceJobManagerType,
 )
 from airavata.model.appcatalog.groupresourceprofile.ttypes import (
     ResourceType as _ThriftResourceType,
@@ -34,7 +30,6 @@ from airavata.model.data.replica.ttypes import (
 )
 from airavata.model.data.movement.ttypes import (
     DataMovementProtocol as _ThriftDataMovementProtocol,
-    SecurityProtocol as _ThriftSecurityProtocol,
 )
 from airavata.model.experiment.ttypes import (
     ExperimentType as _ThriftExperimentType,
@@ -682,153 +677,6 @@ def user_profile(pb):
         timeZone=pb.time_zone or None,
         nsfDemographics=None,
         customDashboard=None,
-    )
-
-
-# --- Per-protocol job-submission / data-movement interface details ----------
-# These admin-only detail views render a single protocol's submission/movement
-# model via the auto-generated serializer, so the adapter exposes Thrift attribute
-# names. SecurityProtocol/ResourceJobManagerType/ProviderName are prefix-aligned
-# (proto *_UNKNOWN sentinel -> None). MonitorMode NAMES diverge (proto MONITOR_FORK
-# / MONITOR_LOCAL vs Thrift FORK / LOCAL) so it needs an explicit map. The
-# ResourceJobManager carries two enum-keyed map<int32,string> fields whose int keys
-# hold proto enum values, bridged to the Thrift enum int by name (like _file_systems).
-
-# proto MonitorMode member name -> Thrift MonitorMode value (names diverge for the
-# FORK/LOCAL members, which proto prefixes with MONITOR_).
-_MONITOR_MODE = {
-    'POLL_JOB_MANAGER': _ThriftMonitorMode.POLL_JOB_MANAGER,
-    'CLOUD_JOB_MONITOR': _ThriftMonitorMode.CLOUD_JOB_MONITOR,
-    'JOB_EMAIL_NOTIFICATION_MONITOR': _ThriftMonitorMode.JOB_EMAIL_NOTIFICATION_MONITOR,
-    'XSEDE_AMQP_SUBSCRIBE': _ThriftMonitorMode.XSEDE_AMQP_SUBSCRIBE,
-    'MONITOR_FORK': _ThriftMonitorMode.FORK,
-    'MONITOR_LOCAL': _ThriftMonitorMode.LOCAL,
-}
-
-
-def _enum_keyed_map(pb_map, proto_enum, thrift_enum):
-    """proto map<int32, string> whose int key holds a ``proto_enum`` value ->
-    {Thrift enum member: value}, bridging the key by NAME (proto and Thrift assign
-    different ints to the same member). The Thrift model declared these as
-    enum-keyed maps, so the serializer's ``DictField`` rendered ``str(member)``
-    (e.g. ``'JobManagerCommand.SUBMISSION'``) -> keep the Thrift IntEnum member as
-    the key to reproduce that exact representation. Unknown keys (e.g. the zero
-    sentinel) are dropped.
-    """
-    result = {}
-    for k, v in pb_map.items():
-        name = proto_enum.DESCRIPTOR.values_by_number.get(k)
-        if name is None:
-            continue
-        thrift_member = getattr(thrift_enum, name.name, None)
-        if thrift_member is not None:
-            result[thrift_member] = v
-    return result
-
-
-def _resource_job_manager(pb):
-    """gRPC ``ResourceJobManager`` -> auto-generated serializer shape."""
-    from airavata_sdk.generated.org.apache.airavata.model.appcatalog.computeresource import (  # noqa: E501
-        compute_resource_pb2,
-    )
-    from airavata_sdk.generated.org.apache.airavata.model.parallelism import (
-        parallelism_pb2,
-    )
-    return SimpleNamespace(
-        resourceJobManagerId=pb.resource_job_manager_id or None,
-        resourceJobManagerType=_thrift_enum_prefixed(
-            pb, 'resource_job_manager_type', _ThriftResourceJobManagerType,
-            'RESOURCE_JOB_MANAGER_TYPE_'),
-        pushMonitoringEndpoint=pb.push_monitoring_endpoint or None,
-        jobManagerBinPath=pb.job_manager_bin_path or None,
-        jobManagerCommands=_enum_keyed_map(
-            pb.job_manager_commands, compute_resource_pb2.JobManagerCommand,
-            _ThriftJobManagerCommand),
-        parallelismPrefix=_enum_keyed_map(
-            pb.parallelism_prefix, parallelism_pb2.ApplicationParallelismType,
-            _ThriftParallelismType),
-    )
-
-
-def local_job_submission(pb):
-    """gRPC ``LOCALSubmission`` -> auto-generated serializer shape."""
-    return SimpleNamespace(
-        jobSubmissionInterfaceId=pb.job_submission_interface_id,
-        resourceJobManager=_resource_job_manager(pb.resource_job_manager),
-        securityProtocol=_thrift_enum_prefixed(
-            pb, 'security_protocol', _ThriftSecurityProtocol,
-            'SECURITY_PROTOCOL_'),
-    )
-
-
-def ssh_job_submission(pb):
-    """gRPC ``SSHJobSubmission`` -> auto-generated serializer shape."""
-    return SimpleNamespace(
-        jobSubmissionInterfaceId=pb.job_submission_interface_id,
-        securityProtocol=_thrift_enum_prefixed(
-            pb, 'security_protocol', _ThriftSecurityProtocol,
-            'SECURITY_PROTOCOL_'),
-        resourceJobManager=_resource_job_manager(pb.resource_job_manager),
-        alternativeSSHHostName=pb.alternative_ssh_host_name or None,
-        sshPort=pb.ssh_port or None,
-        monitorMode=_thrift_enum_mapped(pb, 'monitor_mode', _MONITOR_MODE),
-        batchQueueEmailSenders=list(pb.batch_queue_email_senders),
-    )
-
-
-def cloud_job_submission(pb):
-    """gRPC ``CloudJobSubmission`` -> auto-generated serializer shape."""
-    return SimpleNamespace(
-        jobSubmissionInterfaceId=pb.job_submission_interface_id,
-        securityProtocol=_thrift_enum_prefixed(
-            pb, 'security_protocol', _ThriftSecurityProtocol,
-            'SECURITY_PROTOCOL_'),
-        nodeId=pb.node_id or None,
-        executableType=pb.executable_type or None,
-        providerName=_thrift_enum_prefixed(
-            pb, 'provider_name', _ThriftProviderName, 'PROVIDER_NAME_'),
-        userAccountName=pb.user_account_name or None,
-    )
-
-
-def unicore_job_submission(pb):
-    """gRPC ``UnicoreJobSubmission`` -> auto-generated serializer shape."""
-    return SimpleNamespace(
-        jobSubmissionInterfaceId=pb.job_submission_interface_id,
-        securityProtocol=_thrift_enum_prefixed(
-            pb, 'security_protocol', _ThriftSecurityProtocol,
-            'SECURITY_PROTOCOL_'),
-        unicoreEndPointURL=pb.unicore_end_point_url or None,
-    )
-
-
-def local_data_movement(pb):
-    """gRPC ``LOCALDataMovement`` -> auto-generated serializer shape."""
-    return SimpleNamespace(
-        dataMovementInterfaceId=pb.data_movement_interface_id,
-    )
-
-
-def scp_data_movement(pb):
-    """gRPC ``SCPDataMovement`` -> auto-generated serializer shape."""
-    return SimpleNamespace(
-        dataMovementInterfaceId=pb.data_movement_interface_id,
-        securityProtocol=_thrift_enum_prefixed(
-            pb, 'security_protocol', _ThriftSecurityProtocol,
-            'SECURITY_PROTOCOL_'),
-        alternativeSCPHostName=pb.alternative_scp_host_name or None,
-        sshPort=pb.ssh_port or None,
-    )
-
-
-def grid_ftp_data_movement(pb):
-    """gRPC ``GridFTPDataMovement`` -> auto-generated serializer shape."""
-    return SimpleNamespace(
-        dataMovementInterfaceId=pb.data_movement_interface_id,
-        securityProtocol=_thrift_enum_prefixed(
-            pb, 'security_protocol', _ThriftSecurityProtocol,
-            'SECURITY_PROTOCOL_'),
-        gridFTPEndPoints=list(pb.grid_ftp_end_points),
     )
 
 
