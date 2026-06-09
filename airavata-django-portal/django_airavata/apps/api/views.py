@@ -197,8 +197,11 @@ class ProjectViewSet(APIBackedViewSet):
 
     @action(detail=True)
     def experiments(self, request, project_id=None):
-        experiments = request.airavata_client.getExperimentsInProject(
-            self.authz_token, project_id, -1, 0)
+        experiments = [
+            grpc_adapters.experiment(e)
+            for e in request.airavata.research.get_experiments_in_project(
+                project_id, -1, 0)
+        ]
         serializer = serializers.ExperimentSerializer(
             experiments, many=True, context={'request': request})
         return Response(serializer.data)
@@ -217,8 +220,8 @@ class ExperimentViewSet(mixins.CreateModelMixin,
     lookup_field = 'experiment_id'
 
     def get_instance(self, lookup_value):
-        return self.request.airavata_client.getExperiment(
-            self.authz_token, lookup_value)
+        return grpc_adapters.experiment(
+            self.request.airavata.research.get_experiment(lookup_value))
 
     def perform_create(self, serializer):
         experiment = serializer.save(
@@ -260,8 +263,10 @@ class ExperimentViewSet(mixins.CreateModelMixin,
 
     @action(methods=['get'], detail=True)
     def jobs(self, request, experiment_id=None):
-        jobs = request.airavata_client.getJobDetails(
-            self.authz_token, experiment_id)
+        jobs = [
+            grpc_adapters.job_model(j)
+            for j in request.airavata.research.get_job_details(experiment_id)
+        ]
         serializer = serializers.JobSerializer(
             jobs, many=True, context={'request': request})
         return Response(serializer.data)

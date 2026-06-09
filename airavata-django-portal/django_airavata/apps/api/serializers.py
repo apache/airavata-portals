@@ -576,10 +576,7 @@ class ExperimentSerializer(
     userHasWriteAccess = serializers.SerializerMethodField()
 
     def get_userHasWriteAccess(self, experiment):
-        request = self.context['request']
-        return request.airavata_client.userHasAccess(
-            request.authz_token, experiment.experimentId,
-            ResourcePermissionType.WRITE)
+        return user_has_access(self.context['request'], experiment.experimentId)
 
     def to_representation(self, experiment):
         result = super().to_representation(experiment)

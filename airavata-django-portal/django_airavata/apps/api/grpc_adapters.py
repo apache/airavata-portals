@@ -27,6 +27,16 @@ from airavata.model.credential.store.ttypes import SummaryType as _ThriftSummary
 from airavata.model.data.movement.ttypes import (
     DataMovementProtocol as _ThriftDataMovementProtocol,
 )
+from airavata.model.experiment.ttypes import (
+    ExperimentType as _ThriftExperimentType,
+)
+from airavata.model.status.ttypes import (
+    ExperimentState as _ThriftExperimentState,
+    JobState as _ThriftJobState,
+    ProcessState as _ThriftProcessState,
+    TaskState as _ThriftTaskState,
+)
+from airavata.model.task.ttypes import TaskTypes as _ThriftTaskTypes
 
 
 def _thrift_enum(pb, field, thrift_enum):
@@ -40,6 +50,22 @@ def _thrift_enum(pb, field, thrift_enum):
     enum_descriptor = pb.DESCRIPTOR.fields_by_name[field].enum_type
     name = enum_descriptor.values_by_number[getattr(pb, field)].name
     return getattr(thrift_enum, name)
+
+
+def _thrift_enum_prefixed(pb, field, thrift_enum, proto_prefix):
+    """Bridge a proto enum field to a Thrift value by name after stripping a
+    proto-only prefix.
+
+    proto3 namespaces enum members that would otherwise collide in the file
+    (``EXPERIMENT_STATE_CREATED``) where the Thrift enum uses the bare name
+    (``CREATED``). Members absent from Thrift — notably the zero ``*_UNKNOWN``
+    sentinel — map to None (the serializer renders these as nullable ints).
+    """
+    name = pb.DESCRIPTOR.fields_by_name[field].enum_type.values_by_number[
+        getattr(pb, field)].name
+    if name.startswith(proto_prefix):
+        name = name[len(proto_prefix):]
+    return getattr(thrift_enum, name, None)
 
 
 def _thrift_enum_mapped(pb, field, proto_name_to_thrift):
@@ -509,4 +535,223 @@ def group_resource_profile(pb):
         creationTime=pb.creation_time or None,
         updatedTime=pb.updated_time or None,
         defaultCredentialStoreToken=pb.default_credential_store_token or None,
+    )
+
+
+# --- Experiment tree -------------------------------------------------------
+#
+# getExperiment returns the full ExperimentModel including the processes tree
+# (process -> tasks -> jobs, each with its status list). The status/type enums
+# render as raw integers and are bridged by name with the proto prefix stripped
+# (proto EXPERIMENT_STATE_CREATED -> Thrift CREATED). Status timeOfStateChange
+# stays an int (ExperimentStatusSerializer/ProcessStatusSerializer use a
+# non-nullable UTC field; the nested auto-generated ones render the int);
+# model creation/update times map proto-zero -> None (nullable).
+
+
+def _error_model(pb):
+    """gRPC ``ErrorModel`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        errorId=pb.error_id,
+        creationTime=pb.creation_time or None,
+        actualErrorMessage=pb.actual_error_message,
+        userFriendlyMessage=pb.user_friendly_message,
+        transientOrPersistent=pb.transient_or_persistent,
+        rootCauseErrorIdList=list(pb.root_cause_error_id_list),
+    )
+
+
+def _computational_resource_scheduling(pb):
+    """gRPC ``ComputationalResourceSchedulingModel`` -> auto-generated shape."""
+    return SimpleNamespace(
+        resourceHostId=pb.resource_host_id,
+        totalCPUCount=pb.total_cpu_count,
+        nodeCount=pb.node_count,
+        numberOfThreads=pb.number_of_threads,
+        queueName=pb.queue_name,
+        wallTimeLimit=pb.wall_time_limit,
+        totalPhysicalMemory=pb.total_physical_memory,
+        chessisNumber=pb.chessis_number,
+        staticWorkingDir=pb.static_working_dir,
+        overrideLoginUserName=pb.override_login_user_name,
+        overrideScratchLocation=pb.override_scratch_location,
+        overrideAllocationProjectNumber=pb.override_allocation_project_number,
+        mGroupCount=pb.m_group_count,
+    )
+
+
+def _user_configuration_data(pb):
+    """gRPC ``UserConfigurationDataModel`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        airavataAutoSchedule=pb.airavata_auto_schedule,
+        overrideManualScheduledParams=pb.override_manual_scheduled_params,
+        shareExperimentPublicly=pb.share_experiment_publicly,
+        computationalResourceScheduling=(
+            _computational_resource_scheduling(pb.computational_resource_scheduling)
+            if pb.HasField('computational_resource_scheduling') else None),
+        throttleResources=pb.throttle_resources,
+        userDN=pb.user_dn,
+        generateCert=pb.generate_cert,
+        inputStorageResourceId=pb.input_storage_resource_id,
+        outputStorageResourceId=pb.output_storage_resource_id,
+        experimentDataDir=pb.experiment_data_dir,
+        useUserCRPref=pb.use_user_cr_pref,
+        groupResourceProfileId=pb.group_resource_profile_id,
+        autoScheduledCompResourceSchedulingList=[
+            _computational_resource_scheduling(s)
+            for s in pb.auto_scheduled_comp_resource_scheduling_list],
+    )
+
+
+def _experiment_status(pb):
+    """gRPC ``ExperimentStatus`` -> ``ExperimentStatusSerializer`` shape."""
+    return SimpleNamespace(
+        state=_thrift_enum_prefixed(
+            pb, 'state', _ThriftExperimentState, 'EXPERIMENT_STATE_'),
+        timeOfStateChange=pb.time_of_state_change,
+        reason=pb.reason,
+        statusId=pb.status_id,
+    )
+
+
+def _process_status(pb):
+    """gRPC ``ProcessStatus`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        state=_thrift_enum_prefixed(
+            pb, 'state', _ThriftProcessState, 'PROCESS_STATE_'),
+        timeOfStateChange=pb.time_of_state_change,
+        reason=pb.reason,
+        statusId=pb.status_id,
+        processId=pb.process_id,
+    )
+
+
+def _task_status(pb):
+    """gRPC ``TaskStatus`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        state=_thrift_enum_prefixed(
+            pb, 'state', _ThriftTaskState, 'TASK_STATE_'),
+        timeOfStateChange=pb.time_of_state_change,
+        reason=pb.reason,
+        statusId=pb.status_id,
+    )
+
+
+def _job_status(pb):
+    """gRPC ``JobStatus`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        jobState=_thrift_enum_prefixed(
+            pb, 'job_state', _ThriftJobState, 'JOB_STATE_'),
+        timeOfStateChange=pb.time_of_state_change,
+        reason=pb.reason,
+        statusId=pb.status_id,
+    )
+
+
+def job_model(pb):
+    """gRPC ``JobModel`` -> ``JobSerializer`` shape."""
+    return SimpleNamespace(
+        jobId=pb.job_id,
+        taskId=pb.task_id,
+        processId=pb.process_id,
+        jobDescription=pb.job_description,
+        creationTime=pb.creation_time or None,
+        jobStatuses=[_job_status(s) for s in pb.job_statuses],
+        computeResourceConsumed=pb.compute_resource_consumed,
+        jobName=pb.job_name,
+        workingDir=pb.working_dir,
+        stdOut=pb.std_out,
+        stdErr=pb.std_err,
+        exitCode=pb.exit_code,
+    )
+
+
+def _task_model(pb):
+    """gRPC ``TaskModel`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        taskId=pb.task_id,
+        taskType=_thrift_enum_prefixed(
+            pb, 'task_type', _ThriftTaskTypes, 'TASK_TYPES_'),
+        parentProcessId=pb.parent_process_id,
+        creationTime=pb.creation_time or None,
+        lastUpdateTime=pb.last_update_time or None,
+        taskStatuses=[_task_status(s) for s in pb.task_statuses],
+        taskDetail=pb.task_detail,
+        subTaskModel=pb.sub_task_model,
+        taskErrors=[_error_model(e) for e in pb.task_errors],
+        jobs=[job_model(j) for j in pb.jobs],
+        maxRetry=pb.max_retry,
+        currentRetry=pb.current_retry,
+    )
+
+
+def _process_model(pb):
+    """gRPC ``ProcessModel`` -> auto-generated serializer shape."""
+    return SimpleNamespace(
+        processId=pb.process_id,
+        experimentId=pb.experiment_id,
+        creationTime=pb.creation_time or None,
+        lastUpdateTime=pb.last_update_time or None,
+        processStatuses=[_process_status(s) for s in pb.process_statuses],
+        processDetail=pb.process_detail,
+        applicationInterfaceId=pb.application_interface_id,
+        applicationDeploymentId=pb.application_deployment_id,
+        computeResourceId=pb.compute_resource_id,
+        processInputs=[_input_data_object(i) for i in pb.process_inputs],
+        processOutputs=[_output_data_object(o) for o in pb.process_outputs],
+        processResourceSchedule=(
+            _computational_resource_scheduling(pb.process_resource_schedule)
+            if pb.HasField('process_resource_schedule') else None),
+        tasks=[_task_model(t) for t in pb.tasks],
+        taskDag=pb.task_dag,
+        processErrors=[_error_model(e) for e in pb.process_errors],
+        gatewayExecutionId=pb.gateway_execution_id,
+        enableEmailNotification=pb.enable_email_notification,
+        emailAddresses=list(pb.email_addresses),
+        inputStorageResourceId=pb.input_storage_resource_id,
+        outputStorageResourceId=pb.output_storage_resource_id,
+        userDn=pb.user_dn,
+        generateCert=pb.generate_cert,
+        experimentDataDir=pb.experiment_data_dir,
+        userName=pb.user_name,
+        useUserCRPref=pb.use_user_cr_pref,
+        groupResourceProfileId=pb.group_resource_profile_id,
+        # the legacy workflow-engine subsystem is not adapted (rarely populated);
+        # an empty list matches the Thrift default for non-workflow processes.
+        processWorkflows=[],
+    )
+
+
+def experiment(pb):
+    """gRPC ``ExperimentModel`` -> ``ExperimentSerializer`` shape.
+
+    The deepest read model: recursively adapts the user configuration, the
+    experiment input/output and status lists, the errors, and the full
+    processes -> tasks -> jobs tree.
+    """
+    return SimpleNamespace(
+        experimentId=pb.experiment_id,
+        projectId=pb.project_id,
+        gatewayId=pb.gateway_id,
+        experimentType=_thrift_enum_prefixed(
+            pb, 'experiment_type', _ThriftExperimentType, 'EXPERIMENT_TYPE_'),
+        userName=pb.user_name,
+        experimentName=pb.experiment_name,
+        creationTime=pb.creation_time or None,
+        description=pb.description,
+        executionId=pb.execution_id,
+        gatewayExecutionId=pb.gateway_execution_id,
+        gatewayInstanceId=pb.gateway_instance_id,
+        enableEmailNotification=pb.enable_email_notification,
+        emailAddresses=list(pb.email_addresses),
+        userConfigurationData=(
+            _user_configuration_data(pb.user_configuration_data)
+            if pb.HasField('user_configuration_data') else None),
+        experimentInputs=[_input_data_object(i) for i in pb.experiment_inputs],
+        experimentOutputs=[_output_data_object(o) for o in pb.experiment_outputs],
+        experimentStatus=[_experiment_status(s) for s in pb.experiment_status],
+        errors=[_error_model(e) for e in pb.errors],
+        processes=[_process_model(p) for p in pb.processes],
+        # legacy workflow-engine subsystem not adapted (rarely populated).
+        workflow=None,
     )
