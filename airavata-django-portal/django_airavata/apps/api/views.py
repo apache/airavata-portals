@@ -1976,23 +1976,38 @@ class LogRecordConsumer(APIView):
         if log_record['level'] == 'ERROR':
             try:
                 stacktrace = "\n".join(log_record['stacktrace'])
-                record, created = (
-                    models.ExperimentErrorRecord.objects.get_or_create(
-                        experiment_id=view_utils.resolve_experiment_id(
-                            log_record),
-                        username=getattr(request.user, 'username',
-                                         'anonymous'),
-                        level=log_record['level'],
-                        message=log_record['message'],
-                        defaults={
-                            'details': log_record['details'],
-                            'stacktrace': stacktrace,
-                        },
-                    ))
-                if not created:
+                lookup = {
+                    'experiment_id': view_utils.resolve_experiment_id(
+                        log_record),
+                    'username': getattr(request.user, 'username', 'anonymous'),
+                    'level': log_record['level'],
+                    'message': log_record['message'],
+                }
+                # The same error is commonly reported more than once; we keep a
+                # single row per unique error and bump its count/last-seen time.
+                # There is no DB-level unique constraint (message is an
+                # unbounded TextField and experiment_id is nullable), so
+                # concurrent reports can race and insert duplicate rows. Fold
+                # any duplicates into the oldest surviving row so the table
+                # self-heals and we never crash on MultipleObjectsReturned.
+                existing = list(
+                    models.ExperimentErrorRecord.objects.filter(**lookup)
+                    .order_by('created'))
+                if not existing:
+                    models.ExperimentErrorRecord.objects.create(
+                        details=log_record['details'],
+                        stacktrace=stacktrace,
+                        **lookup,
+                    )
+                else:
+                    record, *duplicates = existing
+                    extra_count = sum(d.count for d in duplicates)
+                    if duplicates:
+                        models.ExperimentErrorRecord.objects.filter(
+                            pk__in=[d.pk for d in duplicates]).delete()
                     # Bump the occurrence count and refresh the last-seen time
                     # (updated is auto_now) and latest details/stacktrace.
-                    record.count = F('count') + 1
+                    record.count = F('count') + 1 + extra_count
                     record.details = log_record['details']
                     record.stacktrace = stacktrace
                     record.save(update_fields=['count', 'details',

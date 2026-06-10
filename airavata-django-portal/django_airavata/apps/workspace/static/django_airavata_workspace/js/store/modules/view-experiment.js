@@ -173,8 +173,16 @@ export const actions = {
     }
   },
   async loadGroupResourceProfile({ getters, commit }) {
+    // Experiments aren't guaranteed to have a group resource profile; without
+    // this guard the id serializes to "null" in the URL and Airavata rejects
+    // it with an AuthorizationException that surfaces as a spurious error.
+    const groupResourceProfileId = getters.groupResourceProfileId;
+    if (!groupResourceProfileId) {
+      commit("setGroupResourceProfile", { groupResourceProfile: null });
+      return;
+    }
     const groupResourceProfile = await services.GroupResourceProfileService.retrieve(
-      { lookup: getters.groupResourceProfileId }
+      { lookup: groupResourceProfileId }
     );
     commit("setGroupResourceProfile", { groupResourceProfile });
   },
