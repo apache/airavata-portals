@@ -1,73 +1,152 @@
 import logging
 
-from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.cache import cache
 
-from . import models
+from airavata_sdk.helpers import compute_resources
 
 logger = logging.getLogger(__name__)
 
 
+# Per-user workspace preferences (most-recent project/group/compute + per-app
+# favorites) live in the cache, not the DB (was api_workspacepreferences /
+# api_applicationpreferences). Pure UX state; cache eviction just reseeds the
+# defaults on the next read.
+def _prefs_key(username):
+    return f"workspace_prefs:{username}"
+
+
+def _load_prefs(username):
+    return cache.get(_prefs_key(username))
+
+
+def _store_prefs(username, data):
+    cache.set(_prefs_key(username), data)
+
+
+class _ApplicationPreference:
+    """Cache-backed stand-in for the old ApplicationPreferences row.
+
+    Exposes the ``application_id`` / ``favorite`` attributes the serializer and
+    favorite/unfavorite views read; ``save()`` writes the favorite flag back
+    through the owning preferences object.
+    """
+
+    def __init__(self, prefs, application_id, favorite):
+        self._prefs = prefs
+        self.application_id = application_id
+        self.favorite = favorite
+
+    def save(self):
+        self._prefs._set_favorite(self.application_id, self.favorite)
+
+
+class _ApplicationPreferencesManager:
+    """Mimics the ORM reverse-FK manager (``applicationpreferences_set``)."""
+
+    def __init__(self, prefs):
+        self._prefs = prefs
+
+    def all(self):
+        return [
+            _ApplicationPreference(self._prefs, app_id, favorite)
+            for app_id, favorite in self._prefs._favorites.items()
+        ]
+
+    def get(self, application_id):
+        if application_id not in self._prefs._favorites:
+            from django.core.exceptions import ObjectDoesNotExist
+            raise ObjectDoesNotExist()
+        return _ApplicationPreference(
+            self._prefs, application_id,
+            self._prefs._favorites[application_id])
+
+    def create(self, username=None, application_id=None, favorite=False):
+        self._prefs._set_favorite(application_id, favorite)
+        return _ApplicationPreference(self._prefs, application_id, favorite)
+
+
+class WorkspacePreferences:
+    """Cache-backed stand-in for the old WorkspacePreferences row.
+
+    Preserves the attribute/method surface every call site relies on:
+    ``most_recent_*`` mutable attributes, ``save()``, and an
+    ``applicationpreferences_set`` reverse-manager.
+    """
+
+    def __init__(self, username, data):
+        self.username = username
+        self.most_recent_project_id = data.get("most_recent_project_id")
+        self.most_recent_group_resource_profile_id = data.get(
+            "most_recent_group_resource_profile_id")
+        self.most_recent_compute_resource_id = data.get(
+            "most_recent_compute_resource_id")
+        self._favorites = dict(data.get("application_preferences", {}))
+        self.applicationpreferences_set = _ApplicationPreferencesManager(self)
+
+    def _as_dict(self):
+        return {
+            "most_recent_project_id": self.most_recent_project_id,
+            "most_recent_group_resource_profile_id":
+                self.most_recent_group_resource_profile_id,
+            "most_recent_compute_resource_id":
+                self.most_recent_compute_resource_id,
+            "application_preferences": self._favorites,
+        }
+
+    def save(self):
+        _store_prefs(self.username, self._as_dict())
+
+    def _set_favorite(self, application_id, favorite):
+        self._favorites[application_id] = favorite
+        self.save()
+
+
 class WorkspacePreferencesHelper:
+    """Read/write a user's workspace preferences.
+
+    The record lives in this portal's cache; the server-side lookups needed to
+    seed/validate it (first writeable project, accessible group resource
+    profiles) are delegated to the SDK ``compute_resources`` helpers.
+    """
 
     def get(self, request):
-        try:
-            workspace_preferences = models.WorkspacePreferences.objects.get(
-                username=request.user.username)
-            self._check(request, workspace_preferences)
-        except ObjectDoesNotExist:
-            workspace_preferences = self._create_default(request)
+        username = request.user.username
+        data = _load_prefs(username)
+        if data is None:
+            workspace_preferences = self._create_default(request, username)
             workspace_preferences.save()
-        return workspace_preferences
-
-    def _create_default(self, request):
-        workspace_preferences = models.WorkspacePreferences.create(
-            request.user.username)
-        most_recent_project = self._get_most_recent_project(request)
-        workspace_preferences.most_recent_project_id = (
-            most_recent_project.project_id if most_recent_project else None)
-        first_grp = \
-            self._get_first_group_resource_profile(request)
-        workspace_preferences.most_recent_group_resource_profile_id = \
-            first_grp.group_resource_profile_id if first_grp else None
-        return workspace_preferences
-
-    def _get_most_recent_project(self, request):
-        "Return most recent writeable project."
-        projects = request.airavata.research.get_user_projects(
-            gateway_id=settings.GATEWAY_ID, user_name=request.user.username,
-            limit=-1, offset=0)
-        for project in projects:
-            if self._can_write(request, project.project_id):
-                return project
-        return None
-
-    def _get_first_group_resource_profile(self, request):
-        "Return first accessible group resource profile"
-
-        group_resource_profiles = \
-            request.airavata.compute.get_group_resource_list()
-        if len(group_resource_profiles) > 0:
-            return group_resource_profiles[0]
         else:
-            return None
+            workspace_preferences = WorkspacePreferences(username, data)
+            self._check(request, workspace_preferences)
+        return workspace_preferences
+
+    def _create_default(self, request, username):
+        defaults = compute_resources.resolve_workspace_defaults(
+            request.airavata)
+        return WorkspacePreferences(username, {
+            "most_recent_project_id": defaults["most_recent_project_id"],
+            "most_recent_group_resource_profile_id":
+                defaults["most_recent_group_resource_profile_id"],
+        })
 
     def _check(self, request, prefs):
         "Validate preference values and update as needed."
         if (not prefs.most_recent_project_id or
                 not self._can_write(request, prefs.most_recent_project_id)):
-            most_recent_project = self._get_most_recent_project(request)
-            if most_recent_project is not None:
-                logger.info("_check: updating most_recent_project_id to {}".format(most_recent_project.project_id))
-                prefs.most_recent_project_id = most_recent_project.project_id
+            most_recent_project_id = (
+                compute_resources.most_recent_writeable_project_id(
+                    request.airavata))
+            if most_recent_project_id is not None:
+                logger.info("_check: updating most_recent_project_id to {}".format(most_recent_project_id))
+                prefs.most_recent_project_id = most_recent_project_id
                 prefs.save()
             else:
                 logger.warning("_check: no writeable projects found, unsetting most_recent_project_id")
                 prefs.most_recent_project_id = None
                 prefs.save()
-        group_resource_profiles = \
-            request.airavata.compute.get_group_resource_list()
-        group_resource_profile_ids = [g.group_resource_profile_id for g in group_resource_profiles]
+        group_resource_profile_ids = (
+            compute_resources.accessible_group_resource_profile_ids(
+                request.airavata))
         if (not prefs.most_recent_group_resource_profile_id or
                 prefs.most_recent_group_resource_profile_id not in group_resource_profile_ids):
             first_grp_id = (group_resource_profile_ids[0]
@@ -80,9 +159,7 @@ class WorkspacePreferencesHelper:
             prefs.save()
 
     def _can_write(self, request, entity_id):
-        return request.airavata.sharing.user_has_access(
-            resource_id=entity_id, user_id=request.user.username,
-            permission_type="WRITE")
+        return compute_resources.user_can_write(request.airavata, entity_id)
 
     def _can_read(self, request, entity_id):
         return request.airavata.sharing.user_has_access(

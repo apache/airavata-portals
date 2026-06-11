@@ -4,8 +4,8 @@ import IOType from "./IOType";
 const FIELDS = [
   "id",
   "name",
-  "requiredInput",
-  "parserId",
+  "required_input",
+  "parser_id",
   {
     name: "type",
     type: IOType,

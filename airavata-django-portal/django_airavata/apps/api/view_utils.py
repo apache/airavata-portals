@@ -1,23 +1,25 @@
 import logging
 import os
 from collections.__init__ import OrderedDict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
-import pytz
 from django.conf import settings
 from django.http import Http404
 from django.http.request import QueryDict
-from rest_framework import mixins, pagination, permissions
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
-from rest_framework.utils.urls import remove_query_param, replace_query_param
-from rest_framework.viewsets import GenericViewSet
+
+from django_airavata.apps.api import web
+from django_airavata.apps.api.web import (
+    Response,
+    remove_query_param,
+    replace_query_param,
+    reverse,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class GenericAPIBackedViewSet(GenericViewSet):
+class GenericAPIBackedViewSet(web.GenericViewSet):
     # Make lookup_value_regex to any set of non-forward-slash characters. Many
     # Airavata ids contains period ('.') which the default lookup_value_regex
     # in DRF doesn't allow.
@@ -36,7 +38,7 @@ class GenericAPIBackedViewSet(GenericViewSet):
         raise NotImplementedError()
 
     def get_queryset(self):
-        if isinstance(self, mixins.ListModelMixin):
+        if isinstance(self, web.mixins.ListModelMixin):
             return self.get_list()
         else:
             # get_queryset() is invoked whenever a detail extra action route
@@ -67,8 +69,8 @@ class GenericAPIBackedViewSet(GenericViewSet):
         return self.request.authz_token
 
 
-class ReadOnlyAPIBackedViewSet(mixins.RetrieveModelMixin,
-                               mixins.ListModelMixin,
+class ReadOnlyAPIBackedViewSet(web.mixins.RetrieveModelMixin,
+                               web.mixins.ListModelMixin,
                                GenericAPIBackedViewSet):
     """
     A viewset that provides default `retrieve()` and `list()` actions.
@@ -80,11 +82,11 @@ class ReadOnlyAPIBackedViewSet(mixins.RetrieveModelMixin,
     pass
 
 
-class APIBackedViewSet(mixins.CreateModelMixin,
-                       mixins.RetrieveModelMixin,
-                       mixins.UpdateModelMixin,
-                       mixins.DestroyModelMixin,
-                       mixins.ListModelMixin,
+class APIBackedViewSet(web.mixins.CreateModelMixin,
+                       web.mixins.RetrieveModelMixin,
+                       web.mixins.UpdateModelMixin,
+                       web.mixins.DestroyModelMixin,
+                       web.mixins.ListModelMixin,
                        GenericAPIBackedViewSet):
     """
     A viewset that provides default `create()`, `retrieve()`, `update()`,
@@ -98,6 +100,123 @@ class APIBackedViewSet(mixins.CreateModelMixin,
     * perform_destroy(self, instance)
     """
     pass
+
+
+class SdkResourceViewSet(web.mixins.CreateModelMixin,
+                         web.mixins.RetrieveModelMixin,
+                         web.mixins.UpdateModelMixin,
+                         web.mixins.ListModelMixin,
+                         GenericAPIBackedViewSet):
+    """CRUD over an SDK ``*_resources`` helper that returns proto-direct values
+    (protos / ``WithAccess`` envelopes), rendered by the global ``ProtoJSONRenderer``.
+
+    A subclass declares the helper module via ``sdk()`` and the helper function
+    names (``list_fn`` / ``get_fn`` / ``create_fn`` / ``update_fn``). Each action
+    calls ``sdk().<fn>(client, *args, **extra_kwargs)`` where ``extra_kwargs``
+    comes from :meth:`extra_kwargs` (the per-request ``has_write`` /
+    ``is_gateway_admin`` flag families thread through it) and the positional args
+    come from the overridable ``*_args`` builders (deviating families — e.g. a
+    ``GATEWAY_ID``-threaded one — override only the builder they need).
+
+    No ``destroy`` here: delete signatures vary too much (some take the lookup id,
+    some the fetched instance, some thread ``GATEWAY_ID``), so a family that
+    supports delete mixes in ``DestroyModelMixin`` and declares its own.
+
+    Set ``paginate = True`` to page ``list`` through ``APIResultPagination``
+    (the helper must accept ``limit`` / ``offset``).
+    """
+
+    list_fn = None
+    get_fn = None
+    create_fn = None
+    update_fn = None
+
+    paginate = False
+
+    @staticmethod
+    def sdk():
+        raise NotImplementedError
+
+    # Extra keyword args threaded into the get/create/update helper calls (e.g.
+    # has_write). The gateway-catalog / sharing families override this.
+    def extra_kwargs(self):
+        return {}
+
+    # List-only keyword args; defaults to extra_kwargs() so the common
+    # has_write flag flows through. Override to add list-specific kwargs.
+    def list_kwargs(self):
+        return self.extra_kwargs()
+
+    # Per-request render hook; identity by default (ProtoJSONRenderer flattens
+    # protos / envelopes). Families that merge a portal-only field override it.
+    def render(self, obj):
+        return obj
+
+    def _render_list(self, results):
+        return [self.render(r) for r in results]
+
+    # Positional arg builders (after the client). Override only when a family's
+    # helper signature deviates from the (lookup_value,) / (data,) defaults.
+    def list_args(self):
+        return ()
+
+    def get_args(self, lookup_value):
+        return (lookup_value,)
+
+    def create_args(self, data):
+        return (data,)
+
+    def update_args(self, lookup_value, data):
+        return (lookup_value, data)
+
+    def _body(self):
+        return self.request.data if isinstance(self.request.data, dict) else {}
+
+    def get_instance(self, lookup_value):
+        return getattr(self.sdk(), self.get_fn)(
+            self.request.airavata, *self.get_args(lookup_value),
+            **self.extra_kwargs())
+
+    def _list_results(self, limit=-1, offset=0):
+        kwargs = dict(self.list_kwargs())
+        if self.paginate:
+            kwargs.update(limit=limit, offset=offset)
+        return getattr(self.sdk(), self.list_fn)(
+            self.request.airavata, *self.list_args(), **kwargs)
+
+    def list(self, request, *args, **kwargs):
+        if self.paginate:
+            view = self
+
+            class _Iterator(APIResultIterator):
+                def get_results(self, limit=-1, offset=0):
+                    return view._list_results(limit=limit, offset=offset)
+
+            queryset = _Iterator()
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                return self.get_paginated_response(self._render_list(page))
+            return Response(self._render_list(queryset.get_results()))
+        return Response(self._render_list(self._list_results()))
+
+    def retrieve(self, request, *args, **kwargs):
+        return Response(self.render(self.get_object()))
+
+    def create(self, request, *args, **kwargs):
+        result = getattr(self.sdk(), self.create_fn)(
+            request.airavata, *self.create_args(self._body()),
+            **self.extra_kwargs())
+        return Response(self.render(result), status=201)
+
+    def update(self, request, *args, **kwargs):
+        lookup_value = self.kwargs[self.lookup_field or 'pk']
+        result = getattr(self.sdk(), self.update_fn)(
+            request.airavata, *self.update_args(lookup_value, self._body()),
+            **self.extra_kwargs())
+        return Response(self.render(result))
+
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
 
 
 class APIResultIterator(object):
@@ -128,7 +247,7 @@ class APIResultIterator(object):
             return self.get_results(1, key)
 
 
-class APIResultPagination(pagination.LimitOffsetPagination):
+class APIResultPagination(web.LimitOffsetPagination):
     """
     Based on DRF's LimitOffsetPagination; Airavata API pagination results don't
     have a known count, so it isn't always possible to know how many pages there
@@ -207,27 +326,27 @@ def convert_utc_iso8601_to_date(iso8601_utc_string):
     # datetime instance
     timestamp = datetime.strptime(
         iso8601_utc_string, "%Y-%m-%dT%H:%M:%S.%fZ")
-    timestamp = timestamp.replace(tzinfo=pytz.UTC)
+    timestamp = timestamp.replace(tzinfo=timezone.utc)
     logger.debug("convert_utc_iso8601_to_date({})={}".format(
         iso8601_utc_string, timestamp))
     return timestamp
 
 
-class IsInAdminsGroupPermission(permissions.BasePermission):
+class IsInAdminsGroupPermission(web.permissions.BasePermission):
     message = "User must be member of the Admins or Read Only Admins groups."
 
     def has_permission(self, request, view):
         # Read Only Admins can make GET requests only
-        if request.method in permissions.SAFE_METHODS:
+        if request.method in web.SAFE_METHODS:
             return (request.is_gateway_admin or
                     request.is_read_only_gateway_admin)
         else:
             return request.is_gateway_admin
 
 
-class ReadOnly(permissions.BasePermission):
+class ReadOnly(web.permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.method in permissions.SAFE_METHODS
+        return request.method in web.SAFE_METHODS
 
 
 def is_shared_dir(path):
@@ -246,12 +365,12 @@ def is_shared_path(path):
     return any(map(lambda n: os.path.commonpath((n, path)) == n, shared_dirs.keys()))
 
 
-class BaseSharedDirPermission(permissions.BasePermission):
+class BaseSharedDirPermission(web.permissions.BasePermission):
     def get_path(self, request, view) -> str:
         raise NotImplementedError()
 
     def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
+        if request.method in web.SAFE_METHODS:
             return True
 
         path = self.get_path(request, view)

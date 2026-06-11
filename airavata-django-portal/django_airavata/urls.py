@@ -16,14 +16,12 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls import include
 from django.conf.urls.static import static
-from django.contrib import admin
 from django.urls import path, re_path
 
 from .apps.api import downloads as api_downloads
 from . import views
 
 urlpatterns = [
-    re_path(r'^djadmin/', admin.site.urls),
     re_path(r'^admin/', include('django_airavata.apps.admin.urls')),
     re_path(r'^auth/', include('django_airavata.apps.auth.urls')),
     re_path(r'^workspace/', include('django_airavata.apps.workspace.urls')),
@@ -36,7 +34,9 @@ urlpatterns = [
     path('sdk/download-dir/', api_downloads.download_dir, name='download_dir'),
     path('sdk/download-experiment-dir/<experiment_id>/',
          api_downloads.download_experiment_dir, name='download_experiment_dir'),
-    re_path(r'^home$', views.home, name='home'),
+    # Root + /home render the portal landing. In production a reverse proxy
+    # routes / to the standalone airavata-cms; standalone (no proxy) lands here.
+    re_path(r'^(?:home)?$', views.home, name='home'),
     # For testing, developing error pages
     re_path(r'^400/', views.error400),
     re_path(r'^403/', views.error403),

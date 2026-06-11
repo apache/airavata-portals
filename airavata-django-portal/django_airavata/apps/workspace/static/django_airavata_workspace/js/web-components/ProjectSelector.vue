@@ -54,21 +54,21 @@ export default {
     sharedProjectOptions: function () {
       return this.projects
         ? this.projects
-            .filter((p) => !p.isOwner)
+            .filter((p) => !p.is_owner)
             .map((project) => ({
-              value: project.projectID,
+              value: project.project_id,
               text:
                 project.name +
-                (!project.isOwner ? " (owned by " + project.owner + ")" : ""),
+                (!project.is_owner ? " (owned by " + project.owner + ")" : ""),
             }))
         : [];
     },
     myProjectOptions() {
       return this.projects
         ? this.projects
-            .filter((p) => p.isOwner)
+            .filter((p) => p.is_owner)
             .map((project) => ({
-              value: project.projectID,
+              value: project.project_id,
               text: project.name,
             }))
         : [];

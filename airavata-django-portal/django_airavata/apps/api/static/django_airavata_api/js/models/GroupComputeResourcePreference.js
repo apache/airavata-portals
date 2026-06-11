@@ -4,25 +4,26 @@ import SlurmComputeResourcePreference from "./SlurmComputeResourcePreference";
 import AwsComputeResourcePreference from "./AwsComputeResourcePreference";
 
 const FIELDS = [
-  "computeResourceId",
-  "groupResourceProfileId",
+  "compute_resource_id",
+  "group_resource_profile_id",
   {
-    name: "overridebyAiravata",
+    name: "override_by_airavata",
     type: "boolean",
     default: true,
   },
-  "loginUserName",
-  "preferredJobSubmissionProtocol",
-  "preferredDataMovementProtocol",
-  "scratchLocation",
-  "resourceSpecificCredentialStoreToken",
+  "login_user_name",
+  // wire enum member NAMES ("SSH"/"SFTP"); sentinels *_PROTOCOL_UNKNOWN.
+  "preferred_job_submission_protocol",
+  "preferred_data_movement_protocol",
+  "scratch_location",
+  "resource_specific_credential_store_token",
   {
-    name: "resourceType",
+    name: "resource_type",
     type: ResourceType,
-    required: true,
   },
+  // oneof wrapper {slurm:{...}} | {aws:{...}}; coerced into a child model below.
   {
-    name: "specificPreferences",
+    name: "specific_preferences",
     type: null,
   },
 ];
@@ -34,153 +35,115 @@ const PREFERENCE_MODEL_MAP = {
 
 export default class GroupComputeResourcePreference extends BaseModel {
   constructor(data = {}) {
-    const topLevelAllocationProjectNumber = data.allocationProjectNumber;
-    const rawSpecificPreferences = data.specificPreferences;
+    const rawSpecificPreferences = data.specific_preferences;
 
     super(FIELDS, data);
 
-    const specificPrefsToUse = rawSpecificPreferences !== undefined && rawSpecificPreferences !== null
-      ? rawSpecificPreferences
-      : (data.specificPreferences !== undefined && data.specificPreferences !== null ? data.specificPreferences : null);
-
-    if (specificPrefsToUse !== null) {
-      this.specificPreferences = specificPrefsToUse;
-    }
-
-    if (this.resourceType && typeof this.resourceType === 'number') {
-      this.resourceType = ResourceType.values.find(rt => rt.value === this.resourceType) || this.resourceType;
-    }
-
-    if (topLevelAllocationProjectNumber) {
-      if (this.resourceType && this.resourceType.name === 'SLURM') {
-        if (!this.specificPreferences) {
-          this.specificPreferences = {};
-        }
-        if (typeof this.specificPreferences === 'object' && !(this.specificPreferences instanceof BaseModel)) {
-          if (!this.specificPreferences.allocationProjectNumber) {
-            this.specificPreferences.allocationProjectNumber = topLevelAllocationProjectNumber;
-          }
-        }
-      } else if (!this.resourceType && topLevelAllocationProjectNumber) {
-        this.resourceType = ResourceType.SLURM;
-        if (!this.specificPreferences) {
-          this.specificPreferences = {};
-        }
-        if (typeof this.specificPreferences === 'object' && !(this.specificPreferences instanceof BaseModel)) {
-          if (!this.specificPreferences.allocationProjectNumber) {
-            this.specificPreferences.allocationProjectNumber = topLevelAllocationProjectNumber;
-          }
-        }
-      }
+    if (rawSpecificPreferences !== undefined && rawSpecificPreferences !== null) {
+      this.specific_preferences = rawSpecificPreferences;
     }
 
     this._coerceSpecificPreferences();
   }
 
   toJSON() {
-    const json = {...this};
-    if (this.resourceType && this.resourceType.value !== undefined) {
-      json.resourceType = this.resourceType.value;
-    } else if (this.resourceType && this.resourceType.name) {
-      json.resourceType = this.resourceType.name;
+    const json = { ...this };
+    if (this.resource_type && this.resource_type.value !== undefined) {
+      json.resource_type = this.resource_type.value;
+    } else if (this.resource_type && this.resource_type.name) {
+      json.resource_type = this.resource_type.name;
     }
 
-    let specificPrefsPayload = this.specificPreferences;
+    let specificPrefsPayload = this.specific_preferences;
     if (
-      this.specificPreferences &&
-      typeof this.specificPreferences.toJSON === "function"
+      this.specific_preferences &&
+      typeof this.specific_preferences.toJSON === "function"
     ) {
-      specificPrefsPayload = this.specificPreferences.toJSON();
+      specificPrefsPayload = this.specific_preferences.toJSON();
     }
 
+    // re-wrap into the proto oneof shape the wire expects.
     if (specificPrefsPayload && this.isResourceType("SLURM")) {
-      json.specificPreferences = {slurm: specificPrefsPayload};
+      json.specific_preferences = { slurm: specificPrefsPayload };
     } else if (specificPrefsPayload && this.isResourceType("AWS")) {
-      json.specificPreferences = {aws: specificPrefsPayload};
+      json.specific_preferences = { aws: specificPrefsPayload };
     } else if (specificPrefsPayload) {
-      json.specificPreferences = specificPrefsPayload;
+      json.specific_preferences = specificPrefsPayload;
     } else {
-      json.specificPreferences = null;
+      json.specific_preferences = null;
     }
 
     return json;
   }
 
   _coerceSpecificPreferences() {
-    // Ensure resourceType is properly set
-    if (this.resourceType && typeof this.resourceType === 'number') {
-      this.resourceType = ResourceType.byValue(this.resourceType) || ResourceType.values.find(rt => rt.value === this.resourceType) || this.resourceType;
-    }
-
-    if (!this.resourceType) {
-      this.specificPreferences = null;
+    if (!this.resource_type) {
+      this.specific_preferences = null;
       return;
     }
 
-    if (!this.resourceType.name) {
+    if (!this.resource_type.name) {
       return;
     }
 
     if (
-      this.specificPreferences &&
-      this.specificPreferences instanceof BaseModel
+      this.specific_preferences &&
+      this.specific_preferences instanceof BaseModel
     ) {
       return;
     }
     let rawData =
-      this.specificPreferences && typeof this.specificPreferences === "object"
-        ? this.specificPreferences
+      this.specific_preferences && typeof this.specific_preferences === "object"
+        ? this.specific_preferences
         : null;
 
+    // unwrap the proto oneof wrapper ({slurm:{...}} / {aws:{...}}).
     if (rawData && !(rawData instanceof BaseModel)) {
-      if (this.resourceType.name === 'SLURM' && 'slurm' in rawData) {
+      if (this.resource_type.name === "SLURM" && "slurm" in rawData) {
         rawData = rawData.slurm;
-      } else if (this.resourceType.name === 'AWS') {
-        if ('aws' in rawData) {
-          rawData = rawData.aws;
-        }
+      } else if (this.resource_type.name === "AWS" && "aws" in rawData) {
+        rawData = rawData.aws;
       }
     }
 
-    const PreferenceModel = PREFERENCE_MODEL_MAP[this.resourceType.name];
+    const PreferenceModel = PREFERENCE_MODEL_MAP[this.resource_type.name];
     if (PreferenceModel) {
       const newPref = rawData
         ? new PreferenceModel(rawData)
         : new PreferenceModel();
-      this.specificPreferences = newPref;
+      this.specific_preferences = newPref;
     } else {
-      this.specificPreferences = rawData;
+      this.specific_preferences = rawData;
     }
   }
 
   resetSpecificPreferences(data = null) {
-    if (!this.resourceType) {
-      this.specificPreferences = null;
+    if (!this.resource_type) {
+      this.specific_preferences = null;
       return;
     }
     if (data && typeof data === "object") {
-      this.specificPreferences = data;
+      this.specific_preferences = data;
     } else {
-      this.specificPreferences = null;
+      this.specific_preferences = null;
     }
     this._coerceSpecificPreferences();
   }
 
   isResourceType(resourceTypeName) {
-    return (
-      !!this.resourceType && this.resourceType.name === resourceTypeName
-    );
+    return !!this.resource_type && this.resource_type.name === resourceTypeName;
   }
 
   _ensureSpecificPreferences() {
-    if (!this.specificPreferences) {
+    if (!this.specific_preferences) {
       this._coerceSpecificPreferences();
     }
   }
 
+  // SLURM-only convenience accessors bridging into the child preference model.
   _getSlurmField(fieldName, defaultValue) {
-    if (this.isResourceType("SLURM") && this.specificPreferences) {
-      return this.specificPreferences[fieldName];
+    if (this.isResourceType("SLURM") && this.specific_preferences) {
+      return this.specific_preferences[fieldName];
     }
     return defaultValue;
   }
@@ -190,41 +153,41 @@ export default class GroupComputeResourcePreference extends BaseModel {
       return;
     }
     this._ensureSpecificPreferences();
-    if (this.specificPreferences) {
-      this.specificPreferences[fieldName] = value;
+    if (this.specific_preferences) {
+      this.specific_preferences[fieldName] = value;
     }
   }
 
-  get allocationProjectNumber() {
-    return this._getSlurmField("allocationProjectNumber");
+  get allocation_project_number() {
+    return this._getSlurmField("allocation_project_number");
   }
 
-  set allocationProjectNumber(value) {
-    this._setSlurmField("allocationProjectNumber", value);
+  set allocation_project_number(value) {
+    this._setSlurmField("allocation_project_number", value);
   }
 
-  get preferredBatchQueue() {
-    return this._getSlurmField("preferredBatchQueue");
+  get preferred_batch_queue() {
+    return this._getSlurmField("preferred_batch_queue");
   }
 
-  set preferredBatchQueue(value) {
-    this._setSlurmField("preferredBatchQueue", value);
+  set preferred_batch_queue(value) {
+    this._setSlurmField("preferred_batch_queue", value);
   }
 
-  get qualityOfService() {
-    return this._getSlurmField("qualityOfService");
+  get quality_of_service() {
+    return this._getSlurmField("quality_of_service");
   }
 
-  set qualityOfService(value) {
-    this._setSlurmField("qualityOfService", value);
+  set quality_of_service(value) {
+    this._setSlurmField("quality_of_service", value);
   }
 
-  get usageReportingGatewayId() {
-    return this._getSlurmField("usageReportingGatewayId");
+  get usage_reporting_gateway_id() {
+    return this._getSlurmField("usage_reporting_gateway_id");
   }
 
-  set usageReportingGatewayId(value) {
-    this._setSlurmField("usageReportingGatewayId", value);
+  set usage_reporting_gateway_id(value) {
+    this._setSlurmField("usage_reporting_gateway_id", value);
   }
 
   get reservations() {
@@ -237,18 +200,18 @@ export default class GroupComputeResourcePreference extends BaseModel {
 
   validate() {
     let validationResults = {};
-    if (this.isEmpty(this.loginUserName)) {
-      validationResults["loginUserName"] = "Please provide a login username.";
+    if (this.isEmpty(this.login_user_name)) {
+      validationResults["login_user_name"] = "Please provide a login username.";
     }
-    if (this.isEmpty(this.scratchLocation)) {
-      validationResults["scratchLocation"] =
+    if (this.isEmpty(this.scratch_location)) {
+      validationResults["scratch_location"] =
         "Please provide a scratch location.";
     }
-    if (!this.resourceType) {
-      validationResults["resourceType"] = "Please select a resource type.";
+    if (!this.resource_type) {
+      validationResults["resource_type"] = "Please select a resource type.";
     }
-    if (this.resourceType && this.specificPreferences) {
-      const specificValidation = this.specificPreferences.validate();
+    if (this.resource_type && this.specific_preferences) {
+      const specificValidation = this.specific_preferences.validate();
       if (specificValidation && Object.keys(specificValidation).length > 0) {
         Object.assign(validationResults, specificValidation);
       }

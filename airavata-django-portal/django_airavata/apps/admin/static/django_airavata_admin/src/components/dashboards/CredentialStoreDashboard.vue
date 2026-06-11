@@ -24,16 +24,16 @@
               :auto-add-admin-groups="false"
             />
           </template>
-          <template slot="cell(persistedTime)" slot-scope="data">
+          <template slot="cell(persisted_time)" slot-scope="data">
             <human-date :date="data.value" />
           </template>
           <template slot="cell(action)" slot-scope="data">
             <clipboard-copy-link
-              :text="data.item.publicKey.trim()"
+              :text="data.item.public_key.trim()"
               class="mr-1"
             />
             <delete-link
-              v-if="data.item.userHasWriteAccess"
+              v-if="data.item.user_has_write_access"
               @delete="deleteSSHCredential(data.item)"
             >
               Are you sure you want to delete the
@@ -61,7 +61,7 @@
             <share-button :entity-id="data.item.token" :disallow-editing-admin-groups="false" :auto-add-admin-groups="false"/>
           </template>
           <template slot="cell(action)" slot-scope="data">
-            <delete-link v-if="data.item.userHasWriteAccess" @delete="deletePasswordCredential(data.item)">
+            <delete-link v-if="data.item.user_has_write_access" @delete="deletePasswordCredential(data.item)">
               Are you sure you want to delete the
               <strong>{{ data.item.description }}</strong> password credential?
             </delete-link>
@@ -116,7 +116,7 @@ export default {
         },
         {
           label: "Created",
-          key: "persistedTime",
+          key: "persisted_time",
         },
         {
           label: "Sharing",
@@ -169,7 +169,7 @@ export default {
     showNewSharedSSHCredentialModel(){
       if (!this.adminsGroup){
         services.GroupService.list({limit: -1}).then((groups) => {
-             this.adminsGroup = groups.filter((g) => g.isGatewayAdminsGroup)[0];
+             this.adminsGroup = groups.filter((g) => g.is_gateway_admins_group)[0];
              this.$refs.newSharedSSHCredentialModal.show();
           });
       }
@@ -186,7 +186,7 @@ export default {
             lookup: session.Session.username,
           }).then((userProfile) => {
             sharedEntity.owner =  userProfile;
-            sharedEntity.isOwner = session.Session.username == sharedEntity.owner.userId;
+            sharedEntity.is_owner = session.Session.username == sharedEntity.owner.user_id;
             sharedEntity.addGroup({
               group: this.adminsGroup,
               permissionType: models.ResourcePermissionType.MANAGE_SHARING,

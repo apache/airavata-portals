@@ -3,7 +3,7 @@ import BaseModel from "./BaseModel";
 const FIELDS = [
   "id",
   "name",
-  "ownerId",
+  "owner_id",
   "description",
   {
     name: "members",
@@ -17,24 +17,26 @@ const FIELDS = [
     list: true,
     default: BaseModel.defaultNewInstance(Array),
   },
+  // The six access flags are merged onto the GroupModel proto server-side by the
+  // WithGroupAccess envelope (not on the proto itself).
   {
-    name: "isOwner",
+    name: "is_owner",
     type: "boolean",
     default: true,
   },
   {
-    name: "isAdmin",
+    name: "is_admin",
     type: "boolean",
     default: false,
   },
   {
-    name: "isMember",
+    name: "is_member",
     type: "boolean",
     default: true,
   },
-  "isGatewayAdminsGroup",
-  "isReadOnlyGatewayAdminsGroup",
-  "isDefaultGatewayUsersGroup",
+  "is_gateway_admins_group",
+  "is_read_only_gateway_admins_group",
+  "is_default_gateway_users_group",
 ];
 
 export default class Group extends BaseModel {
@@ -55,10 +57,10 @@ export default class Group extends BaseModel {
    * Return true if group is either the "Gateway Admins" or the "Readonly Admins" group.
    */
   get isAdminGroup() {
-    return this.isReadOnlyGatewayAdminsGroup || this.isGatewayAdminsGroup;
+    return this.is_read_only_gateway_admins_group || this.is_gateway_admins_group;
   }
 
   get userHasWriteAccess() {
-    return this.isOwner || this.isAdmin;
+    return this.is_owner || this.is_admin;
   }
 }

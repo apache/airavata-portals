@@ -8,50 +8,51 @@ import ProcessModel from "./ProcessModel";
 import UserConfigurationData from "./UserConfigurationData";
 
 const FIELDS = [
-  "experimentId",
-  "projectId",
-  "gatewayId",
+  "experiment_id",
+  "project_id",
+  "gateway_id",
+  // wire enum NAME ("SINGLE_APPLICATION"); 0-sentinel "EXPERIMENT_TYPE_UNKNOWN".
   {
-    name: "experimentType",
-    type: "number",
-    default: 0,
+    name: "experiment_type",
+    type: "string",
+    default: "EXPERIMENT_TYPE_UNKNOWN",
   },
-  "userName",
-  "experimentName",
+  "user_name",
+  "experiment_name",
   {
-    name: "creationTime",
+    name: "creation_time",
     type: "date",
   },
   "description",
-  "executionId",
+  "execution_id",
   {
-    name: "enableEmailNotification",
+    name: "enable_email_notification",
     type: "boolean",
     default: false,
   },
   {
-    name: "emailAddresses",
+    name: "email_addresses",
     type: "string",
     list: true,
   },
   {
-    name: "userConfigurationData",
+    name: "user_configuration_data",
     type: UserConfigurationData,
     default: BaseModel.defaultNewInstance(UserConfigurationData),
   },
   {
-    name: "experimentInputs",
+    name: "experiment_inputs",
     type: InputDataObjectType,
     list: true,
     default: BaseModel.defaultNewInstance(Array),
   },
   {
-    name: "experimentOutputs",
+    name: "experiment_outputs",
     type: OutputDataObjectType,
     list: true,
   },
   {
-    name: "experimentStatus",
+    name: "experiment_status",
     type: ExperimentStatus,
     list: true,
   },
@@ -66,8 +67,9 @@ const FIELDS = [
     list: true,
   },
   "workflow",
+  // merged onto the proto server-side by the WithAccess envelope.
   {
-    name: "userHasWriteAccess",
+    name: "user_has_write_access",
     type: "boolean",
     default: true,
   },
@@ -81,19 +83,19 @@ export default class Experiment extends BaseModel {
 
   validate() {
     let validationResults = {};
-    if (this.isEmpty(this.experimentName)) {
-      validationResults["experimentName"] =
+    if (this.isEmpty(this.experiment_name)) {
+      validationResults["experiment_name"] =
         "Please provide a name for this experiment.";
     }
-    if (this.isEmpty(this.projectId)) {
-      validationResults["projectId"] = "Please select a project.";
+    if (this.isEmpty(this.project_id)) {
+      validationResults["project_id"] = "Please select a project.";
     }
     return validationResults;
   }
 
   get latestStatus() {
-    if (this.experimentStatus && this.experimentStatus.length > 0) {
-      return this.experimentStatus[this.experimentStatus.length - 1];
+    if (this.experiment_status && this.experiment_status.length > 0) {
+      return this.experiment_status[this.experiment_status.length - 1];
     } else {
       return null;
     }
@@ -127,7 +129,7 @@ export default class Experiment extends BaseModel {
     return (
       (!this.latestStatus ||
         this.latestStatus.state === ExperimentState.CREATED) &&
-      this.userHasWriteAccess
+      this.user_has_write_access
     );
   }
 
@@ -144,40 +146,39 @@ export default class Experiment extends BaseModel {
   }
 
   get resourceHostId() {
-    return this.userConfigurationData &&
-      this.userConfigurationData.computationalResourceScheduling
-      ? this.userConfigurationData.computationalResourceScheduling
-          .resourceHostId
+    return this.user_configuration_data &&
+      this.user_configuration_data.computational_resource_scheduling
+      ? this.user_configuration_data.computational_resource_scheduling
+          .resource_host_id
       : null;
   }
 
   populateInputsOutputsFromApplicationInterface(applicationInterface) {
-    // Copy application inputs and outputs to the experiment
-    this.experimentInputs = applicationInterface.applicationInputs.map(
+    this.experiment_inputs = applicationInterface.application_inputs.map(
       (input) => input.clone()
     );
     this.evaluateInputDependencies();
-    this.experimentOutputs = applicationInterface.applicationOutputs.slice();
+    this.experiment_outputs = applicationInterface.application_outputs.slice();
   }
 
   evaluateInputDependencies() {
-    const inputValues = this._collectInputValues(this.experimentInputs);
-    for (const input of this.experimentInputs) {
+    const inputValues = this._collectInputValues(this.experiment_inputs);
+    for (const input of this.experiment_inputs) {
       input.evaluateDependencies(inputValues);
     }
   }
 
   getExperimentInput(inputName) {
-    return this.experimentInputs.find(inp => inp.name === inputName);
+    return this.experiment_inputs.find(inp => inp.name === inputName);
   }
 
   getExperimentOutput(outputName) {
-    return this.experimentOutputs.find(out => out.name === outputName);
+    return this.experiment_outputs.find(out => out.name === outputName);
   }
 
   _collectInputValues() {
     const result = {};
-    this.experimentInputs.forEach((inp) => {
+    this.experiment_inputs.forEach((inp) => {
       result[inp.name] = inp.value;
     });
     return result;

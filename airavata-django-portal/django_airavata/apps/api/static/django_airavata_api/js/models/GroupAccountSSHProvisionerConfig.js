@@ -1,10 +1,10 @@
 import BaseModel from "./BaseModel";
 
 const FIELDS = [
-  "resourceId",
-  "groupResourceProfileId",
-  "configName",
-  "configValue",
+  "resource_id",
+  "group_resource_profile_id",
+  "config_name",
+  "config_value",
 ];
 
 export default class GroupAccountSSHProvisionerConfig extends BaseModel {

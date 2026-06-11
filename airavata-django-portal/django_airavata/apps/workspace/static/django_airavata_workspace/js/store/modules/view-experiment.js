@@ -37,14 +37,14 @@ export const mutations = {
 export const actions = {
   async setInitialFullExperimentData({ dispatch }, { fullExperimentData }) {
     const fullExperiment = await services.FullExperimentService.retrieve({
-      lookup: fullExperimentData.experimentId,
+      lookup: fullExperimentData.experiment_id,
       initialFullExperimentData: fullExperimentData,
     });
     dispatch("setFullExperiment", { fullExperiment });
   },
   async setFullExperiment({ dispatch, commit }, { fullExperiment }) {
     commit("setFullExperiment", { fullExperiment });
-    const appInterfaceId = fullExperiment.experiment.executionId;
+    const appInterfaceId = fullExperiment.experiment.execution_id;
     try {
       const applicationInterface = await services.ApplicationInterfaceService.retrieve(
         { lookup: appInterfaceId },
@@ -85,7 +85,7 @@ export const actions = {
     ) {
       try {
         await dispatch("loadExperiment", {
-          experimentId: state.fullExperiment.experimentId,
+          experimentId: state.fullExperiment.experiment_id,
         });
         setTimeout(() => {
           dispatch("pollExperiment");
@@ -165,11 +165,11 @@ function getDataProducts(io, collection) {
   if (io.type === models.DataType.URI_COLLECTION) {
     const dataProductURIs = io.value.split(",");
     dataProducts = dataProductURIs.map((uri) =>
-      collection.find((dp) => dp.productUri === uri)
+      collection.find((dp) => dp.product_uri === uri)
     );
   } else {
     const dataProductURI = io.value;
-    dataProducts = collection.filter((dp) => dp.productUri === dataProductURI);
+    dataProducts = collection.filter((dp) => dp.product_uri === dataProductURI);
   }
   return dataProducts ? dataProducts.filter((dp) => (dp ? true : false)) : [];
 }
@@ -177,7 +177,7 @@ function getDataProducts(io, collection) {
 export const getters = {
   isPolling: (state) => state.polling,
   experimentId: (state) =>
-    state.fullExperiment ? state.fullExperiment.experimentId : null,
+    state.fullExperiment ? state.fullExperiment.experiment_id : null,
   experiment: (state) =>
     state.fullExperiment ? state.fullExperiment.experiment : null,
   isExecuting: (state, getters) =>
@@ -191,11 +191,11 @@ export const getters = {
     (getters.experiment.isFinished || getters.isExecuting),
   outputDataProducts(state) {
     const result = {};
-    if (state.fullExperiment && state.fullExperiment.outputDataProducts) {
-      state.fullExperiment.experiment.experimentOutputs.forEach((output) => {
+    if (state.fullExperiment && state.fullExperiment.output_data_products) {
+      state.fullExperiment.experiment.experiment_outputs.forEach((output) => {
         result[output.name] = getDataProducts(
           output,
-          state.fullExperiment.outputDataProducts
+          state.fullExperiment.output_data_products
         );
       });
     }
@@ -205,14 +205,14 @@ export const getters = {
   currentlyRunningIntermediateOutputFetches(state, getters) {
     const result = {};
     if (getters.experiment) {
-      for (const output of getters.experiment.experimentOutputs) {
+      for (const output of getters.experiment.experiment_outputs) {
         const runningIntermediateOutputFetchTimestamp =
           state.runningIntermediateOutputFetches[output.name];
-        const processStatus = output.intermediateOutput
-          ? output.intermediateOutput.processStatus
+        const processStatus = output.intermediate_output
+          ? output.intermediate_output.process_status
           : null;
         const processStatusTimestamp = processStatus
-          ? processStatus.timeOfStateChange
+          ? processStatus.time_of_state_change
           : null;
         result[output.name] = false;
         // If our most recent timestamp for the intermediate output is the
@@ -233,26 +233,26 @@ export const getters = {
     return result;
   },
   userHasWriteAccess(state, getters) {
-    return getters.experiment ? getters.experiment.userHasWriteAccess : false;
+    return getters.experiment ? getters.experiment.user_has_write_access : false;
   },
   isJobActive(state) {
     return (
       state.fullExperiment &&
-      state.fullExperiment.jobDetails &&
-      state.fullExperiment.jobDetails.some(
+      state.fullExperiment.job_details &&
+      state.fullExperiment.job_details.some(
         (job) =>
           job.latestJobStatus &&
-          job.latestJobStatus.jobState === JobState.ACTIVE
+          job.latestJobStatus.job_state === JobState.ACTIVE
       )
     );
   },
   showQueueSettings(state) {
     return state.applicationInterface
-      ? state.applicationInterface.showQueueSettings
+      ? state.applicationInterface.show_queue_settings
       : false;
   },
   groupResourceProfileId(state, getters) {
-    return getters.experiment?.userConfigurationData?.groupResourceProfileId;
+    return getters.experiment?.user_configuration_data?.group_resource_profile_id;
   },
 };
 

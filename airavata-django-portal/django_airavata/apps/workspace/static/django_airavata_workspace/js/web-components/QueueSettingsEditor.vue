@@ -79,13 +79,13 @@
           <div slot="description">
             <i class="fa fa-info-circle" aria-hidden="true"></i>
             Max Allowed Cores = {{ maxAllowedCores
-            }}<template v-if="queue && queue.cpuPerNode > 0"
-              >. There are {{ queue.cpuPerNode }} cores per node.
+            }}<template v-if="queue && queue.cpu_per_node > 0"
+              >. There are {{ queue.cpu_per_node }} cores per node.
             </template>
           </div>
         </b-form-group>
         </div>
-        <div class="d-flex flex-column" v-if="queue && queue.cpuPerNode > 0">
+        <div class="d-flex flex-column" v-if="queue && queue.cpu_per_node > 0">
           <div class="flex-fill"
                style="border: 1px solid #6c757d;border-top-right-radius: 10px;margin-top: 51px;border-left-width: 0px;border-bottom-width: 0px;margin-right: 15px;"></div>
           <b-button size="sm" pill variant="outline-secondary"
@@ -212,15 +212,15 @@ export default {
       }
       const queueOptions = this.queues.map((q) => {
         return {
-          value: q.queueName,
-          text: q.queueName,
+          value: q.queue_name,
+          text: q.queue_name,
         };
       });
       utils.StringUtils.sortIgnoreCase(queueOptions, (q) => q.text);
       return queueOptions;
     },
     queueDescription() {
-      return this.queue ? this.queue.queueDescription : null;
+      return this.queue ? this.queue.queue_description : null;
     },
     currentQueueSettings() {
       return {

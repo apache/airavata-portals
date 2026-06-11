@@ -13,27 +13,27 @@
           >
             <div class="card-body">
               <h5 class="card-title mb-4">
-                Settings for queue {{ data.queueName }}
+                Settings for queue {{ data.queue_name }}
               </h5>
               <div class="row">
                 <div class="col">
                   <h3 class="h5 mb-0">
-                    {{ data.nodeCount }}
+                    {{ data.node_count }}
                   </h3>
                   <span class="text-muted text-uppercase">NODE COUNT</span>
                 </div>
                 <div class="col">
                   <h3 class="h5 mb-0">
-                    {{ data.totalCPUCount }}
+                    {{ data.total_cpu_count }}
                   </h3>
                   <span class="text-muted text-uppercase">CORE COUNT</span>
                 </div>
                 <div class="col">
-                  <h3 class="h5 mb-0">{{ data.wallTimeLimit }} minutes</h3>
+                  <h3 class="h5 mb-0">{{ data.wall_time_limit }} minutes</h3>
                   <span class="text-muted text-uppercase">TIME LIMIT</span>
                 </div>
                 <div class="col" v-if="maxPhysicalMemory > 0">
-                  <h3 class="h5 mb-0">{{ data.totalPhysicalMemory }} MB</h3>
+                  <h3 class="h5 mb-0">{{ data.total_physical_memory }} MB</h3>
                   <span class="text-muted text-uppercase">PHYSICAL MEMORY</span>
                 </div>
               </div>
@@ -53,7 +53,7 @@
           >
             <b-form-select
               id="queue"
-              v-model="data.queueName"
+              v-model="data.queue_name"
               :options="queueOptions"
               required
               @change="queueChanged"
@@ -77,7 +77,7 @@
                   type="number"
                   min="1"
                   :max="maxNodes"
-                  v-model="data.nodeCount"
+                  v-model="data.node_count"
                   required
                   @input="nodeCountChanged"
                   :state="getValidationState('nodeCount', true)"
@@ -99,7 +99,7 @@
                   type="number"
                   min="1"
                   :max="maxCPUCount"
-                  v-model="data.totalCPUCount"
+                  v-model="data.total_cpu_count"
                   required
                   @input="cpuCountChanged"
                   :state="getValidationState('totalCPUCount', true)"
@@ -111,9 +111,9 @@
                   }}<template
                     v-if="
                       selectedQueueDefault &&
-                      selectedQueueDefault.cpuPerNode > 0
+                      selectedQueueDefault.cpu_per_node > 0
                     "
-                    >. There are {{ selectedQueueDefault.cpuPerNode }} cores per
+                    >. There are {{ selectedQueueDefault.cpu_per_node }} cores per
                     node.
                   </template>
                 </div>
@@ -121,7 +121,7 @@
             </div>
             <div
               class="d-flex flex-column"
-              v-if="selectedQueueDefault && selectedQueueDefault.cpuPerNode > 0"
+              v-if="selectedQueueDefault && selectedQueueDefault.cpu_per_node > 0"
             >
               <div
                 class="flex-fill"
@@ -174,7 +174,7 @@
                 type="number"
                 min="1"
                 :max="maxWalltime"
-                v-model="data.wallTimeLimit"
+                v-model="data.wall_time_limit"
                 required
                 :state="getValidationState('wallTimeLimit', true)"
               >
@@ -198,7 +198,7 @@
                 type="number"
                 min="0"
                 :max="maxPhysicalMemory"
-                v-model="data.totalPhysicalMemory"
+                v-model="data.total_physical_memory"
                 :state="getValidationState('totalPhysicalMemory', true)"
               >
               </b-form-input>
@@ -264,15 +264,15 @@ export default {
     queueOptions: function () {
       const queueOptions = this.queueDefaults.map((queueDefault) => {
         return {
-          value: queueDefault.queueName,
-          text: queueDefault.queueName,
+          value: queueDefault.queue_name,
+          text: queueDefault.queue_name,
         };
       });
       return queueOptions;
     },
     selectedQueueDefault: function () {
       return this.queueDefaults.find(
-        (queue) => queue.queueName === this.data.queueName
+        (queue) => queue.queue_name === this.data.queue_name
       );
     },
     maxCPUCount: function () {
@@ -282,11 +282,11 @@ export default {
       const batchQueueResourcePolicy = this.batchQueueResourcePolicy;
       if (batchQueueResourcePolicy) {
         return Math.min(
-          batchQueueResourcePolicy.maxAllowedCores,
-          this.selectedQueueDefault.maxProcessors
+          batchQueueResourcePolicy.max_allowed_cores,
+          this.selectedQueueDefault.max_processors
         );
       }
-      return this.selectedQueueDefault.maxProcessors;
+      return this.selectedQueueDefault.max_processors;
     },
     maxNodes: function () {
       if (!this.selectedQueueDefault) {
@@ -295,11 +295,11 @@ export default {
       const batchQueueResourcePolicy = this.batchQueueResourcePolicy;
       if (batchQueueResourcePolicy) {
         return Math.min(
-          batchQueueResourcePolicy.maxAllowedNodes,
-          this.selectedQueueDefault.maxNodes
+          batchQueueResourcePolicy.max_allowed_nodes,
+          this.selectedQueueDefault.max_nodes
         );
       }
-      return this.selectedQueueDefault.maxNodes;
+      return this.selectedQueueDefault.max_nodes;
     },
     maxWalltime: function () {
       if (!this.selectedQueueDefault) {
@@ -308,30 +308,30 @@ export default {
       const batchQueueResourcePolicy = this.batchQueueResourcePolicy;
       if (batchQueueResourcePolicy) {
         return Math.min(
-          batchQueueResourcePolicy.maxAllowedWalltime,
-          this.selectedQueueDefault.maxRunTime
+          batchQueueResourcePolicy.max_allowed_walltime,
+          this.selectedQueueDefault.max_run_time
         );
       }
-      return this.selectedQueueDefault.maxRunTime;
+      return this.selectedQueueDefault.max_run_time;
     },
     maxPhysicalMemory: function () {
       if (!this.selectedQueueDefault) {
         return 0;
       }
-      return this.selectedQueueDefault.maxMemory;
+      return this.selectedQueueDefault.max_memory;
     },
     queueDefaults() {
       return this.appDeploymentQueues
         ? this.appDeploymentQueues
-            .filter((q) => this.isQueueInComputeResourcePolicy(q.queueName))
+            .filter((q) => this.isQueueInComputeResourcePolicy(q.queue_name))
             .sort((a, b) => {
               // Sort default first, then by alphabetically by name
-              if (a.isDefaultQueue) {
+              if (a.is_default_queue) {
                 return -1;
-              } else if (b.isDefaultQueue) {
+              } else if (b.is_default_queue) {
                 return 1;
               } else {
-                return a.queueName.localeCompare(b.queueName);
+                return a.queue_name.localeCompare(b.queue_name);
               }
             })
         : [];
@@ -347,12 +347,12 @@ export default {
         return null;
       }
       return this.getBatchQueueResourcePolicy(
-        this.selectedQueueDefault.queueName
+        this.selectedQueueDefault.queue_name
       );
     },
     queueDescription() {
       return this.selectedQueueDefault
-        ? this.selectedQueueDefault.queueDescription
+        ? this.selectedQueueDefault.queue_description
         : null;
     },
     validation() {
@@ -370,26 +370,26 @@ export default {
     },
     showQueueSettings() {
       return this.applicationInterface
-        ? this.applicationInterface.showQueueSettings
+        ? this.applicationInterface.show_queue_settings
         : false;
     },
     disabled() {
       return (
         this.applicationInterface &&
-        !!this.applicationInterface.queueSettingsCalculatorId
+        !!this.applicationInterface.queue_settings_calculator_id
       );
     },
   },
   methods: {
     queueChanged: function (queueName) {
       const queueDefault = this.queueDefaults.find(
-        (queue) => queue.queueName === queueName
+        (queue) => queue.queue_name === queueName
       );
-      this.data.totalCPUCount = this.getDefaultCPUCount(queueDefault);
-      this.data.nodeCount = this.getDefaultNodeCount(queueDefault);
-      this.data.wallTimeLimit = this.getDefaultWalltime(queueDefault);
+      this.data.total_cpu_count = this.getDefaultCPUCount(queueDefault);
+      this.data.node_count = this.getDefaultNodeCount(queueDefault);
+      this.data.wall_time_limit = this.getDefaultWalltime(queueDefault);
       if (this.maxPhysicalMemory === 0) {
-        this.data.totalPhysicalMemory = 0;
+        this.data.total_physical_memory = 0;
       }
     },
     validate() {
@@ -406,24 +406,24 @@ export default {
     },
     setDefaultQueue() {
       if (this.queueDefaults.length === 0) {
-        this.data.queueName = null;
+        this.data.queue_name = null;
         return;
       }
       const defaultQueue = this.queueDefaults[0];
 
-      this.data.queueName = defaultQueue.queueName;
-      this.data.totalCPUCount = this.getDefaultCPUCount(defaultQueue);
-      this.data.nodeCount = this.getDefaultNodeCount(defaultQueue);
-      this.data.wallTimeLimit = this.getDefaultWalltime(defaultQueue);
+      this.data.queue_name = defaultQueue.queue_name;
+      this.data.total_cpu_count = this.getDefaultCPUCount(defaultQueue);
+      this.data.node_count = this.getDefaultNodeCount(defaultQueue);
+      this.data.wall_time_limit = this.getDefaultWalltime(defaultQueue);
       if (this.maxPhysicalMemory === 0) {
-        this.data.totalPhysicalMemory = 0;
+        this.data.total_physical_memory = 0;
       }
     },
     isQueueInComputeResourcePolicy: function (queueName) {
       if (!this.computeResourcePolicy) {
         return true;
       }
-      return this.computeResourcePolicy.allowedBatchQueues.includes(queueName);
+      return this.computeResourcePolicy.allowed_batch_queues.includes(queueName);
     },
     getBatchQueueResourcePolicy: function (queueName) {
       if (
@@ -440,31 +440,31 @@ export default {
       const batchQueueResourcePolicy = this.batchQueueResourcePolicy;
       if (batchQueueResourcePolicy) {
         return Math.min(
-          batchQueueResourcePolicy.maxAllowedCores,
-          queueDefault.defaultCPUCount
+          batchQueueResourcePolicy.max_allowed_cores,
+          queueDefault.default_cpu_count
         );
       }
-      return queueDefault.defaultCPUCount;
+      return queueDefault.default_cpu_count;
     },
     getDefaultNodeCount: function (queueDefault) {
       const batchQueueResourcePolicy = this.batchQueueResourcePolicy;
       if (batchQueueResourcePolicy) {
         return Math.min(
-          batchQueueResourcePolicy.maxAllowedNodes,
-          queueDefault.defaultNodeCount
+          batchQueueResourcePolicy.max_allowed_nodes,
+          queueDefault.default_node_count
         );
       }
-      return queueDefault.defaultNodeCount;
+      return queueDefault.default_node_count;
     },
     getDefaultWalltime: function (queueDefault) {
       const batchQueueResourcePolicy = this.batchQueueResourcePolicy;
       if (batchQueueResourcePolicy) {
         return Math.min(
-          batchQueueResourcePolicy.maxAllowedWalltime,
-          queueDefault.defaultWalltime
+          batchQueueResourcePolicy.max_allowed_walltime,
+          queueDefault.default_walltime
         );
       }
-      return queueDefault.defaultWalltime;
+      return queueDefault.default_walltime;
     },
     getValidationFeedback: function (properties) {
       return utils.getProperty(this.validation, properties);
@@ -479,13 +479,13 @@ export default {
     applyBatchQueueResourcePolicy() {
       // Apply batchQueueResourcePolicy maximums
       if (this.selectedQueueDefault) {
-        this.data.totalCPUCount = Math.min(
-          this.data.totalCPUCount,
+        this.data.total_cpu_count = Math.min(
+          this.data.total_cpu_count,
           this.maxCPUCount
         );
-        this.data.nodeCount = Math.min(this.data.nodeCount, this.maxNodes);
-        this.data.wallTimeLimit = Math.min(
-          this.data.wallTimeLimit,
+        this.data.node_count = Math.min(this.data.node_count, this.maxNodes);
+        this.data.wall_time_limit = Math.min(
+          this.data.wall_time_limit,
           this.maxWalltime
         );
       }
@@ -493,11 +493,11 @@ export default {
     nodeCountChanged() {
       if (
         this.enableNodeCountToCpuCheck &&
-        this.selectedQueueDefault.cpuPerNode > 0
+        this.selectedQueueDefault.cpu_per_node > 0
       ) {
-        const nodeCount = parseInt(this.data.nodeCount);
-        this.data.totalCPUCount = Math.min(
-          nodeCount * this.selectedQueueDefault.cpuPerNode,
+        const nodeCount = parseInt(this.data.node_count);
+        this.data.total_cpu_count = Math.min(
+          nodeCount * this.selectedQueueDefault.cpu_per_node,
           this.maxCPUCount
         );
       }
@@ -505,12 +505,12 @@ export default {
     cpuCountChanged() {
       if (
         this.enableNodeCountToCpuCheck &&
-        this.selectedQueueDefault.cpuPerNode > 0
+        this.selectedQueueDefault.cpu_per_node > 0
       ) {
-        const cpuCount = parseInt(this.data.totalCPUCount);
+        const cpuCount = parseInt(this.data.total_cpu_count);
         if (cpuCount > 0) {
-          this.data.nodeCount = Math.min(
-            Math.ceil(cpuCount / this.selectedQueueDefault.cpuPerNode),
+          this.data.node_count = Math.min(
+            Math.ceil(cpuCount / this.selectedQueueDefault.cpu_per_node),
             this.maxNodes
           );
         }
@@ -538,13 +538,13 @@ export default {
     batchQueueResourcePolicy(value, oldValue) {
       if (
         value &&
-        (!oldValue || value.resourcePolicyId !== oldValue.resourcePolicyId)
+        (!oldValue || value.resource_policy_id !== oldValue.resource_policy_id)
       ) {
         this.applyBatchQueueResourcePolicy();
       }
     },
     computeResourcePolicy() {
-      if (!this.isQueueInComputeResourcePolicy(this.data.queueName)) {
+      if (!this.isQueueInComputeResourcePolicy(this.data.queue_name)) {
         this.setDefaultQueue();
       }
     },
@@ -562,7 +562,7 @@ export default {
     this.loadAppDeploymentQueues().then(() => {
       // For brand new queue settings (no queueName specified) load the default
       // queue and its default values and apply them
-      if (!this.value.queueName) {
+      if (!this.value.queue_name) {
         this.setDefaultQueue();
       }
     });

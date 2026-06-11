@@ -10,15 +10,26 @@ from airavata_sdk.generated.org.apache.airavata.model.user.user_profile_pb2 impo
     UserProfile,
 )
 from django.contrib.auth.models import User
-from django.test import TestCase, override_settings
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
-# from rest_framework import status
-from rest_framework.test import APIRequestFactory, force_authenticate
 
 from django_airavata.apps.api import signals, views
 
 GATEWAY_ID = "test-gateway"
 PORTAL_ADMINS = [('Admin Name', 'admin@example.com')]
+
+
+def authenticate(request, user, data=None):
+    """Stand-in for DRF's ``force_authenticate`` + request wrapper.
+
+    These tests call ``ViewSet.as_view(...)(request)`` directly (no middleware),
+    so set what the request-augmentation middleware / auth layer would: the
+    authenticated ``user`` and the parsed body (``request.data``) +
+    ``request.query_params`` the views read.
+    """
+    request.user = user
+    request.data = data if data is not None else {}
+    request.query_params = request.GET
 
 
 @override_settings(
@@ -29,7 +40,7 @@ class GroupViewSetTests(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user('testuser')
-        self.factory = APIRequestFactory()
+        self.factory = RequestFactory()
 
     def test_create_group_sends_user_added_to_group_signal(self):
 
@@ -43,8 +54,8 @@ class GroupViewSetTests(TestCase):
                     f"testuser1@{GATEWAY_ID}"],
             "admins": []
         }
-        request = self.factory.post(url, data)
-        force_authenticate(request, self.user)
+        request = self.factory.post(url)
+        authenticate(request, self.user, data)
 
         # Mock api clients
         group_manager_mock = MagicMock(name='group_manager')
@@ -99,8 +110,8 @@ class GroupViewSetTests(TestCase):
                     f"testuser3@{GATEWAY_ID}"],  # new member
             "admins": []
         }
-        request = self.factory.put(url, data)
-        force_authenticate(request, self.user)
+        request = self.factory.put(url)
+        authenticate(request, self.user, data)
 
         # Mock api clients
         group_manager_mock = MagicMock(name='group_manager')
@@ -178,7 +189,7 @@ class IAMUserViewSetTests(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user('testuser')
-        self.factory = APIRequestFactory()
+        self.factory = RequestFactory()
 
     @patch("django_airavata.apps.api.views.iam_admin_client")
     def test_update_that_adds_user_to_group_sends_user_added_to_group_signal(
@@ -203,8 +214,8 @@ class IAMUserViewSetTests(TestCase):
                 {"id": "group2", "name": "Group 2"}
             ]
         }
-        request = self.factory.put(url, data)
-        force_authenticate(request, self.user)
+        request = self.factory.put(url)
+        authenticate(request, self.user, data)
         request.is_gateway_admin = True
 
         # Mock api clients
@@ -305,8 +316,8 @@ class IAMUserViewSetTests(TestCase):
                 {"id": "group3", "name": "Group 3"},
             ]
         }
-        request = self.factory.put(url, data)
-        force_authenticate(request, self.user)
+        request = self.factory.put(url)
+        authenticate(request, self.user, data)
         request.is_gateway_admin = True
 
         # Mock api clients
@@ -414,8 +425,8 @@ class IAMUserViewSetTests(TestCase):
                 {"id": "group1", "name": "Group 1"},
             ]
         }
-        request = self.factory.put(url, data)
-        force_authenticate(request, self.user)
+        request = self.factory.put(url)
+        authenticate(request, self.user, data)
         request.is_gateway_admin = True
 
         # Mock api clients
@@ -484,7 +495,7 @@ class ExceptionHandlingTest(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user('testuser')
-        self.factory = APIRequestFactory()
+        self.factory = RequestFactory()
 
     def test_unauthenticated_request(self):
 

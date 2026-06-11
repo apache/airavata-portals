@@ -2,28 +2,28 @@ import BaseModel from "./BaseModel";
 import Group from "./Group";
 
 const FIELDS = [
-  "userModelVersion",
-  "airavataInternalUserId",
-  "userId",
-  "gatewayId",
+  "airavata_internal_user_id",
+  "user_id",
+  "gateway_id",
   "email",
-  "firstName",
-  "lastName",
+  "first_name",
+  "last_name",
   "enabled",
-  "emailVerified",
-  "airavataUserProfileExists",
+  "email_verified",
   {
-    name: "creationTime",
+    name: "creation_time",
     type: "date",
   },
+  "airavata_user_profile_exists",
+  // merged onto the proto server-side by the WithAccess envelope.
+  "user_has_write_access",
   {
     name: "groups",
     type: Group,
     list: true,
   },
-  "userHasWriteAccess",
-  "externalIDPUserInfo",
-  "userProfileInvalidFields",
+  "external_idp_user_info",
+  "user_profile_invalid_fields",
 ];
 
 export default class IAMUserProfile extends BaseModel {
@@ -31,6 +31,6 @@ export default class IAMUserProfile extends BaseModel {
     super(FIELDS, data);
   }
   get userProfileComplete() {
-    return this.userProfileInvalidFields.length === 0;
+    return this.user_profile_invalid_fields.length === 0;
   }
 }

@@ -1,16 +1,16 @@
 import BaseModel from "./BaseModel";
 
 const FIELDS = [
-  "errorId",
+  "error_id",
   {
-    name: "creationTime",
+    name: "creation_time",
     type: "date",
   },
-  "actualErrorMessage",
-  "userFriendlyMessage",
-  "transientOrPersistent",
+  "actual_error_message",
+  "user_friendly_message",
+  "transient_or_persistent",
   {
-    name: "rootCauseErrorIdList",
+    name: "root_cause_error_id_list",
     type: "string",
     list: true,
   },

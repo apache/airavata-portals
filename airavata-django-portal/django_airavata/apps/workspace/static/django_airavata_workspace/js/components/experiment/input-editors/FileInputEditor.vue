@@ -3,9 +3,9 @@
     <div class="d-flex" v-if="isDataProductURI && dataProduct">
       <user-storage-link
         class="mr-auto"
-        :data-product-uri="dataProduct.productUri"
+        :data-product-uri="dataProduct.product_uri"
         :mime-type="dataProduct.mimeType"
-        :file-name="dataProduct.productName"
+        :file-name="dataProduct.product_name"
       />
       <delete-link
         v-if="!readOnly && dataProduct.isInputFileUpload"
@@ -13,7 +13,7 @@
         @delete="deleteDataProduct"
       >
         Are you sure you want to delete input file
-        <strong>{{ dataProduct.productName }}</strong
+        <strong>{{ dataProduct.product_name }}</strong
         >?
       </delete-link>
       <b-link
@@ -92,9 +92,12 @@ export default {
     loadDataProduct(dataProductURI) {
       services.DataProductService.retrieve({ lookup: dataProductURI })
         .then((dataProduct) => {
-          if (dataProduct.downloadURL === null) {
-            // Null out this field when the file is no longer available. Force
-            // user to select or upload another file.
+          // A data product with no replica is no longer downloadable; force the
+          // user to select or upload another file (downloadURL is gone).
+          if (
+            !dataProduct.replica_locations ||
+            dataProduct.replica_locations.length === 0
+          ) {
             this.data = null;
             this.valueChanged();
           } else {

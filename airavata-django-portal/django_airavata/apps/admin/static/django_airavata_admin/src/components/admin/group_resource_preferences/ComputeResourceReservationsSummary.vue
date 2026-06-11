@@ -35,7 +35,7 @@ export default {
         : [];
     },
     activeReservationNames() {
-      return this.activeReservations.map((r) => r.reservationName);
+      return this.activeReservations.map((r) => r.reservation_name);
     },
     upcomingReservations() {
       return this.reservations

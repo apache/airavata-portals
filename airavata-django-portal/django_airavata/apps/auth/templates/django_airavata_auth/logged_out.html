@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container my-5">
+  <p>You have been logged out.</p>
+  <a href="{% url 'django_airavata_auth:login' %}">Log in again</a>
+</div>
+{% endblock %}

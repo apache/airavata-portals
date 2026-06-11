@@ -10,7 +10,7 @@ function factory(config = { initA: "1", initB: null, sync: true }) {
   const inputB = new models.InputDataObjectType({
     name: "B",
     value: config.initB,
-    metaData: {
+    meta_data: {
       editor: {
         dependencies: {
           show: {
@@ -29,7 +29,7 @@ function factory(config = { initA: "1", initB: null, sync: true }) {
   });
   // eslint-disable-next-line no-unused-vars
   const experiment = new models.Experiment({
-    experimentInputs: [inputA, inputB],
+    experiment_inputs: [inputA, inputB],
   });
   const wrapper = shallowMount(InputEditorContainer, {
     propsData: {

@@ -4,15 +4,15 @@
 
 <div class="main-content-wrapper">
   <main class="main-content">
-  <div class="container">
-      {% if options.external %}
-      {% include "./partials/externals_login_form.html" %}
-      {% endif %}
-
-      {% if options.password and not options.password.hidden %}
-      {% include "./partials/username_password_login_form.html" %}
-      {% endif %}
-  </div>
+    <div class="container">
+      {% comment %} Login is hosted by Keycloak; kick off the OIDC flow while
+      preserving the desktop passthrough params so the callback returns the
+      access token to the desktop/CLI client. {% endcomment %}
+      <a class="btn btn-primary"
+         href="{% url 'django_airavata_auth:login' %}?login_desktop=true{% if download_code %}&download-code=true{% endif %}{% if show_code %}&show-code=true{% endif %}">
+        Log in
+      </a>
+    </div>
   </main>
 </div>
 {% endblock content %}

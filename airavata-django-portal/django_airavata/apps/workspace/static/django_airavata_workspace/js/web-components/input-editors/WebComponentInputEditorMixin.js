@@ -32,7 +32,7 @@ export default {
   },
   computed: {
     readOnly() {
-      return this.experimentInput.isReadOnly;
+      return this.experimentInput.is_read_only;
     },
     id() {
       return utils.sanitizeHTMLId(this.experimentInput.name);

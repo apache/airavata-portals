@@ -22,12 +22,17 @@ setup(
     packages=find_packages(),
     install_requires=[
             'Django',
-            'djangorestframework',
             'requests',
             'requests-oauthlib',
-            'jupyter',
+            'django-webpack-loader',
+            'PyJWT',
+            # Notebook output rendering (apps/api/output_views.py).
             'papermill',
-            'zipstream-new',
+            'nbconvert',
+            # gRPC runtime for the Airavata SDK stubs.
+            'grpcio>=1.60.0',
+            'protobuf>=5.26.0,<7.0.0',
+            'googleapis-common-protos>=1.62.0',
             # The gRPC Airavata SDK is the portal's sole Airavata dependency. It
             # is not yet on PyPI (the published 2.2.7 is the retired Thrift SDK),
             # so for development install it editable from a local apache/airavata
@@ -39,9 +44,6 @@ setup(
         'dev': [
             'flake8',
             'flake8-isort'
-        ],
-        'mysql': [
-            'mysqlclient'
         ]
     },
     classifiers=[

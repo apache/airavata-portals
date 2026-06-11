@@ -65,12 +65,12 @@ export default {
       ).then((experiments) => {
         this.feedItems = experiments.results.map((e) => {
           return {
-            id: e.experimentId,
-            statusName: e.experimentStatus.name,
+            id: e.experiment_id,
+            statusName: e.experiment_status.name,
             title: e.name,
             url: urls.viewExperiment(e),
-            timestamp: e.statusUpdateTime,
-            interfaceId: e.executionId,
+            timestamp: e.status_update_time,
+            interfaceId: e.execution_id,
             isProgressing: e.convertToExperiment().isProgressing,
             type: null,
           };
@@ -123,7 +123,7 @@ export default {
           ) {
             feedItem.type = this.applicationInterfaces[
               feedItem.interfaceId
-            ].applicationName;
+            ].application_name;
           }
         });
     },

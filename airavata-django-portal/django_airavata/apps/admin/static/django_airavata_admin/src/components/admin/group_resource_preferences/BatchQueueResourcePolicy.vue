@@ -4,20 +4,20 @@
       <b-form-group
         label="Maximum Allowed Nodes"
         label-for="max-allowed-nodes"
-        :invalid-feedback="validationFeedback.maxAllowedNodes.invalidFeedback"
-        :state="validationFeedback.maxAllowedNodes.state"
+        :invalid-feedback="validationFeedback.max_allowed_nodes.invalidFeedback"
+        :state="validationFeedback.max_allowed_nodes.state"
       >
         <b-form-input
           id="max-allowed-nodes"
           type="number"
-          v-model="data.maxAllowedNodes"
+          v-model="data.max_allowed_nodes"
           :readonly="readonly"
           @input="policyUpdated"
           min="1"
-          :max="batchQueue.maxNodes"
+          :max="batchQueue.max_nodes"
           :formatter="numberFormatter"
-          :placeholder="'Max Nodes: ' + batchQueue.maxNodes"
-          :state="validationFeedback.maxAllowedNodes.state"
+          :placeholder="'Max Nodes: ' + batchQueue.max_nodes"
+          :state="validationFeedback.max_allowed_nodes.state"
         >
         </b-form-input>
       </b-form-group>
@@ -26,20 +26,20 @@
       <b-form-group
         label="Maximum Allowed Cores"
         label-for="max-allowed-cores"
-        :invalid-feedback="validationFeedback.maxAllowedCores.invalidFeedback"
-        :state="validationFeedback.maxAllowedCores.state"
+        :invalid-feedback="validationFeedback.max_allowed_cores.invalidFeedback"
+        :state="validationFeedback.max_allowed_cores.state"
       >
         <b-form-input
           id="max-allowed-cores"
           type="number"
-          v-model="data.maxAllowedCores"
+          v-model="data.max_allowed_cores"
           :readonly="readonly"
           @input="policyUpdated"
           min="1"
-          :max="batchQueue.maxProcessors"
+          :max="batchQueue.max_processors"
           :formatter="numberFormatter"
-          :placeholder="'Max Cores: ' + batchQueue.maxProcessors"
-          :state="validationFeedback.maxAllowedCores.state"
+          :placeholder="'Max Cores: ' + batchQueue.max_processors"
+          :state="validationFeedback.max_allowed_cores.state"
         >
         </b-form-input>
       </b-form-group>
@@ -49,21 +49,21 @@
         label="Maximum Allowed Wall Time"
         label-for="max-allowed-walltime"
         :invalid-feedback="
-          validationFeedback.maxAllowedWalltime.invalidFeedback
+          validationFeedback.max_allowed_walltime.invalidFeedback
         "
-        :state="validationFeedback.maxAllowedWalltime.state"
+        :state="validationFeedback.max_allowed_walltime.state"
       >
         <b-form-input
           id="max-allowed-walltime"
           type="number"
-          v-model="data.maxAllowedWalltime"
+          v-model="data.max_allowed_walltime"
           :readonly="readonly"
           @input="policyUpdated"
           min="1"
-          :max="batchQueue.maxRunTime"
+          :max="batchQueue.max_run_time"
           :formatter="numberFormatter"
-          :placeholder="'Max Wall Time: ' + batchQueue.maxRunTime"
-          :state="validationFeedback.maxAllowedWalltime.state"
+          :placeholder="'Max Wall Time: ' + batchQueue.max_run_time"
+          :state="validationFeedback.max_allowed_walltime.state"
         >
         </b-form-input>
       </b-form-group>
@@ -99,7 +99,7 @@ export default {
     const localValue = this.value
       ? this.value.clone()
       : new models.BatchQueueResourcePolicy();
-    localValue.queuename = this.batchQueue.queueName;
+    localValue.queuename = this.batchQueue.queue_name;
     return {
       data: localValue,
     };
@@ -107,9 +107,9 @@ export default {
   methods: {
     policyUpdated: function () {
       if (
-        this.data.maxAllowedNodes ||
-        this.data.maxAllowedCores ||
-        this.data.maxAllowedWalltime
+        this.data.max_allowed_nodes ||
+        this.data.max_allowed_cores ||
+        this.data.max_allowed_walltime
       ) {
         this.$emit("input", this.data);
       } else {

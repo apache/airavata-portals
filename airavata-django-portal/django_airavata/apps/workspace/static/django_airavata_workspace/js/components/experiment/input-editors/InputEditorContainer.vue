@@ -4,14 +4,14 @@
     :label-for="inputEditorComponentId"
     :state="validationState"
     :feedback-messages="validationFeedback"
-    :description="experimentInput.userFriendlyDescription"
+    :description="experimentInput.user_friendly_description"
   >
     <component
       :is="inputEditorComponentName"
       :id="inputEditorComponentId"
       :experiment-input="experimentInput"
       :experiment="experiment"
-      :read-only="experimentInput.isReadOnly"
+      :read-only="experimentInput.is_read_only"
       v-model="data"
       @invalid="recordInvalidInputEditorValue"
       @valid="recordValidInputEditorValue"

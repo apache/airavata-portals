@@ -111,7 +111,7 @@
               <tbody>
                 <tr
                   v-for="experiment in experiments"
-                  :key="experiment.experimentId"
+                  :key="experiment.experiment_id"
                 >
                   <td>
                     <b-link :href="viewLink(experiment)">{{
@@ -122,15 +122,15 @@
                     {{ applicationName(experiment) }}
                   </td>
                   <td v-else class="font-italic text-muted">N/A</td>
-                  <td>{{ experiment.userName }}</td>
+                  <td>{{ experiment.user_name }}</td>
                   <td>
-                    <span :title="experiment.creationTime">{{
-                      fromNow(experiment.creationTime)
+                    <span :title="experiment.creation_time">{{
+                      fromNow(experiment.creation_time)
                     }}</span>
                   </td>
                   <td>
                     <experiment-status-badge
-                      :statusName="experiment.experimentStatus.name"
+                      :statusName="experiment.experiment_status.name"
                     />
                   </td>
                   <td>
@@ -303,22 +303,21 @@ export default {
       return urls.viewExperiment(experiment);
     },
     applicationName: function (experiment) {
-      if (experiment.executionId in this.applicationInterfaces) {
+      if (experiment.execution_id in this.applicationInterfaces) {
         if (
-          this.applicationInterfaces[experiment.executionId] instanceof
+          this.applicationInterfaces[experiment.execution_id] instanceof
           models.ApplicationInterfaceDefinition
         ) {
-          return this.applicationInterfaces[experiment.executionId]
-            .applicationName;
+          return this.applicationInterfaces[experiment.execution_id].application_name;
         } else if (
-          this.applicationInterfaces[experiment.executionId] === null
+          this.applicationInterfaces[experiment.execution_id] === null
         ) {
           return null;
         }
       } else {
         const request = services.ApplicationInterfaceService.retrieve(
           {
-            lookup: experiment.executionId,
+            lookup: experiment.execution_id,
           },
           {
             ignoreErrors: true,
@@ -327,7 +326,7 @@ export default {
           .then((result) => {
             this.$set(
               this.applicationInterfaces,
-              experiment.executionId,
+              experiment.execution_id,
               result
             );
           })
@@ -335,7 +334,7 @@ export default {
             if (errors.ErrorUtils.isNotFoundError(error)) {
               this.$set(
                 this.applicationInterfaces,
-                experiment.executionId,
+                experiment.execution_id,
                 null
               );
             } else {
@@ -343,13 +342,13 @@ export default {
             }
           })
           .catch(utils.FetchUtils.reportError);
-        this.$set(this.applicationInterfaces, experiment.executionId, request);
+        this.$set(this.applicationInterfaces, experiment.execution_id, request);
       }
       return "...";
     },
     clone(experiment) {
       services.ExperimentService.clone({
-        lookup: experiment.experimentId,
+        lookup: experiment.experiment_id,
       }).then((clonedExperiment) => {
         urls.navigateToEditExperiment(clonedExperiment);
       });
@@ -365,8 +364,8 @@ export default {
       if (this.appInterfaces) {
         const options = this.appInterfaces.map((appInterface) => {
           return {
-            value: appInterface.applicationInterfaceId,
-            text: appInterface.applicationName,
+            value: appInterface.application_interface_id,
+            text: appInterface.application_name,
           };
         });
         return utils.StringUtils.sortIgnoreCase(options, (o) => o.text);
@@ -378,7 +377,7 @@ export default {
       if (this.projectInterfaces) {
         const options = this.projectInterfaces.map((projectInterface) => {
           return {
-            value: projectInterface.projectID,
+            value: projectInterface.project_id,
             text: projectInterface.name,
           };
         });

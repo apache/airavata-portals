@@ -206,7 +206,7 @@
             {{ request.user.first_name }} {{ request.user.last_name }}
           </a>
           <div class=dropdown-menu aria-labelledby=dropdownMenuButton>
-            <a class=dropdown-item href="{% url 'django_airavata_auth:user_profile' %}">
+            <a class=dropdown-item href="{{ KEYCLOAK_ACCOUNT_CONSOLE_URL }}" target="_blank" rel="noopener">
               User Settings
               <i class="fa fa-user-cog"></i>
             </a>

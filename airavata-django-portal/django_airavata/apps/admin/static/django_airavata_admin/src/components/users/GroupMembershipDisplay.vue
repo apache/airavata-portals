@@ -30,20 +30,20 @@ export default {
   },
   computed: {
     adminsGroup() {
-      return this.groups.find((g) => g.isGatewayAdminsGroup);
+      return this.groups.find((g) => g.is_gateway_admins_group);
     },
     readOnlyAdminsGroup() {
-      return this.groups.find((g) => g.isReadOnlyGatewayAdminsGroup);
+      return this.groups.find((g) => g.is_read_only_gateway_admins_group);
     },
     defaultUsersGroup() {
-      return this.groups.find((g) => g.isDefaultGatewayUsersGroup);
+      return this.groups.find((g) => g.is_default_gateway_users_group);
     },
     nonGatewayGroups() {
       return this.groups.filter((g) => {
         return (
-          !g.isGatewayAdminsGroup &&
-          !g.isReadOnlyGatewayAdminsGroup &&
-          !g.isDefaultGatewayUsersGroup
+          !g.is_gateway_admins_group &&
+          !g.is_read_only_gateway_admins_group &&
+          !g.is_default_gateway_users_group
         );
       });
     },

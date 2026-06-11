@@ -7,7 +7,7 @@
         </h1>
       </div>
       <div class="col-auto">
-        <share-button :entity-id="experiment.experimentId" />
+        <share-button :entity-id="experiment.experiment_id" />
         <b-link v-if="isEditable" class="btn btn-primary" :href="editLink">
           Edit
           <i class="fa fa-edit" aria-hidden="true"></i>
@@ -26,7 +26,7 @@
         </b-btn>
       </div>
     </div>
-    <template v-for="output in experiment.experimentOutputs">
+    <template v-for="output in experiment.experiment_outputs">
       <div class="row" v-if="finishedOrExecuting" :key="output.name">
         <div class="col">
           <output-display-container :experiment-output="output" />
@@ -36,7 +36,7 @@
     <div class="row" v-if="finishedOrExecuting">
       <div class="col">
         <experiment-storage-view-container
-          :experimentId="experiment.experimentId"
+          :experimentId="experiment.experiment_id"
         />
       </div>
     </div>
@@ -49,12 +49,12 @@
                 <tr>
                   <th scope="row">Name</th>
                   <td>
-                    <div :title="experiment.experimentId">
-                      {{ experiment.experimentName }}
+                    <div :title="experiment.experiment_id">
+                      {{ experiment.experiment_name }}
                     </div>
                     <small class="text-muted">
-                      ID: {{ experiment.experimentId }} (<clipboard-copy-link
-                        :text="experiment.experimentId"
+                      ID: {{ experiment.experiment_id }} (<clipboard-copy-link
+                        :text="experiment.experiment_id"
                         :link-classes="['text-reset']"
                       >
                         copy
@@ -81,7 +81,7 @@
                 </tr>
                 <tr>
                   <th scope="row">Owner</th>
-                  <td>{{ experiment.userName }}</td>
+                  <td>{{ experiment.user_name }}</td>
                 </tr>
                 <tr>
                   <th scope="row">Application</th>
@@ -117,8 +117,8 @@
                 </tr>
                 <tr
                   v-if="
-                    localFullExperiment.jobDetails &&
-                    localFullExperiment.jobDetails.length > 0
+                    localFullExperiment.job_details &&
+                    localFullExperiment.job_details.length > 0
                   "
                 >
                   <th scope="row">Job</th>
@@ -132,14 +132,14 @@
                       </thead>
                       <tr
                         v-for="(jobDetail,
-                        index) in localFullExperiment.jobDetails"
-                        :key="jobDetail.jobId"
+                        index) in localFullExperiment.job_details"
+                        :key="jobDetail.job_id"
                       >
-                        <td>{{ jobDetail.jobName }}</td>
-                        <td>{{ jobDetail.jobId }}</td>
+                        <td>{{ jobDetail.job_name }}</td>
+                        <td>{{ jobDetail.job_id }}</td>
                         <td>{{ jobDetail.jobStatusStateName }}</td>
                         <td>
-                          <span :title="jobDetail.creationTime.toString()">{{
+                          <span :title="jobDetail.creation_time.toString()">{{
                             jobCreationTimes[index]
                           }}</span>
                         </td>
@@ -157,7 +157,7 @@
                 <tr>
                   <th scope="row">Creation Time</th>
                   <td>
-                    <span :title="experiment.creationTime.toString()">{{
+                    <span :title="experiment.creation_time.toString()">{{
                       creationTime
                     }}</span>
                   </td>
@@ -167,7 +167,7 @@
                   <td>
                     <span
                       :title="
-                        localFullExperiment.experimentStatus.timeOfStateChange.toString()
+                        localFullExperiment.experimentStatus.time_of_state_change.toString()
                       "
                       >{{ lastModifiedTime }}</span
                     >
@@ -177,7 +177,7 @@
                   <th scope="row">Allocation</th>
                   <td>
                     <b-link :href="viewGroupResourceProfileLink">
-                      {{ groupResourceProfile.groupResourceProfileName }}
+                      {{ groupResourceProfile.group_resource_profile_name }}
                     </b-link>
                   </td>
                 </tr>
@@ -185,8 +185,8 @@
                   <th scope="row">Wall Time Limit</th>
                   <td>
                     {{
-                      experiment.userConfigurationData
-                        .computationalResourceScheduling.wallTimeLimit
+                      experiment.user_configuration_data
+                        .computational_resource_scheduling.wall_time_limit
                     }}
                     minutes
                   </td>
@@ -195,8 +195,8 @@
                   <th scope="row">CPU Count</th>
                   <td>
                     {{
-                      experiment.userConfigurationData
-                        .computationalResourceScheduling.totalCPUCount
+                      experiment.user_configuration_data
+                        .computational_resource_scheduling.total_cpu_count
                     }}
                   </td>
                 </tr>
@@ -204,22 +204,22 @@
                   <th scope="row">Node Count</th>
                   <td>
                     {{
-                      experiment.userConfigurationData
-                        .computationalResourceScheduling.nodeCount
+                      experiment.user_configuration_data
+                        .computational_resource_scheduling.node_count
                     }}
                   </td>
                 </tr>
                 <tr
                   v-if="
                     showQueueSettings &&
-                    experiment.userConfigurationData
-                      .computationalResourceScheduling.totalPhysicalMemory
+                    experiment.user_configuration_data
+                      .computational_resource_scheduling.total_physical_memory
                   "
                 >
                   <th scope="row">Total Physical Memory</th>
                   <td>
                     {{
-                      experiment.userConfigurationData.computationalResourceScheduling.totalPhysicalMemory.toLocaleString()
+                      experiment.user_configuration_data.computational_resource_scheduling.total_physical_memory.toLocaleString()
                     }}
                     MB
                   </td>
@@ -228,8 +228,8 @@
                   <th scope="row">Queue</th>
                   <td>
                     {{
-                      experiment.userConfigurationData
-                        .computationalResourceScheduling.queueName
+                      experiment.user_configuration_data
+                        .computational_resource_scheduling.queue_name
                     }}
                   </td>
                 </tr>
@@ -238,7 +238,7 @@
                   <td>
                     <ul>
                       <li
-                        v-for="input in experiment.experimentInputs"
+                        v-for="input in experiment.experiment_inputs"
                         :key="input.name"
                       >
                         {{ input.name }}:
@@ -250,7 +250,7 @@
                           v-else-if="input.type.isFileValueType"
                           :data-product="dp"
                           :input-file="true"
-                          :key="dp.productUri"
+                          :key="dp.product_uri"
                         />
                       </li>
                     </ul>
@@ -261,28 +261,28 @@
                   <td>
                     <b-card
                       v-for="error in experiment.errors"
-                      :key="error.errorId"
+                      :key="error.error_id"
                       header="Error"
                     >
-                      <p>{{ error.userFriendlyMessage }}</p>
+                      <p>{{ error.user_friendly_message }}</p>
                     </b-card>
                   </td>
                 </tr>
                 <template v-if="failedJobs.length > 0">
-                  <tr v-for="job in failedJobs" :key="job.jobId">
+                  <tr v-for="job in failedJobs" :key="job.job_id">
                     <th scope="row">Job Submission Response</th>
                     <td>
                       <b-card
-                        v-if="job.stdOut"
-                        :header="job.jobName + ' STDOUT'"
+                        v-if="job.std_out"
+                        :header="job.job_name + ' STDOUT'"
                       >
-                        <pre class="pre-scrollable">{{ job.stdOut }}</pre>
+                        <pre class="pre-scrollable">{{ job.std_out }}</pre>
                       </b-card>
                       <b-card
-                        v-if="job.stdErr"
-                        :header="job.jobName + ' STDERR'"
+                        v-if="job.std_err"
+                        :header="job.job_name + ' STDERR'"
                       >
-                        <pre class="pre-scrollable">{{ job.stdErr }}</pre>
+                        <pre class="pre-scrollable">{{ job.std_err }}</pre>
                       </b-card>
                     </td>
                   </tr>
@@ -334,13 +334,13 @@ export default {
       const result = {};
       if (
         this.localFullExperiment &&
-        this.localFullExperiment.inputDataProducts
+        this.localFullExperiment.input_data_products
       ) {
-        this.localFullExperiment.experiment.experimentInputs.forEach(
+        this.localFullExperiment.experiment.experiment_inputs.forEach(
           (input) => {
             result[input.name] = this.getDataProducts(
               input,
-              this.localFullExperiment.inputDataProducts
+              this.localFullExperiment.input_data_products
             );
           }
         );
@@ -351,13 +351,13 @@ export default {
       const result = {};
       if (
         this.localFullExperiment &&
-        this.localFullExperiment.outputDataProducts
+        this.localFullExperiment.output_data_products
       ) {
-        this.localFullExperiment.experiment.experimentOutputs.forEach(
+        this.localFullExperiment.experiment.experiment_outputs.forEach(
           (output) => {
             result[output.name] = this.getDataProducts(
               output,
-              this.localFullExperiment.outputDataProducts
+              this.localFullExperiment.output_data_products
             );
           }
         );
@@ -365,19 +365,19 @@ export default {
       return result;
     },
     creationTime: function () {
-      return moment(this.localFullExperiment.experiment.creationTime).fromNow();
+      return moment(this.localFullExperiment.experiment.creation_time).fromNow();
     },
     lastModifiedTime: function () {
       return moment(
-        this.localFullExperiment.experimentStatus.timeOfStateChange
+        this.localFullExperiment.experimentStatus.time_of_state_change
       ).fromNow();
     },
     experiment: function () {
       return this.localFullExperiment.experiment;
     },
     jobCreationTimes: function () {
-      return this.localFullExperiment.jobDetails.map((jobDetail) =>
-        moment(jobDetail.creationTime).fromNow()
+      return this.localFullExperiment.job_details.map((jobDetail) =>
+        moment(jobDetail.creation_time).fromNow()
       );
     },
     editLink() {
@@ -400,13 +400,13 @@ export default {
       return this.localFullExperiment.experiment.isCancelable;
     },
     failedJobs() {
-      if (this.fullExperiment && this.fullExperiment.jobDetails) {
-        return this.fullExperiment.jobDetails.filter(
+      if (this.fullExperiment && this.fullExperiment.job_details) {
+        return this.fullExperiment.job_details.filter(
           (job) =>
             this.experiment.latestStatus.state ===
               models.ExperimentState.FAILED ||
             (job.latestJobStatus &&
-              job.latestJobStatus.jobState === models.JobState.FAILED)
+              job.latestJobStatus.job_state === models.JobState.FAILED)
         );
       } else {
         return [];
@@ -445,12 +445,12 @@ export default {
       if (io.type === models.DataType.URI_COLLECTION) {
         const dataProductURIs = io.value.split(",");
         dataProducts = dataProductURIs.map((uri) =>
-          collection.find((dp) => dp.productUri === uri)
+          collection.find((dp) => dp.product_uri === uri)
         );
       } else {
         const dataProductURI = io.value;
         dataProducts = collection.filter(
-          (dp) => dp.productUri === dataProductURI
+          (dp) => dp.product_uri === dataProductURI
         );
       }
       return dataProducts

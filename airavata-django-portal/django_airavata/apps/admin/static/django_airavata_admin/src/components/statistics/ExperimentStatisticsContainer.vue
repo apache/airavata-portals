@@ -178,9 +178,9 @@
               <experiment-statistics-card
                 bg-variant="primary"
                 header-text-variant="white"
-                :count="experimentStatistics.allExperimentCount || 0"
+                :count="experimentStatistics.all_experiment_count || 0"
                 title="Total Experiments"
-                @click="selectExperiments('allExperiments')"
+                @click="selectExperiments('all_experiments')"
               >
                 <span slot="link-text">All</span>
               </experiment-statistics-card>
@@ -188,10 +188,10 @@
             <div class="col-xl-2 col-md-4">
               <experiment-statistics-card
                 bg-variant="light"
-                :count="experimentStatistics.createdExperimentCount || 0"
+                :count="experimentStatistics.created_experiment_count || 0"
                 :states="createdStates"
                 title="Created Experiments"
-                @click="selectExperiments('createdExperiments')"
+                @click="selectExperiments('created_experiments')"
               >
               </experiment-statistics-card>
             </div>
@@ -199,10 +199,10 @@
               <experiment-statistics-card
                 bg-variant="light"
                 header-text-variant="success"
-                :count="experimentStatistics.runningExperimentCount || 0"
+                :count="experimentStatistics.running_experiment_count || 0"
                 :states="runningStates"
                 title="Running Experiments"
-                @click="selectExperiments('runningExperiments')"
+                @click="selectExperiments('running_experiments')"
               >
               </experiment-statistics-card>
             </div>
@@ -211,10 +211,10 @@
                 bg-variant="success"
                 header-text-variant="white"
                 link-variant="success"
-                :count="experimentStatistics.completedExperimentCount || 0"
+                :count="experimentStatistics.completed_experiment_count || 0"
                 :states="completedStates"
                 title="Completed Experiments"
-                @click="selectExperiments('completedExperiments')"
+                @click="selectExperiments('completed_experiments')"
               >
               </experiment-statistics-card>
             </div>
@@ -223,10 +223,10 @@
                 bg-variant="warning"
                 header-text-variant="white"
                 link-variant="warning"
-                :count="experimentStatistics.cancelledExperimentCount || 0"
+                :count="experimentStatistics.cancelled_experiment_count || 0"
                 :states="canceledStates"
                 title="Cancelled Experiments"
-                @click="selectExperiments('cancelledExperiments')"
+                @click="selectExperiments('cancelled_experiments')"
               >
               </experiment-statistics-card>
             </div>
@@ -235,10 +235,10 @@
                 bg-variant="danger"
                 header-text-variant="white"
                 link-variant="danger"
-                :count="experimentStatistics.failedExperimentCount || 0"
+                :count="experimentStatistics.failed_experiment_count || 0"
                 :states="failedStates"
                 title="Failed Experiments"
-                @click="selectExperiments('failedExperiments')"
+                @click="selectExperiments('failed_experiments')"
               >
               </experiment-statistics-card>
             </div>
@@ -247,21 +247,21 @@
             <div class="col">
               <b-card>
                 <b-table :fields="fields" :items="items">
-                  <template slot="cell(executionId)" slot-scope="data">
+                  <template slot="cell(execution_id)" slot-scope="data">
                     <application-name :application-interface-id="data.value" />
                   </template>
-                  <template slot="cell(resourceHostId)" slot-scope="data">
+                  <template slot="cell(resource_host_id)" slot-scope="data">
                     <compute-resource-name :compute-resource-id="data.value" />
                   </template>
-                  <template slot="cell(creationTime)" slot-scope="data">
+                  <template slot="cell(creation_time)" slot-scope="data">
                     <human-date :date="data.value" />
                   </template>
-                  <template slot="cell(experimentStatus)" slot-scope="data">
+                  <template slot="cell(experiment_status)" slot-scope="data">
                     <experiment-status-badge :status-name="data.value.name" />
                   </template>
                   <template slot="cell(actions)" slot-scope="data">
                     <b-link
-                      @click="showExperimentDetails(data.item.experimentId)"
+                      @click="showExperimentDetails(data.item.experiment_id)"
                     >
                       View Details
                       <i class="far fa-chart-bar" aria-hidden="true"></i>
@@ -270,7 +270,7 @@
                 </b-table>
               </b-card>
               <pager
-                v-if="experimentStatistics.allExperimentCount > 0"
+                v-if="experimentStatistics.all_experiment_count > 0"
                 :paginator="experimentStatisticsPaginator"
                 @next="experimentStatisticsPaginator.next()"
                 @previous="experimentStatisticsPaginator.previous()"
@@ -280,13 +280,13 @@
         </b-tab>
         <b-tab
           v-for="experimentTab in experimentDetailTabs"
-          :key="experimentTab.experiment.experimentId"
+          :key="experimentTab.experiment.experiment_id"
         >
           <template slot="title">
             {{ experimentTab.tabTitle }}
             <b-link
               @click="
-                removeExperimentDetailTab(experimentTab.experiment.experimentId)
+                removeExperimentDetailTab(experimentTab.experiment.experiment_id)
               "
               class="text-secondary"
             >
@@ -393,23 +393,23 @@ export default {
           label: "Name",
         },
         {
-          key: "userName",
+          key: "user_name",
           label: "Owner",
         },
         {
-          key: "executionId",
+          key: "execution_id",
           label: "Application",
         },
         {
-          key: "resourceHostId",
+          key: "resource_host_id",
           label: "Resource",
         },
         {
-          key: "creationTime",
+          key: "creation_time",
           label: "Creation Time",
         },
         {
-          key: "experimentStatus",
+          key: "experiment_status",
           label: "Status",
         },
         {
@@ -446,8 +446,8 @@ export default {
       if (this.appInterfaces) {
         const options = this.appInterfaces.map((appInterface) => {
           return {
-            value: appInterface.applicationInterfaceId,
-            text: appInterface.applicationName,
+            value: appInterface.application_interface_id,
+            text: appInterface.application_name,
           };
         });
         return utils.StringUtils.sortIgnoreCase(options, (o) => o.text);
@@ -461,7 +461,7 @@ export default {
         // First create a Set of all compute resource ids in the GRPs
         const groupResourceProfileCompResources = new Set(
           this.groupResourceProfiles.flatMap((grp) =>
-            grp.computePreferences.map((cp) => cp.computeResourceId)
+            grp.compute_preferences.map((cp) => cp.compute_resource_id)
           )
         );
         const options = this.computeResourceNames
@@ -478,21 +478,21 @@ export default {
       }
     },
     selectedExperimentsTabTitle() {
-      if (this.selectedExperimentSummariesKey === "allExperiments") {
+      if (this.selectedExperimentSummariesKey === "all_experiments") {
         return "All Experiments";
-      } else if (this.selectedExperimentSummariesKey === "createdExperiments") {
+      } else if (this.selectedExperimentSummariesKey === "created_experiments") {
         return "Created Experiments";
-      } else if (this.selectedExperimentSummariesKey === "runningExperiments") {
+      } else if (this.selectedExperimentSummariesKey === "running_experiments") {
         return "Running Experiments";
       } else if (
-        this.selectedExperimentSummariesKey === "completedExperiments"
+        this.selectedExperimentSummariesKey === "completed_experiments"
       ) {
         return "Completed Experiments";
       } else if (
-        this.selectedExperimentSummariesKey === "cancelledExperiments"
+        this.selectedExperimentSummariesKey === "cancelled_experiments"
       ) {
         return "Cancelled Experiments";
-      } else if (this.selectedExperimentSummariesKey === "failedExperiments") {
+      } else if (this.selectedExperimentSummariesKey === "failed_experiments") {
         return "Failed Experiments";
       } else {
         return "Experiments";
@@ -592,7 +592,7 @@ export default {
             { ignoreErrors: true }
           );
           this.experimentDetailTabs.push({
-            tabTitle: tabTitle || exp.experimentName,
+            tabTitle: tabTitle || exp.experiment_name,
             experiment: exp,
           });
           this.selectExperimentDetailsTab(experimentId);
@@ -635,7 +635,7 @@ export default {
           );
         }
         this.showExperimentDetails(
-          searchResults.results[0].experimentId,
+          searchResults.results[0].experiment_id,
           `Job ${jobId}`
         );
       }
@@ -651,7 +651,7 @@ export default {
     },
     getExperimentDetailTabsIndex(experimentId) {
       return this.experimentDetailTabs.findIndex(
-        (tab) => tab.experiment.experimentId === experimentId
+        (tab) => tab.experiment.experiment_id === experimentId
       );
     },
     removeExperimentDetailTab(experimentId) {

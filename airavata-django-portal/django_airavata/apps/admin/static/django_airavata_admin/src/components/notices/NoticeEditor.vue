@@ -29,7 +29,7 @@
         <b-form-textarea
           id="notice-message"
           type="text"
-          v-model="data.notificationMessage"
+          v-model="data.notification_message"
           required
           placeholder="Notice Message"
           :state="getValidationState('notificationMessage')"
@@ -103,12 +103,12 @@
       <b-form-group
         label="Show In Dashboard"
         label-for="showInDashboard"
-        :state="getValidationState('showInDashboard')"
+        :state="getValidationState('show_in_dashboard')"
       >
         <b-form-checkbox
           id="showInDashboard"
-          v-model="data.showInDashboard"
-          :state="getValidationState('showInDashboard')"
+          v-model="data.show_in_dashboard"
+          :state="getValidationState('show_in_dashboard')"
         >
         </b-form-checkbox>
       </b-form-group>
@@ -158,21 +158,21 @@ export default {
   },
   created() {
     //checks whether the component is used for editing or updating the notificaion
-    if (this.value.notificationId != null) {
+    if (this.value.notification_id != null) {
       this.editNotification = true;
       this.inputPublishedTime = new moment(
-        this.value.publishedTime.toISOString()
+        this.value.published_time.toISOString()
       )
         .utc()
         .format();
       this.inputExpirationTime = new moment(
-        this.value.expirationTime.toISOString()
+        this.value.expiration_time.toISOString()
       )
         .utc()
         .format();
       this.data.priority = this.value.priority.name;
-      this.data.showInDashboard = this.value.showInDashboard;
-      this.today = new moment(this.value.expirationTime.toISOString()).format();
+      this.data.show_in_dashboard = this.value.show_in_dashboard;
+      this.today = new moment(this.value.expiration_time.toISOString()).format();
     }
   },
   data() {
@@ -227,10 +227,10 @@ export default {
   },
   watch: {
     inputExpirationTime() {
-      this.data.expirationTime = this.inputExpirationTime;
+      this.data.expiration_time = this.inputExpirationTime;
     },
     inputPublishedTime() {
-      this.data.publishedTime = this.inputPublishedTime;
+      this.data.published_time = this.inputPublishedTime;
     },
   },
 };

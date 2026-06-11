@@ -13,7 +13,7 @@
           <b-form-input
             id="image-name"
             type="text"
-            v-model="parser.imageName"
+            v-model="parser.image_name"
           />
         </b-form-group>
       </div>

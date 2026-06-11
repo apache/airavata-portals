@@ -5,47 +5,51 @@ import DataType from "./DataType";
 import Experiment from "./Experiment";
 
 const FIELDS = [
-  "applicationInterfaceId",
-  "applicationName",
-  "applicationDescription",
+  "application_interface_id",
+  "application_name",
+  "application_description",
   {
-    name: "applicationModules",
+    name: "application_modules",
     type: "string",
     list: true,
   },
-  // When saving/updating, the order of the inputs in the applicationInputs
-  // array determines the 'inputOrder' that will be applied to each input on the
-  // backend. Updating 'inputOrder' will have no effect.
+  // When saving/updating, the order of the inputs in the application_inputs
+  // array determines the 'input_order' that will be applied to each input on
+  // the backend. Updating 'input_order' will have no effect.
   {
-    name: "applicationInputs",
+    name: "application_inputs",
     type: InputDataObjectType,
     list: true,
     default: BaseModel.defaultNewInstance(Array),
   },
   {
-    name: "applicationOutputs",
+    name: "application_outputs",
     type: OutputDataObjectType,
     list: true,
     default: BaseModel.defaultNewInstance(Array),
   },
   {
-    name: "archiveWorkingDirectory",
+    name: "archive_working_directory",
     type: "boolean",
     default: false,
   },
   {
-    name: "hasOptionalFileInputs",
+    name: "has_optional_file_inputs",
     type: "boolean",
     default: false,
   },
-  "userHasWriteAccess",
+  // WithAccess-merged scalar (not on the proto).
+  "user_has_write_access",
+  // Portal-only queue-settings overrides: not on the proto and not merged into
+  // the read response; the backend persists them from the write request body
+  // (snake_case keys) into the ApplicationSettings model.
   {
-    name: "showQueueSettings",
+    name: "show_queue_settings",
     type: "boolean",
     default: true,
   },
   {
-    name: "queueSettingsCalculatorId",
+    name: "queue_settings_calculator_id",
     type: "string",
     default: null,
   },
@@ -77,26 +81,26 @@ export default class ApplicationInterfaceDefinition extends BaseModel {
         },
       },
     });
-    if (!this.applicationOutputs) {
-      this.applicationOutputs = [];
+    if (!this.application_outputs) {
+      this.application_outputs = [];
     }
-    this.applicationOutputs.push(stdout, stderr);
+    this.application_outputs.push(stdout, stderr);
   }
 
   createExperiment() {
     const experiment = new Experiment();
     experiment.populateInputsOutputsFromApplicationInterface(this);
-    experiment.executionId = this.applicationInterfaceId;
+    experiment.execution_id = this.application_interface_id;
     return experiment;
   }
 
   get applicationModuleId() {
-    if (!this.applicationModules || this.applicationModules.length > 1) {
+    if (!this.application_modules || this.application_modules.length > 1) {
       throw new Error(
         `No unique application module exists for interface
-        ${this.applicationName}: modules=${this.applicationModules}`
+        ${this.application_name}: modules=${this.application_modules}`
       );
     }
-    return this.applicationModules[0];
+    return this.application_modules[0];
   }
 }

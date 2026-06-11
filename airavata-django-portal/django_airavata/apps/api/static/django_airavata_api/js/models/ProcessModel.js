@@ -8,37 +8,37 @@ import ErrorModel from "./ErrorModel";
 import ProcessWorkflow from "./ProcessWorkflow";
 
 const FIELDS = [
-  "processId",
-  "experimentId",
+  "process_id",
+  "experiment_id",
   {
-    name: "creationTime",
-    type: Date,
+    name: "creation_time",
+    type: "date",
   },
   {
-    name: "lastUpdateTime",
-    type: Date,
+    name: "last_update_time",
+    type: "date",
   },
   {
-    name: "processStatuses",
+    name: "process_statuses",
     type: ProcessStatus,
     list: true,
   },
-  "processDetail",
-  "applicationInterfaceId",
-  "applicationDeploymentId",
-  "computeResourceId",
+  "process_detail",
+  "application_interface_id",
+  "application_deployment_id",
+  "compute_resource_id",
   {
-    name: "processInputs",
+    name: "process_inputs",
     type: InputDataObjectType,
     list: true,
   },
   {
-    name: "processOutputs",
+    name: "process_outputs",
     type: OutputDataObjectType,
     list: true,
   },
   {
-    name: "processResourceSchedule",
+    name: "process_resource_schedule",
     type: ComputationalResourceSchedulingModel,
   },
   {
@@ -46,25 +46,25 @@ const FIELDS = [
     type: Task,
     list: true,
   },
-  "taskDag",
+  "task_dag",
   {
-    name: "processErrors",
+    name: "process_errors",
     type: ErrorModel,
     list: true,
   },
-  "gatewayExecutionId",
-  "enableEmailNotification",
-  "emailAddresses",
-  "inputStorageResourceId",
-  "outputStorageResourceId",
-  "userDn",
-  "generateCert",
-  "experimentDataDir",
-  "userName",
-  "useUserCRPref",
-  "groupResourceProfileId",
+  "gateway_execution_id",
+  "enable_email_notification",
+  "email_addresses",
+  "input_storage_resource_id",
+  "output_storage_resource_id",
+  "user_dn",
+  "generate_cert",
+  "experiment_data_dir",
+  "user_name",
+  "use_user_cr_pref",
+  "group_resource_profile_id",
   {
-    name: "processWorkflows",
+    name: "process_workflows",
     type: ProcessWorkflow,
     list: true,
   },
@@ -81,14 +81,14 @@ export default class ProcessModel extends BaseModel {
   get sortedTasks() {
     const tasksArrCopy = this.tasks.slice();
     tasksArrCopy.sort((a, b) => {
-      const aIndex = this.taskDagArray.findIndex((t) => t === a.taskId);
-      const bIndex = this.taskDagArray.findIndex((t) => t === b.taskId);
+      const aIndex = this.taskDagArray.findIndex((t) => t === a.task_id);
+      const bIndex = this.taskDagArray.findIndex((t) => t === b.task_id);
       return aIndex - bIndex;
     });
     return tasksArrCopy;
   }
 
   get taskDagArray() {
-    return this.taskDag ? this.taskDag.split(",") : [];
+    return this.task_dag ? this.task_dag.split(",") : [];
   }
 }

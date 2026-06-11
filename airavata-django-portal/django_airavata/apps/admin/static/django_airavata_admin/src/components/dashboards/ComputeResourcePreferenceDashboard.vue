@@ -7,18 +7,18 @@
   >
     <template slot="item-list" slot-scope="slotProps">
       <b-table striped hover :fields="fields" :items="slotProps.items">
-        <template slot="cell(updatedTime)" slot-scope="data">
+        <template slot="cell(updated_time)" slot-scope="data">
           <human-date :date="data.value" />
         </template>
         <template slot="cell(action)" slot-scope="data">
           <router-link
             class="action-link"
-            v-if="data.item.userHasWriteAccess"
+            v-if="data.item.user_has_write_access"
             :to="{
               name: 'group_resource_preference',
               params: {
                 value: data.item,
-                id: data.item.groupResourceProfileId,
+                id: data.item.group_resource_profile_id,
               },
             }"
           >
@@ -27,12 +27,12 @@
           </router-link>
           <router-link
             class="action-link"
-            v-if="!data.item.userHasWriteAccess"
+            v-if="!data.item.user_has_write_access"
             :to="{
               name: 'group_resource_preference',
               params: {
                 value: data.item,
-                id: data.item.groupResourceProfileId,
+                id: data.item.group_resource_profile_id,
               },
             }"
           >
@@ -40,12 +40,12 @@
             <i class="fa fa-eye" aria-hidden="true"></i>
           </router-link>
           <delete-link
-            v-if="data.item.userHasWriteAccess"
+            v-if="data.item.user_has_write_access"
             class="action-link"
             @delete="removeGroupResourceProfile(data.item)"
           >
             Are you sure you want to delete Group Resource Profile
-            <strong>{{ data.item.groupResourceProfileName }}</strong
+            <strong>{{ data.item.group_resource_profile_name }}</strong
             >?
           </delete-link>
         </template>
@@ -71,11 +71,11 @@ export default {
       fields: [
         {
           label: "Name",
-          key: "groupResourceProfileName",
+          key: "group_resource_profile_name",
         },
         {
           label: "Updated",
-          key: "updatedTime",
+          key: "updated_time",
         },
         {
           label: "Action",
@@ -99,7 +99,7 @@ export default {
     },
     removeGroupResourceProfile: function (groupResourceProfile) {
       services.GroupResourceProfileService.delete({
-        lookup: groupResourceProfile.groupResourceProfileId,
+        lookup: groupResourceProfile.group_resource_profile_id,
       })
         .then(() => services.GroupResourceProfileService.list())
         .then(

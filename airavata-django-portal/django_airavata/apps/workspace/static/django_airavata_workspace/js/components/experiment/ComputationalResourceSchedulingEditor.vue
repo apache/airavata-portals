@@ -5,8 +5,8 @@
         <b-form-group
           label="Compute Resource"
           label-for="compute-resource"
-          :feedback="getValidationFeedback('resourceHostId')"
-          :state="getValidationState('resourceHostId')"
+          :feedback="getValidationFeedback("resource_host_id")"
+          :state="getValidationState("resource_host_id")"
         >
           <b-form-select
             id="compute-resource"
@@ -14,7 +14,7 @@
             :options="computeResourceOptions"
             required
             @change="computeResourceChanged"
-            :state="getValidationState('resourceHostId')"
+            :state="getValidationState("resource_host_id")"
             :disabled="
               !computeResourceOptions || computeResourceOptions.length === 0
             "
@@ -76,7 +76,7 @@ export default {
       computeResources: {},
       applicationDeployments: [],
       selectedGroupResourceProfileData: null,
-      resourceHostId: this.value.resourceHostId,
+      resourceHostId: this.value.resource_host_id,
       invalidQueueSettings: false,
       workspacePreferences: null,
     };
@@ -103,10 +103,10 @@ export default {
     computeResourceOptions: function () {
       const computeResourceOptions = this.applicationDeployments.map((dep) => {
         return {
-          value: dep.computeHostId,
+          value: dep.compute_host_id,
           text:
-            dep.computeHostId in this.computeResources
-              ? this.computeResources[dep.computeHostId]
+            dep.compute_host_id in this.computeResources
+              ? this.computeResources[dep.compute_host_id]
               : "",
         };
       });
@@ -117,11 +117,11 @@ export default {
       if (this.selectedGroupResourceProfileData === null) {
         return null;
       }
-      return this.selectedGroupResourceProfileData.computeResourcePolicies.find(
+      return this.selectedGroupResourceProfileData.compute_resource_policies.find(
         (crp) => {
           return (
-            crp.computeResourceId ===
-            this.localComputationalResourceScheduling.resourceHostId
+            crp.compute_resource_id ===
+            this.localComputationalResourceScheduling.resource_host_id
           );
         }
       );
@@ -130,11 +130,11 @@ export default {
       if (this.selectedGroupResourceProfileData === null) {
         return null;
       }
-      return this.selectedGroupResourceProfileData.batchQueueResourcePolicies.filter(
+      return this.selectedGroupResourceProfileData.batch_queue_resource_policies.filter(
         (bqrp) => {
           return (
-            bqrp.computeResourceId ===
-            this.localComputationalResourceScheduling.resourceHostId
+            bqrp.compute_resource_id ===
+            this.localComputationalResourceScheduling.resource_host_id
           );
         }
       );
@@ -148,12 +148,12 @@ export default {
       }
       // Find application deployment that corresponds to this compute resource
       let selectedApplicationDeployment = this.applicationDeployments.find(
-        (dep) => dep.computeHostId === this.resourceHostId
+        (dep) => dep.compute_host_id === this.resourceHostId
       );
       if (!selectedApplicationDeployment) {
         throw new Error("Failed to find application deployment!");
       }
-      return selectedApplicationDeployment.appDeploymentId;
+      return selectedApplicationDeployment.app_deployment_id;
     },
     validation() {
       const queueInfo = {}; // QueueSettingsEditor will validate queue information
@@ -167,7 +167,7 @@ export default {
   },
   methods: {
     computeResourceChanged: function (selectedComputeResourceId) {
-      this.data.resourceHostId = selectedComputeResourceId;
+      this.data.resource_host_id = selectedComputeResourceId;
     },
     loadApplicationDeployments: function (appModuleId, groupResourceProfileId) {
       services.ApplicationDeploymentService.list(
@@ -222,7 +222,7 @@ export default {
       // ComputationalResourceSchedulingModel instance but doesn't know
       // the resourceHostId so we need to copy it back into the instance
       // whenever it changes
-      this.localComputationalResourceScheduling.resourceHostId = this.resourceHostId;
+      this.localComputationalResourceScheduling.resource_host_id = this.resourceHostId;
       this.$emit("input", this.data);
     },
     queueSettingsValidityChanged(valid) {
@@ -282,7 +282,7 @@ export default {
       );
       if (
         this.selectedGroupResourceProfileData &&
-        this.selectedGroupResourceProfileData.groupResourceProfileId !==
+        this.selectedGroupResourceProfileData.group_resource_profile_id !==
           newGroupResourceProfileId
       ) {
         this.loadGroupResourceProfile();

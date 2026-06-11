@@ -40,7 +40,7 @@
         >
           <span slot="permissions-header"
             >Inherited {{ parentEntityLabel }} Permissions
-            <!-- <small class="text-muted" v-if="parentEntityOwner">Owned by {{parentEntityOwner.firstName}} {{parentEntityOwner.lastName}} ({{parentEntityOwner.email}})</small> -->
+            <!-- <small class="text-muted" v-if="parentEntityOwner">Owned by {{parentEntityOwner.first_name}} {{parentEntityOwner.last_name}} ({{parentEntityOwner.email}})</small> -->
           </span>
         </shared-entity-editor>
       </template>
@@ -107,18 +107,18 @@ export default {
       return this.combinedUsers.length;
     },
     userNames: function () {
-      return this.combinedUsers.map((u) => u.firstName + " " + u.lastName);
+      return this.combinedUsers.map((u) => u.first_name + " " + u.last_name);
     },
     combinedUsers() {
       const users = [];
-      if (this.localSharedEntity && this.localSharedEntity.userPermissions) {
+      if (this.localSharedEntity && this.localSharedEntity.user_permissions) {
         users.push(
-          ...this.localSharedEntity.userPermissions.map((up) => up.user)
+          ...this.localSharedEntity.user_permissions.map((up) => up.user)
         );
       }
-      if (this.parentSharedEntity && this.parentSharedEntity.userPermissions) {
+      if (this.parentSharedEntity && this.parentSharedEntity.user_permissions) {
         users.push(
-          ...this.parentSharedEntity.userPermissions.map((up) => up.user)
+          ...this.parentSharedEntity.user_permissions.map((up) => up.user)
         );
         if (this.parentEntityOwner) {
           users.push(this.parentEntityOwner);
@@ -127,8 +127,8 @@ export default {
       return users;
     },
     filteredGroupPermissions: function () {
-      if (this.localSharedEntity && this.localSharedEntity.groupPermissions) {
-        return this.localSharedEntity.groupPermissions;
+      if (this.localSharedEntity && this.localSharedEntity.group_permissions) {
+        return this.localSharedEntity.group_permissions;
       } else {
         return [];
       }
@@ -136,9 +136,9 @@ export default {
     combinedGroups() {
       const groups = [];
       groups.push(...this.filteredGroupPermissions.map((gp) => gp.group));
-      if (this.parentSharedEntity && this.parentSharedEntity.groupPermissions) {
+      if (this.parentSharedEntity && this.parentSharedEntity.group_permissions) {
         groups.push(
-          ...this.parentSharedEntity.groupPermissions.map((gp) => gp.group)
+          ...this.parentSharedEntity.group_permissions.map((gp) => gp.group)
         );
       }
       return groups;
@@ -156,21 +156,21 @@ export default {
       // Enable share button if new entity or user is the entity's owner
       return (
         this.localSharedEntity &&
-        (!this.localSharedEntity.entityId ||
-          this.localSharedEntity.isOwner ||
-          this.localSharedEntity.hasSharingPermission)
+        (!this.localSharedEntity.entity_id ||
+          this.localSharedEntity.is_owner ||
+          this.localSharedEntity.has_sharing_permission)
       );
     },
     hasParentSharedEntityPermissions() {
       return (
         this.parentSharedEntity &&
-        (this.parentSharedEntity.userPermissions.length > 0 ||
-          this.parentSharedEntity.groupPermissions.length > 0)
+        (this.parentSharedEntity.user_permissions.length > 0 ||
+          this.parentSharedEntity.group_permissions.length > 0)
       );
     },
     parentEntityOwner() {
       // Only show the parent entity owner when not the same as current user
-      if (this.parentSharedEntity && !this.parentSharedEntity.isOwner) {
+      if (this.parentSharedEntity && !this.parentSharedEntity.is_owner) {
         return this.parentSharedEntity.owner;
       } else {
         return null;
@@ -194,7 +194,7 @@ export default {
       }
       if (
         !this.entityId &&
-        (!this.sharedEntity || !this.sharedEntity.entityId) &&
+        (!this.sharedEntity || !this.sharedEntity.entity_id) &&
         (!this.defaultGatewayUsersGroup ||
           !this.adminsGroup ||
           !this.readOnlyAdminsGroup)
@@ -203,11 +203,11 @@ export default {
           services.GroupService.list({ limit: -1 }).then((groups) => {
             this.groups = groups;
             this.defaultGatewayUsersGroup = groups.find(
-              (g) => g.isDefaultGatewayUsersGroup
+              (g) => g.is_default_gateway_users_group
             );
-            this.adminsGroup = groups.find((g) => g.isGatewayAdminsGroup);
+            this.adminsGroup = groups.find((g) => g.is_gateway_admins_group);
             this.readOnlyAdminsGroup = groups.find(
-              (g) => g.isReadOnlyGatewayAdminsGroup
+              (g) => g.is_read_only_gateway_admins_group
             );
           })
         );
@@ -228,7 +228,7 @@ export default {
           this.localSharedEntity = new models.SharedEntity();
         }
         if (
-          !this.localSharedEntity.entityId &&
+          !this.localSharedEntity.entity_id &&
           this.autoAddDefaultGatewayUsersGroup &&
           this.defaultGatewayUsersGroup
         ) {
@@ -238,7 +238,7 @@ export default {
           this.emitUnsavedEvent();
         }
         if (
-          !this.localSharedEntity.entityId &&
+          !this.localSharedEntity.entity_id &&
           this.autoAddAdminGroups &&
           this.adminsGroup &&
           this.readOnlyAdminsGroup
@@ -251,22 +251,22 @@ export default {
           this.emitUnsavedEvent();
         }
         if (
-          this.localSharedEntity.entityId &&
+          this.localSharedEntity.entity_id &&
           this.autoAddAdminGroups &&
-          this.localSharedEntity.isOwner
+          this.localSharedEntity.is_owner
         ) {
           // AIRAVATA-3297 Admins group used to get WRITE permission, but the
           // new default is MANAGE_SHARING so update if necessary
           // Since autoAddAdminGroups is true, there should already be an adminsGroupPermission
-          const adminsGroupPermission = this.localSharedEntity.groupPermissions.find(
-            (gp) => gp.group.isGatewayAdminsGroup
+          const adminsGroupPermission = this.localSharedEntity.group_permissions.find(
+            (gp) => gp.group.is_gateway_admins_group
           );
           if (
             adminsGroupPermission &&
-            adminsGroupPermission.permissionType !==
+            adminsGroupPermission.permission_type !==
               models.ResourcePermissionType.MANAGE_SHARING
           ) {
-            adminsGroupPermission.permissionType =
+            adminsGroupPermission.permission_type =
               models.ResourcePermissionType.MANAGE_SHARING;
             this.emitUnsavedEvent();
           }
@@ -294,10 +294,10 @@ export default {
       // we'll just emit 'unsaved' to let parent know that sharing has changed.
       // It will be up to parent to call `mergeAndSave(entityId)` once there is
       // an entityId or merge the sharedEntity itself.
-      if (this.localSharedEntity.entityId) {
+      if (this.localSharedEntity.entity_id) {
         services.SharedEntityService.update({
           data: this.localSharedEntity,
-          lookup: this.localSharedEntity.entityId,
+          lookup: this.localSharedEntity.entity_id,
         }).then((sharedEntity) => {
           this.localSharedEntity = sharedEntity;
           this.emitSavedEvent();

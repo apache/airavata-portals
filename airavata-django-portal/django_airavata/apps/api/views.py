@@ -9,20 +9,14 @@ from urllib.parse import quote
 
 from airavata_sdk.helpers import experiment_orchestration, queue_settings
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.decorators.gzip import gzip_page
-from rest_framework import mixins, pagination, status
-from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.exceptions import ParseError
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.renderers import JSONRenderer
-from rest_framework.response import Response
-from rest_framework.views import APIView
 
+from django_airavata import context_processors
+from django_airavata.apps.api import web
 from django_airavata.apps.admin.models import UserDataArchiveEntry
 from django_airavata.apps.api.view_utils import (
     APIBackedViewSet,
@@ -31,15 +25,13 @@ from django_airavata.apps.api.view_utils import (
     DataProductSharedDirPermission,
     GenericAPIBackedViewSet,
     IsInAdminsGroupPermission,
+    SdkResourceViewSet,
     UserStorageSharedDirPermission
 )
 from django_airavata.apps.auth import iam_admin_client
-from django_airavata.apps.auth.models import EmailVerification
 
 from . import (
     exceptions,
-    grpc_adapters,
-    grpc_requests,
     helpers,
     models,
     output_views,
@@ -71,17 +63,8 @@ _data_product_file_path = view_utils.data_product_file_path
 
 def _storage_upload_and_register(request, dir_path, uploaded_file, name=None,
                                  content_type=None, experiment_id=None):
-    """Upload a file to user storage and register a data product for it (gRPC).
-
-    Writes the bytes via the ``storage`` facade (the path is the full file path,
-    ``~/``-prefixed so the backend resolves it against the storage root, or
-    relative to the experiment data dir when ``experiment_id`` is given), then
-    registers a data product via the ``research`` facade so the file has a
-    canonical product URI. Returns the registered data product adapted to the
-    ``DataProductSerializer`` shape. Replaces the legacy
-    ``user_storage.save``/``save_input_file`` (which transferred bytes and
-    registered the data product in one call).
-    """
+    """Write the bytes via the ``storage`` facade, then register a data product
+    via the ``research`` facade so the file gets a canonical product URI."""
     storage = request.airavata.storage
     name = name or os.path.basename(getattr(uploaded_file, 'name', '') or '')
     # Full file path resolved against the storage root (or experiment data dir).
@@ -92,10 +75,14 @@ def _storage_upload_and_register(request, dir_path, uploaded_file, name=None,
         path=upload_path, content=content, name=name,
         content_type=content_type or '')
     # The upload response is minimal; resolve the absolute path the backend wrote
-    # to and register the full data product.
+    # to and register the full data product via the SDK research_resources
+    # helpers (which absorbed the legacy ``grpc_requests.data_product_for_upload``
+    # proto-assembly).
+    from airavata_sdk.helpers import research_resources
     metadata = storage.get_file_metadata(upload_path)
-    product_uri = request.airavata.research.register_data_product(
-        grpc_requests.data_product_for_upload(
+    product_uri = research_resources.register_data_product(
+        request.airavata,
+        research_resources.data_product_for_upload(
             gateway_id=settings.GATEWAY_ID,
             owner_name=request.user.username,
             product_name=name,
@@ -106,50 +93,107 @@ def _storage_upload_and_register(request, dir_path, uploaded_file, name=None,
     return request.airavata.research.get_data_product(product_uri)
 
 
+def _render_uploaded_data_product(request, data_product):
+    """Snake_case proto-direct render of a freshly registered upload.
+
+    Wrapped in a ``WithAccess`` so the frontend ``DataProduct`` model receives
+    ``is_owner`` / ``user_has_write_access``: the uploader owns the new file, so
+    both are True (matching the legacy owner-has-write rule).
+    """
+    from airavata_sdk.helpers._envelope import WithAccess
+
+    from django_airavata.apps.api.proto_render import to_jsonable
+    is_owner = bool(data_product.owner_name) and (
+        data_product.owner_name == request.user.username)
+    return to_jsonable(WithAccess(
+        message=data_product, is_owner=is_owner, user_has_write_access=True))
+
+
 class GroupViewSet(APIBackedViewSet):
-    serializer_class = serializers.GroupSerializer
+    """Groups resource. SDK returns ``WithGroupAccess[GroupModel]``.
+
+    The ``user_added_to_group`` notification fan-out (needs ``request`` +
+    ``iam.get_user_profile_by_id`` + a Django signal) stays in the portal; the
+    SDK create/update helpers return the raw proto + the set of newly added
+    member ids so this ViewSet can replay it.
+    """
+
     lookup_field = 'group_id'
     pagination_class = APIResultPagination
     pagination_viewname = 'django_airavata_api:group-list'
 
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import sharing_resources
+        return sharing_resources
+
+    def _gateway_groups(self):
+        # The middleware stashes a camelCase map in the session; the SDK helpers
+        # want snake_case keys. Translate when present, else None (helper fetches
+        # it via GetGatewayGroups).
+        gg = self.request.session.get('GATEWAY_GROUPS')
+        if gg:
+            return {
+                'admins_group_id': gg['adminsGroupId'],
+                'read_only_admins_group_id': gg['readOnlyAdminsGroupId'],
+                'default_gateway_users_group_id':
+                    gg['defaultGatewayUsersGroupId'],
+            }
+        return None
+
     def get_list(self):
+        """Iterator yielding ``WithGroupAccess[GroupModel]`` for the gateway."""
         view = self
 
         class GroupResultsIterator(APIResultIterator):
             def get_results(self, limit=-1, offset=0):
-                groups = list(view.request.airavata.sharing.gm_get_groups())
-                end = offset + limit if limit > 0 else len(groups)
-                return groups[offset:end] if groups else []
+                return view._sdk().list_groups(
+                    view.request.airavata, limit=limit, offset=offset,
+                    gateway_groups=view._gateway_groups())
 
         return GroupResultsIterator()
 
     def get_instance(self, lookup_value):
-        return self.request.airavata.sharing.gm_get_group(lookup_value)
+        """Return ``WithGroupAccess[GroupModel]`` for *lookup_value*."""
+        return self._sdk().get_group(
+            self.request.airavata, lookup_value,
+            gateway_groups=self._gateway_groups())
 
-    def perform_create(self, serializer):
-        group = serializer.save()
-        group_id = self.request.airavata.sharing.gm_create_group(group)
-        group.id = group_id
-        users_added_to_group = set(group.members) - {group.owner_id}
-        self._send_users_added_to_group(users_added_to_group, group)
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_list()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            return self.get_paginated_response(list(page))
+        return web.Response(queryset.get_results())
 
-    def perform_update(self, serializer):
-        group = serializer.save()
-        sharing = self.request.airavata.sharing
-        if len(serializer.added_members) > 0:
-            sharing.gm_add_users_to_group(serializer.added_members, group.id)
-            self._send_users_added_to_group(serializer.added_members, group)
-        if len(serializer.removed_members) > 0:
-            sharing.gm_remove_users_from_group(
-                serializer.removed_members, group.id)
-        if len(serializer.added_admins) > 0:
-            sharing.gm_add_group_admins(group.id, serializer.added_admins)
-        if len(serializer.removed_admins) > 0:
-            sharing.gm_remove_group_admins(group.id, serializer.removed_admins)
-        sharing.gm_update_group(group)
+    def retrieve(self, request, *args, **kwargs):
+        return web.Response(self.get_object())
 
-    def perform_destroy(self, group):
-        self.request.airavata.sharing.gm_delete_group(group.id, group.owner_id)
+    def create(self, request, *args, **kwargs):
+        data = request.data if isinstance(request.data, dict) else {}
+        result, group, added_members = self._sdk().create_group(
+            request.airavata, data, gateway_groups=self._gateway_groups())
+        self._send_users_added_to_group(added_members, group)
+        return web.Response(result, status=web.status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        group_id = self.kwargs[self.lookup_field]
+        data = request.data if isinstance(request.data, dict) else {}
+        result, group, added_members = self._sdk().update_group(
+            request.airavata, group_id, data,
+            gateway_groups=self._gateway_groups())
+        self._send_users_added_to_group(added_members, group)
+        return web.Response(result)
+
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def perform_destroy(self, instance):
+        # ``get_object`` now yields a ``WithGroupAccess`` envelope, so delegate
+        # to the SDK ``delete_group`` (which re-fetches the proto to recover the
+        # ``owner_id`` the DeleteGroup RPC requires) keyed on the lookup id.
+        self._sdk().delete_group(
+            self.request.airavata, self.kwargs[self.lookup_field])
 
     def _send_users_added_to_group(self, internal_user_ids, group):
         for internal_user_id in internal_user_ids:
@@ -163,58 +207,50 @@ class GroupViewSet(APIBackedViewSet):
                 request=self.request)
 
 
-class ProjectViewSet(APIBackedViewSet):
-    serializer_class = serializers.ProjectSerializer
+class ProjectViewSet(web.mixins.DestroyModelMixin, SdkResourceViewSet):
+    """Projects resource. SDK returns ``WithAccess[Project]``."""
+
     lookup_field = 'project_id'
     pagination_class = APIResultPagination
     pagination_viewname = 'django_airavata_api:project-list'
+    paginate = True
 
-    def get_list(self):
-        view = self
+    list_fn = 'list_projects'
+    get_fn = 'get_project'
+    create_fn = 'create_project'
+    update_fn = 'update_project'
 
-        class ProjectResultIterator(APIResultIterator):
-            def get_results(self, limit=-1, offset=0):
-                return view.request.airavata.research.get_user_projects(
-                    gateway_id=view.gateway_id, user_name=view.username,
-                    limit=limit, offset=offset)
+    @staticmethod
+    def sdk():
+        from airavata_sdk.helpers import research_resources
+        return research_resources
 
-        return ProjectResultIterator()
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        self._update_most_recent_project(response.data.message.project_id)
+        return response
 
-    def get_instance(self, lookup_value):
-        return self.request.airavata.research.get_project(lookup_value)
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        self._update_most_recent_project(self.kwargs[self.lookup_field])
+        return response
 
-    def perform_create(self, serializer):
-        project = serializer.save(
-            owner=self.username,
-            gateway_id=self.gateway_id)
-        project_id = self.request.airavata.research.create_project(
-            self.gateway_id, project)
-        project.project_id = project_id
-        self._update_most_recent_project(project_id)
+    def perform_destroy(self, instance):
+        # ``get_object`` yields a ``WithAccess`` envelope; the proto is under
+        # ``.message`` (the dataclass doesn't proxy field access).
+        self.request.airavata.research.delete_project(instance.message.project_id)
 
-    def perform_update(self, serializer):
-        project = serializer.save()
-        self.request.airavata.research.update_project(
-            project.project_id, project)
-        self._update_most_recent_project(project.project_id)
-
-    @action(detail=False)
+    @web.action(detail=False)
     def list_all(self, request):
-        projects = self.request.airavata.research.get_user_projects(
-            gateway_id=self.gateway_id, user_name=self.username,
-            limit=-1, offset=0)
-        serializer = serializers.ProjectSerializer(
-            projects, many=True, context={'request': request})
-        return Response(serializer.data)
+        return web.Response(self.sdk().list_projects(request.airavata))
 
-    @action(detail=True)
+    @web.action(detail=True)
     def experiments(self, request, project_id=None):
-        experiments = list(
-            request.airavata.research.get_experiments_in_project(
-                project_id, -1, 0))
-        serializer = serializers.ExperimentSerializer(
-            experiments, many=True, context={'request': request})
-        return Response(serializer.data)
+        # WithAccess[ExperimentModel] list, rendered proto-direct. The
+        # EXECUTING-state intermediate-output enrichment is an ExperimentViewSet
+        # detail concern and is not applied to this list.
+        return web.Response(self.sdk().get_experiments_in_project(
+            request.airavata, project_id, limit=-1, offset=0))
 
     def _update_most_recent_project(self, project_id):
         prefs = helpers.WorkspacePreferencesHelper().get(self.request)
@@ -222,40 +258,107 @@ class ProjectViewSet(APIBackedViewSet):
         prefs.save()
 
 
-class ExperimentViewSet(mixins.CreateModelMixin,
-                        mixins.RetrieveModelMixin,
-                        mixins.UpdateModelMixin,
+class ExperimentViewSet(web.mixins.CreateModelMixin,
+                        web.mixins.RetrieveModelMixin,
+                        web.mixins.UpdateModelMixin,
                         GenericAPIBackedViewSet):
-    serializer_class = serializers.ExperimentSerializer
+    """Experiments-core resource. SDK returns ``WithAccess[ExperimentModel]``
+    (the whole process/task/job tree included).
+
+    The EXECUTING-state intermediate-output enrichment is replayed by
+    ``_add_intermediate_output_information`` against the rendered snake_case dict
+    (it needs ``request.airavata`` + backend calls, so it can't live in the SDK
+    proto-direct return).
+    """
+
     lookup_field = 'experiment_id'
 
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import research_resources
+        return research_resources
+
     def get_instance(self, lookup_value):
-        return self.request.airavata.research.get_experiment(lookup_value)
+        return self._sdk().get_experiment(self.request.airavata, lookup_value)
 
-    def perform_create(self, serializer):
-        experiment = serializer.save(
-            gateway_id=self.gateway_id,
-            user_name=self.username)
-        experiment_id = self.request.airavata.research.create_experiment(
-            self.gateway_id, experiment)
+    def _render(self, with_access, request):
+        # Flatten the proto, then layer the EXECUTING-state intermediate-output
+        # enrichment on top (a plain dict is safe — ProtoJSONRenderer recurses).
+        from django_airavata.apps.api.proto_render import to_jsonable
+        data = to_jsonable(with_access)
+        self._add_intermediate_output_information(
+            with_access.message, data, request)
+        return data
+
+    def retrieve(self, request, *args, **kwargs):
+        with_access = self.get_object()
+        return web.Response(self._render(with_access, request))
+
+    def create(self, request, *args, **kwargs):
+        sdk = self._sdk()
+        data = request.data if isinstance(request.data, dict) else {}
+        result = sdk.create_experiment(request.airavata, data)
+        experiment = result.message
         self._update_workspace_preferences(
             project_id=experiment.project_id,
             group_resource_profile_id=experiment.user_configuration_data.group_resource_profile_id,
             compute_resource_id=experiment.user_configuration_data.computational_resource_scheduling.resource_host_id)
-        experiment.experiment_id = experiment_id
+        return web.Response(
+            self._render(result, request), status=web.status.HTTP_201_CREATED)
 
-    def perform_update(self, serializer):
-        experiment = serializer.save(
-            gateway_id=self.gateway_id,
-            user_name=self.username)
-        self.request.airavata.research.update_experiment(
-            experiment.experiment_id, experiment)
+    def update(self, request, *args, **kwargs):
+        sdk = self._sdk()
+        experiment_id = self.kwargs[self.lookup_field]
+        data = request.data if isinstance(request.data, dict) else {}
+        result = sdk.update_experiment(request.airavata, experiment_id, data)
+        experiment = result.message
         self._update_workspace_preferences(
             project_id=experiment.project_id,
             group_resource_profile_id=experiment.user_configuration_data.group_resource_profile_id,
             compute_resource_id=experiment.user_configuration_data.computational_resource_scheduling.resource_host_id)
+        return web.Response(self._render(result, request))
 
-    @action(methods=['post'], detail=True)
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def _add_intermediate_output_information(self, experiment, data, request):
+        """Replay the old serializer's EXECUTING-state output enrichment.
+
+        When the experiment's latest status is EXECUTING, each experiment output
+        gains an ``intermediate_output`` block (fetchability + per-output process
+        status + any already-staged data products).  This needs backend calls,
+        so it lives in the ViewSet rather than the SDK proto-direct return —
+        mirroring ``ExperimentSerializer._add_intermediate_output_information``,
+        but emitting snake_case keys and rendering the nested protos via
+        ``to_jsonable`` (no DRF serializer).
+        """
+        from airavata_sdk.generated.org.apache.airavata.model.status import (
+            status_pb2,
+        )
+        from django_airavata.apps.api.proto_render import to_jsonable
+        if not (experiment.experiment_status and
+                experiment.experiment_status[-1].state ==
+                status_pb2.ExperimentState.EXPERIMENT_STATE_EXECUTING):
+            return
+        for output in data.get("experiment_outputs", []):
+            output["intermediate_output"] = {"process_status": None}
+            try:
+                can_fetch = experiment_orchestration.can_fetch_intermediate_output(
+                    request.airavata, experiment, output["name"])
+                output["intermediate_output"]["can_fetch"] = can_fetch
+                process_status = experiment_orchestration.get_intermediate_output_process_status(
+                    request.airavata, experiment, output["name"])
+                if process_status:
+                    output["intermediate_output"]["process_status"] = (
+                        to_jsonable(process_status))
+                data_products = experiment_orchestration.get_intermediate_output_data_products(
+                    request.airavata, experiment, output["name"])
+                output["intermediate_output"]["data_products"] = [
+                    to_jsonable(dp) for dp in data_products]
+            except Exception:
+                log.debug("Failed to get intermediate output status", exc_info=True)
+
+    @web.action(methods=['post'], detail=True)
     def launch(self, request, experiment_id=None):
         try:
             experiment = request.airavata.research.get_experiment(experiment_id)
@@ -265,48 +368,52 @@ class ExperimentViewSet(mixins.CreateModelMixin,
                 experiment_id, experiment)
             experiment_orchestration.launch(
                 request.airavata, experiment_id, username=request.user.username)
-            return Response({'success': True})
+            return web.Response({'success': True})
         except Exception as e:
             log.exception(f"Failed to launch experiment {experiment_id}", extra={'request': request})
-            return Response({'success': False, 'errorMessage': str(e)})
+            return web.Response({'success': False, 'errorMessage': str(e)})
 
-    @action(methods=['get'], detail=True)
+    @web.action(methods=['get'], detail=True)
     def jobs(self, request, experiment_id=None):
-        jobs = list(request.airavata.research.get_job_details(experiment_id))
-        serializer = serializers.JobSerializer(
-            jobs, many=True, context={'request': request})
-        return Response(serializer.data)
+        # list_experiment_jobs returns raw JobModel protos; ProtoJSONRenderer
+        # flattens each to snake_case (job_state enum as NAME, int64 timestamps
+        # as epoch-millis strings).
+        return web.Response(
+            self._sdk().list_experiment_jobs(request.airavata, experiment_id))
 
-    @action(methods=['post'], detail=True)
+    @web.action(methods=['post'], detail=True)
     def clone(self, request, experiment_id=None):
         # clone() stages the input files (download+re-upload to tmp) and returns
-        # the new experiment id; re-fetch the cloned experiment via gRPC.
+        # the new experiment id; re-fetch the cloned experiment as a
+        # WithAccess[ExperimentModel] so the rendered shape matches retrieve.
         cloned_experiment_id = experiment_orchestration.clone(
             request.airavata, experiment_id, username=request.user.username)
-        cloned_experiment = request.airavata.research.get_experiment(
-            cloned_experiment_id)
-        serializer = self.serializer_class(
-            cloned_experiment, context={'request': request})
-        return Response(serializer.data)
+        with_access = self._sdk().get_experiment(
+            request.airavata, cloned_experiment_id)
+        return web.Response(self._render(with_access, request))
 
-    @action(methods=['post'], detail=True)
+    @web.action(methods=['post'], detail=True)
     def cancel(self, request, experiment_id=None):
         try:
             request.airavata.research.terminate_experiment(
                 experiment_id, self.gateway_id)
-            return Response({'success': True})
+            return web.Response({'success': True})
         except Exception as e:
             log.exception("Cancel action has thrown the following error", extra={'request': request})
             raise e
 
-    @action(methods=['post'], detail=True)
+    @web.action(methods=['post'], detail=True)
     def fetch_intermediate_outputs(self, request, experiment_id=None):
-        if "outputNames" not in request.data:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        # snake_case body in the proto-direct contract; accept the legacy
+        # camelCase key too while the frontend migrates.
+        output_names = request.data.get(
+            "output_names", request.data.get("outputNames"))
+        if output_names is None:
+            return web.Response(status=web.status.HTTP_400_BAD_REQUEST)
         try:
             experiment_orchestration.fetch_intermediate_output(
-                request.airavata, experiment_id, *request.data["outputNames"])
-            return Response({'success': True})
+                request.airavata, experiment_id, *output_names)
+            return web.Response({'success': True})
         except Exception as e:
             log.exception("fetchIntermediateOutputs failed with the following error", extra={'request': request})
             raise e
@@ -321,16 +428,24 @@ class ExperimentViewSet(mixins.CreateModelMixin,
         prefs.save()
 
 
-class ExperimentSearchViewSet(mixins.ListModelMixin, GenericAPIBackedViewSet):
-    serializer_class = serializers.ExperimentSummarySerializer
+class ExperimentSearchViewSet(web.mixins.ListModelMixin, GenericAPIBackedViewSet):
+    """Experiment-search resource (list-only). SDK returns a list of
+    ``WithAccess[ExperimentSummaryModel]``.
+
+    The gRPC ``SearchExperiments`` call takes ``filters`` as a ``map<string,
+    string>`` keyed by ``ExperimentSearchFields`` member name (the query-param
+    key already is one).
+    """
+
     pagination_class = APIResultPagination
     pagination_viewname = 'django_airavata_api:experiment-search-list'
 
-    def get_list(self):
-        view = self
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import research_resources
+        return research_resources
 
-        # gRPC SearchExperiments takes filters as a map<string, string> keyed by
-        # ExperimentSearchFields member name (the query-param key already is one).
+    def _filters(self):
         from airavata_sdk.generated.org.apache.airavata.model.experiment import (
             experiment_pb2,
         )
@@ -340,144 +455,122 @@ class ExperimentSearchViewSet(mixins.ListModelMixin, GenericAPIBackedViewSet):
         for key, value in self.request.query_params.items():
             if key in valid_fields:
                 filters[key] = value
+        return filters
+
+    def get_list(self):
+        view = self
+        filters = self._filters()
 
         class ExperimentSearchResultIterator(APIResultIterator):
             def get_results(self, limit=-1, offset=0):
-                return list(view.request.airavata.research.search_experiments(
-                    gateway_id=view.gateway_id, user_name=view.username,
-                    filters=filters, limit=limit, offset=offset))
+                return view._sdk().search_experiments(
+                    view.request.airavata, filters=filters,
+                    limit=limit, offset=offset)
 
         # Preserve query parameters when moving to next and previous links
-        return ExperimentSearchResultIterator(query_params=self.request.query_params.copy())
+        return ExperimentSearchResultIterator(
+            query_params=self.request.query_params.copy())
 
     def get_instance(self, lookup_value):
         raise NotImplementedError()
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_list()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            return self.get_paginated_response(list(page))
+        return web.Response(queryset.get_results())
 
-class FullExperimentViewSet(mixins.RetrieveModelMixin,
+
+class FullExperimentViewSet(web.mixins.RetrieveModelMixin,
                             GenericAPIBackedViewSet):
-    serializer_class = serializers.FullExperimentSerializer
+    """Full-experiment resource — a composed ``FullExperiment`` pydantic model
+    whose fields carry the component protos / ``WithAccess`` envelopes wholesale.
+
+    The ViewSet resolves the request-bound inputs the SDK cannot derive (whether
+    the caller may READ the referenced project, the gateway-admin write flag for
+    the nested module, the per-data-product write flag, and the output-views map)
+    and passes them into the SDK helper.
+    """
+
     lookup_field = 'experiment_id'
 
-    def get_instance(self, lookup_value):
-        """Get FullExperiment instance with resolved references."""
-        # TODO: move loading experiment and references to airavata_sdk?
-        experimentModel = self.request.airavata.research.get_experiment(
-            lookup_value)
-        DT = _data_type_pb2().DataType
-        outputDataProducts = [
-            self.request.airavata.research.get_data_product(output.value)
-            for output in experimentModel.experiment_outputs
-            if (output.value and
-                output.value.startswith('airavata-dp') and
-                output.type in (DT.URI, DT.STDOUT, DT.STDERR))]
-        outputDataProducts += [
-            self.request.airavata.research.get_data_product(dp)
-            for output in experimentModel.experiment_outputs
-            if (output.value and
-                output.type == DT.URI_COLLECTION)
-            for dp in output.value.split(',')
-            if output.value.startswith('airavata-dp')]
-        appInterfaceId = experimentModel.execution_id
-        try:
-            applicationInterface = (
-                self.request.airavata.research.get_application_interface(
-                    appInterfaceId))
-        except Exception as e:
-            log.warning(f"Failed to load app interface: {e}")
-            applicationInterface = None
-        exp_output_views = output_views.get_output_views(
-            self.request, experimentModel, applicationInterface)
-        inputDataProducts = [
-            self.request.airavata.research.get_data_product(inp.value)
-            for inp in experimentModel.experiment_inputs
-            if (inp.value and
-                inp.value.startswith('airavata-dp') and
-                inp.type in (DT.URI, DT.STDOUT, DT.STDERR))]
-        inputDataProducts += [
-            self.request.airavata.research.get_data_product(dp)
-            for inp in experimentModel.experiment_inputs
-            if (inp.value and
-                inp.type == DT.URI_COLLECTION)
-            for dp in inp.value.split(',')
-            if inp.value.startswith('airavata-dp')]
-        applicationModule = None
-        try:
-            if applicationInterface is not None:
-                appModuleId = applicationInterface.application_modules[0]
-                applicationModule = (
-                    self.request.airavata.research.get_application_module(
-                        appModuleId))
-            else:
-                log.warning(
-                    "Cannot load application model since app interface failed to load")
-        except Exception:
-            log.exception("Failed to load app interface/module", extra={'request': self.request})
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import research_resources
+        return research_resources
 
-        compute_resource_id = None
-        if experimentModel.HasField('user_configuration_data'):
-            user_conf = experimentModel.user_configuration_data
-            if user_conf.HasField('computational_resource_scheduling'):
-                compute_resource_id = (
-                    user_conf.computational_resource_scheduling.resource_host_id)
-        try:
-            compute_resource = (
-                self.request.airavata.compute.get_compute_resource(
-                    compute_resource_id)
-                if compute_resource_id else None)
-        except Exception:
-            log.exception("Failed to load compute resource for {}".format(
-                compute_resource_id), extra={'request': self.request})
-            compute_resource = None
-        if serializers.user_has_access(
-                self.request, experimentModel.project_id, 'READ'):
-            project = self.request.airavata.research.get_project(
-                experimentModel.project_id)
-        else:
-            # User may not have access to project, only experiment
-            project = None
-        job_details = list(
-            self.request.airavata.research.get_job_details(lookup_value))
-        full_experiment = serializers.FullExperiment(
-            experimentModel,
-            project=project,
-            outputDataProducts=outputDataProducts,
-            inputDataProducts=inputDataProducts,
-            applicationModule=applicationModule,
-            computeResource=compute_resource,
-            jobDetails=job_details,
-            outputViews=exp_output_views)
-        return full_experiment
+    def _data_product_write(self, request):
+        # Write rule (no backend calls): owner always; inside a gateway shared
+        # directory only gateway admins; otherwise allowed.
+        def _write(dp):
+            owner = dp.owner_name
+            if owner and owner == request.user.username:
+                return True
+            replicas = dp.replica_locations
+            if replicas and replicas[0].file_path:
+                if view_utils.is_shared_path(replicas[0].file_path):
+                    return request.is_gateway_admin
+            return True
+
+        return _write
+
+    def _output_views(self, request):
+        def _fn(experiment, application_interface):
+            return output_views.get_output_views(
+                request, experiment, application_interface)
+        return _fn
+
+    def retrieve(self, request, *args, **kwargs):
+        sdk = self._sdk()
+        experiment_id = self.kwargs[self.lookup_field]
+        project_has_read = serializers.user_has_access(
+            request,
+            request.airavata.research.get_experiment(
+                experiment_id).project_id,
+            'READ')
+        module_has_write = getattr(request, "is_gateway_admin", False)
+        result = sdk.get_full_experiment(
+            request.airavata,
+            experiment_id,
+            project_has_read=project_has_read,
+            module_has_write=module_has_write,
+            data_product_write_fn=self._data_product_write(request),
+            output_views_fn=self._output_views(request),
+        )
+        return web.Response(result)
 
 
-class ApplicationModuleViewSet(APIBackedViewSet):
-    serializer_class = serializers.ApplicationModuleSerializer
+class ApplicationModuleViewSet(web.mixins.DestroyModelMixin, SdkResourceViewSet):
+    """Application modules resource. SDK returns ``WithAccess[ApplicationModule]``.
+
+    A gateway-level catalog entry, not a per-user shared resource:
+    ``user_has_write_access`` is the gateway-admin flag, passed into the SDK
+    function as ``has_write``.
+    """
+
     lookup_field = 'app_module_id'
+    list_fn = 'list_application_modules'
+    get_fn = 'get_application_module'
+    create_fn = 'create_application_module'
+    update_fn = 'update_application_module'
 
-    def get_list(self):
-        return list(self.request.airavata.research.get_accessible_app_modules(
-            gateway_id=self.gateway_id))
+    @staticmethod
+    def sdk():
+        from airavata_sdk.helpers import research_resources
+        return research_resources
 
-    def get_instance(self, lookup_value):
-        return self.request.airavata.research.get_application_module(
-            lookup_value)
+    def extra_kwargs(self):
+        return {"has_write": getattr(self.request, "is_gateway_admin", False)}
 
-    def perform_create(self, serializer):
-        app_module = serializer.save()
-        app_module_id = self.request.airavata.research.register_application_module(
-            self.gateway_id, app_module)
-        app_module.app_module_id = app_module_id
-
-    def perform_update(self, serializer):
-        app_module = serializer.save()
-        self.request.airavata.research.update_application_module(
-            app_module.app_module_id, app_module)
+    def list_kwargs(self):
+        return {**self.extra_kwargs(), "accessible_only": True}
 
     def perform_destroy(self, instance):
         self.request.airavata.research.delete_application_module(
-            instance.app_module_id)
+            instance.message.app_module_id)
 
-    @action(detail=True)
+    @web.action(detail=True)
     def application_interface(self, request, app_module_id):
         all_app_interfaces = list(
             request.airavata.research.get_all_application_interfaces(
@@ -489,9 +582,17 @@ class ApplicationModuleViewSet(APIBackedViewSet):
             if app_module_id in app_interface.application_modules:
                 app_interfaces.append(app_interface)
         if len(app_interfaces) == 1:
-            serializer = serializers.ApplicationInterfaceDescriptionSerializer(
-                app_interfaces[0], context={'request': request})
-            return Response(serializer.data)
+            # The application-interface family is proto-direct: wrap the matched
+            # interface proto in a gateway-catalog WithAccess so ProtoJSONRenderer
+            # flattens it to snake_case (no hyperlink injection — the frontend
+            # builds URLs from application_interface_id).
+            from airavata_sdk.helpers._envelope import WithAccess
+            has_write = getattr(request, "is_gateway_admin", False)
+            return web.Response(WithAccess(
+                message=app_interfaces[0],
+                is_owner=False,
+                user_has_write_access=has_write,
+            ))
         elif len(app_interfaces) > 1:
             log.error(
                 "More than one application interface found for module {}: {}"
@@ -504,18 +605,14 @@ class ApplicationModuleViewSet(APIBackedViewSet):
             raise Http404("No application interface found for module id {}"
                           .format(app_module_id))
 
-    @action(detail=True)
+    @web.action(detail=True)
     def application_deployments(self, request, app_module_id):
-        all_deployments = (
-            self.request.airavata.research
-            .get_accessible_application_deployments(self.gateway_id))
-        app_deployments = [
-            dep for dep in all_deployments if dep.app_module_id == app_module_id]
-        serializer = serializers.ApplicationDeploymentDescriptionSerializer(
-            app_deployments, many=True, context={'request': request})
-        return Response(serializer.data)
+        # WithAccess[ApplicationDeploymentDescription] list (per-deployment
+        # sharing WRITE lookup), rendered proto-direct.
+        return web.Response(self.sdk().list_application_deployments_for_module(
+            request.airavata, app_module_id))
 
-    @action(methods=['post'], detail=True)
+    @web.action(methods=['post'], detail=True)
     def favorite(self, request, app_module_id):
         helper = helpers.WorkspacePreferencesHelper()
         workspace_preferences = helper.get(request)
@@ -533,7 +630,7 @@ class ApplicationModuleViewSet(APIBackedViewSet):
 
         return HttpResponse(status=204)
 
-    @action(methods=['post'], detail=True)
+    @web.action(methods=['post'], detail=True)
     def unfavorite(self, request, app_module_id):
         helper = helpers.WorkspacePreferencesHelper()
         workspace_preferences = helper.get(request)
@@ -551,28 +648,41 @@ class ApplicationModuleViewSet(APIBackedViewSet):
 
         return HttpResponse(status=204)
 
-    @action(detail=False)
+    @web.action(detail=False)
     def list_all(self, request, format=None):
-        all_modules = list(self.request.airavata.research.get_all_app_modules(
-            gateway_id=self.gateway_id))
-        serializer = self.serializer_class(
-            all_modules, many=True, context={'request': request})
-        return Response(serializer.data)
+        has_write = getattr(request, "is_gateway_admin", False)
+        return web.Response(self.sdk().list_application_modules(
+            request.airavata, has_write=has_write, accessible_only=False))
 
 
-class ApplicationInterfaceViewSet(APIBackedViewSet):
-    serializer_class = serializers.ApplicationInterfaceDescriptionSerializer
+class ApplicationInterfaceViewSet(web.mixins.DestroyModelMixin, SdkResourceViewSet):
+    """Application interfaces resource. SDK returns
+    ``WithAccess[ApplicationInterfaceDescription]``.
+
+    A gateway-level catalog entry: ``user_has_write_access`` is the gateway-admin
+    flag, passed into the SDK function as ``has_write``.
+
+    Two write-side behaviours stay in the ViewSet because they touch portal state
+    outside the proto: ``_update_input_metadata`` (proto input meta_data
+    massaging) and ``_persist_queue_settings`` (the portal ``ApplicationSettings``
+    model carrying ``show_queue_settings`` / ``queue_settings_calculator_id``).
+    """
+
     lookup_field = 'app_interface_id'
+    list_fn = 'list_application_interfaces'
+    get_fn = 'get_application_interface'
 
-    def get_list(self):
-        return list(
-            self.request.airavata.research.get_all_application_interfaces(
-                self.gateway_id))
+    @staticmethod
+    def sdk():
+        from airavata_sdk.helpers import research_resources
+        return research_resources
+
+    def extra_kwargs(self):
+        return {"has_write": getattr(self.request, "is_gateway_admin", False)}
 
     def get_instance(self, lookup_value):
         try:
-            return self.request.airavata.research.get_application_interface(
-                lookup_value)
+            return super().get_instance(lookup_value)
         except Exception:
             # If it failed to load, check to see if it exists at all
             all_interfaces = self.request.airavata.research.get_all_application_interfaces(
@@ -583,24 +693,64 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
             else:
                 raise  # re-raise
 
-    def perform_create(self, serializer):
-        application_interface = serializer.save()
+    def create(self, request, *args, **kwargs):
+        sdk = self.sdk()
+        has_write = getattr(request, "is_gateway_admin", False)
+        data = request.data if isinstance(request.data, dict) else {}
+        # Build the proto, massage input metadata, register, then re-fetch.
+        application_interface = sdk._build_application_interface(
+            request.airavata, data)
         self._update_input_metadata(application_interface)
-        log.debug("application_interface: {}".format(application_interface))
-        app_interface_id = self.request.airavata.research.register_application_interface(
-            self.gateway_id, application_interface)
-        application_interface.application_interface_id = app_interface_id
+        app_interface_id = (
+            request.airavata.research.register_application_interface(
+                self.gateway_id, application_interface))
+        result = sdk.get_application_interface(
+            request.airavata, app_interface_id, has_write=has_write)
+        return web.Response(result, status=web.status.HTTP_201_CREATED)
 
-    def perform_update(self, serializer):
-        application_interface = serializer.save()
+    def update(self, request, *args, **kwargs):
+        sdk = self.sdk()
+        app_interface_id = self.kwargs[self.lookup_field]
+        has_write = getattr(request, "is_gateway_admin", False)
+        data = request.data if isinstance(request.data, dict) else {}
+        base = request.airavata.research.get_application_interface(
+            app_interface_id)
+        application_interface = sdk._build_application_interface(
+            request.airavata, data, base=base)
+        application_interface.application_interface_id = app_interface_id
         self._update_input_metadata(application_interface)
-        self.request.airavata.research.update_application_interface(
-            application_interface.application_interface_id,
-            application_interface)
+        self._persist_queue_settings(application_interface, data)
+        request.airavata.research.update_application_interface(
+            app_interface_id, application_interface)
+        result = sdk.get_application_interface(
+            request.airavata, app_interface_id, has_write=has_write)
+        return web.Response(result)
+
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         self.request.airavata.research.delete_application_interface(
-            instance.application_interface_id)
+            instance.message.application_interface_id)
+
+    def _persist_queue_settings(self, app_interface, data):
+        """Persist the portal-only queue-settings overrides for this interface.
+
+        The legacy ``ApplicationInterfaceDescriptionSerializer.update`` wrote
+        ``show_queue_settings`` / ``queue_settings_calculator_id`` to the
+        ``ApplicationSettings`` model, keyed on the interface's first module.
+        The request body carries these as snake_case keys in *data*.
+        """
+        defaults = {}
+        if "show_queue_settings" in data:
+            defaults["show_queue_settings"] = data["show_queue_settings"]
+        if "queue_settings_calculator_id" in data:
+            defaults["queue_settings_calculator_id"] = (
+                data["queue_settings_calculator_id"])
+        if defaults and app_interface.application_modules:
+            application_module_id = app_interface.application_modules[0]
+            models.ApplicationSettings.objects.update_or_create(
+                application_module_id=application_module_id, defaults=defaults)
 
     def _update_input_metadata(self, app_interface):
         for app_input in app_interface.application_inputs:
@@ -617,56 +767,95 @@ class ApplicationInterfaceViewSet(APIBackedViewSet):
                     o["isRequired"] = app_input.is_required
                     app_input.meta_data = json.dumps(metadata)
 
-    @action(detail=True)
+    @web.action(detail=True)
     def compute_resources(self, request, app_interface_id):
         compute_resources = request.airavata.research.get_available_app_interface_compute_resources(
             app_interface_id)
-        return Response(compute_resources)
+        return web.Response(compute_resources)
 
 
 class ApplicationDeploymentViewSet(APIBackedViewSet):
-    serializer_class = serializers.ApplicationDeploymentDescriptionSerializer
+    """Application deployments resource. SDK returns
+    ``WithAccess[ApplicationDeploymentDescription]``.
+
+    The ``queues`` action renders the compute resource's ``BatchQueue`` protos
+    directly via ``to_jsonable`` (after overlaying this deployment's defaults).
+    """
+
     lookup_field = 'app_deployment_id'
 
-    def get_list(self):
-        app_module_id = self.request.query_params.get('appModuleId', None)
-        group_resource_profile_id = self.request.query_params.get(
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import research_resources
+        return research_resources
+
+    def _has_write(self, request, app_deployment_id):
+        """Per-deployment sharing-registry WRITE lookup (legacy
+        ``user_has_access``)."""
+        return request.airavata.sharing.user_has_access(
+            resource_id=app_deployment_id,
+            user_id=self.username,
+            permission_type="WRITE",
+        )
+
+    def list(self, request, *args, **kwargs):
+        sdk = self._sdk()
+        app_module_id = request.query_params.get('appModuleId', None)
+        group_resource_profile_id = request.query_params.get(
             'groupResourceProfileId', None)
         if (app_module_id and not group_resource_profile_id)\
                 or (not app_module_id and group_resource_profile_id):
-            raise ParseError("Query params appModuleId and "
+            raise web.ParseError("Query params appModuleId and "
                              "groupResourceProfileId are required together.")
         if app_module_id and group_resource_profile_id:
-            deployments = self.request.airavata.research.get_application_deployments_for_app_module_and_group_resource_profile(
-                app_module_id, group_resource_profile_id)
+            deployments = (
+                sdk.list_application_deployments_for_module_and_profile(
+                    request.airavata, app_module_id,
+                    group_resource_profile_id))
         else:
-            deployments = self.request.airavata.research.get_accessible_application_deployments(
-                self.gateway_id)
-        return list(deployments)
+            deployments = sdk.list_application_deployments(request.airavata)
+        return web.Response(deployments)
 
-    def get_instance(self, lookup_value):
-        return self.request.airavata.research.get_application_deployment(
-            lookup_value)
+    def retrieve(self, request, *args, **kwargs):
+        sdk = self._sdk()
+        app_deployment_id = self.kwargs[self.lookup_field]
+        return web.Response(
+            sdk.get_application_deployment(request.airavata, app_deployment_id))
 
-    def perform_create(self, serializer):
-        application_deployment = serializer.save()
-        app_deployment_id = self.request.airavata.research.register_application_deployment(
-            self.gateway_id, application_deployment)
-        application_deployment.app_deployment_id = app_deployment_id
+    def create(self, request, *args, **kwargs):
+        sdk = self._sdk()
+        data = request.data if isinstance(request.data, dict) else {}
+        # The legacy create did not compute user_has_write_access from sharing on
+        # the freshly created resource; the owner always has write access, so
+        # report True for the created record.
+        result = sdk.create_application_deployment(
+            request.airavata, data, has_write=True)
+        return web.Response(result, status=web.status.HTTP_201_CREATED)
 
-    def perform_update(self, serializer):
-        application_deployment = serializer.save()
-        self.request.airavata.research.update_application_deployment(
-            application_deployment.app_deployment_id,
-            application_deployment)
+    def update(self, request, *args, **kwargs):
+        sdk = self._sdk()
+        app_deployment_id = self.kwargs[self.lookup_field]
+        data = request.data if isinstance(request.data, dict) else {}
+        result = sdk.update_application_deployment(
+            request.airavata, app_deployment_id, data,
+            has_write=self._has_write(request, app_deployment_id))
+        return web.Response(result)
+
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         self.request.airavata.research.delete_application_deployment(
             instance.app_deployment_id)
 
-    @action(detail=True)
+    def get_instance(self, lookup_value):
+        return self.request.airavata.research.get_application_deployment(
+            lookup_value)
+
+    @web.action(detail=True)
     def queues(self, request, app_deployment_id):
         """Return queues for this deployment with defaults overridden by deployment defaults if they exist"""
+        from django_airavata.apps.api.proto_render import to_jsonable
         app_deployment = (
             self.request.airavata.research.get_application_deployment(
                 app_deployment_id))
@@ -687,30 +876,45 @@ class ApplicationDeploymentViewSet(APIBackedViewSet):
                 else:
                     batch_queue.is_default_queue = False
             batch_queues.append(batch_queue)
-        serializer = serializers.BatchQueueSerializer(
-            batch_queues, many=True, context={'request': request})
-        return Response(serializer.data)
+        return web.Response(to_jsonable(batch_queues))
 
 
-class ComputeResourceViewSet(mixins.RetrieveModelMixin,
+class ComputeResourceViewSet(web.mixins.RetrieveModelMixin,
                              GenericAPIBackedViewSet):
-    serializer_class = serializers.ComputeResourceDescriptionSerializer
+    """Compute-resources resource. SDK returns the raw
+    ``ComputeResourceDescription`` proto (no ownership/sharing, no envelope).
+
+    The ``all_names`` / ``all_names_list`` actions return id-keyed maps whose keys
+    are opaque compute-resource ids; they keep the default ``JSONRenderer`` via a
+    per-action ``renderer_classes`` override so those keys pass through untouched
+    (snake_case rendering would otherwise mangle them).
+    """
+
     lookup_field = 'compute_resource_id'
 
-    def get_instance(self, lookup_value, format=None):
-        return self.request.airavata.compute.get_compute_resource(lookup_value)
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import compute_resources
+        return compute_resources
 
-    @action(detail=False)
+    def get_instance(self, lookup_value, format=None):
+        return self._sdk().get_compute_resource(
+            self.request.airavata, lookup_value)
+
+    def retrieve(self, request, *args, **kwargs):
+        return web.Response(self.get_object())
+
+    @web.action(detail=False)
     def all_names(self, request, format=None):
         """Return a map of compute resource names keyed by resource id."""
-        return Response(
-            request.airavata.compute.get_all_compute_resource_names())
+        return web.Response(
+            self._sdk().list_compute_resource_names(request.airavata))
 
-    @action(detail=False)
+    @web.action(detail=False)
     def all_names_list(self, request, format=None):
         """Return a list of compute resource names keyed by resource id."""
-        all_names = request.airavata.compute.get_all_compute_resource_names()
-        return Response([
+        all_names = self._sdk().list_compute_resource_names(request.airavata)
+        return web.Response([
             {
                 'host_id': host_id,
                 'host': host,
@@ -720,134 +924,175 @@ class ComputeResourceViewSet(mixins.RetrieveModelMixin,
             } for host_id, host in all_names.items()
         ])
 
-    @action(detail=True)
+    @web.action(detail=True)
     def queues(self, request, compute_resource_id, format=None):
-        details = request.airavata.compute.get_compute_resource(
-            compute_resource_id)
-        serializer = self.serializer_class(instance=details,
-                                           context={'request': request})
-        data = serializer.data
-        return Response([queue["queueName"] for queue in data["batchQueues"]])
+        """Return the resource's batch-queue names (a plain string list)."""
+        details = self._sdk().get_compute_resource(
+            request.airavata, compute_resource_id)
+        return web.Response([queue.queue_name for queue in details.batch_queues])
 
 
-class LocalJobSubmissionView(APIView):
-    renderer_classes = (JSONRenderer,)
-
-    def get(self, request, format=None):
-        job_submission_id = request.query_params["id"]
-        local_job_submission = (
-            request.airavata.compute.get_local_job_submission(job_submission_id))
-        return Response(
-            serializers.LocalJobSubmissionSerializer(
-                local_job_submission).data)
-
-
-class CloudJobSubmissionView(APIView):
-    renderer_classes = (JSONRenderer,)
-
-    def get(self, request, format=None):
-        job_submission_id = request.query_params["id"]
-        job_submission = request.airavata.compute.get_cloud_job_submission(
-            job_submission_id)
-        return Response(
-            serializers.CloudJobSubmissionSerializer(job_submission).data)
+# Per-protocol job-submission detail views — proto-direct, thin.
+#
+# Each delegates to the SDK ``compute_resources`` helper
+# (``get_{local,ssh,unicore,cloud}_job_submission``), which returns the bare
+# facade proto directly.  ``ProtoJSONRenderer`` flattens it to snake_case JSON
+# (``MessageToDict(preserving_proto_field_name=True,
+# always_print_fields_with_no_presence=True)``: enums as member NAMES, nested
+# ``resource_job_manager`` and its enum-keyed maps included).  These resources
+# carry no hyperlink, ownership, or sharing fields, so there is no envelope and
+# no link injection.  No DRF serializer, no camelize, no dict transform.
 
 
-class SshJobSubmissionView(APIView):
-    renderer_classes = (JSONRenderer,)
+def _job_submission_sdk():
+    from airavata_sdk.helpers import compute_resources
+    return compute_resources
+
+
+class LocalJobSubmissionView(web.APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        job_submission = request.airavata.compute.get_ssh_job_submission(
-            job_submission_id)
-        return Response(
-            serializers.SshJobSubmissionSerializer(job_submission).data)
+        return web.Response(_job_submission_sdk().get_local_job_submission(
+            request.airavata, job_submission_id))
 
 
-class UnicoreJobSubmissionView(APIView):
-    renderer_classes = (JSONRenderer,)
+class CloudJobSubmissionView(web.APIView):
 
     def get(self, request, format=None):
         job_submission_id = request.query_params["id"]
-        job_submission = request.airavata.compute.get_unicore_job_submission(
-            job_submission_id)
-        return Response(
-            serializers.UnicoreJobSubmissionSerializer(job_submission).data)
+        return web.Response(_job_submission_sdk().get_cloud_job_submission(
+            request.airavata, job_submission_id))
 
 
-class GridFtpDataMovementView(APIView):
-    renderer_classes = (JSONRenderer,)
+class SshJobSubmissionView(web.APIView):
+
+    def get(self, request, format=None):
+        job_submission_id = request.query_params["id"]
+        return web.Response(_job_submission_sdk().get_ssh_job_submission(
+            request.airavata, job_submission_id))
+
+
+class UnicoreJobSubmissionView(web.APIView):
+
+    def get(self, request, format=None):
+        job_submission_id = request.query_params["id"]
+        return web.Response(_job_submission_sdk().get_unicore_job_submission(
+            request.airavata, job_submission_id))
+
+
+def _data_movement_sdk():
+    from airavata_sdk.helpers import storage_resources
+    return storage_resources
+
+
+# Per-protocol data movement — proto-direct.  Each SDK helper returns the bare
+# facade proto (``LOCALDataMovement`` / ``SCPDataMovement`` /
+# ``GridFTPDataMovement``); these resources carry no hyperlink / ownership /
+# sharing fields, so there is no envelope.  ``ProtoJSONRenderer`` flattens each
+# to snake_case JSON (``security_protocol`` as the enum member NAME, ``ssh_port``
+# as a number, ``grid_ftp_end_points`` as the snake_case proto field).  The
+# UNICORE protocol has no facade getter, so no ``UnicoreDataMovementView`` is
+# exposed (it would be a 501).
+
+
+class GridFtpDataMovementView(web.APIView):
 
     def get(self, request, format=None):
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata.storage.get_grid_ftp_data_movement(
-            data_movement_id)
-        return Response(
-            serializers.GridFtpDataMovementSerializer(data_movement).data)
+        return web.Response(_data_movement_sdk().get_grid_ftp_data_movement(
+            request.airavata, data_movement_id))
 
 
-class ScpDataMovementView(APIView):
-    renderer_classes = (JSONRenderer,)
+class ScpDataMovementView(web.APIView):
 
     def get(self, request, format=None):
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata.storage.get_scp_data_movement(
-            data_movement_id)
-        return Response(
-            serializers.ScpDataMovementSerializer(data_movement).data)
+        return web.Response(_data_movement_sdk().get_scp_data_movement(
+            request.airavata, data_movement_id))
 
 
-class LocalDataMovementView(APIView):
-    renderer_classes = (JSONRenderer,)
+class LocalDataMovementView(web.APIView):
 
     def get(self, request, format=None):
         data_movement_id = request.query_params["id"]
-        data_movement = request.airavata.storage.get_local_data_movement(
-            data_movement_id)
-        return Response(
-            serializers.LocalDataMovementSerializer(data_movement).data)
+        return web.Response(_data_movement_sdk().get_local_data_movement(
+            request.airavata, data_movement_id))
 
 
-class DataProductView(APIView):
+def _data_product_has_write(request, data_product):
+    # WRITE rule: owner always; inside a gateway shared directory only gateway
+    # admins; otherwise allowed. Request-bound, so the SDK can't derive it.
+    owner = data_product.owner_name
+    if owner and owner == request.user.username:
+        return True
+    replicas = data_product.replica_locations
+    if replicas and replicas[0].file_path:
+        if view_utils.is_shared_path(replicas[0].file_path):
+            return request.is_gateway_admin
+    return True
 
-    serializer_class = serializers.DataProductSerializer
-    permission_classes = [IsAuthenticated, DataProductSharedDirPermission]
+
+class DataProductView(web.APIView):
+    """Data product resource. SDK returns ``WithAccess[DataProductModel]``;
+    ``user_has_write_access`` is computed via :func:`_data_product_has_write`.
+
+    The PUT write body carries ``file_content_text`` (snake_case); the legacy
+    ``fileContentText`` wire key is still accepted for compatibility.
+    """
+
+    permission_classes = [web.IsAuthenticated, DataProductSharedDirPermission]
+
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import research_resources
+        return research_resources
 
     def get(self, request, format=None):
         data_product_uri = request.query_params['product-uri']
-        data_product = request.airavata.research.get_data_product(data_product_uri)
-        serializer = self.serializer_class(
-            data_product, context={'request': request})
-        return Response(serializer.data)
+        data_product = request.airavata.research.get_data_product(
+            data_product_uri)
+        has_write = _data_product_has_write(request, data_product)
+        result = self._sdk().get_data_product(
+            request.airavata, data_product_uri, has_write=has_write)
+        return web.Response(result)
 
     def put(self, request, format=None):
         data_product_uri = request.query_params['product-uri']
         data_product = request.airavata.research.get_data_product(data_product_uri)
-        if request.data and "fileContentText" in request.data:
+        # The body carries ``file_content_text`` (snake_case); the legacy
+        # ``fileContentText`` wire key is still accepted for compatibility.
+        file_content = None
+        if request.data:
+            if "file_content_text" in request.data:
+                file_content = request.data["file_content_text"]
+            elif "fileContentText" in request.data:
+                file_content = request.data["fileContentText"]
+        if file_content is not None:
             file_path = _data_product_file_path(data_product)
             if file_path is None:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return web.Response(status=web.status.HTTP_400_BAD_REQUEST)
             # Overwrite the file content in place at the replica's path.
             request.airavata.storage.upload_file(
                 path=file_path,
-                content=request.data["fileContentText"].encode("utf-8"),
+                content=file_content.encode("utf-8"),
                 name=data_product.product_name or os.path.basename(file_path))
             return self.get(request=request, format=format)
         else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return web.Response(status=web.status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(http_method_names=['POST'])
+@web.api_view(http_method_names=['POST'])
 def upload_input_file(request):
     try:
         input_file = request.FILES['file']
         data_product = _storage_upload_and_register(
             request, TMP_INPUT_FILE_UPLOAD_DIR, input_file,
             content_type=input_file.content_type)
-        serializer = serializers.DataProductSerializer(
-            data_product, context={'request': request})
-        return JsonResponse({'uploaded': True,
-                             'data-product': serializer.data})
+        return JsonResponse({
+            'uploaded': True,
+            'data-product': _render_uploaded_data_product(
+                request, data_product)})
     except Exception as e:
         log.error("Failed to upload file", exc_info=True, extra={'request': request})
         resp = JsonResponse({'uploaded': False, 'error': str(e)})
@@ -855,7 +1100,7 @@ def upload_input_file(request):
         return resp
 
 
-@api_view(http_method_names=['POST'])
+@web.api_view(http_method_names=['POST'])
 def tus_upload_finish(request):
     uploadURL = request.POST['uploadURL']
 
@@ -866,16 +1111,16 @@ def tus_upload_finish(request):
                 name=file_name, content_type=file_type)
     try:
         data_product = tus.save_tus_upload(uploadURL, save_upload)
-        serializer = serializers.DataProductSerializer(
-            data_product, context={'request': request})
-        return JsonResponse({'uploaded': True,
-                             'data-product': serializer.data})
+        return JsonResponse({
+            'uploaded': True,
+            'data-product': _render_uploaded_data_product(
+                request, data_product)})
     except Exception as e:
         return exceptions.generic_json_exception_response(e, status=400)
 
 
 @gzip_page
-@api_view()
+@web.api_view()
 def download_file(request):
     # TODO: remove this deprecated view
     warnings.warn("download_file view is deprecated; use 'download-file'", DeprecationWarning)
@@ -886,14 +1131,12 @@ def download_file(request):
         + '?data-product-uri=' + quote(data_product_uri))
 
 
-@api_view()
+@web.api_view()
 def download(request):
     """Stream the bytes of a data product's first replica.
 
-    Resolves ``?data-product-uri=`` via the gRPC research registry and streams
-    the file from the gRPC storage facade. Replaces the legacy SDK
-    download-URL/redirect path. The DataProductSerializer's ``downloadURL``
-    field points here.
+    Resolves ``?data-product-uri=`` via the research registry and streams the
+    file from the storage facade.
     """
     data_product_uri = request.GET.get('data-product-uri', '')
     try:
@@ -915,8 +1158,8 @@ def download(request):
     return response
 
 
-@api_view(http_method_names=['DELETE'])
-@permission_classes([IsAuthenticated, DataProductSharedDirPermission])
+@web.api_view(http_method_names=['DELETE'])
+@web.permission_classes([web.IsAuthenticated, DataProductSharedDirPermission])
 def delete_file(request):
     # TODO check that user has write access to this file using sharing API
     data_product_uri = request.GET.get('data-product-uri', '')
@@ -928,8 +1171,8 @@ def delete_file(request):
                     .format(data_product_uri), exc_info=True)
         raise Http404("data product does not exist") from e
     try:
-        if (data_product.gatewayId != settings.GATEWAY_ID or
-                data_product.ownerName != request.user.username):
+        if (data_product.gateway_id != settings.GATEWAY_ID or
+                data_product.owner_name != request.user.username):
             raise PermissionDenied()
         file_path = _data_product_file_path(data_product)
         if file_path is None:
@@ -940,24 +1183,48 @@ def delete_file(request):
         raise Http404(str(e)) from e
 
 
-class UserProfileViewSet(mixins.RetrieveModelMixin,
-                         mixins.ListModelMixin,
+class UserProfileViewSet(web.mixins.RetrieveModelMixin,
+                         web.mixins.ListModelMixin,
                          GenericAPIBackedViewSet):
-    serializer_class = serializers.UserProfileSerializer
+    """User profiles resource (read-only). SDK returns the raw ``UserProfile``
+    proto (no envelope)."""
 
-    def get_list(self):
-        return list(self.request.airavata.iam.get_all_user_profiles_in_gateway(
-            self.gateway_id, 0, -1))
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import iam_resources
+        return iam_resources
 
-    def get_instance(self, lookup_value):
-        return self.request.airavata.iam.get_user_profile_by_id(
-            self.request.user.username, self.gateway_id)
+    def list(self, request, *args, **kwargs):
+        data = self._sdk().get_all_user_profiles_in_gateway(
+            request.airavata, offset=0, limit=-1)
+        return web.Response(data)
+
+    def retrieve(self, request, *args, **kwargs):
+        # Matches the legacy get_instance: look up by the authenticated user,
+        # not by the URL lookup value.
+        data = self._sdk().get_user_profile(
+            request.airavata, request.user.username)
+        return web.Response(data)
 
 
 class GroupResourceProfileViewSet(APIBackedViewSet):
-    serializer_class = serializers.GroupResourceProfileSerializer
+    """Group resource profiles. SDK returns ``WithAccess[GroupResourceProfile]``.
+
+    ``user_has_write_access`` is a composite the SDK can't derive: WRITE sharing
+    on the profile id AND READ access to every credential token (the default
+    token plus each compute-preference resource-specific token). The ViewSet
+    computes it in ``_compute_has_write`` and passes it in as ``has_write``. The
+    list endpoint is unpaginated, matching the pre-migration contract.
+    """
+
     lookup_field = 'group_resource_profile_id'
 
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import compute_resources
+        return compute_resources
+
+    # get_object()/destroy still uses this.
     def get_list(self):
         return list(self.request.airavata.compute.get_group_resource_list())
 
@@ -965,355 +1232,318 @@ class GroupResourceProfileViewSet(APIBackedViewSet):
         return self.request.airavata.compute.get_group_resource_profile(
             lookup_value)
 
-    def perform_create(self, serializer):
-        group_resource_profile = serializer.save(gateway_id=self.gateway_id)
-        created = self.request.airavata.compute.create_group_resource_profile(
-            group_resource_profile)
-        group_resource_profile.group_resource_profile_id = (
-            created.group_resource_profile_id)
-        group_resource_profile.creation_time = created.creation_time
+    def _compute_has_write(self, profile):
+        # WRITE on the profile AND READ on every credential token (see class doc).
+        from django_airavata.apps.api.serializers import user_has_access
 
-    def perform_update(self, serializer):
-        original = serializer.instance
-        grp = serializer.save()
-        compute = self.request.airavata.compute
-        # Remove compute prefs / policies that are no longer present.
-        new_pref_ids = {
-            cp.compute_resource_id for cp in grp.compute_preferences}
-        for cp in original.compute_preferences:
-            if cp.compute_resource_id not in new_pref_ids:
-                compute.remove_group_compute_prefs(
-                    cp.group_resource_profile_id, cp.compute_resource_id)
-        new_policy_ids = {
-            p.resource_policy_id for p in grp.compute_resource_policies}
-        for p in original.compute_resource_policies:
-            if p.resource_policy_id and p.resource_policy_id not in new_policy_ids:
-                compute.remove_group_compute_resource_policy(
-                    p.resource_policy_id)
-        new_bq_ids = {
-            p.resource_policy_id for p in grp.batch_queue_resource_policies}
-        for p in original.batch_queue_resource_policies:
-            if p.resource_policy_id and p.resource_policy_id not in new_bq_ids:
-                compute.remove_group_batch_queue_resource_policy(
-                    p.resource_policy_id)
-        compute.update_group_resource_profile(
-            grp.group_resource_profile_id, grp)
+        request = self.request
+        if not user_has_access(
+                request, profile.group_resource_profile_id, "WRITE"):
+            return False
+        tokens = set([profile.default_credential_store_token] +
+                     [cp.resource_specific_credential_store_token
+                      for cp in profile.compute_preferences])
 
-    def perform_destroy(self, instance):
-        self.request.airavata.compute.remove_group_resource_profile(
-            instance.group_resource_profile_id)
+        def check_token(token):
+            return not token or user_has_access(request, token, "READ")
+
+        return all(map(check_token, tokens))
+
+    def list(self, request, *args, **kwargs):
+        # The composite write flag needs each profile proto, so resolve the map
+        # from the raw list, then let the SDK wrap each proto in WithAccess.
+        profiles = self.get_list()
+        has_write_by_id = {
+            p.group_resource_profile_id: self._compute_has_write(p)
+            for p in profiles
+        }
+        return web.Response(self._sdk().list_group_resource_profiles(
+            request.airavata, has_write_by_id=has_write_by_id))
+
+    def retrieve(self, request, *args, **kwargs):
+        group_resource_profile_id = self.kwargs[self.lookup_field]
+        profile = self.get_instance(group_resource_profile_id)
+        if profile is None:
+            raise Http404
+        return web.Response(self._sdk().get_group_resource_profile(
+            request.airavata, group_resource_profile_id,
+            has_write=self._compute_has_write(profile)))
+
+    def create(self, request, *args, **kwargs):
+        data = request.data if isinstance(request.data, dict) else {}
+        result = self._sdk().create_group_resource_profile(
+            request.airavata, data)
+        # Re-fetch to resolve the composite write flag against the persisted
+        # profile (the create result has the server-assigned id + tokens).
+        profile = self.get_instance(result.message.group_resource_profile_id)
+        result.user_has_write_access = self._compute_has_write(profile)
+        return web.Response(result, status=web.status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        group_resource_profile_id = self.kwargs[self.lookup_field]
+        data = request.data if isinstance(request.data, dict) else {}
+        result = self._sdk().update_group_resource_profile(
+            request.airavata, group_resource_profile_id, data)
+        profile = self.get_instance(group_resource_profile_id)
+        result.user_has_write_access = self._compute_has_write(profile)
+        return web.Response(result)
+
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        group_resource_profile_id = self.kwargs[self.lookup_field]
+        self._sdk().delete_group_resource_profile(
+            request.airavata, group_resource_profile_id)
+        return web.Response(status=web.status.HTTP_204_NO_CONTENT)
 
 
-class SharedEntityViewSet(mixins.RetrieveModelMixin,
-                          mixins.UpdateModelMixin,
+class SharedEntityViewSet(web.mixins.RetrieveModelMixin,
+                          web.mixins.UpdateModelMixin,
                           GenericAPIBackedViewSet):
-    serializer_class = serializers.SharedEntitySerializer
+    """Shared-entities resource — a composed ``SharedEntity`` carrying the
+    ``UserProfile`` protos and ``WithGroupAccess`` group envelopes wholesale.
+
+    Write model (``update`` / ``partial_update`` / ``merge``): grant/revoke deltas
+    are computed and applied by ``sharing_resources.apply_sharing_update``
+    (NAME-keyed permission maps); ``_normalize_permission`` accepts either the
+    legacy integer or the member-NAME ``permission_type``.
+    """
+
     lookup_field = 'entity_id'
 
-    def get_instance(self, lookup_value):
-        users = {}
-        # Only load *directly* granted permissions since these are the only
-        # ones that can be edited
-        # Load accessible users in order of permission precedence: users that
-        # have WRITE permission should also have READ
-        users.update(self._load_directly_accessible_users(
-            lookup_value, serializers.ResourcePermissionType.READ))
-        users.update(self._load_directly_accessible_users(
-            lookup_value, serializers.ResourcePermissionType.WRITE))
-        users.update(self._load_directly_accessible_users(
-            lookup_value, serializers.ResourcePermissionType.MANAGE_SHARING))
-        owner_ids = self._load_directly_accessible_users(
-            lookup_value, serializers.ResourcePermissionType.OWNER)
-        # Assume that there is one and only one DIRECT owner (there may be one
-        # or more INDIRECT cascading owners, which would the owners of the
-        # ancestor entities, but getAllDirectlyAccessibleUsers does not return
-        # indirectly cascading owners)
-        owner_id = list(owner_ids.keys())[0]
-        # Remove owner from the users list
-        del users[owner_id]
-        user_list = []
-        for user_id in users:
-            user_list.append({'user': self._load_user_profile(user_id),
-                              'permissionType': users[user_id]})
-        groups = {}
-        groups.update(self._load_directly_accessible_groups(
-            lookup_value, serializers.ResourcePermissionType.READ))
-        groups.update(self._load_directly_accessible_groups(
-            lookup_value, serializers.ResourcePermissionType.WRITE))
-        groups.update(self._load_directly_accessible_groups(
-            lookup_value, serializers.ResourcePermissionType.MANAGE_SHARING))
-        group_list = []
-        for group_id in groups:
-            group_list.append({'group': self._load_group(group_id),
-                               'permissionType': groups[group_id]})
-        return {'entityId': lookup_value,
-                'userPermissions': user_list,
-                'groupPermissions': group_list,
-                'owner': self._load_user_profile(owner_id)}
+    # Legacy ``ResourcePermissionType`` integers → member NAME (write bodies may
+    # still carry the historical int ``permission_type``).
+    _PERMISSION_INT_TO_NAME = {
+        0: "WRITE", 1: "READ", 2: "OWNER", 3: "MANAGE_SHARING"}
 
-    def _load_accessible_users(self, entity_id, permission_type):
-        users = self.request.airavata.sharing.get_all_accessible_users(
-            entity_id, serializers.ResourcePermissionType(permission_type).name)
-        return {user_id: permission_type for user_id in users}
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import sharing_resources
+        return sharing_resources
 
-    def _load_directly_accessible_users(self, entity_id, permission_type):
-        users = self.request.airavata.sharing.get_all_directly_accessible_users(
-            entity_id, serializers.ResourcePermissionType(permission_type).name)
-        return {user_id: permission_type for user_id in users}
+    def _gateway_groups(self):
+        # The middleware stashes a camelCase map in the session; the SDK helpers
+        # want snake_case keys. Translate when present, else None (helper fetches
+        # it via GetGatewayGroups).
+        gg = self.request.session.get('GATEWAY_GROUPS')
+        if gg:
+            return {
+                'admins_group_id': gg['adminsGroupId'],
+                'read_only_admins_group_id': gg['readOnlyAdminsGroupId'],
+                'default_gateway_users_group_id':
+                    gg['defaultGatewayUsersGroupId'],
+            }
+        return None
 
-    def _load_user_profile(self, user_id):
-        username = user_id[0:user_id.rindex('@')]
-        return self.request.airavata.iam.get_user_profile_by_id(
-            username, settings.GATEWAY_ID)
+    def retrieve(self, request, *args, **kwargs):
+        entity_id = self.kwargs[self.lookup_field]
+        return web.Response(self._sdk().get_shared_entity(
+            request.airavata, entity_id,
+            gateway_groups=self._gateway_groups()))
 
-    def _load_accessible_groups(self, entity_id, permission_type):
-        groups = self.request.airavata.sharing.get_all_accessible_groups(
-            entity_id, serializers.ResourcePermissionType(permission_type).name)
-        return {group_id: permission_type for group_id in groups}
-
-    def _load_directly_accessible_groups(self, entity_id, permission_type):
-        groups = self.request.airavata.sharing.get_all_directly_accessible_groups(
-            entity_id, serializers.ResourcePermissionType(permission_type).name)
-        return {group_id: permission_type for group_id in groups}
-
-    def _load_group(self, group_id):
-        return self.request.airavata.sharing.gm_get_group(group_id)
-
-    def perform_update(self, serializer):
-        shared_entity = serializer.save()
-        entity_id = shared_entity['entityId']
-        if len(shared_entity['_user_grant_read_permission']) > 0:
-            self._share_with_users(
-                entity_id, serializers.ResourcePermissionType.READ,
-                shared_entity['_user_grant_read_permission'])
-        if len(shared_entity['_user_grant_write_permission']) > 0:
-            self._share_with_users(
-                entity_id, serializers.ResourcePermissionType.WRITE,
-                shared_entity['_user_grant_write_permission'])
-        if len(shared_entity['_user_grant_manage_sharing_permission']) > 0:
-            self._share_with_users(
-                entity_id, serializers.ResourcePermissionType.MANAGE_SHARING,
-                shared_entity['_user_grant_manage_sharing_permission'])
-        if len(shared_entity['_user_revoke_read_permission']) > 0:
-            self._revoke_from_users(
-                entity_id, serializers.ResourcePermissionType.READ,
-                shared_entity['_user_revoke_read_permission'])
-        if len(shared_entity['_user_revoke_write_permission']) > 0:
-            self._revoke_from_users(
-                entity_id, serializers.ResourcePermissionType.WRITE,
-                shared_entity['_user_revoke_write_permission'])
-        if len(shared_entity['_user_revoke_manage_sharing_permission']) > 0:
-            self._revoke_from_users(
-                entity_id, serializers.ResourcePermissionType.MANAGE_SHARING,
-                shared_entity['_user_revoke_manage_sharing_permission'])
-        if len(shared_entity['_group_grant_read_permission']) > 0:
-            self._share_with_groups(
-                entity_id, serializers.ResourcePermissionType.READ,
-                shared_entity['_group_grant_read_permission'])
-        if len(shared_entity['_group_grant_write_permission']) > 0:
-            self._share_with_groups(
-                entity_id, serializers.ResourcePermissionType.WRITE,
-                shared_entity['_group_grant_write_permission'])
-        if len(shared_entity['_group_grant_manage_sharing_permission']) > 0:
-            self._share_with_groups(
-                entity_id, serializers.ResourcePermissionType.MANAGE_SHARING,
-                shared_entity['_group_grant_manage_sharing_permission'])
-        if len(shared_entity['_group_revoke_read_permission']) > 0:
-            self._revoke_from_groups(
-                entity_id, serializers.ResourcePermissionType.READ,
-                shared_entity['_group_revoke_read_permission'])
-        if len(shared_entity['_group_revoke_write_permission']) > 0:
-            self._revoke_from_groups(
-                entity_id, serializers.ResourcePermissionType.WRITE,
-                shared_entity['_group_revoke_write_permission'])
-        if len(shared_entity['_group_revoke_manage_sharing_permission']) > 0:
-            self._revoke_from_groups(
-                entity_id, serializers.ResourcePermissionType.MANAGE_SHARING,
-                shared_entity['_group_revoke_manage_sharing_permission'])
-
-    def _share_with_users(self, entity_id, permission_type, user_ids):
-        name = serializers.ResourcePermissionType(permission_type).name
-        self.request.airavata.sharing.share_resource_with_users(
-            entity_id, {user_id: name for user_id in user_ids})
-
-    def _revoke_from_users(self, entity_id, permission_type, user_ids):
-        name = serializers.ResourcePermissionType(permission_type).name
-        self.request.airavata.sharing.revoke_sharing_of_resource_from_users(
-            entity_id, {user_id: name for user_id in user_ids})
-
-    def _share_with_groups(self, entity_id, permission_type, group_ids):
-        name = serializers.ResourcePermissionType(permission_type).name
-        self.request.airavata.sharing.share_resource_with_groups(
-            entity_id, {group_id: name for group_id in group_ids})
-
-    def _revoke_from_groups(self, entity_id, permission_type, group_ids):
-        name = serializers.ResourcePermissionType(permission_type).name
-        self.request.airavata.sharing.revoke_sharing_of_resource_from_groups(
-            entity_id, {group_id: name for group_id in group_ids})
-
-    @action(methods=['put'], detail=True)
-    def merge(self, request, entity_id=None):
-        # Validate updated sharing settings
-        updated = self.get_serializer(data=request.data)
-        updated.is_valid(raise_exception=True)
-        # Get the existing sharing settings and merge in the updated settings
-        existing_instance = self.get_object()
-        existing = self.get_serializer(instance=existing_instance)
-        merged_data = existing.data
-        merged_data['userPermissions'] = existing.data['userPermissions'] + \
-            updated.initial_data['userPermissions']
-        merged_data['groupPermissions'] = existing.data['groupPermissions'] + \
-            updated.initial_data['groupPermissions']
-        # Create a merged_serializer from the existing sharing settings and the
-        # merged settings. This will calculate all permissions that need to be
-        # granted and revoked to go from the exisitng settings to the merged
-        # settings.
-        merged_serializer = self.get_serializer(
-            existing_instance, data=merged_data)
-        merged_serializer.is_valid(raise_exception=True)
-        self.perform_update(merged_serializer)
-        return Response(merged_serializer.data)
-
-    @action(methods=['get'], detail=True)
+    @web.action(methods=['get'], detail=True)
     def all(self, request, entity_id=None):
         """Load direct plus indirectly (inherited) shared permissions."""
-        users = {}
-        # Load accessible users in order of permission precedence: users that
-        # have WRITE permission should also have READ
-        users.update(self._load_accessible_users(
-            entity_id, serializers.ResourcePermissionType.READ))
-        users.update(self._load_accessible_users(
-            entity_id, serializers.ResourcePermissionType.WRITE))
-        users.update(self._load_accessible_users(
-            entity_id, serializers.ResourcePermissionType.MANAGE_SHARING))
-        owner_ids = self._load_accessible_users(
-            entity_id, serializers.ResourcePermissionType.OWNER)
-        # Assume that there is one and only one DIRECT owner (there may be one
-        # or more INDIRECT cascading owners, which would the owners of the
-        # ancestor entities, but getAllAccessibleUsers does not return
-        # indirectly cascading owners)
-        owner_id = list(owner_ids.keys())[0]
-        # Remove owner from the users list
-        del users[owner_id]
-        user_list = []
-        for user_id in users:
-            user_list.append({'user': self._load_user_profile(user_id),
-                              'permissionType': users[user_id]})
-        groups = {}
-        groups.update(self._load_accessible_groups(
-            entity_id, serializers.ResourcePermissionType.READ))
-        groups.update(self._load_accessible_groups(
-            entity_id, serializers.ResourcePermissionType.WRITE))
-        groups.update(self._load_accessible_groups(
-            entity_id, serializers.ResourcePermissionType.MANAGE_SHARING))
-        group_list = []
-        for group_id in groups:
-            group_list.append({'group': self._load_group(group_id),
-                               'permissionType': groups[group_id]})
-        shared_entity = {'entityId': entity_id,
-                         'userPermissions': user_list,
-                         'groupPermissions': group_list,
-                         'owner': self._load_user_profile(owner_id)}
-        serializer = self.serializer_class(
-            shared_entity, context={'request': request})
-        return Response(serializer.data)
+        return web.Response(self._sdk().get_all_shared_entity(
+            request.airavata, entity_id,
+            gateway_groups=self._gateway_groups()))
+
+    @classmethod
+    def _normalize_permission(cls, value):
+        """Coerce a body ``permission_type`` to the member NAME string.
+
+        Accepts either the legacy ``ResourcePermissionType`` integer or the new
+        member NAME, so the write path is stable across the camelCase→snake_case
+        cutover.
+        """
+        if isinstance(value, int):
+            return cls._PERMISSION_INT_TO_NAME[value]
+        return value
+
+    @classmethod
+    def _permission_map(cls, permissions, id_field):
+        """Build an ``{id -> permission_name}`` map from a permission list.
+
+        *permissions* is the snake_case list of
+        ``{<user|group>: {...}, permission_type: <int|name>}`` dicts; *id_field*
+        names the nested id key (``airavata_internal_user_id`` for users, ``id``
+        for groups).
+        """
+        result = {}
+        for entry in permissions:
+            nested = entry.get('user', entry.get('group', {}))
+            result[nested[id_field]] = cls._normalize_permission(
+                entry['permission_type'])
+        return result
+
+    def _existing_permission_maps(self, entity_id):
+        """Return ``(existing_user_map, existing_group_map)`` from the server.
+
+        Reads the *directly* granted permissions (the only editable ones) via
+        the SDK ``SharedEntity`` object and reduces them to
+        ``{id -> permission_name}`` maps — the same ``existing`` state the write
+        delta computation diffs against.
+        """
+        existing = self._sdk().get_shared_entity(
+            self.request.airavata, entity_id,
+            gateway_groups=self._gateway_groups())
+        existing_users = {
+            up.user.airavata_internal_user_id: up.permission_type
+            for up in existing.user_permissions}
+        existing_groups = {
+            gp.group.message.id: gp.permission_type
+            for gp in existing.group_permissions}
+        return existing_users, existing_groups
+
+    def _apply(self, entity_id, new_user_map, new_group_map):
+        existing_users, existing_groups = self._existing_permission_maps(
+            entity_id)
+        self._sdk().apply_sharing_update(
+            self.request.airavata, entity_id,
+            existing_user_permissions=existing_users,
+            new_user_permissions=new_user_map,
+            existing_group_permissions=existing_groups,
+            new_group_permissions=new_group_map,
+        )
+
+    def update(self, request, *args, **kwargs):
+        entity_id = self.kwargs[self.lookup_field]
+        # The body is snake_case (``user_permissions`` / ``group_permissions`` /
+        # ``permission_type``).
+        body = request.data if isinstance(request.data, dict) else {}
+        new_user_map = self._permission_map(
+            body.get('user_permissions', []), 'airavata_internal_user_id')
+        new_group_map = self._permission_map(
+            body.get('group_permissions', []), 'id')
+        self._apply(entity_id, new_user_map, new_group_map)
+        return self.retrieve(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    @web.action(methods=['put'], detail=True)
+    def merge(self, request, entity_id=None):
+        """Merge the request body's grants on top of the existing settings.
+
+        Unlike ``update`` (which replaces the sharing settings), ``merge`` adds
+        the body's permissions to the existing ones, so the effective "new"
+        state is ``existing ∪ body`` (body wins on conflicting ids — it appears
+        last, matching the old serializer's list concatenation + dict build).
+        """
+        body = request.data if isinstance(request.data, dict) else {}
+
+        existing_users, existing_groups = self._existing_permission_maps(
+            entity_id)
+        body_user_map = self._permission_map(
+            body.get('user_permissions', []), 'airavata_internal_user_id')
+        body_group_map = self._permission_map(
+            body.get('group_permissions', []), 'id')
+        # Merge: existing first, body overrides on conflict (body is "last").
+        merged_users = {**existing_users, **body_user_map}
+        merged_groups = {**existing_groups, **body_group_map}
+
+        self._sdk().apply_sharing_update(
+            request.airavata, entity_id,
+            existing_user_permissions=existing_users,
+            new_user_permissions=merged_users,
+            existing_group_permissions=existing_groups,
+            new_group_permissions=merged_groups,
+        )
+        return web.Response(self._sdk().get_shared_entity(
+            request.airavata, entity_id,
+            gateway_groups=self._gateway_groups()))
 
 
 class CredentialSummaryViewSet(APIBackedViewSet):
-    serializer_class = serializers.CredentialSummarySerializer
+    """Credential-summaries resource. SDK returns ``WithAccess[CredentialSummary]``
+    (``user_has_write_access`` keyed on the credential ``token``)."""
 
-    def _credential_summaries(self, summary_type):
-        return list(
-            self.request.airavata.credential.get_all_credential_summaries(
-                self.gateway_id, summary_type))
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import credential_resources
+        return credential_resources
+
+    # APIBackedViewSet integration — get_instance still used by destroy
 
     def get_list(self):
-        pb2 = serializers._credential_store_pb2()
-        return (self._credential_summaries(pb2.SummaryType.SSH) +
-                self._credential_summaries(pb2.SummaryType.PASSWD))
+        return self._sdk().get_all_credential_summaries(self.request.airavata)
 
     def get_instance(self, lookup_value):
         return self.request.airavata.credential.get_credential_summary(
             lookup_value, self.gateway_id)
 
-    @action(detail=False)
+    def list(self, request, *args, **kwargs):
+        return web.Response(self._sdk().get_all_credential_summaries(
+            request.airavata))
+
+    def retrieve(self, request, *args, **kwargs):
+        lookup_value = self.kwargs[self.lookup_field or 'pk']
+        return web.Response(self._sdk().get_credential_summary(
+            request.airavata, lookup_value))
+
+    @web.action(detail=False)
     def ssh(self, request):
         pb2 = serializers._credential_store_pb2()
-        serializer = self.get_serializer(
-            self._credential_summaries(pb2.SummaryType.SSH), many=True)
-        return Response(serializer.data)
+        return web.Response(self._sdk().get_all_credential_summaries(
+            request.airavata, summary_type=pb2.SummaryType.SSH))
 
-    @action(detail=False)
+    @web.action(detail=False)
     def password(self, request):
         pb2 = serializers._credential_store_pb2()
-        serializer = self.get_serializer(
-            self._credential_summaries(pb2.SummaryType.PASSWD), many=True)
-        return Response(serializer.data)
+        return web.Response(self._sdk().get_all_credential_summaries(
+            request.airavata, summary_type=pb2.SummaryType.PASSWD))
 
-    @action(methods=['post'], detail=False)
+    @web.action(methods=['post'], detail=False)
     def create_ssh(self, request):
         if 'description' not in request.data:
-            raise ParseError("'description' is required in request")
-        description = request.data.get('description')
-        token_id = request.airavata.credential.generate_and_register_ssh_keys(
-            self.gateway_id, self.username, description)
-        credential_summary = request.airavata.credential.get_credential_summary(
-            token_id, self.gateway_id)
-        serializer = self.get_serializer(credential_summary)
-        return Response(serializer.data)
+            raise web.ParseError("'description' is required in request")
+        return web.Response(self._sdk().create_ssh_credential(
+            request.airavata, request.data))
 
-    @action(methods=['post'], detail=False)
+    @web.action(methods=['post'], detail=False)
     def create_password(self, request):
         if ('username' not in request.data or
             'password' not in request.data or
                 'description' not in request.data):
-            raise ParseError("'username', 'password' and 'description' "
+            raise web.ParseError("'username', 'password' and 'description' "
                              "are all required in request")
-        username = request.data.get('username')
-        password = request.data.get('password')
-        description = request.data.get('description')
-        token_id = request.airavata.credential.register_pwd_credential(
-            self.gateway_id,
-            grpc_requests.password_credential(
-                self.gateway_id, self.username, username, password, description))
-        credential_summary = request.airavata.credential.get_credential_summary(
-            token_id, self.gateway_id)
-        serializer = self.get_serializer(credential_summary)
-        return Response(serializer.data)
+        return web.Response(self._sdk().create_password_credential(
+            request.airavata, request.data))
 
     def perform_destroy(self, instance):
-        pb2 = serializers._credential_store_pb2()
-        if instance.type == pb2.SummaryType.SSH:
-            self.request.airavata.credential.delete_ssh_pub_key(
-                instance.token, self.gateway_id)
-        elif instance.type == pb2.SummaryType.PASSWD:
-            self.request.airavata.credential.delete_pwd_credential(
-                instance.token, self.gateway_id)
+        self._sdk().delete_credential_summary(self.request.airavata, instance)
 
 
-class CurrentGatewayResourceProfile(APIView):
+class CurrentGatewayResourceProfile(web.APIView):
+    """Current gateway resource profile. SDK returns
+    ``WithAccess[GatewayResourceProfile]``.
+
+    A gateway-level resource: ``user_has_write_access`` is the gateway-admin flag,
+    which the view computes and passes into the SDK helper.
+    """
+
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import compute_resources
+        return compute_resources
 
     def get(self, request, format=None):
-        gateway_resource_profile = (
-            request.airavata.compute.get_gateway_resource_profile(
-                settings.GATEWAY_ID))
-        serializer = serializers.GatewayResourceProfileSerializer(
-            gateway_resource_profile, context={'request': request})
-        return Response(serializer.data)
+        has_write = getattr(request, "is_gateway_admin", False)
+        return web.Response(self._sdk().get_gateway_resource_profile(
+            request.airavata, settings.GATEWAY_ID, has_write=has_write))
 
     def put(self, request, format=None):
-        serializer = serializers.GatewayResourceProfileSerializer(
-            data=request.data, context={'request': request})
-        if serializer.is_valid():
-            gateway_resource_profile = serializer.save()
-            request.airavata.compute.update_gateway_resource_profile(
-                settings.GATEWAY_ID, gateway_resource_profile)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        has_write = getattr(request, "is_gateway_admin", False)
+        data = request.data if isinstance(request.data, dict) else {}
+        return web.Response(
+            self._sdk().update_gateway_resource_profile(
+                request.airavata, settings.GATEWAY_ID, data,
+                has_write=has_write),
+            status=web.status.HTTP_201_CREATED)
 
 
-class ExperimentArchiveView(APIView):
+class ExperimentArchiveView(web.APIView):
 
     def get(self, request, experiment_id=None, format=None):
         experiment = request.airavata.research.get_experiment(experiment_id)
@@ -1328,106 +1558,115 @@ class ExperimentArchiveView(APIView):
             result["created_date"] = archive_entry.user_data_archive.created_date
         except UserDataArchiveEntry.DoesNotExist:
             pass
-        return Response(result, status=status.HTTP_200_OK)
+        return web.Response(result, status=web.status.HTTP_200_OK)
 
 
-class StorageResourceViewSet(mixins.RetrieveModelMixin,
+class StorageResourceViewSet(web.mixins.RetrieveModelMixin,
                              GenericAPIBackedViewSet):
-    serializer_class = serializers.StorageResourceSerializer
+    """Storage resource catalog (read-only). SDK returns the raw
+    ``StorageResourceDescription`` proto (no envelope)."""
+
     lookup_field = 'storage_resource_id'
 
-    def get_instance(self, lookup_value, format=None):
-        return self.request.airavata.storage.get_storage_resource(lookup_value)
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import storage_resources
+        return storage_resources
 
-    @action(detail=False)
+    def get_instance(self, lookup_value):
+        return self._sdk().get_storage_resource(self.request.airavata,
+                                                 lookup_value)
+
+    def retrieve(self, request, *args, **kwargs):
+        return web.Response(self.get_instance(self.kwargs[self.lookup_field]))
+
+    @web.action(detail=False)
     def all_names(self, request, format=None):
-        """Return a map of storage resource names keyed by resource id."""
-        return Response(
-            request.airavata.storage.get_all_storage_resource_names())
+        return web.Response(self._sdk().list_storage_resource_names(
+            request.airavata))
 
 
-class StoragePreferenceViewSet(APIBackedViewSet):
-    serializer_class = serializers.StoragePreferenceSerializer
+class StoragePreferenceViewSet(SdkResourceViewSet):
+    """Gateway storage preferences. SDK returns the bare ``StoragePreference``
+    proto (no envelope). Every helper threads ``GATEWAY_ID`` as the leading arg.
+    The list endpoint is unpaginated, matching the pre-migration contract."""
+
     lookup_field = 'storage_resource_id'
+    list_fn = 'list_gateway_storage_preferences'
+    get_fn = 'get_gateway_storage_preference'
+    create_fn = 'create_gateway_storage_preference'
+    update_fn = 'update_gateway_storage_preference'
 
-    def get_list(self):
-        return list(
-            self.request.airavata.compute.get_all_gateway_storage_preferences(
-                settings.GATEWAY_ID))
+    @staticmethod
+    def sdk():
+        from airavata_sdk.helpers import compute_resources
+        return compute_resources
 
-    def get_instance(self, lookup_value):
-        return self.request.airavata.compute.get_gateway_storage_preference(
-            settings.GATEWAY_ID, lookup_value)
+    def list_args(self):
+        return (settings.GATEWAY_ID,)
 
-    def perform_create(self, serializer):
-        storage_preference = serializer.save()
-        self.request.airavata.compute.add_gateway_storage_preference(
-            settings.GATEWAY_ID,
-            storage_preference.storage_resource_id,
-            storage_preference)
+    def get_args(self, lookup_value):
+        return (settings.GATEWAY_ID, lookup_value)
 
-    def perform_update(self, serializer):
-        storage_preference = serializer.save()
-        self.request.airavata.compute.update_gateway_storage_preference(
-            settings.GATEWAY_ID,
-            storage_preference.storage_resource_id,
-            storage_preference)
+    def create_args(self, data):
+        return (settings.GATEWAY_ID, data)
 
-    def perform_destroy(self, instance):
-        self.request.airavata.compute.delete_gateway_storage_preference(
-            settings.GATEWAY_ID, instance.storage_resource_id)
+    def update_args(self, lookup_value, data):
+        return (settings.GATEWAY_ID, lookup_value, data)
+
+    def destroy(self, request, *args, **kwargs):
+        self.sdk().delete_gateway_storage_preference(
+            request.airavata, settings.GATEWAY_ID,
+            self.kwargs[self.lookup_field])
+        return web.Response(status=web.status.HTTP_204_NO_CONTENT)
 
 
-class ParserViewSet(mixins.CreateModelMixin,
-                    mixins.RetrieveModelMixin,
-                    mixins.UpdateModelMixin,
-                    mixins.ListModelMixin,
-                    GenericAPIBackedViewSet):
-    serializer_class = serializers.ParserSerializer
+class ParserViewSet(SdkResourceViewSet):
+    """Parsers resource (gateway-level catalog). SDK returns the raw ``Parser``
+    proto (no envelope)."""
+
     lookup_field = 'parser_id'
+    list_fn = 'list_parsers'
+    get_fn = 'get_parser'
+    create_fn = 'create_parser'
+    update_fn = 'update_parser'
 
-    def get_list(self):
-        return list(self.request.airavata.research.list_all_parsers(
-            settings.GATEWAY_ID))
+    @staticmethod
+    def sdk():
+        from airavata_sdk.helpers import research_resources
+        return research_resources
 
-    def get_instance(self, lookup_value):
-        return self.request.airavata.research.get_parser(
-            lookup_value, settings.GATEWAY_ID)
 
-    def perform_create(self, serializer):
-        parser = serializer.save()
-        parser.id = self.request.airavata.research.save_parser(parser)
-
-    def perform_update(self, serializer):
-        parser = serializer.save()
-        self.request.airavata.research.save_parser(parser)
+# Sentinel for "key absent" in dict.pop (distinguishes a real None value).
+_SENTINEL = object()
 
 
 def _user_storage_path(path, experiment_id=None, request=None):
-    """Resolve a user-storage path to the absolute, ``~/``-prefixed path the gRPC
-    storage facade expects.
+    # Shim over the SDK resolver for portal callers that pass a Django request
+    # (the SDK helper takes the request.airavata client).
+    from airavata_sdk.helpers import storage_resources
+    return storage_resources.resolve_user_storage_path(
+        request.airavata, path, experiment_id)
 
-    A bare relative path is taken relative to the user's storage root (``~/``).
-    When ``experiment_id`` is given, the path is relative to that experiment's
-    data directory (resolved via the experiment's userConfigurationData).
+
+class UserStoragePathView(web.APIView):
+    """User-storage browse/listing over the SDK ``storage_resources`` helpers.
+
+    The per-entry path-permission flags (``user_has_write_access`` for files,
+    ``user_has_write_access`` / ``is_shared_dir`` for directories) are
+    ``GATEWAY_DATA_SHARED_DIRECTORIES`` / ``is_gateway_admin`` decisions, not
+    backend fields, so they are layered on the rendered proto here.
+
+    The write paths (upload / tus / file-content replace / delete) stay in the
+    portal — HTTP concerns, not part of the read contract.
     """
-    rel = (path or "").lstrip("/")
-    if experiment_id:
-        experiment = request.airavata.research.get_experiment(experiment_id)
-        data_dir = (experiment.user_configuration_data.experiment_data_dir
-                    if experiment.HasField('user_configuration_data')
-                    else None) or ""
-        base = data_dir.rstrip("/")
-        full = base + ("/" + rel if rel else "")
-        return full if (full.startswith("/") or full.startswith("~/")) else "~/" + full
-    if rel.startswith("~"):
-        return rel
-    return "~/" + rel
 
+    permission_classes = (web.IsAuthenticated, UserStorageSharedDirPermission)
 
-class UserStoragePathView(APIView):
-    serializer_class = serializers.UserStoragePathSerializer
-    permission_classes = (IsAuthenticated, UserStorageSharedDirPermission)
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import storage_resources
+        return storage_resources
 
     def get(self, request, path="/", format=None):
         # AIRAVATA-3460 Allow passing path as a query parameter instead
@@ -1436,12 +1675,13 @@ class UserStoragePathView(APIView):
         return self._create_response(request, path, experiment_id=experiment_id)
 
     def post(self, request, path="/", format=None):
+        sdk = self._sdk()
         path = request.data.get('path', path)
         experiment_id = request.data.get('experiment-id')
-        storage = request.airavata.storage
-        resolved = _user_storage_path(path, experiment_id, request)
-        if not storage.dir_exists(resolved):
-            storage.create_dir(resolved)
+        resolved = sdk.resolve_user_storage_path(
+            request.airavata, path, experiment_id)
+        if not sdk.dir_exists(request.airavata, resolved):
+            sdk.create_dir(request.airavata, resolved)
 
         data_product = None
         # Handle direct upload
@@ -1465,6 +1705,7 @@ class UserStoragePathView(APIView):
 
     # Accept either to replace file or to replace file content text.
     def put(self, request, path="/", format=None):
+        sdk = self._sdk()
         path = request.POST.get('path', path)
         # Replace the file if the request has a file upload.
         if 'file' in request.FILES:
@@ -1474,57 +1715,92 @@ class UserStoragePathView(APIView):
         # Replace only the file content if the request body has the `fileContentText`
         elif request.data and "fileContentText" in request.data:
             request.airavata.storage.upload_file(
-                path=_user_storage_path(path),
+                path=sdk.resolve_user_storage_path(request.airavata, path),
                 content=request.data["fileContentText"].encode("utf-8"),
                 name=os.path.basename(path))
         else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return web.Response(status=web.status.HTTP_400_BAD_REQUEST)
 
         return self._create_response(request=request, path=path)
 
     def delete(self, request, path="/", format=None):
+        sdk = self._sdk()
         path = request.data.get('path', path)
         experiment_id = request.data.get('experiment-id')
-        storage = request.airavata.storage
-        resolved = _user_storage_path(path, experiment_id, request)
-        if storage.dir_exists(resolved):
-            storage.delete_dir(resolved)
+        resolved = sdk.resolve_user_storage_path(
+            request.airavata, path, experiment_id)
+        if sdk.dir_exists(request.airavata, resolved):
+            sdk.delete_dir(request.airavata, resolved)
         else:
-            storage.delete_file(resolved)
+            sdk.delete_file(request.airavata, resolved)
 
-        return Response(status=204)
+        return web.Response(status=204)
+
+    # Per-entry path-permission flags (mirrors the legacy serializer fields)
+
+    def _dir_write_access(self, request, path):
+        """WRITE flag for a directory entry: gateway-admin on a shared path,
+        ``True`` otherwise (mirrors ``UserHasWriteAccessToPathSerializer``)."""
+        if view_utils.is_shared_path(path):
+            return request.is_gateway_admin
+        return True
+
+    def _user_has_write_access(self, request, path):
+        """Top-level ``user_has_write_access`` (mirrors the legacy base serializer).
+
+        ``True`` for non-shared paths; the gateway-admin flag for shared paths.
+        """
+        if view_utils.is_shared_path(path):
+            return request.is_gateway_admin
+        return True
 
     def _create_response(self, request, path, uploaded=None, experiment_id=None):
-        storage = request.airavata.storage
-        resolved = _user_storage_path(path, experiment_id, request)
-        if storage.dir_exists(resolved):
-            listing = storage.list_dir(resolved)
+        from django_airavata.apps.api.proto_render import to_jsonable
+        sdk = self._sdk()
+        resolved = sdk.resolve_user_storage_path(
+            request.airavata, path, experiment_id)
+        top_write_access = self._user_has_write_access(request, path)
+        if sdk.dir_exists(request.airavata, resolved):
+            listing = sdk.list_dir(request.airavata, resolved)
+            # The proto path is absolute (/storage/...); expose it home-relative
+            # so the frontend's ~/-prefixed navigation doesn't double the root.
+            base_rel = path[2:] if path.startswith('~/') else path.lstrip('/')
+            directories = []
+            for d in listing.directories:
+                rendered = to_jsonable(d)
+                rendered['path'] = os.path.join(base_rel, d.name)
+                rendered['user_has_write_access'] = self._dir_write_access(
+                    request, d.path)
+                rendered['is_shared_dir'] = view_utils.is_shared_dir(d.path)
+                directories.append(rendered)
+            files = []
+            for f in listing.files:
+                rendered = to_jsonable(f)
+                rendered['path'] = os.path.join(base_rel, f.name)
+                rendered['user_has_write_access'] = True
+                files.append(rendered)
             data = {
-                'isDir': True,
-                'directories': [
-                    grpc_adapters.user_storage_directory(d) for d in listing.directories],
-                'files': [grpc_adapters.user_storage_file(f) for f in listing.files],
+                'is_dir': True,
+                'directories': directories,
+                'files': files,
             }
-            if uploaded is not None:
-                data['uploaded'] = uploaded
-            data['parts'] = self._split_path(path)
-            data['path'] = path
-            serializer = self.serializer_class(
-                data, context={'request': request})
-            return Response(serializer.data)
         else:
-            file = grpc_adapters.user_storage_file(storage.get_file_metadata(resolved))
+            rendered = to_jsonable(
+                sdk.get_file_metadata(request.airavata, resolved))
+            rendered['user_has_write_access'] = True
             data = {
-                'isDir': False,
+                'is_dir': False,
                 'directories': [],
-                'files': [file]
+                'files': [rendered],
             }
-            if uploaded is not None:
-                data['uploaded'] = uploaded
-            data['parts'] = self._split_path(path)
-            serializer = self.serializer_class(
-                data, context={'request': request})
-            return Response(serializer.data)
+        if uploaded is not None:
+            # uploaded is a proto DataProductModel; ProtoJSONRenderer renders it
+            # to snake_case via to_jsonable on the response path.
+            data['uploaded'] = uploaded
+        data['parts'] = self._split_path(path)
+        data['path'] = path
+        data['user_has_write_access'] = top_write_access
+        return web.Response(data)
 
     def _split_path(self, path):
         head, tail = os.path.split(path)
@@ -1536,47 +1812,64 @@ class UserStoragePathView(APIView):
             return []
 
 
-class ExperimentStoragePathView(APIView):
+class ExperimentStoragePathView(web.APIView):
+    """Experiment data-dir browse/listing over the SDK ``storage_resources``
+    helpers.
 
-    serializer_class = serializers.ExperimentStoragePathSerializer
+    Entry ``path`` is rewritten relative to the experiment data dir (the legacy
+    ``ListExperimentDir`` exposed relative paths). File entries carry
+    ``user_has_write_access`` — always ``True`` since an experiment data dir is
+    never a gateway-shared path.
+    """
+
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import storage_resources
+        return storage_resources
 
     def get(self, request, experiment_id=None, path="", format=None):
         return self._create_response(request, experiment_id, path)
 
     def _create_response(self, request, experiment_id, path):
-        storage = request.airavata.storage
-        resolved = _user_storage_path(path, experiment_id, request)
-        if not storage.dir_exists(resolved):
+        from django_airavata.apps.api.proto_render import to_jsonable
+        sdk = self._sdk()
+        resolved = sdk.resolve_user_storage_path(
+            request.airavata, path, experiment_id)
+        if not sdk.dir_exists(request.airavata, resolved):
             raise Http404(f"Path '{path}' does not exist for {experiment_id}")
-        listing = storage.list_dir(resolved)
+
+        base = resolved.rstrip("/")
 
         def rel(entry_path):
             # Expose the path relative to the experiment data dir, as the legacy
             # list_experiment_dir did (resolved is the absolute experiment path).
-            base = resolved.rstrip("/")
-            p = entry_path
-            if p.startswith(base + "/"):
-                return p[len(base) + 1:]
-            return os.path.basename(p)
+            if entry_path.startswith(base + "/"):
+                return entry_path[len(base) + 1:]
+            return os.path.basename(entry_path)
 
-        def add_expid(d):
-            d['experiment_id'] = experiment_id
-            return d
+        def rel_path(entry_path):
+            r = rel(entry_path)
+            return os.path.join(path, r) if path else r
+
+        listing = sdk.list_experiment_dir(request.airavata, resolved)
+        directories = []
+        for d in listing.directories:
+            rendered = to_jsonable(d)
+            rendered['path'] = rel_path(d.path)
+            directories.append(rendered)
+        files = []
+        for f in listing.files:
+            rendered = to_jsonable(f)
+            rendered['path'] = rel_path(f.path)
+            rendered['user_has_write_access'] = True
+            files.append(rendered)
         data = {
-            'isDir': True,
-            'directories': [
-                add_expid(grpc_adapters.user_storage_directory(
-                    d, relative_path=os.path.join(path, rel(d.path)) if path else rel(d.path)))
-                for d in listing.directories],
-            'files': [
-                add_expid(grpc_adapters.user_storage_file(
-                    f, relative_path=os.path.join(path, rel(f.path)) if path else rel(f.path)))
-                for f in listing.files],
+            'is_dir': True,
+            'directories': directories,
+            'files': files,
+            'parts': self._split_path(path),
         }
-        data['parts'] = self._split_path(path)
-        serializer = self.serializer_class(
-            data, context={'request': request})
-        return Response(serializer.data)
+        return web.Response(data)
 
     def _split_path(self, path):
         head, tail = os.path.split(path)
@@ -1588,20 +1881,32 @@ class ExperimentStoragePathView(APIView):
             return []
 
 
-class WorkspacePreferencesView(APIView):
-    serializer_class = serializers.WorkspacePreferencesSerializer
+class WorkspacePreferencesView(web.APIView):
 
     def get(self, request, format=None):
         helper = helpers.WorkspacePreferencesHelper()
         workspace_preferences = helper.get(request)
-        serializer = self.serializer_class(
-            workspace_preferences, context={'request': request})
-        return Response(serializer.data)
+        return web.Response(
+            serializers.workspace_preferences_data(workspace_preferences))
 
 
 class ManageNotificationViewSet(APIBackedViewSet):
-    serializer_class = serializers.NotificationSerializer
+    """Notifications resource. SDK returns ``WithAccess[Notification]``
+    (gateway-level; ``user_has_write_access`` is the gateway-admin flag).
+
+    Each action merges the portal-only ``show_in_dashboard`` flag (the Django
+    ``NotificationExtension`` table — not part of the proto, so the SDK cannot
+    supply it) onto the flattened JSON.
+    """
+
     lookup_field = 'notification_id'
+
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import research_resources
+        return research_resources
+
+    # APIBackedViewSet integration — still used by the destroy mixin
 
     def get_instance(self, lookup_value):
         return self.request.airavata.research.get_notification(
@@ -1611,51 +1916,229 @@ class ManageNotificationViewSet(APIBackedViewSet):
         return list(self.request.airavata.research.get_all_notifications(
             self.gateway_id))
 
+    # Portal-only ``show_in_dashboard`` extension (Django ``NotificationExtension``)
+
+    def _show_in_dashboard(self, notification_id):
+        """Resolve the ``show_in_dashboard`` extension flag for one notification."""
+        extensions = models.NotificationExtension.objects.filter(
+            notification_id=notification_id)
+        return bool(extensions) and extensions[0].showInDashboard
+
+    def _show_in_dashboard_map(self, notification_ids):
+        """Build ``{notification_id: show_in_dashboard}`` from a single query."""
+        rows = models.NotificationExtension.objects.filter(
+            notification_id__in=list(notification_ids))
+        return {r.notification_id: bool(r.showInDashboard) for r in rows}
+
+    def _render(self, with_access, show_in_dashboard):
+        """Flatten a ``WithAccess[Notification]`` and merge the portal-only flag.
+
+        ``to_jsonable`` renders the proto to snake_case JSON merged with the
+        access scalars; ``show_in_dashboard`` (the Django extension flag) is
+        merged on top here because it is not a proto / SDK field.
+        """
+        from django_airavata.apps.api.proto_render import to_jsonable
+        data = to_jsonable(with_access)
+        data["show_in_dashboard"] = bool(show_in_dashboard)
+        return data
+
+    def _update_notification_extension(self, request, notification_id):
+        """Persist the portal-only ``show_in_dashboard`` extension flag.
+
+        Mirrors the legacy ``NotificationSerializer.update_notification_extension``
+        — only acts when the request body carries ``show_in_dashboard`` (the
+        request body is already snake_case)."""
+        if "show_in_dashboard" not in request.data:
+            return
+        value = request.data["show_in_dashboard"]
+        existing = models.NotificationExtension.objects.filter(
+            notification_id=notification_id)
+        if existing:
+            existing.update(showInDashboard=value)
+        else:
+            models.NotificationExtension.objects.create(
+                notification_id=notification_id, showInDashboard=value)
+
+    def list(self, request, *args, **kwargs):
+        sdk = self._sdk()
+        has_write = request.is_gateway_admin
+        results = sdk.list_notifications(request.airavata, has_write=has_write)
+        dashboard_map = self._show_in_dashboard_map(
+            r.message.notification_id for r in results)
+        data = [
+            self._render(
+                r,
+                dashboard_map.get(r.message.notification_id, False))
+            for r in results
+        ]
+        return web.Response(data)
+
+    def retrieve(self, request, *args, **kwargs):
+        sdk = self._sdk()
+        notification_id = self.kwargs[self.lookup_field]
+        result = sdk.get_notification(
+            request.airavata, notification_id,
+            has_write=request.is_gateway_admin)
+        return web.Response(self._render(
+            result, self._show_in_dashboard(notification_id)))
+
+    def create(self, request, *args, **kwargs):
+        sdk = self._sdk()
+        # request.data is already snake_case
+        data = request.data if isinstance(request.data, dict) else {}
+        show_in_dashboard = bool(data.get("show_in_dashboard", False))
+        result = sdk.create_notification(
+            request.airavata, data, has_write=request.is_gateway_admin)
+        self._update_notification_extension(
+            request, result.message.notification_id)
+        return web.Response(
+            self._render(result, show_in_dashboard),
+            status=web.status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        sdk = self._sdk()
+        notification_id = self.kwargs[self.lookup_field]
+        data = request.data if isinstance(request.data, dict) else {}
+        show_in_dashboard = bool(
+            data.get("show_in_dashboard",
+                     self._show_in_dashboard(notification_id)))
+        result = sdk.update_notification(
+            request.airavata, notification_id, data,
+            has_write=request.is_gateway_admin)
+        self._update_notification_extension(request, notification_id)
+        return web.Response(self._render(result, show_in_dashboard))
+
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
     def perform_destroy(self, instance):
         self.request.airavata.research.delete_notification(
             settings.GATEWAY_ID, instance.notification_id)
 
-    def perform_create(self, serializer):
-        notification = serializer.save(gateway_id=self.gateway_id)
-        notification.notification_id = (
-            self.request.airavata.research.create_notification(notification))
 
-        serializer.update_notification_extension(self.request, notification)
-
-    def perform_update(self, serializer):
-        notification = serializer.save()
-        self.request.airavata.research.update_notification(notification)
-
-        serializer.update_notification_extension(self.request, notification)
-
-
-class AckNotificationViewSet(APIView):
+class AckNotificationViewSet(web.APIView):
 
     def get(self, request, format=None):
         if 'id' in request.GET:
             notification_id = request.GET['id']
-            try:
-                notification = models.User_Notifications.objects.get(
-                    notification_id=notification_id,
-                    username=request.user.username)
-                notification.is_read = True
-                notification.save()
-            except ObjectDoesNotExist:
-                models.User_Notifications.objects.create(
-                    username=request.user.username,
-                    notification_id=notification.notificationId)
+            context_processors.mark_notification_read(
+                request.user.username, notification_id)
         return HttpResponse(status=204)
 
 
-class IAMUserViewSet(mixins.RetrieveModelMixin,
-                     mixins.UpdateModelMixin,
-                     mixins.ListModelMixin,
-                     mixins.DestroyModelMixin,
+class IAMUserViewSet(web.mixins.RetrieveModelMixin,
+                     web.mixins.UpdateModelMixin,
+                     web.mixins.ListModelMixin,
+                     web.mixins.DestroyModelMixin,
                      GenericAPIBackedViewSet):
-    serializer_class = serializers.IAMUserProfile
+    """IAM (managed Keycloak) users — a composed pydantic ``IAMUser``.
+
+    The ViewSet supplies the parts the IAM service cannot compute: the
+    ``DoesUserExist`` result, the sharing group list, ``request.is_gateway_admin``,
+    and the two Django-ORM lookups.
+
+    The ``update`` / ``update_username`` write path validates the incoming
+    camelCase body with plain validators in ``serializers`` (write validation
+    only — off the OUTPUT path), so it needs the plain ``JSONParser`` (no key
+    transform).
+    """
+
     pagination_class = APIResultPagination
-    permission_classes = (IsAuthenticated, IsInAdminsGroupPermission,)
+    permission_classes = (web.IsAuthenticated, IsInAdminsGroupPermission,)
     lookup_field = 'user_id'
+
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import iam_resources
+        return iam_resources
+
+    # Composed-part resolvers (the parts the owning IAM service can't compute)
+
+    def _user_profile_exists(self, user_profile):
+        return self.request.airavata.iam.does_user_exist(
+            user_profile.user_id, self.gateway_id)
+
+    def _user_groups(self, user_profile, exists):
+        """Resolve the GroupModel protos the user belongs to (write path uses
+        these too; only resolved when the airavata user profile exists)."""
+        if not exists:
+            return []
+        return list(
+            self.request.airavata.sharing.gm_get_all_groups_user_belongs(
+                user_profile.airavata_internal_user_id))
+
+    def _external_idp_user_info(self, user_id):
+        # TODO(Phase C): external IDP claims were mirrored into the local Django
+        # UserProfile.idp_userinfo, which no longer exists. Expose them via a
+        # backend RPC / the Keycloak identity broker if this admin column is
+        # still needed.
+        return {}
+
+    def _user_profile_invalid_fields(self, user_id):
+        # TODO(Phase C): profile validity was computed from the local Django
+        # UserProfile, which no longer exists. Profile validity is Keycloak's
+        # concern now; surface it via a backend RPC if this admin column is
+        # still needed.
+        return []
+
+    def _build_iam_user(self, user_profile, request, *, exists=None,
+                        groups=None):
+        """Compose an ``IAMUser`` from a proto ``UserProfile``.
+
+        Resolves the composed parts (``DoesUserExist`` result, the user's groups
+        as ``WithGroupAccess`` envelopes rendered proto-direct, gateway-admin
+        flag, two Django-ORM lookups) and hands them to the SDK ``get_iam_user``,
+        which computes the proto-derived scalars and returns the pydantic model.
+        """
+        from airavata_sdk.helpers import sharing_resources
+
+        from django_airavata.apps.api.proto_render import to_jsonable
+
+        if exists is None:
+            exists = self._user_profile_exists(user_profile)
+        if groups is None:
+            groups = self._user_groups(user_profile, exists)
+
+        return self._sdk().get_iam_user(
+            request.airavata,
+            user_profile,
+            airavata_user_profile_exists=exists,
+            user_has_write_access=request.is_gateway_admin,
+            groups=to_jsonable(sharing_resources.wrap_groups(
+                request.airavata, groups)),
+            external_idp_user_info=self._external_idp_user_info(
+                user_profile.user_id),
+            user_profile_invalid_fields=self._user_profile_invalid_fields(
+                user_profile.user_id),
+        )
+
+    def list(self, request, *args, **kwargs):
+        search = request.GET.get('search', None)
+
+        view = self
+
+        class IAMUsersResultIterator(APIResultIterator):
+            def get_results(self, limit=-1, offset=0):
+                return list(view._sdk().list_iam_users(
+                    request.airavata, offset=offset, limit=limit,
+                    search=search or ""))
+
+        queryset = IAMUsersResultIterator(
+            query_params=request.query_params.copy())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            data = [self._build_iam_user(u, request) for u in page]
+            return self.get_paginated_response(data)
+        data = [self._build_iam_user(u, request)
+                for u in queryset.get_results()]
+        return web.Response(data)
+
+    def retrieve(self, request, *args, **kwargs):
+        user_id = self.kwargs[self.lookup_field]
+        user_profile = iam_admin_client.get_user(user_id)
+        return web.Response(self._build_iam_user(user_profile, request))
+
+    # APIResultIterator / write-path plumbing (serializer-backed)
 
     def get_list(self):
         search = self.request.GET.get('search', None)
@@ -1672,61 +2155,66 @@ class IAMUserViewSet(mixins.RetrieveModelMixin,
         return self._convert_user_profile(
             iam_admin_client.get_user(lookup_value))
 
-    def perform_update(self, serializer):
-        managed_user_profile = serializer.save()
+    def update(self, request, *args, **kwargs):
+        # Validate the camelCase body, apply the group-membership diff, then
+        # render the refreshed profile through the SDK output path.
+        instance = self.get_object()
+        try:
+            data = serializers.validate_iam_user_body(request.data)
+        except serializers.ValidationError as e:
+            return web.Response(e.detail, status=web.status.HTTP_400_BAD_REQUEST)
+        self._apply_group_diff(instance, data)
+        user_profile = iam_admin_client.get_user(data['userId'])
+        return web.Response(self._build_iam_user(user_profile, request))
+
+    def _apply_group_diff(self, instance, data):
+        added_group_ids, removed_group_ids = serializers.iam_user_group_diff(
+            instance['groups'], data)
         sharing = self.request.airavata.sharing
-        user_id = managed_user_profile['airavataInternalUserId']
+        user_id = instance['airavataInternalUserId']
         added_groups = []
-        for group_id in managed_user_profile['_added_group_ids']:
+        for group_id in added_group_ids:
             group = sharing.gm_get_group(group_id)
             sharing.gm_add_users_to_group([user_id], group_id)
             added_groups.append(group)
         if len(added_groups) > 0:
             user_profile = self.request.airavata.iam.get_user_profile_by_id(
-                managed_user_profile['userId'], settings.GATEWAY_ID)
+                data['userId'], settings.GATEWAY_ID)
             signals.user_added_to_group.send(
                 sender=self.__class__,
                 user=user_profile,
                 groups=added_groups,
                 request=self.request)
-        for group_id in managed_user_profile['_removed_group_ids']:
+        for group_id in removed_group_ids:
             sharing.gm_remove_users_from_group([user_id], group_id)
 
     def perform_destroy(self, instance):
         iam_admin_client.delete_user(instance['userId'])
 
-    @action(methods=['post'], detail=True)
+    @web.action(methods=['post'], detail=True)
     def enable(self, request, user_id=None):
         iam_admin_client.enable_user(user_id)
-        instance = self.get_instance(user_id)
-        serializer = self.serializer_class(instance=instance,
-                                           context={'request': request})
-        return Response(serializer.data)
+        user_profile = iam_admin_client.get_user(user_id)
+        return web.Response(self._build_iam_user(user_profile, request))
 
-    @action(methods=['put'], detail=False)
+    @web.action(methods=['put'], detail=False)
     def update_username(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        old_username = serializer.validated_data['userId']
-        new_username = serializer.validated_data['newUsername']
+        try:
+            old_username, new_username = serializers.parse_update_username(
+                request.data)
+        except serializers.ValidationError as e:
+            return web.Response(e.detail, status=web.status.HTTP_400_BAD_REQUEST)
         iam_admin_client.update_username(old_username, new_username)
-        # set username_initialized to True so it is treated as valid.
-        django_user = get_user_model().objects.get(username=old_username)
-        django_user.user_profile.username_initialized = True
-        django_user.user_profile.save()
-        # Not strictly necessary since next time the user logs in, the Django
-        # user record for the user will get updated to have the new username.
-        # But this is done to keep it consistent.
-        django_user.username = new_username
-        django_user.save()
-        instance = self.get_instance(new_username)
-        serializer = self.serializer_class(instance=instance,
-                                           context={'request': request})
-        return Response(serializer.data)
+        # The username is updated in Keycloak (the source of truth); there is no
+        # longer a Django UserProfile mirror to keep in sync.
+        user_profile = iam_admin_client.get_user(new_username)
+        return web.Response(self._build_iam_user(user_profile, request))
 
     def _convert_user_profile(self, user_profile):
         # iam_admin_client returns a protobuf UserProfile; read proto fields
-        # directly and build the dict the IAMUserProfile serializer consumes.
+        # directly and build the dict the IAMUserProfile serializer consumes on
+        # the write path (the read/output path composes the SDK IAMUser via
+        # _build_iam_user).
         from airavata_sdk.generated.org.apache.airavata.model.user import (
             user_profile_pb2,
         )
@@ -1754,9 +2242,16 @@ class IAMUserViewSet(mixins.RetrieveModelMixin,
         }
 
 
-class ExperimentStatisticsView(APIView):
+class ExperimentStatisticsView(web.APIView):
+    """Experiment-statistics resource. SDK returns the ``ExperimentStatistics``
+    proto wholesale; the view nests it under ``results`` in a pagination envelope
+    keyed on the proto's ``all_experiment_count``."""
     # TODO: restrict to only Admins or Read Only Admins group members
-    serializer_class = serializers.ExperimentStatisticsSerializer
+
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import research_resources
+        return research_resources
 
     def get(self, request, format=None):
         if 'fromTime' in request.GET:
@@ -1778,31 +2273,74 @@ class ExperimentStatisticsView(APIView):
         limit = int(request.GET.get('limit', '50'))
         offset = int(request.GET.get('offset', '0'))
 
-        statistics = request.airavata.research.get_experiment_statistics(
-            settings.GATEWAY_ID, from_time, to_time,
-            username or "", application_name or "", resource_hostname or "",
-            limit, offset)
-        serializer = self.serializer_class(statistics, context={'request': request})
+        stats = self._sdk().get_experiment_statistics(
+            request.airavata,
+            from_time=from_time, to_time=to_time,
+            user_name=username, application_name=application_name,
+            resource_host_name=resource_hostname,
+            limit=limit, offset=offset)
 
-        paginator = pagination.LimitOffsetPagination()
-        paginator.count = statistics.all_experiment_count
+        paginator = web.LimitOffsetPagination()
+        paginator.count = stats.all_experiment_count
         paginator.limit = limit
         paginator.offset = offset
         paginator.request = request
-        response = paginator.get_paginated_response(serializer.data)
+        # The proto is nested under ``results``; ProtoJSONRenderer recurses the
+        # paginated dict and flattens it to snake_case JSON.
+        response = paginator.get_paginated_response(stats)
         # Also add limit and offset to the response
         response.data['limit'] = limit
         response.data['offset'] = offset
         return response
 
 
-class UnverifiedEmailUserViewSet(mixins.ListModelMixin,
-                                 mixins.RetrieveModelMixin,
+class UnverifiedEmailUserViewSet(web.mixins.ListModelMixin,
+                                 web.mixins.RetrieveModelMixin,
                                  GenericAPIBackedViewSet):
-    serializer_class = serializers.UnverifiedEmailUserProfile
+    """Users whose email is not yet verified — a pydantic ``UnverifiedEmailUser``
+    (a strict subset of ``IAMUser``). The ViewSet supplies
+    ``request.is_gateway_admin``."""
+
     pagination_class = APIResultPagination
-    permission_classes = (IsAuthenticated, IsInAdminsGroupPermission,)
+    permission_classes = (web.IsAuthenticated, IsInAdminsGroupPermission,)
     lookup_field = 'user_id'
+
+    @staticmethod
+    def _sdk():
+        from airavata_sdk.helpers import iam_resources
+        return iam_resources
+
+    def _build_unverified(self, user_profile, request):
+        return self._sdk().get_unverified_email_user(
+            request.airavata,
+            user_profile,
+            user_has_write_access=request.is_gateway_admin,
+        )
+
+    def list(self, request, *args, **kwargs):
+        view = self
+
+        class UnverifiedEmailUsersResultIterator(APIResultIterator):
+            def get_results(self, limit=-1, offset=0):
+                return view._get_unverified_email_user_profiles(limit, offset)
+
+        queryset = UnverifiedEmailUsersResultIterator()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            data = [self._build_unverified(u, request) for u in page]
+            return self.get_paginated_response(data)
+        data = [self._build_unverified(u, request)
+                for u in queryset.get_results()]
+        return web.Response(data)
+
+    def retrieve(self, request, *args, **kwargs):
+        user_id = self.kwargs[self.lookup_field]
+        users = self._get_unverified_email_user_profiles(
+            limit=1, username=user_id)
+        if len(users) == 0:
+            raise Http404("No unverified email record found for user {}"
+                          .format(user_id))
+        return web.Response(self._build_unverified(users[0], request))
 
     def get_list(self):
         get_users = self._get_unverified_email_user_profiles
@@ -1823,54 +2361,20 @@ class UnverifiedEmailUserViewSet(mixins.ListModelMixin,
 
     def _get_unverified_email_user_profiles(
             self, limit=-1, offset=0, username=None):
-        from airavata_sdk.generated.org.apache.airavata.model.user import (
-            user_profile_pb2,
-        )
-        Status = user_profile_pb2.Status
-        unverified_emails = EmailVerification.objects.filter(
-            verified=False).order_by('username').values('username').distinct()
-        if username is not None:
-            unverified_emails = unverified_emails.filter(username=username)
-        if limit > 0:
-            unverified_emails = unverified_emails[offset:offset + limit]
-        results = []
-        for unverified_email in unverified_emails:
-            unverified_username = unverified_email['username']
-            if iam_admin_client.is_user_exist(unverified_username):
-                user_profile = iam_admin_client.get_user(unverified_username)
-                if (user_profile.state == Status.CONFIRMED or
-                        user_profile.state == Status.ACTIVE):
-                    # TODO: test this
-                    EmailVerification.objects.filter(
-                        username=unverified_username).update(
-                        verified=True)
-                    continue
-                results.append({
-                    'userId': user_profile.user_id,
-                    'gatewayId': user_profile.gateway_id,
-                    'email': user_profile.emails[0],
-                    'firstName': user_profile.first_name,
-                    'lastName': user_profile.last_name,
-                    'enabled': user_profile.state == Status.ACTIVE,
-                    'emailVerified': (user_profile.state == Status.CONFIRMED or
-                                      user_profile.state == Status.ACTIVE),
-                    'creationTime': user_profile.creation_time,
-                })
-            else:
-                # Delete the EmailVerification records since that user no
-                # longer exists in the IAM service
-                EmailVerification.objects.filter(
-                    username=unverified_username).delete()
-        return results
+        # TODO(Phase C): self-registration email verification is now owned by
+        # Keycloak (the local EmailVerification model was removed with the Django
+        # account surface). Surface unverified-email users via a backend RPC /
+        # Keycloak admin query if this admin view is still needed.
+        return []
 
 
-class LogRecordConsumer(APIView):
-    serializer_class = serializers.LogRecordSerializer
+class LogRecordConsumer(web.APIView):
 
     def post(self, request, format=None):
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        log_record = serializer.validated_data
+        try:
+            log_record = serializers.parse_log_record(request.data)
+        except serializers.ValidationError as e:
+            return web.Response(e.detail, status=web.status.HTTP_400_BAD_REQUEST)
         log_level = getattr(logging, log_record['level'], None)
         if log_level is not None:
             stacktrace = "".join(
@@ -1880,24 +2384,19 @@ class LogRecordConsumer(APIView):
                         log_record['message'],
                         json.dumps(log_record['details'], indent=4),
                         stacktrace), extra={'request': request})
-        return Response(serializer.data)
+        return web.Response(serializers.render_log_record(log_record))
 
 
-class SettingsAPIView(APIView):
-    serializer_class = serializers.SettingsSerializer
+class SettingsAPIView(web.APIView):
 
     def get(self, request, format=None):
-        data = {
-            'fileUploadMaxFileSize': settings.FILE_UPLOAD_MAX_FILE_SIZE,
-            'tusEndpoint': settings.TUS_ENDPOINT,
-            'pgaUrl': settings.PGA_URL
-        }
-        serializer = self.serializer_class(
-            data, context={'request': request})
-        return Response(serializer.data)
+        return web.Response(serializers.settings_data(
+            settings.FILE_UPLOAD_MAX_FILE_SIZE,
+            settings.TUS_ENDPOINT,
+            settings.PGA_URL))
 
 
-class APIServerStatusCheckView(APIView):
+class APIServerStatusCheckView(web.APIView):
 
     def get(self, request, format=None):
         try:
@@ -1914,10 +2413,10 @@ class APIServerStatusCheckView(APIView):
             data = {
                 "apiServerUp": False
             }
-        return Response(data)
+        return web.Response(data)
 
 
-@api_view()
+@web.api_view()
 def notebook_output_view(request):
     provider_id = request.GET['provider-id']
     experiment_id = request.GET['experiment-id']
@@ -1929,13 +2428,13 @@ def notebook_output_view(request):
     return HttpResponse(data['output'])
 
 
-@api_view()
+@web.api_view()
 def html_output_view(request):
     data = _generate_output_view_data(request)
     return JsonResponse(data)
 
 
-@api_view()
+@web.api_view()
 def image_output_view(request):
     data = _generate_output_view_data(request)
     # data should contain 'image' as a file-like object or raw bytes with the
@@ -1944,7 +2443,7 @@ def image_output_view(request):
     return JsonResponse(data)
 
 
-@api_view()
+@web.api_view()
 def link_output_view(request):
     data = _generate_output_view_data(request)
     return JsonResponse(data)
@@ -1964,8 +2463,7 @@ def _generate_output_view_data(request):
                                       **params.dict())
 
 
-class QueueSettingsCalculatorViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericAPIBackedViewSet):
-    serializer_class = serializers.QueueSettingsCalculatorSerializer
+class QueueSettingsCalculatorViewSet(web.mixins.ListModelMixin, web.mixins.RetrieveModelMixin, GenericAPIBackedViewSet):
 
     def get_list(self):
         return queue_settings.get_all()
@@ -1977,13 +2475,29 @@ class QueueSettingsCalculatorViewSet(mixins.ListModelMixin, mixins.RetrieveModel
             return None
         return calc[0]
 
-    @action(methods=['post'], detail=True, serializer_class=serializers.ExperimentSerializer)
-    def calculate(self, request, pk=None):
+    def list(self, request, *args, **kwargs):
+        return web.Response([serializers.queue_settings_calculator_data(c)
+                         for c in self.get_list()])
 
-        serializer = self.get_serializer(data=request.data)
+    def retrieve(self, request, *args, **kwargs):
+        return web.Response(serializers.queue_settings_calculator_data(
+            self.get_object()))
+
+    @web.action(methods=['post'], detail=True)
+    def calculate(self, request, pk=None):
+        from airavata_sdk.helpers import research_resources
+        data = request.data if isinstance(request.data, dict) else {}
         result = {}
-        # Just ignore invalid experiment model since likely caused by late initialization
-        if serializer.is_valid():
-            experiment_model = serializer.save()
-            result = queue_settings.calculate_queue_settings(pk, request, experiment_model)
-        return Response(result)
+        # Build the proto ExperimentModel from the request; ignore a malformed
+        # body (likely a late-initialization partial) and return empty settings.
+        try:
+            experiment_model = research_resources.build_experiment(
+                request.airavata, data)
+        except Exception:
+            log.debug("Ignoring invalid experiment model for queue calculation",
+                      exc_info=True)
+            experiment_model = None
+        if experiment_model is not None:
+            result = queue_settings.calculate_queue_settings(
+                pk, request, experiment_model)
+        return web.Response(result)

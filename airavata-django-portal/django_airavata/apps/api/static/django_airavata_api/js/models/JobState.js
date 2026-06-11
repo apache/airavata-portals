@@ -2,6 +2,7 @@ import BaseEnum from "./BaseEnum";
 
 export default class JobState extends BaseEnum {}
 JobState.init([
+  "JOB_STATE_UNKNOWN",
   "SUBMITTED",
   "QUEUED",
   "ACTIVE",
@@ -9,6 +10,5 @@ JobState.init([
   "CANCELED",
   "FAILED",
   "SUSPENDED",
-  "UNKNOWN",
   "NON_CRITICAL_FAIL",
 ]);

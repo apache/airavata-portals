@@ -2,13 +2,15 @@ import BaseModel from "./BaseModel";
 import ProcessStatus from "./ProcessStatus";
 import DataProduct from "./DataProduct";
 
+// Portal-composed (not a proto): the experiments ViewSet's
+// _add_intermediate_output_information emits process_status + data_products.
 const FIELDS = [
   {
-    name: "processStatus",
+    name: "process_status",
     type: ProcessStatus,
   },
   {
-    name: "dataProducts",
+    name: "data_products",
     type: DataProduct,
     list: true,
   },

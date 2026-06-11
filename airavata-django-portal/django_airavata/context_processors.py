@@ -6,13 +6,30 @@ import re
 
 from django.apps import apps
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.cache import cache
 from django.urls import reverse
 
 from django_airavata.app_config import AiravataAppConfig
-from django_airavata.apps.api.models import User_Notifications
 
 logger = logging.getLogger(__name__)
+
+
+# Per-user notification read-state lives in the cache (was the
+# api_user_notifications table): {notification_id: is_read}. Pure UX state; cache
+# eviction just re-marks notifications unread.
+def _notif_read_key(username):
+    return f"notif_read:{username}"
+
+
+def notification_read_state(username):
+    return cache.get(_notif_read_key(username), {})
+
+
+def mark_notification_read(username, notification_id):
+    state = notification_read_state(username)
+    state[notification_id] = True
+    cache.set(_notif_read_key(username), state)
+
 
 # proto NotificationPriority value -> the Thrift NotificationPriority integer the
 # frontend dashboard expects (proto LOW=1/NORMAL=2/HIGH=3 vs Thrift 0/1/2). Built
@@ -72,16 +89,11 @@ def get_notifications(request):
                     reverse('django_airavata_api:ack-notifications'))\
                     + "?id=" + str(notification.notification_id)
 
-                try:
-                    notification_status = User_Notifications.objects.get(
-                        notification_id=notification.notification_id,
-                        username=request.user.username)
-                except ObjectDoesNotExist:
-                    notification_status = User_Notifications.objects.create(
-                        username=request.user.username,
-                        notification_id=notification.notification_id)
-                notification_data['is_read'] = notification_status.is_read
-                if not notification_status.is_read:
+                is_read = notification_read_state(
+                    request.user.username).get(
+                        notification.notification_id, False)
+                notification_data['is_read'] = is_read
+                if not is_read:
                     unread_notifications += 1
                 valid_notifications.append(notification_data)
 
@@ -103,7 +115,10 @@ def user_session_data(request):
         # is_gateway_admin may not be set if a failure occurs during login
         data["isGatewayAdmin"] = getattr(request, "is_gateway_admin", False)
     return {
-        "user_session_data": json.dumps(data)
+        "user_session_data": json.dumps(data),
+        # Keycloak account console for the "User Settings" link in base.html.
+        "KEYCLOAK_ACCOUNT_CONSOLE_URL": getattr(
+            settings, "KEYCLOAK_ACCOUNT_CONSOLE_URL", ""),
     }
 
 

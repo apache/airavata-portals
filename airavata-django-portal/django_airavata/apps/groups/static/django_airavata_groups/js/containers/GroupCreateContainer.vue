@@ -30,7 +30,7 @@ export default {
       const group = new models.Group();
       const ownerId = session.Session.airavataInternalUserId;
       group.members.push(ownerId);
-      group.ownerId = ownerId;
+      group.owner_id = ownerId;
       return group;
     },
   },

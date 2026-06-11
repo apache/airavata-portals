@@ -7,11 +7,11 @@ const FIELDS = [
     type: TaskState,
   },
   {
-    name: "timeOfStateChange",
-    type: Date,
+    name: "time_of_state_change",
+    type: "date",
   },
   "reason",
-  "statusId",
+  "status_id",
 ];
 
 export default class TaskStatus extends BaseModel {

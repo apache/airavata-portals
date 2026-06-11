@@ -5,9 +5,9 @@
       <gateway-groups-badge
         :group="group"
         v-if="
-          group.isGatewayAdminsGroup ||
-          group.isReadOnlyGatewayAdminsGroup ||
-          group.isDefaultGatewayUsersGroup
+          group.is_gateway_admins_group ||
+          group.is_read_only_gateway_admins_group ||
+          group.is_default_gateway_users_group
         "
       />
     </td>
@@ -15,7 +15,7 @@
     <td>{{ group.description }}</td>
     <td>
       <a
-        v-if="group.isOwner || group.isAdmin"
+        v-if="group.is_owner || group.is_admin"
         class="action-link"
         :href="'/groups/edit/' + encodeURIComponent(group.id) + '/'"
       >
@@ -90,20 +90,20 @@ export default {
   computed: {
     deleteable: function () {
       return (
-        this.group.isOwner &&
+        this.group.is_owner &&
         // Don't allow deleting "GatewayGroups" groups since they serve
         // a special function in the gateway
-        this.group.isGatewayAdminsGroup === false &&
-        this.group.isReadOnlyGatewayAdminsGroup === false &&
-        this.group.isDefaultGatewayUsersGroup === false
+        this.group.is_gateway_admins_group === false &&
+        this.group.is_read_only_gateway_admins_group === false &&
+        this.group.is_default_gateway_users_group === false
       );
     },
     ownerUsername() {
-      const lastAtIndex = this.group.ownerId.lastIndexOf("@");
+      const lastAtIndex = this.group.owner_id.lastIndexOf("@");
       if (lastAtIndex > 0) {
-        return this.group.ownerId.substring(0, lastAtIndex);
+        return this.group.owner_id.substring(0, lastAtIndex);
       }
-      return this.group.ownerId;
+      return this.group.owner_id;
     },
   },
   methods: {

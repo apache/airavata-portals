@@ -18,14 +18,14 @@
           <div class="card-body">
             <storage-preference-list
               v-if="gatewayResourceProfile"
-              :storagePreferences="gatewayResourceProfile.storagePreferences"
+              :storagePreferences="gatewayResourceProfile.storage_preferences"
               :default-credential-store-token="
-                gatewayResourceProfile.credentialStoreToken
+                gatewayResourceProfile.credential_store_token
               "
               @updated="updatedStoragePreference"
               @added="addedStoragePreference"
               @delete="deleteStoragePreference"
-              :readonly="!gatewayResourceProfile.userHasWriteAccess"
+              :readonly="!gatewayResourceProfile.user_has_write_access"
             />
           </div>
         </div>
@@ -33,7 +33,7 @@
     </div>
     <div
       class="row"
-      v-if="gatewayResourceProfile && gatewayResourceProfile.userHasWriteAccess"
+      v-if="gatewayResourceProfile && gatewayResourceProfile.user_has_write_access"
     >
       <div class="col">
         <b-button variant="primary" @click="save"> Save </b-button>
@@ -79,11 +79,11 @@ export default {
       this.gatewayResourceProfile = this.gatewayResourceProfileClone.clone();
     },
     updatedStoragePreference(updatedStoragePreference) {
-      const index = this.gatewayResourceProfile.storagePreferences.findIndex(
+      const index = this.gatewayResourceProfile.storage_preferences.findIndex(
         (sp) =>
-          sp.storageResourceId === updatedStoragePreference.storageResourceId
+          sp.storage_resource_id === updatedStoragePreference.storage_resource_id
       );
-      this.gatewayResourceProfile.storagePreferences.splice(
+      this.gatewayResourceProfile.storage_preferences.splice(
         index,
         1,
         updatedStoragePreference
@@ -93,17 +93,17 @@ export default {
       services.StoragePreferenceService.create({
         data: newStoragePreference,
       }).then((sp) => {
-        this.gatewayResourceProfile.storagePreferences.push(sp);
+        this.gatewayResourceProfile.storage_preferences.push(sp);
       });
     },
     deleteStoragePreference(storageResourceId) {
       services.StoragePreferenceService.delete({
         lookup: storageResourceId,
       }).then(() => {
-        const index = this.gatewayResourceProfile.storagePreferences.findIndex(
-          (sp) => sp.storageResourceId === storageResourceId
+        const index = this.gatewayResourceProfile.storage_preferences.findIndex(
+          (sp) => sp.storage_resource_id === storageResourceId
         );
-        this.gatewayResourceProfile.storagePreferences.splice(index, 1);
+        this.gatewayResourceProfile.storage_preferences.splice(index, 1);
       });
     },
   },

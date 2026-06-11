@@ -5,29 +5,29 @@ import TaskTypes from "./TaskTypes";
 import TaskStatus from "./TaskStatus";
 
 const FIELDS = [
-  "taskId",
+  "task_id",
   {
-    name: "taskType",
+    name: "task_type",
     type: TaskTypes,
   },
-  "parentProcessId",
+  "parent_process_id",
   {
-    name: "creationTime",
-    type: Date,
+    name: "creation_time",
+    type: "date",
   },
   {
-    name: "lastUpdateTime",
-    type: Date,
+    name: "last_update_time",
+    type: "date",
   },
   {
-    name: "taskStatuses",
+    name: "task_statuses",
     type: TaskStatus,
     list: true,
   },
-  "taskDetail",
-  "subTaskModel",
+  "task_detail",
+  "sub_task_model",
   {
-    name: "taskErrors",
+    name: "task_errors",
     type: ErrorModel,
     list: true,
   },
@@ -36,8 +36,8 @@ const FIELDS = [
     type: Job,
     list: true,
   },
-  "maxRetry",
-  "currentRetry",
+  "max_retry",
+  "current_retry",
 ];
 
 export default class Task extends BaseModel {
@@ -46,8 +46,8 @@ export default class Task extends BaseModel {
   }
 
   get latestStatus() {
-    if (this.taskStatuses && this.taskStatuses.length > 0) {
-      return this.taskStatuses[this.taskStatuses.length - 1];
+    if (this.task_statuses && this.task_statuses.length > 0) {
+      return this.task_statuses[this.task_statuses.length - 1];
     } else {
       return null;
     }

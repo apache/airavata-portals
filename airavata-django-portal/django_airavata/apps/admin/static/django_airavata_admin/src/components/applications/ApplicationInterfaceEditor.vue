@@ -13,7 +13,7 @@
         >
           <b-form-radio-group
             id="archive-directory"
-            v-model="data.archiveWorkingDirectory"
+            v-model="data.archive_working_directory"
             :options="trueFalseOptions"
             :disabled="readonly"
           >
@@ -27,7 +27,7 @@
         >
           <b-form-radio-group
             id="show-queue-settings"
-            v-model="data.showQueueSettings"
+            v-model="data.show_queue_settings"
             :options="trueFalseOptions"
             :disabled="readonly"
           >
@@ -42,7 +42,7 @@
           description="Select function to automatically compute queue settings."
         >
           <b-form-select
-            v-model="data.queueSettingsCalculatorId"
+            v-model="data.queue_settings_calculator_id"
             :options="queueSettingsCalculatorOptions"
             :disabled="queueSettingsCalculatorOptions.length === 0"
           >
@@ -63,15 +63,15 @@
         <b-form-textarea
           id="application-description"
           :rows="5"
-          v-model="data.applicationDescription"
+          v-model="data.application_description"
           :state="
-            !data.applicationDescription ||
-            data.applicationDescription.length < 500
+            !data.application_description ||
+            data.application_description.length < 500
           "
         >
         </b-form-textarea>
-        <b-form-valid-feedback v-if="!!data.applicationDescription">
-          {{ data.applicationDescription.length }} / 500
+        <b-form-valid-feedback v-if="!!data.application_description">
+          {{ data.application_description.length }} / 500
         </b-form-valid-feedback>
         <b-form-invalid-feedback>
           Application instructions text is limited to 500 characters maximum.
@@ -82,13 +82,13 @@
       <div class="col">
         <h1 class="h5 mb-4">Input Fields</h1>
         <draggable
-          v-model="data.applicationInputs"
+          v-model="data.application_inputs"
           :options="dragOptions"
           @start="onDragStart"
           @end="onDragEnd"
         >
           <application-input-field-editor
-            v-for="input in data.applicationInputs"
+            v-for="input in data.application_inputs"
             :value="input"
             :key="input.key"
             :focus="input.key === focusApplicationInputKey"
@@ -115,7 +115,7 @@
       <div class="col">
         <h1 class="h5 mb-4">Output Fields</h1>
         <application-output-field-editor
-          v-for="output in data.applicationOutputs"
+          v-for="output in data.application_outputs"
           :value="output"
           :key="output.key"
           :focus="output.key === focusApplicationOutputKey"
@@ -206,38 +206,38 @@ export default {
       this.$emit("cancel");
     },
     updatedInput(newValue) {
-      const input = this.data.applicationInputs.find(
+      const input = this.data.application_inputs.find(
         (input) => input.key === newValue.key
       );
       Object.assign(input, newValue);
     },
     addApplicationInput() {
       const appInput = new models.InputDataObjectType();
-      this.data.applicationInputs.push(appInput);
+      this.data.application_inputs.push(appInput);
       this.focusApplicationInputKey = appInput.key;
     },
     deleteInput(input) {
-      const inputIndex = this.data.applicationInputs.findIndex(
+      const inputIndex = this.data.application_inputs.findIndex(
         (inp) => inp.key === input.key
       );
-      this.data.applicationInputs.splice(inputIndex, 1);
+      this.data.application_inputs.splice(inputIndex, 1);
     },
     updatedOutput(newValue) {
-      const output = this.data.applicationOutputs.find(
+      const output = this.data.application_outputs.find(
         (o) => o.key === newValue.key
       );
       Object.assign(output, newValue);
     },
     addApplicationOutput() {
       const newOutput = new models.OutputDataObjectType();
-      this.data.applicationOutputs.push(newOutput);
+      this.data.application_outputs.push(newOutput);
       this.focusApplicationOutputKey = newOutput.key;
     },
     deleteOutput(output) {
-      const outputIndex = this.data.applicationOutputs.findIndex(
+      const outputIndex = this.data.application_outputs.findIndex(
         (o) => o.key === output.key
       );
-      this.data.applicationOutputs.splice(outputIndex, 1);
+      this.data.application_outputs.splice(outputIndex, 1);
     },
     onDragStart() {
       this.collapseApplicationInputs = true;

@@ -7,11 +7,12 @@ const FIELDS = [
     type: ProcessState,
   },
   {
-    name: "timeOfStateChange",
-    type: Date,
+    name: "time_of_state_change",
+    type: "date",
   },
   "reason",
-  "statusId",
+  "status_id",
+  "process_id",
 ];
 
 export default class ProcessStatus extends BaseModel {

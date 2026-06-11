@@ -9,7 +9,7 @@
             class="application-name text-muted text-uppercase"
           >
             <i class="fa fa-code" aria-hidden="true"></i>
-            {{ appModule.appModuleName }}
+            {{ appModule.app_module_name }}
           </div>
           <slot name="title">Experiment Editor</slot>
         </h1>
@@ -17,9 +17,9 @@
       <div class="col-auto">
         <share-button
           ref="shareButton"
-          :entity-id="localExperiment.experimentId"
+          :entity-id="localExperiment.experiment_id"
           :entity-label="'Experiment'"
-          :parent-entity-id="localExperiment.projectId"
+          :parent-entity-id="localExperiment.project_id"
           :parent-entity-label="'Project'"
           :auto-add-default-gateway-users-group="false"
         />
@@ -31,16 +31,16 @@
           <b-form-group
             label="Experiment Name"
             label-for="experiment-name"
-            :feedback="getValidationFeedback('experimentName')"
-            :state="getValidationState('experimentName')"
+            :feedback="getValidationFeedback("experiment_name")"
+            :state="getValidationState("experiment_name")"
           >
             <b-form-input
               id="experiment-name"
               type="text"
-              v-model="localExperiment.experimentName"
+              v-model="localExperiment.experiment_name"
               required
               placeholder="Experiment name"
-              :state="getValidationState('experimentName')"
+              :state="getValidationState("experiment_name")"
             ></b-form-input>
           </b-form-group>
           <experiment-description-editor
@@ -53,14 +53,14 @@
           <b-form-group
             label="Project"
             label-for="project"
-            :feedback="getValidationFeedback('projectId')"
-            :state="getValidationState('projectId')"
+            :feedback="getValidationFeedback("project_id")"
+            :state="getValidationState("project_id")"
           >
             <b-form-select
               id="project"
-              v-model="localExperiment.projectId"
+              v-model="localExperiment.project_id"
               required
-              :state="getValidationState('projectId')"
+              :state="getValidationState("project_id")"
             >
               <template slot="first">
                 <option :value="null" disabled>Select a Project</option>
@@ -91,9 +91,9 @@
         <div class="col">
           <workspace-notices-management-container
             class="mt-2"
-            v-if="appInterface && appInterface.applicationDescription"
+            v-if="appInterface && appInterface.application_description"
             :data="[
-              { notificationMessage: appInterface.applicationDescription },
+              { notification_message: appInterface.application_description },
             ]"
           />
         </div>
@@ -111,7 +111,7 @@
 
               <transition-group name="fade">
                 <input-editor-container
-                  v-for="experimentInput in localExperiment.experimentInputs"
+                  v-for="experimentInput in localExperiment.experiment_inputs"
                   :experiment-input="experimentInput"
                   :experiment="localExperiment"
                   v-model="experimentInput.value"
@@ -129,7 +129,7 @@
         </div>
       </div>
       <group-resource-profile-selector
-        v-model="localExperiment.userConfigurationData.groupResourceProfileId"
+        v-model="localExperiment.user_configuration_data.group_resource_profile_id"
         @invalid="invalidGroupResourceProfileSelector = true"
         @valid="invalidGroupResourceProfileSelector = false"
       >
@@ -138,13 +138,13 @@
         <div class="col">
           <computational-resource-scheduling-editor
             v-model="
-              localExperiment.userConfigurationData
-                .computationalResourceScheduling
+              localExperiment.user_configuration_data
+                .computational_resource_scheduling
             "
-            v-if="localExperiment.userConfigurationData.groupResourceProfileId"
-            :app-module-id="appModule.appModuleId"
+            v-if="localExperiment.user_configuration_data.group_resource_profile_id"
+            :app-module-id="appModule.app_module_id"
             :group-resource-profile-id="
-              localExperiment.userConfigurationData.groupResourceProfileId
+              localExperiment.user_configuration_data.group_resource_profile_id
             "
             @invalid="invalidComputationalResourceSchedulingEditor = true"
             @valid="invalidComputationalResourceSchedulingEditor = false"
@@ -155,7 +155,7 @@
       <div class="row">
         <div class="col">
           <b-form-group label="Email Settings">
-            <b-form-checkbox v-model="localExperiment.enableEmailNotification">
+            <b-form-checkbox v-model="localExperiment.enable_email_notification">
               Receive email notification of experiment status
             </b-form-checkbox>
           </b-form-group>
@@ -233,11 +233,11 @@ export default {
   mounted: function () {
     services.ProjectService.listAll().then((projects) => {
       this.projects = projects;
-      if (!this.localExperiment.projectId) {
+      if (!this.localExperiment.project_id) {
         services.WorkspacePreferencesService.get().then(
           (workspacePreferences) => {
-            if (!this.localExperiment.projectId) {
-              this.localExperiment.projectId =
+            if (!this.localExperiment.project_id) {
+              this.localExperiment.project_id =
                 workspacePreferences.most_recent_project_id;
             }
           }
@@ -248,19 +248,19 @@ export default {
   computed: {
     sharedProjectOptions: function () {
       return this.projects
-        .filter((p) => !p.isOwner)
+        .filter((p) => !p.is_owner)
         .map((project) => ({
-          value: project.projectID,
+          value: project.project_id,
           text:
             project.name +
-            (!project.isOwner ? " (owned by " + project.owner + ")" : ""),
+            (!project.is_owner ? " (owned by " + project.owner + ")" : ""),
         }));
     },
     myProjectOptions() {
       return this.projects
-        .filter((p) => p.isOwner)
+        .filter((p) => p.is_owner)
         .map((project) => ({
-          value: project.projectID,
+          value: project.project_id,
           text: project.name,
         }));
     },
@@ -294,16 +294,16 @@ export default {
       return this.saveOrUpdateExperiment().then((experiment) => {
         this.localExperiment = experiment;
         return services.ExperimentService.launch({
-          lookup: experiment.experimentId,
+          lookup: experiment.experiment_id,
         }).then(() => {
           this.$emit("savedAndLaunched", experiment);
         });
       });
     },
     saveOrUpdateExperiment: function () {
-      if (this.localExperiment.experimentId) {
+      if (this.localExperiment.experiment_id) {
         return services.ExperimentService.update({
-          lookup: this.localExperiment.experimentId,
+          lookup: this.localExperiment.experiment_id,
           data: this.localExperiment,
         }).then((experiment) => {
           this.saved = true;
@@ -317,7 +317,7 @@ export default {
           // created
           this.saved = true;
           return this.$refs.shareButton
-            .mergeAndSave(experiment.experimentId)
+            .mergeAndSave(experiment.experiment_id)
             .then(() => experiment);
         });
       }
@@ -356,26 +356,26 @@ export default {
     calculateQueueSettings: _.debounce(async function () {
       const queueSettingsUpdate = await services.QueueSettingsCalculatorService.calculate(
         {
-          lookup: this.appInterface.queueSettingsCalculatorId,
+          lookup: this.appInterface.queue_settings_calculator_id,
           data: this.localExperiment,
         },
         { showSpinner: false }
       );
-      // Override values in computationalResourceScheduling with the values
+      // Override values in computational_resource_scheduling with the values
       // returned from the queue settings calculator
       Object.assign(
-        this.localExperiment.userConfigurationData
-          .computationalResourceScheduling,
+        this.localExperiment.user_configuration_data
+          .computational_resource_scheduling,
         queueSettingsUpdate
       );
     }, 500),
     experimentInputsChanged() {
-      if (this.appInterface.queueSettingsCalculatorId) {
+      if (this.appInterface.queue_settings_calculator_id) {
         this.calculateQueueSettings();
       }
     },
     resourceHostIdChanged() {
-      if (this.appInterface.queueSettingsCalculatorId) {
+      if (this.appInterface.queue_settings_calculator_id) {
         this.calculateQueueSettings();
       }
     },
@@ -390,13 +390,13 @@ export default {
       },
       deep: true,
     },
-    "experiment.experimentInputs": {
+    "experiment.experiment_inputs": {
       handler() {
         this.experimentInputsChanged();
       },
       deep: true,
     },
-    "experiment.userConfigurationData.computationalResourceScheduling.resourceHostId": function () {
+    "experiment.user_configuration_data.computational_resource_scheduling.resource_host_id": function () {
       this.resourceHostIdChanged();
     },
   },

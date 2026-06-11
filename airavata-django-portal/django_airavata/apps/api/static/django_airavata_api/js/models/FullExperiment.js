@@ -7,7 +7,7 @@ import Job from "./Job";
 import Project from "./Project";
 
 const FIELDS = [
-  "experimentId",
+  "experiment_id",
   {
     name: "experiment",
     type: Experiment,
@@ -17,30 +17,30 @@ const FIELDS = [
     type: Project,
   },
   {
-    name: "applicationModule",
+    name: "application_module",
     type: ApplicationModule,
   },
   {
-    name: "computeResource",
+    name: "compute_resource",
     type: ComputeResourceDescription,
   },
   {
-    name: "outputDataProducts",
+    name: "output_data_products",
     type: DataProduct,
     list: true,
   },
   {
-    name: "inputDataProducts",
+    name: "input_data_products",
     type: DataProduct,
     list: true,
   },
   {
-    name: "jobDetails",
+    name: "job_details",
     type: Job,
     list: true,
   },
   {
-    name: "outputViews",
+    name: "output_views",
     type: Object,
   },
 ];
@@ -55,11 +55,13 @@ export default class FullExperiment extends BaseModel {
   }
 
   get applicationName() {
-    return this.applicationModule ? this.applicationModule.appModuleName : null;
+    return this.application_module
+      ? this.application_module.app_module_name
+      : null;
   }
 
   get computeHostName() {
-    return this.computeResource ? this.computeResource.hostName : null;
+    return this.compute_resource ? this.compute_resource.host_name : null;
   }
 
   get resourceHostId() {

@@ -86,7 +86,7 @@ const testApplyBatchQueueResourcePolicy = ({
 }) => {
   const state = {};
   state.experiment = new models.Experiment();
-  state.experiment.userConfigurationData.computationalResourceScheduling = new models.ComputationalResourceSchedulingModel(
+  state.experiment.user_configuration_data.computational_resource_scheduling = new models.ComputationalResourceSchedulingModel(
     computationalResourceScheduling
   );
   const bqrp = new models.BatchQueueResourcePolicy(batchQueueResourcePolicy);
@@ -106,14 +106,14 @@ const testApplyBatchQueueResourcePolicy = ({
 test("applyBatchQueueResourcePolicy: maxAllowedCores caps totalCPUCount", (done) => {
   testApplyBatchQueueResourcePolicy({
     computationalResourceScheduling: {
-      totalCPUCount: 10,
-      nodeCount: 1,
-      wallTimeLimit: 30,
+      total_cpu_count: 10,
+      node_count: 1,
+      wall_time_limit: 30,
     },
     batchQueueResourcePolicy: {
-      maxAllowedCores: 5,
-      maxAllowedNodes: 2,
-      maxAllowedWalltime: 120,
+      max_allowed_cores: 5,
+      max_allowed_nodes: 2,
+      max_allowed_walltime: 120,
     },
     expectedMutations: [
       { type: "updateTotalCPUCount", payload: { totalCPUCount: 5 } },
@@ -125,14 +125,14 @@ test("applyBatchQueueResourcePolicy: maxAllowedCores caps totalCPUCount", (done)
 test("applyBatchQueueResourcePolicy: maxAllowedCores doesn't affect totalCPUCount", (done) => {
   testApplyBatchQueueResourcePolicy({
     computationalResourceScheduling: {
-      totalCPUCount: 10,
-      nodeCount: 1,
-      wallTimeLimit: 30,
+      total_cpu_count: 10,
+      node_count: 1,
+      wall_time_limit: 30,
     },
     batchQueueResourcePolicy: {
-      maxAllowedCores: 50,
-      maxAllowedNodes: 2,
-      maxAllowedWalltime: 120,
+      max_allowed_cores: 50,
+      max_allowed_nodes: 2,
+      max_allowed_walltime: 120,
     },
     expectedMutations: [],
     done,
@@ -142,14 +142,14 @@ test("applyBatchQueueResourcePolicy: maxAllowedCores doesn't affect totalCPUCoun
 test("applyBatchQueueResourcePolicy: maxAllowedNodes caps nodeCount", (done) => {
   testApplyBatchQueueResourcePolicy({
     computationalResourceScheduling: {
-      totalCPUCount: 10,
-      nodeCount: 11,
-      wallTimeLimit: 30,
+      total_cpu_count: 10,
+      node_count: 11,
+      wall_time_limit: 30,
     },
     batchQueueResourcePolicy: {
-      maxAllowedCores: 50,
-      maxAllowedNodes: 4,
-      maxAllowedWalltime: 120,
+      max_allowed_cores: 50,
+      max_allowed_nodes: 4,
+      max_allowed_walltime: 120,
     },
     expectedMutations: [{ type: "updateNodeCount", payload: { nodeCount: 4 } }],
     done,
@@ -159,14 +159,14 @@ test("applyBatchQueueResourcePolicy: maxAllowedNodes caps nodeCount", (done) => 
 test("applyBatchQueueResourcePolicy: maxAllowedNodes doesn't affect nodeCount", (done) => {
   testApplyBatchQueueResourcePolicy({
     computationalResourceScheduling: {
-      totalCPUCount: 10,
-      nodeCount: 7,
-      wallTimeLimit: 30,
+      total_cpu_count: 10,
+      node_count: 7,
+      wall_time_limit: 30,
     },
     batchQueueResourcePolicy: {
-      maxAllowedCores: 50,
-      maxAllowedNodes: 52,
-      maxAllowedWalltime: 120,
+      max_allowed_cores: 50,
+      max_allowed_nodes: 52,
+      max_allowed_walltime: 120,
     },
     expectedMutations: [],
     done,
@@ -176,14 +176,14 @@ test("applyBatchQueueResourcePolicy: maxAllowedNodes doesn't affect nodeCount", 
 test("applyBatchQueueResourcePolicy: maxAllowedWalltime caps wallTimeLimit", (done) => {
   testApplyBatchQueueResourcePolicy({
     computationalResourceScheduling: {
-      totalCPUCount: 10,
-      nodeCount: 1,
-      wallTimeLimit: 8,
+      total_cpu_count: 10,
+      node_count: 1,
+      wall_time_limit: 8,
     },
     batchQueueResourcePolicy: {
-      maxAllowedCores: 50,
-      maxAllowedNodes: 10,
-      maxAllowedWalltime: 6,
+      max_allowed_cores: 50,
+      max_allowed_nodes: 10,
+      max_allowed_walltime: 6,
     },
     expectedMutations: [
       { type: "updateWallTimeLimit", payload: { wallTimeLimit: 6 } },
@@ -195,14 +195,14 @@ test("applyBatchQueueResourcePolicy: maxAllowedWalltime caps wallTimeLimit", (do
 test("applyBatchQueueResourcePolicy: maxAllowedWalltime doesn't affect wallTimeLimit", (done) => {
   testApplyBatchQueueResourcePolicy({
     computationalResourceScheduling: {
-      totalCPUCount: 10,
-      nodeCount: 1,
-      wallTimeLimit: 30,
+      total_cpu_count: 10,
+      node_count: 1,
+      wall_time_limit: 30,
     },
     batchQueueResourcePolicy: {
-      maxAllowedCores: 24,
-      maxAllowedNodes: 2,
-      maxAllowedWalltime: 120,
+      max_allowed_cores: 24,
+      max_allowed_nodes: 2,
+      max_allowed_walltime: 120,
     },
     expectedMutations: [],
     done,
@@ -217,7 +217,7 @@ test("initializeGroupResourceProfileId: set to most recent group resource profil
     "ec50a69d-54ea-4b7c-a578-9a2a8da09ba0";
   state.groupResourceProfiles = [
     new models.GroupResourceProfile({
-      groupResourceProfileId:
+      group_resource_profile_id:
         state.workspacePreferences.most_recent_group_resource_profile_id,
     }),
   ];
@@ -256,14 +256,14 @@ test("initializeGroupResourceProfileId: set to most recent group resource profil
 test("initializeGroupResourceProfileId: set to most recent group resource profile when no longer has access to grp", (done) => {
   const state = {};
   state.experiment = new models.Experiment();
-  state.experiment.userConfigurationData.groupResourceProfileId =
+  state.experiment.user_configuration_data.group_resource_profile_id =
     "2580d4e6-7a8d-444e-b259-a8e6ae886d66";
   state.workspacePreferences = new models.WorkspacePreferences();
   state.workspacePreferences.most_recent_group_resource_profile_id =
     "ec50a69d-54ea-4b7c-a578-9a2a8da09ba0";
   state.groupResourceProfiles = [
     new models.GroupResourceProfile({
-      groupResourceProfileId:
+      group_resource_profile_id:
         state.workspacePreferences.most_recent_group_resource_profile_id,
     }),
   ];
@@ -279,8 +279,8 @@ test("initializeGroupResourceProfileId: set to most recent group resource profil
   expect(
     state.groupResourceProfiles.find(
       (grp) =>
-        grp.groupResourceProfileId ===
-        state.experiment.userConfigurationData.groupResourceProfileId
+        grp.group_resource_profile_id ===
+        state.experiment.user_configuration_data.group_resource_profile_id
     )
   ).toBeUndefined();
   const g = {
@@ -309,13 +309,13 @@ test("initializeGroupResourceProfileId: set to most recent group resource profil
 test("initializeGroupResourceProfileId: set to first group resource profile when no most recent grp", (done) => {
   const state = {};
   state.experiment = new models.Experiment();
-  state.experiment.userConfigurationData.groupResourceProfileId =
+  state.experiment.user_configuration_data.group_resource_profile_id =
     "2580d4e6-7a8d-444e-b259-a8e6ae886d66";
   state.workspacePreferences = new models.WorkspacePreferences();
   state.workspacePreferences.most_recent_group_resource_profile_id = null;
   state.groupResourceProfiles = [
     new models.GroupResourceProfile({
-      groupResourceProfileId: "c84da77b-8ce6-457f-b5c7-c72a663d7f77",
+      group_resource_profile_id: "c84da77b-8ce6-457f-b5c7-c72a663d7f77",
     }),
   ];
   const expectedActions = [
@@ -351,7 +351,7 @@ test("initializeGroupResourceProfileId: set to first group resource profile when
 test("initializeGroupResourceProfileId: set to null when no longer has access", (done) => {
   const state = {};
   state.experiment = new models.Experiment();
-  state.experiment.userConfigurationData.groupResourceProfileId =
+  state.experiment.user_configuration_data.group_resource_profile_id =
     "2580d4e6-7a8d-444e-b259-a8e6ae886d66";
   state.workspacePreferences = new models.WorkspacePreferences();
   state.workspacePreferences.most_recent_group_resource_profile_id = null;
@@ -423,7 +423,7 @@ test("applyGroupResourceProfile: when compute resource doesn't change, but queue
 
 test("applyGroupResourceProfile: when compute resource doesn't change, and queue doesn't change, dispatches applyBatchQueueResourcePolicy", (done) => {
   const getters = {
-    queue: new models.BatchQueue({ queueName: "shared" }),
+    queue: new models.BatchQueue({ queue_name: "shared" }),
   };
   const expectedActions = [
     {
@@ -444,7 +444,7 @@ test("applyGroupResourceProfile: when compute resource doesn't change, and queue
 test("initializeResourceHostId: experiment has no resourceHostId, should dispatch getDefaultResourceHostId, return true", (done) => {
   const state = {};
   state.experiment = new models.Experiment();
-  state.experiment.userConfigurationData.computationalResourceScheduling = new models.ComputationalResourceSchedulingModel();
+  state.experiment.user_configuration_data.computational_resource_scheduling = new models.ComputationalResourceSchedulingModel();
   const mockGetters = {
     resourceHostId: getters.resourceHostId(state),
   };
@@ -473,18 +473,18 @@ test("initializeResourceHostId: experiment has no resourceHostId, should dispatc
 test("initializeResourceHostId: experiment has resourceHostId but not in list of app deployments, should dispatch getDefaultResourceHostId, return true", (done) => {
   const state = {};
   state.experiment = new models.Experiment();
-  state.experiment.userConfigurationData.computationalResourceScheduling = new models.ComputationalResourceSchedulingModel(
+  state.experiment.user_configuration_data.computational_resource_scheduling = new models.ComputationalResourceSchedulingModel(
     {
-      resourceHostId: "resourceHostId1",
+      resource_host_id: "resourceHostId1",
     }
   );
   // experiment's resourceHostId1 isn't in list of app deployments
   state.applicationDeployments = [
     new models.ApplicationDeploymentDescription({
-      computeHostId: "resourceHostId2",
+      compute_host_id: "resourceHostId2",
     }),
     new models.ApplicationDeploymentDescription({
-      computeHostId: "resourceHostId3",
+      compute_host_id: "resourceHostId3",
     }),
   ];
   const mockGetters = {
@@ -521,20 +521,20 @@ test("initializeResourceHostId: experiment has resourceHostId but not in list of
 test("initializeResourceHostId: experiment has resourceHostId and in list of app deployments, should return false", (done) => {
   const state = {};
   state.experiment = new models.Experiment();
-  state.experiment.userConfigurationData.computationalResourceScheduling = new models.ComputationalResourceSchedulingModel(
+  state.experiment.user_configuration_data.computational_resource_scheduling = new models.ComputationalResourceSchedulingModel(
     {
-      resourceHostId: "resourceHostId1",
+      resource_host_id: "resourceHostId1",
     }
   );
   state.applicationDeployments = [
     new models.ApplicationDeploymentDescription({
-      computeHostId: "resourceHostId1",
+      compute_host_id: "resourceHostId1",
     }),
     new models.ApplicationDeploymentDescription({
-      computeHostId: "resourceHostId2",
+      compute_host_id: "resourceHostId2",
     }),
     new models.ApplicationDeploymentDescription({
-      computeHostId: "resourceHostId3",
+      compute_host_id: "resourceHostId3",
     }),
   ];
   const mockGetters = {
@@ -562,13 +562,13 @@ test("getDefaultResourceHostId: dispatch loadDefaultComputeResourceId, return de
   });
   state.applicationDeployments = [
     new models.ApplicationDeploymentDescription({
-      computeHostId: "resourceHostId1",
+      compute_host_id: "resourceHostId1",
     }),
     new models.ApplicationDeploymentDescription({
-      computeHostId: "resourceHostId2",
+      compute_host_id: "resourceHostId2",
     }),
     new models.ApplicationDeploymentDescription({
-      computeHostId: "resourceHostId3",
+      compute_host_id: "resourceHostId3",
     }),
   ];
   const mockGetters = {
@@ -598,10 +598,10 @@ test("getDefaultResourceHostId: dispatch loadDefaultComputeResourceId, return fi
   });
   state.applicationDeployments = [
     new models.ApplicationDeploymentDescription({
-      computeHostId: "resourceHostId2",
+      compute_host_id: "resourceHostId2",
     }),
     new models.ApplicationDeploymentDescription({
-      computeHostId: "resourceHostId3",
+      compute_host_id: "resourceHostId3",
     }),
   ];
   const mockGetters = {
@@ -648,16 +648,16 @@ test("getDefaultResourceHostId: dispatch loadDefaultComputeResourceId, return nu
 test("initializeQueue: when queue selected, when defaults are less than batch queue policy limits, queue settings use defaults", (done) => {
   const mockGetters = {
     queue: new models.BatchQueue({
-      queueName: "shared",
-      defaultNodeCount: 1,
-      defaultCPUCount: 8,
-      defaultWalltime: 30,
+      queue_name: "shared",
+      default_node_count: 1,
+      default_cpu_count: 8,
+      default_walltime: 30,
     }),
     batchQueueResourcePolicy: new models.BatchQueueResourcePolicy({
       queuename: "shared",
-      maxAllowedNodes: 2,
-      maxAllowedCores: 32,
-      maxAllowedWalltime: 60,
+      max_allowed_nodes: 2,
+      max_allowed_cores: 32,
+      max_allowed_walltime: 60,
     }),
   };
   mockGetters.getDefaultCPUCount = getters.getDefaultCPUCount(
@@ -691,16 +691,16 @@ test("initializeQueue: when queue selected, when defaults are less than batch qu
 test("initializeQueue: when queue selected, when defaults are more than batch queue policy limits, queue settings use batch queue policy limits", (done) => {
   const mockGetters = {
     queue: new models.BatchQueue({
-      queueName: "shared",
-      defaultNodeCount: 4,
-      defaultCPUCount: 16,
-      defaultWalltime: 120,
+      queue_name: "shared",
+      default_node_count: 4,
+      default_cpu_count: 16,
+      default_walltime: 120,
     }),
     batchQueueResourcePolicy: new models.BatchQueueResourcePolicy({
       queuename: "shared",
-      maxAllowedNodes: 2,
-      maxAllowedCores: 12,
-      maxAllowedWalltime: 45,
+      max_allowed_nodes: 2,
+      max_allowed_cores: 12,
+      max_allowed_walltime: 45,
     }),
   };
   mockGetters.getDefaultCPUCount = getters.getDefaultCPUCount(
@@ -751,7 +751,7 @@ test("initializeQueue: when no queue selected, settings are set to 0", (done) =>
 test("updateNodeCount: only update nodeCount when cpuPerNode <= 0", (done) => {
   const mockGetters = {
     queue: new models.BatchQueue({
-      cpuPerNode: 0,
+      cpu_per_node: 0,
     }),
   };
   const expectedMutations = [
@@ -772,7 +772,7 @@ test("updateNodeCount: update also totalCPUCount when cpuPerNode > 0", (done) =>
   const enableNodeCountToCpuCheck = true;
   const mockGetters = {
     queue: new models.BatchQueue({
-      cpuPerNode: 24,
+      cpu_per_node: 24,
     }),
     maxAllowedCores: 1000,
   };
@@ -796,7 +796,7 @@ test("updateNodeCount: update totalCPUCount when cpuPerNode > 0, but apply maxim
   const enableNodeCountToCpuCheck = true;
   const mockGetters = {
     queue: new models.BatchQueue({
-      cpuPerNode: 24,
+      cpu_per_node: 24,
     }),
     maxAllowedCores: 50,
   };
@@ -819,7 +819,7 @@ test("updateTotalCPUCount: only update totalCPUCount when cpuPerNode <= 0", (don
   const totalCPUCount = 23;
   const mockGetters = {
     queue: new models.BatchQueue({
-      cpuPerNode: 0,
+      cpu_per_node: 0,
     }),
   };
   const expectedMutations = [
@@ -841,7 +841,7 @@ test("updateTotalCPUCount: update also nodeCount when cpuPerNode > 0", (done) =>
   const enableNodeCountToCpuCheck = true;
   const mockGetters = {
     queue: new models.BatchQueue({
-      cpuPerNode: 24,
+      cpu_per_node: 24,
     }),
     maxAllowedNodes: 1000,
   };
@@ -865,11 +865,11 @@ test("updateTotalCPUCount: update nodeCount when cpuPerNode > 0, but apply maxim
   const enableNodeCountToCpuCheck = true;
   const mockGetters = {
     queue: new models.BatchQueue({
-      cpuPerNode: 24,
+      cpu_per_node: 24,
     }),
     maxAllowedNodes: 2,
   };
-  expect(totalCPUCount / mockGetters.queue.cpuPerNode).toBeGreaterThan(
+  expect(totalCPUCount / mockGetters.queue.cpu_per_node).toBeGreaterThan(
     mockGetters.maxAllowedNodes
   );
   const expectedMutations = [

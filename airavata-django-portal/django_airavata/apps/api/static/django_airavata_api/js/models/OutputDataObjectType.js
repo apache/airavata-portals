@@ -11,35 +11,37 @@ const FIELDS = [
     type: DataType,
     default: DataType.URI,
   },
-  "applicationArgument",
+  "application_argument",
   {
-    name: "isRequired",
+    name: "is_required",
     type: "boolean",
     default: false,
   },
   {
-    name: "requiredToAddedToCommandLine",
+    name: "required_to_added_to_command_line",
     type: "boolean",
     default: false,
   },
   {
-    name: "dataMovement",
+    name: "data_movement",
     type: "boolean",
     default: false,
   },
   "location",
-  "searchQuery",
+  "search_query",
   {
-    name: "outputStreaming",
+    name: "output_streaming",
     type: "boolean",
     default: false,
   },
-  "storageResourceId",
-  "metaData",
+  "storage_resource_id",
+  "meta_data",
+  // Not a proto field: the experiments ViewSet layers this snake_case block
+  // (process_status + data_products + can_fetch) onto EXECUTING-state outputs.
   {
-    name: "intermediateOutput",
+    name: "intermediate_output",
     type: IntermediateOutput,
-  }
+  },
 ];
 
 export default class OutputDataObjectType extends BaseModel {
@@ -54,13 +56,33 @@ export default class OutputDataObjectType extends BaseModel {
   }
 
   get fileMetadata() {
-    return this.metaData ? this.metaData["file-metadata"] : null;
+    // Proto-direct: meta_data is a raw JSON string; parse before indexing.
+    const metadata = this._getMetadata();
+    return metadata ? metadata["file-metadata"] : null;
   }
 
   get fileMetadataMimeType() {
     return this.fileMetadata && this.fileMetadata["mime-type"]
       ? this.fileMetadata["mime-type"]
       : null;
+  }
+
+  _getMetadata() {
+    if (!this.meta_data) {
+      return null;
+    }
+    if (typeof this.meta_data === "object") {
+      return this.meta_data;
+    }
+    if (typeof this.meta_data === "string") {
+      try {
+        const parsed = JSON.parse(this.meta_data);
+        return typeof parsed === "object" ? parsed : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
   }
 }
 

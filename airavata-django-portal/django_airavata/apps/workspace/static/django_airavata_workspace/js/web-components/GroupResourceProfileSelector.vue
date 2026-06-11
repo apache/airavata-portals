@@ -55,8 +55,8 @@ export default {
         const groupResourceProfileOptions = this.groupResourceProfiles.map(
           (groupResourceProfile) => {
             return {
-              value: groupResourceProfile.groupResourceProfileId,
-              text: groupResourceProfile.groupResourceProfileName,
+              value: groupResourceProfile.group_resource_profile_id,
+              text: groupResourceProfile.group_resource_profile_name,
             };
           }
         );

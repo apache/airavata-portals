@@ -9,11 +9,12 @@ through the ``download``/``download-file`` views instead.
 import io
 import logging
 import os
+import zipfile
 
-import zipstream
 from django.http import StreamingHttpResponse
 from django.utils.text import get_valid_filename
-from rest_framework.decorators import api_view
+
+from django_airavata.apps.api.web import api_view
 
 from .views import _user_storage_path
 
@@ -63,16 +64,26 @@ def _join(base, rel):
 
 
 def _zip_response(storage, filename, entries):
-    zf = zipstream.ZipFile(compression=zipstream.ZIP_DEFLATED, allowZip64=True)
-    for archive_name, abs_path, size in entries:
-        zf.write_iter(archive_name, _read_bytes(storage, abs_path), buffer_size=size or 0)
-    response = StreamingHttpResponse(zf, content_type='application/zip')
+    # Files are already fully read into memory (storage.download_file().content),
+    # so build the whole archive in a BytesIO with stdlib zipfile and stream the
+    # buffer back. NOTE: this buffers the entire zip in memory — fine for dev, but
+    # for large directories in production this should be replaced with a true
+    # streaming zip (the previous zipstream-new behavior).
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as zf:
+        for archive_name, abs_path, size in entries:
+            zf.writestr(archive_name, storage.download_file(abs_path).content)
+    buf.seek(0)
+    response = StreamingHttpResponse(
+        _iter_buffer(buf), content_type='application/zip')
     response['Content-Disposition'] = f'attachment; filename={filename}'
     return response
 
 
-def _read_bytes(storage, abs_path):
-    """Yield a stored file's bytes in buffer-sized chunks for the zip stream."""
-    content = storage.download_file(abs_path).content
-    for i in range(0, len(content), io.DEFAULT_BUFFER_SIZE):
-        yield content[i:i + io.DEFAULT_BUFFER_SIZE]
+def _iter_buffer(buf):
+    """Yield the in-memory archive in buffer-sized chunks."""
+    while True:
+        chunk = buf.read(io.DEFAULT_BUFFER_SIZE)
+        if not chunk:
+            break
+        yield chunk

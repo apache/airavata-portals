@@ -43,7 +43,7 @@
                 <b-form-input
                   id="docker-image"
                   type="text"
-                  v-model="localParser.imageName"
+                  v-model="localParser.image_name"
                   required
                   placeholder="Enter the Docker Image name"
                 >
@@ -58,7 +58,7 @@
                 <b-form-input
                   id="input-path"
                   type="text"
-                  v-model="localParser.inputDirPath"
+                  v-model="localParser.input_dir_path"
                   required
                   placeholder="Enter input directory of the container"
                 >
@@ -73,7 +73,7 @@
                 <b-form-input
                   id="output-path"
                   type="text"
-                  v-model="localParser.outputDirPath"
+                  v-model="localParser.output_dir_path"
                   required
                   placeholder="Enter output directory of the container"
                 >
@@ -90,7 +90,7 @@
         <div class="card">
           <div class="card-body">
             <list-layout
-              :items="localParser.inputFiles"
+              :items="localParser.input_files"
               title="Inputs"
               new-item-button-text="New Input"
               @add-new-item="createInput"
@@ -114,7 +114,7 @@
         <div class="card">
           <div class="card-body">
             <list-layout
-              :items="localParser.outputFiles"
+              :items="localParser.output_files"
               title="Outputs"
               new-item-button-text="New Output"
               @add-new-item="createOutput"
@@ -177,7 +177,7 @@ export default {
         },
         {
           label: "Required",
-          key: "requiredInput",
+          key: "required_input",
         },
         {
           label: "Type",
@@ -192,7 +192,7 @@ export default {
         },
         {
           label: "Required",
-          key: "requiredOutput",
+          key: "required_output",
         },
         {
           label: "Type",

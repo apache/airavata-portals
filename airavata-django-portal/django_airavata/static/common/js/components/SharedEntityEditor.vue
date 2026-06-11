@@ -16,9 +16,9 @@
           </span>
           <span v-if="slotProps.suggestion.type == 'user'">
             <i class="fa fa-user"></i>
-            {{ slotProps.suggestion.user.firstName }}
-            {{ slotProps.suggestion.user.lastName }} ({{
-              slotProps.suggestion.user.userId
+            {{ slotProps.suggestion.user.first_name }}
+            {{ slotProps.suggestion.user.last_name }} ({{
+              slotProps.suggestion.user.user_id
             }}) - {{ slotProps.suggestion.user.email }}
           </span>
         </template>
@@ -36,19 +36,19 @@
     >
       <template slot="cell(name)" slot-scope="data">
         <span
-          :title="data.item.user.userId"
+          :title="data.item.user.user_id"
           :class="userDataClasses"
-          v-if="!isPermissionReadOnly(data.item.permissionType)"
-          >{{ data.item.user.firstName }} {{ data.item.user.lastName }}</span
+          v-if="!isPermissionReadOnly(data.item.permission_type)"
+          >{{ data.item.user.first_name }} {{ data.item.user.last_name }}</span
         >
         <span v-else class="text-muted font-italic"
-          >{{ data.item.user.firstName }} {{ data.item.user.lastName }}</span
+          >{{ data.item.user.first_name }} {{ data.item.user.last_name }}</span
         >
       </template>
       <template slot="cell(email)" slot-scope="data">
         <span
           :class="userDataClasses"
-          v-if="!isPermissionReadOnly(data.item.permissionType)"
+          v-if="!isPermissionReadOnly(data.item.permission_type)"
           >{{ data.item.user.email }}</span
         >
         <span v-else class="text-muted font-italic">{{
@@ -57,20 +57,20 @@
       </template>
       <template slot="cell(permission)" slot-scope="data">
         <b-form-select
-          v-if="!isPermissionReadOnly(data.item.permissionType)"
-          v-model="data.item.permissionType"
+          v-if="!isPermissionReadOnly(data.item.permission_type)"
+          v-model="data.item.permission_type"
           :options="permissionOptions"
         />
         <span
           v-else
           class="text-uppercase text-muted font-italic"
           :class="userDataClasses"
-          >{{ data.item.permissionType.name }}</span
+          >{{ data.item.permission_type.name }}</span
         >
       </template>
       <template slot="cell(remove)" slot-scope="data">
         <b-link
-          v-if="!isPermissionReadOnly(data.item.permissionType)"
+          v-if="!isPermissionReadOnly(data.item.permission_type)"
           @click="removeUser(data.item.user)"
         >
           <span class="fa fa-trash"></span>
@@ -86,7 +86,7 @@
     >
       <template slot="cell(name)" slot-scope="data">
         <span
-          v-if="editingAllowed(data.item.group, data.item.permissionType)"
+          v-if="editingAllowed(data.item.group, data.item.permission_type)"
           >{{ data.item.group.name }}</span
         >
         <span v-else class="text-muted font-italic">{{
@@ -95,17 +95,17 @@
       </template>
       <template slot="cell(permission)" slot-scope="data">
         <b-form-select
-          v-if="editingAllowed(data.item.group, data.item.permissionType)"
-          v-model="data.item.permissionType"
+          v-if="editingAllowed(data.item.group, data.item.permission_type)"
+          v-model="data.item.permission_type"
           :options="permissionOptions"
         />
         <span v-else class="text-muted font-italic">{{
-          data.item.permissionType.name
+          data.item.permission_type.name
         }}</span>
       </template>
       <template slot="cell(remove)" slot-scope="data">
         <b-link
-          v-if="editingAllowed(data.item.group, data.item.permissionType)"
+          v-if="editingAllowed(data.item.group, data.item.permission_type)"
           @click="removeGroup(data.item.group)"
         >
           <span class="fa fa-trash"></span>
@@ -164,25 +164,25 @@ export default {
       ];
     },
     usersCount: function () {
-      return this.data && this.data.userPermissions
-        ? this.data.userPermissions.length
+      return this.data && this.data.user_permissions
+        ? this.data.user_permissions.length
         : 0;
     },
     sortedUserPermissions: function () {
-      const userPermsCopy = this.data.userPermissions
-        ? this.data.userPermissions.slice()
+      const userPermsCopy = this.data.user_permissions
+        ? this.data.user_permissions.slice()
         : [];
       const sortedUserPerms = utils.StringUtils.sortIgnoreCase(
         userPermsCopy,
-        (userPerm) => userPerm.user.lastName + ", " + userPerm.user.firstName
+        (userPerm) => userPerm.user.last_name + ", " + userPerm.user.first_name
       );
       // When in readonly mode, if the current owner isn't the owner, display
       // the user with the OWNER permission
-      if (this.readonly && !this.data.isOwner) {
+      if (this.readonly && !this.data.is_owner) {
         sortedUserPerms.push(
           new models.UserPermission({
             user: this.data.owner,
-            permissionType: models.ResourcePermissionType.OWNER,
+            permission_type: models.ResourcePermissionType.OWNER,
           })
         );
       }
@@ -195,8 +195,8 @@ export default {
       };
     },
     filteredGroupPermissions: function () {
-      return this.data && this.data.groupPermissions
-        ? this.data.groupPermissions
+      return this.data && this.data.group_permissions
+        ? this.data.group_permissions
         : [];
     },
     sortedGroupPermissions: function () {
@@ -224,7 +224,7 @@ export default {
         models.ResourcePermissionType.WRITE,
       ];
       // manage_sharing permission is visible only if the user is the owner or it is a new entity and owner is not defined
-      if (this.data.isOwner || this.data.isOwner === null) {
+      if (this.data.is_owner || this.data.is_owner === null) {
         options.push(models.ResourcePermissionType.MANAGE_SHARING);
       }
       return options.map((perm) => {
@@ -259,29 +259,30 @@ export default {
     },
     userSuggestions: function () {
       // filter out already selected users
-      const currentUserIds = this.data.userPermissions
-        ? this.data.userPermissions.map(
-            (userPerm) => userPerm.user.airavataInternalUserId
+      const currentUserIds = this.data.user_permissions
+        ? this.data.user_permissions.map(
+            (userPerm) => userPerm.user.airavata_internal_user_id
           )
         : [];
       return this.users
         .filter(
-          (user) => currentUserIds.indexOf(user.airavataInternalUserId) < 0
+          (user) => currentUserIds.indexOf(user.airavata_internal_user_id) < 0
         )
         .filter(
+          // Session is the portal session object, not a model — its key stays camelCase.
           (user) =>
-            user.airavataInternalUserId !==
+            user.airavata_internal_user_id !==
             session.Session.airavataInternalUserId
         )
         .map((user) => {
           return {
-            id: user.airavataInternalUserId,
+            id: user.airavata_internal_user_id,
             name:
-              user.firstName +
+              user.first_name +
               " " +
-              user.lastName +
+              user.last_name +
               " (" +
-              user.userId +
+              user.user_id +
               ") " +
               user.email,
             user: user,
@@ -306,7 +307,7 @@ export default {
         this.data.addGroup({ group });
       } else if (suggestion.type === "user") {
         const user = this.users.find(
-          (user) => user.airavataInternalUserId === suggestion.id
+          (user) => user.airavata_internal_user_id === suggestion.id
         );
         this.data.addUser(user);
       }
@@ -323,18 +324,18 @@ export default {
         !this.readonly &&
         (!this.disallowEditingAdminGroups || !group.isAdminGroup) &&
         !(
-          !this.data.isOwner &&
+          !this.data.is_owner &&
           permission === models.ResourcePermissionType.MANAGE_SHARING
         )
       );
     },
     isPermissionReadOnly: function (permission) {
       // if it is a new entity, it will not be readonly
-      if (this.data.isOwner == null) {
+      if (this.data.is_owner == null) {
         return false;
       }
       return (
-        !this.data.isOwner &&
+        !this.data.is_owner &&
         permission === models.ResourcePermissionType.MANAGE_SHARING
       );
     },

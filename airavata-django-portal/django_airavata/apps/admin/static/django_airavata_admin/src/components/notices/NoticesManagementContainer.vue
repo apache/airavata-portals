@@ -31,20 +31,20 @@
               </template>
               <template slot="item-list">
                 <b-table hover :fields="fields" :items="items">
-                  <template slot="cell(publishedTime)" slot-scope="data">
+                  <template slot="cell(published_time)" slot-scope="data">
                     <human-date :date="data.value" /> </template
                   >row
-                  <template slot="cell(expirationTime)" slot-scope="data">
+                  <template slot="cell(expiration_time)" slot-scope="data">
                     <human-date :date="data.value" />
                   </template>
                   <template slot="cell(action)" slot-scope="data">
-                    <template v-if="data.item.userHasWriteAccess">
+                    <template v-if="data.item.user_has_write_access">
                       <b-link class="action-link" @click="toggleDetails(data)">
                         Edit
                         <i class="fa fa-edit" aria-hidden="true"></i>
                       </b-link>
                       <delete-link
-                        @delete="deleteNotice(data.item.notificationId)"
+                        @delete="deleteNotice(data.item.notification_id)"
                       >
                         Are you sure you want to delete the notice?
                       </delete-link>
@@ -121,15 +121,15 @@ export default {
         },
         {
           label: "Message",
-          key: "notificationMessage",
+          key: "notification_message",
         },
         {
           label: "Publish Date",
-          key: "publishedTime",
+          key: "published_time",
         },
         {
           label: "Expiry Date",
-          key: "expirationTime",
+          key: "expiration_time",
         },
         {
           label: "Priority",
@@ -137,7 +137,7 @@ export default {
         },
         {
           label: "Show In Dashboard",
-          key: "showInDashboard",
+          key: "show_in_dashboard",
         },
         {
           label: "Action",
@@ -165,10 +165,10 @@ export default {
       const validation = this.updatedNotice.validate();
       if (Object.keys(validation).length === 0) {
         const index = this.notices.findIndex(
-          (sp) => sp.notificationId === this.updatedNotice.notificationId
+          (sp) => sp.notification_id === this.updatedNotice.notification_id
         );
         services.ManageNotificationService.update({
-          lookup: this.updatedNotice.notificationId,
+          lookup: this.updatedNotice.notification_id,
           data: this.updatedNotice,
         }).then((sp) => {
           this.notices.splice(index, 1, sp);
@@ -187,7 +187,7 @@ export default {
         lookup: notificationId,
       }).then(() => {
         const index = this.notices.findIndex(
-          (sp) => sp.notificationId === notificationId
+          (sp) => sp.notification_id === notificationId
         );
         this.notices.splice(index, 1);
       });
@@ -196,8 +196,8 @@ export default {
       (this.updatedNotice = new models.Notification()),
         (this.updatedNotice = row.item);
       row.toggleDetails();
-      this.showingDetails[row.item.notificationId] = !this.showingDetails[
-        row.item.notificationId
+      this.showingDetails[row.item.notification_id] = !this.showingDetails[
+        row.item.notification_id
       ];
     },
   },

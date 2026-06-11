@@ -71,9 +71,12 @@ export default class BaseModel {
   }
 
   convertDateField(fieldValue, fieldDefault) {
-    return typeof fieldValue !== "undefined"
-      ? new Date(fieldValue)
-      : fieldDefault;
+    // Wire timestamps are epoch-millis strings ("1705320000000", "0" for unset);
+    // new Date(millisString) would parse it as a date string and yield Invalid Date.
+    if (fieldValue === null || typeof fieldValue === "undefined") {
+      return fieldDefault;
+    }
+    return new Date(Number(fieldValue));
   }
 
   convertModelField(modelClass, fieldValue, fieldDefault) {

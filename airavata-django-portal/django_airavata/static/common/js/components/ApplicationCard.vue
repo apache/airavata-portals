@@ -7,7 +7,7 @@
         @click.prevent="handleAppClick"
       >
         <div class="card-body">
-          <h2 class="card-title h5">{{ appModule.appModuleName }}</h2>
+          <h2 class="card-title h5">{{ appModule.app_module_name }}</h2>
           <span
             class="badge badge-primary mr-1"
             v-for="tag in appModule.tags"
@@ -16,12 +16,12 @@
           >
           <span
             class="badge badge-primary mr-1"
-            v-if="appModule.appModuleVersion"
-            >{{ appModule.appModuleVersion }}</span
+            v-if="appModule.app_module_version"
+            >{{ appModule.app_module_version }}</span
           >
           <p class="card-text card-text--small mt-3 text-secondary">
             <linkify>
-              {{ appModule.appModuleDescription }}
+              {{ appModule.app_module_description }}
             </linkify>
           </p>
           <p class="card-text">

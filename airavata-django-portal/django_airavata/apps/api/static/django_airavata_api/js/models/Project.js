@@ -1,17 +1,32 @@
 import BaseModel from "./BaseModel";
 
 const FIELDS = [
-  "projectID",
+  "project_id",
+  "owner",
+  "gateway_id",
   "name",
   "description",
-  "owner",
-  "gatewayId",
   {
-    name: "creationTime",
+    name: "creation_time",
     type: "date",
   },
-  "userHasWriteAccess",
-  "isOwner",
+  {
+    name: "shared_users",
+    type: "string",
+    list: true,
+  },
+  {
+    name: "shared_groups",
+    type: "string",
+    list: true,
+  },
+  // merged onto the proto server-side by the WithAccess envelope.
+  "is_owner",
+  {
+    name: "user_has_write_access",
+    type: "boolean",
+    default: true,
+  },
 ];
 
 export default class Project extends BaseModel {

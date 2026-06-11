@@ -78,10 +78,12 @@ export default {
   },
   computed: {
     editAvailable() {
-      return !this.dataProduct || this.dataProduct.filesize < MAX_EDIT_FILESIZE;
+      return (
+        !this.dataProduct || this.dataProduct.product_size < MAX_EDIT_FILESIZE
+      );
     },
     userHasWriteAccess() {
-      return this.dataProduct && this.dataProduct.userHasWriteAccess;
+      return this.dataProduct && this.dataProduct.user_has_write_access;
     },
     readOnly() {
       return !this.userHasWriteAccess;

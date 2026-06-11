@@ -6,16 +6,16 @@
         <b-form-group
           label="Application Name"
           label-for="application-name"
-          :invalid-feedback="validationFeedback.appModuleName.invalidFeedback"
-          :state="validationFeedback.appModuleName.state"
+          :invalid-feedback="validationFeedback.app_module_name.invalidFeedback"
+          :state="validationFeedback.app_module_name.state"
         >
           <b-form-input
             id="application-name"
             type="text"
-            v-model="data.appModuleName"
+            v-model="data.app_module_name"
             required
             :disabled="readonly"
-            :state="validationFeedback.appModuleName.state"
+            :state="validationFeedback.app_module_name.state"
           ></b-form-input>
         </b-form-group>
         <b-form-group
@@ -25,7 +25,7 @@
           <b-form-input
             id="application-version"
             type="text"
-            v-model="data.appModuleVersion"
+            v-model="data.app_module_version"
             :disabled="readonly"
           ></b-form-input>
         </b-form-group>
@@ -35,7 +35,7 @@
         >
           <b-form-textarea
             id="application-description"
-            v-model="data.appModuleDescription"
+            v-model="data.app_module_description"
             :rows="3"
             :disabled="readonly"
           ></b-form-textarea>

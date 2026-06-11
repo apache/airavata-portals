@@ -54,7 +54,7 @@
         <b-form-input
           :id="id + '-override-filename'"
           type="text"
-          v-model="data.overrideFilename"
+          v-model="data.override_filename"
           :disabled="readonly"
         ></b-form-input>
       </b-form-group>
@@ -62,7 +62,7 @@
         <b-form-input
           :id="id + '-argument'"
           type="text"
-          v-model="data.applicationArgument"
+          v-model="data.application_argument"
           :disabled="readonly"
         ></b-form-input>
       </b-form-group>
@@ -74,7 +74,7 @@
       >
         <b-form-radio-group
           :id="id + '-required-command-line'"
-          v-model="data.requiredToAddedToCommandLine"
+          v-model="data.required_to_added_to_command_line"
           :options="trueFalseOptions"
           :disabled="readonly"
         >
@@ -88,7 +88,7 @@
         >
           <b-form-radio-group
             :id="id + '-required'"
-            v-model="data.isRequired"
+            v-model="data.is_required"
             :options="trueFalseOptions"
             :disabled="readonly"
           >
@@ -101,7 +101,7 @@
         >
           <b-form-radio-group
             :id="id + '-read-only'"
-            v-model="data.isReadOnly"
+            v-model="data.is_read_only"
             :options="trueFalseOptions"
             :disabled="readonly"
           >
@@ -114,7 +114,7 @@
       >
         <b-form-textarea
           :id="id + '-user-friendly-description'"
-          v-model="data.userFriendlyDescription"
+          v-model="data.user_friendly_description"
           :rows="3"
           :disabled="readonly"
         />
@@ -126,7 +126,7 @@
       >
         <json-editor
           :id="id + '-metadata'"
-          v-model="data.metaData"
+          v-model="metadata"
           :rows="5"
           :disabled="readonly"
         />
@@ -185,6 +185,20 @@ export default {
     },
     showOverrideFilenameField() {
       return this.data.type === models.DataType.URI;
+    },
+    // meta_data is a raw JSON string on the wire; JSONEditor works with objects.
+    metadata: {
+      get() {
+        if (!this.data.meta_data) {
+          return null;
+        }
+        return typeof this.data.meta_data === "string"
+          ? JSON.parse(this.data.meta_data)
+          : this.data.meta_data;
+      },
+      set(value) {
+        this.data.meta_data = value ? JSON.stringify(value) : null;
+      },
     },
   },
   methods: {

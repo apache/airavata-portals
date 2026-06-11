@@ -3,15 +3,15 @@ import JobState from "./JobState";
 
 const FIELDS = [
   {
-    name: "jobState",
+    name: "job_state",
     type: JobState,
   },
   {
-    name: "timeOfStateChange",
+    name: "time_of_state_change",
     type: "date",
   },
   "reason",
-  "statusId",
+  "status_id",
 ];
 
 export default class JobStatus extends BaseModel {

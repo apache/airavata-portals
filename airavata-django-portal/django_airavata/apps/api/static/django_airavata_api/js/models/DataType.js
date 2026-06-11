@@ -18,6 +18,7 @@ export default class DataType extends BaseEnum {
   }
 }
 DataType.init([
+  "DATA_TYPE_UNKNOWN",
   "STRING",
   "INTEGER",
   "FLOAT",

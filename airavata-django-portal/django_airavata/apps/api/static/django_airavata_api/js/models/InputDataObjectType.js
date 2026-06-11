@@ -12,37 +12,37 @@ const FIELDS = [
     type: DataType,
     default: DataType.STRING,
   },
-  "applicationArgument",
+  "application_argument",
   {
-    name: "standardInput",
+    name: "standard_input",
     type: "boolean",
     default: false,
   },
-  "userFriendlyDescription",
-  "metaData",
-  "inputOrder",
+  "user_friendly_description",
+  "meta_data",
+  "input_order",
   {
-    name: "isRequired",
-    type: "boolean",
-    default: false,
-  },
-  {
-    name: "requiredToAddedToCommandLine",
+    name: "is_required",
     type: "boolean",
     default: false,
   },
   {
-    name: "dataStaged",
+    name: "required_to_added_to_command_line",
     type: "boolean",
     default: false,
   },
-  "storageResourceId",
   {
-    name: "isReadOnly",
+    name: "data_staged",
     type: "boolean",
     default: false,
   },
-  "overrideFilename",
+  "storage_resource_id",
+  {
+    name: "is_read_only",
+    type: "boolean",
+    default: false,
+  },
+  "override_filename",
 ];
 
 const IS_REQUIRED_DEFAULT = "This field is required.";
@@ -193,13 +193,23 @@ export default class InputDataObjectType extends BaseModel {
   }
 
   _getMetadata() {
-    // metaData could really be anything, here we expect it to be an object
-    // so safely check if it is first
-    if (this.metaData && typeof this.metaData === "object") {
-      return this.metaData;
-    } else {
+    // Proto-direct: meta_data is a raw JSON string; parse it to an object.
+    // Tolerate an already-parsed object (e.g. component-set value on edit).
+    if (!this.meta_data) {
       return null;
     }
+    if (typeof this.meta_data === "object") {
+      return this.meta_data;
+    }
+    if (typeof this.meta_data === "string") {
+      try {
+        const parsed = JSON.parse(this.meta_data);
+        return typeof parsed === "object" ? parsed : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
   }
 
   validate(value = undefined) {
@@ -210,7 +220,7 @@ export default class InputDataObjectType extends BaseModel {
       return results;
     }
     let valueErrorMessages = [];
-    if (this.isRequired && this.isEmpty(inputValue)) {
+    if (this.is_required && this.isEmpty(inputValue)) {
       if (this.type === DataType.URI_COLLECTION) {
         valueErrorMessages.push(IS_REQUIRED_URI_COLLECTION);
       } else {
@@ -247,7 +257,7 @@ export default class InputDataObjectType extends BaseModel {
             "isRequired" in this.editorDependencies.showOptions &&
             this.editorDependencies.showOptions.isRequired
           ) {
-            this.isRequired = this.show;
+            this.is_required = this.show;
           }
         }
       }

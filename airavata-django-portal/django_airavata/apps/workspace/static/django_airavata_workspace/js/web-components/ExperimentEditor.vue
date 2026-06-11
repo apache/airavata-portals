@@ -8,7 +8,7 @@
       <!-- programmatically define slot for experiment-project as native slot
            (not Vue slots), see #mounted() -->
     </div>
-    <template v-for="input in experiment.experimentInputs">
+    <template v-for="input in experiment.experiment_inputs">
       <div
         :ref="input.name"
         :key="input.name"
@@ -71,7 +71,7 @@ export default {
     // in the DOM any more.  As a workaround, programmatically create native
     // slots. See also https://github.com/vuejs/vue-web-component-wrapper/issues/38
     this.$nextTick(() => {
-      for (const input of this.experiment.experimentInputs) {
+      for (const input of this.experiment.experiment_inputs) {
         const slot = document.createElement("slot");
         slot.setAttribute("name", input.name);
         if (["STRING", "INTEGER", "FLOAT"].includes(input.type.name)) {
@@ -138,7 +138,7 @@ export default {
       experimentNameInputEl.setAttribute("name", "experiment-name");
       experimentNameInputEl.setAttribute(
         "value",
-        this.experiment.experimentName
+        this.experiment.experiment_name
       );
       experimentNameInputEl.setAttribute("required", "required");
       experimentNameGroupEl.append(
@@ -150,8 +150,8 @@ export default {
       );
 
       const projectSelectorEl = document.createElement("adpf-project-selector");
-      if (this.experiment.projectId) {
-        projectSelectorEl.setAttribute("value", this.experiment.projectId);
+      if (this.experiment.project_id) {
+        projectSelectorEl.setAttribute("value", this.experiment.project_id);
       }
       this.$refs.projectSelector.append(
         this.createSlot("experiment-project", projectSelectorEl)

@@ -7,11 +7,11 @@ const FIELDS = [
     type: ExperimentState,
   },
   {
-    name: "timeOfStateChange",
+    name: "time_of_state_change",
     type: "date",
   },
   "reason",
-  "statusId",
+  "status_id",
 ];
 
 export default class ExperimentStatus extends BaseModel {

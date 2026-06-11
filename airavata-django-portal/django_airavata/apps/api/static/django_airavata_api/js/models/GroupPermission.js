@@ -10,8 +10,9 @@ export default class GroupPermission extends BaseModel {
           name: "group",
           type: Group,
         },
+        // permission_type arrives as the enum member NAME string.
         {
-          name: "permissionType",
+          name: "permission_type",
           type: ResourcePermissionType,
         },
       ],

@@ -25,7 +25,7 @@
         >
       </template>
       <template slot="cell(modifiedTimestamp)" slot-scope="data">
-        <human-date :date="data.item.modifiedTime" />
+        <human-date :date="data.item.modified_time" />
       </template>
       <template slot="cell(actions)" slot-scope="data">
         <b-link
@@ -99,27 +99,28 @@ export default {
     },
     items() {
       if (this.experimentStoragePath) {
-        const dirs = this.experimentStoragePath.directories
-          .filter((d) => !d.hidden)
-          .map((d) => {
-            return {
-              name: d.name,
-              path: d.path,
-              type: "dir",
-              modifiedTime: d.modifiedTime,
-              modifiedTimestamp: d.modifiedTime.getTime(), // for sorting
-              size: d.size,
-            };
-          });
+        const dirs = this.experimentStoragePath.directories.map((d) => {
+          return {
+            name: d.name,
+            path: d.path,
+            type: "dir",
+            modified_time: d.modified_time,
+            modifiedTimestamp: d.modified_time.getTime(), // for sorting
+            size: d.size,
+          };
+        });
         const files = this.experimentStoragePath.files.map((f) => {
           return {
             name: f.name,
-            mimeType: f.mimeType,
+            content_type: f.content_type,
             type: "file",
-            dataProductURI: f.dataProductURI,
-            downloadURL: f.downloadURL,
-            modifiedTime: f.modifiedTime,
-            modifiedTimestamp: f.modifiedTime.getTime(), // for sorting
+            data_product_uri: f.data_product_uri,
+            // downloadURL is no longer on the wire; build it from the URI.
+            downloadURL: `/sdk/download/?data-product-uri=${encodeURIComponent(
+              f.data_product_uri
+            )}`,
+            modified_time: f.modified_time,
+            modifiedTimestamp: f.modified_time.getTime(), // for sorting
             size: f.size,
           };
         });

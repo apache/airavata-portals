@@ -1,6 +1,5 @@
 import collections
 import inspect
-import io
 import json
 import logging
 import os
@@ -11,10 +10,9 @@ import papermill as pm
 from airavata_sdk.generated.org.apache.airavata.model.application.io.application_io_pb2 import (  # noqa: E501
     DataType,
 )
+from airavata_sdk.helpers import research_resources, storage_resources
 from django.conf import settings
 from nbconvert import HTMLExporter
-
-from . import view_utils
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +175,8 @@ def generate_data(request,
                   **kwargs):
     output_view_provider = _get_output_view_provider(output_view_provider_id)
     # TODO if output_view_provider is None, return 404
-    experiment = request.airavata.research.get_experiment(experiment_id)
+    experiment = research_resources.get_experiment_proto(
+        request.airavata, experiment_id)
     experiment_output = [o
                          for o in experiment.experiment_outputs
                          if o.name == experiment_output_name]
@@ -219,16 +218,9 @@ def _generate_data(request,
                                      DataType.STDERR) and
           experiment_output.value.startswith("airavata-dp")):
         data_product_uris = experiment_output.value.split(",")
-        data_products = map(
-            lambda dpid: request.airavata.research.get_data_product(dpid),
-            data_product_uris)
-        for data_product in data_products:
-            file_path = view_utils.data_product_file_path(data_product)
-            if file_path and request.airavata.storage.file_exists(file_path):
-                resp = request.airavata.storage.download_file(file_path)
-                output_file = io.BytesIO(resp.content)
-                output_file.name = resp.name or os.path.basename(file_path)
-                output_files.append(output_file)
+        output_files.extend(
+            storage_resources.download_data_product_files(
+                request.airavata, data_product_uris))
 
     generate_data_func = output_view_provider.generate_data
     method_sig = inspect.signature(generate_data_func)

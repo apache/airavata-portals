@@ -1,16 +1,20 @@
 """Auth utilities."""
 
+import logging
+import os
 import time
 
+import requests
 from django.conf import settings
-from django.contrib.auth import authenticate
 from django.core.mail import EmailMessage
 from django.http.request import split_domain_port
 from django.template import Context, Template
-from oauthlib.oauth2 import BackendApplicationClient
+from oauthlib.oauth2 import BackendApplicationClient, InvalidGrantError
 from requests_oauthlib import OAuth2Session
 
 from . import models
+
+logger = logging.getLogger(__name__)
 
 
 class AuthzToken:
@@ -35,10 +39,12 @@ def get_authz_token(request, user=None, access_token=None):
     elif is_session_access_token(request) and not is_session_access_token_expired(request, user=user):
         return _create_authz_token(request, user=user, access_token=access_token)
     elif not is_refresh_token_expired(request):
-        # Have backend reauthenticate the user with the refresh token
-        user = authenticate(request)
-        if user:
-            return _create_authz_token(request, user=user)
+        # Refresh the access token directly (no Django auth backend involved).
+        token = refresh_access_token(request)
+        if token:
+            store_token_in_session(request, token)
+            return _create_authz_token(
+                request, user=user, access_token=token['access_token'])
     return None
 
 
@@ -64,6 +70,81 @@ def get_service_account_authz_token():
         accessToken=access_token,
         # This is a service account, so leaving out userName for now
         claimsMap={'gatewayID': settings.GATEWAY_ID})
+
+
+def store_token_in_session(request, token):
+    """Persist a Keycloak token dict into the session.
+
+    Keeps the exact session keys the rest of the auth layer reads
+    (``is_session_access_token_expired``, ``is_refresh_token_expired``,
+    ``_get_access_token``, the desktop login views).
+    """
+    now = time.time()
+    sess = request.session
+    sess['ACCESS_TOKEN'] = token['access_token']
+    sess['ACCESS_TOKEN_EXPIRES_AT'] = now + token['expires_in']
+    sess['REFRESH_TOKEN'] = token['refresh_token']
+    sess['REFRESH_TOKEN_EXPIRES_AT'] = now + token['refresh_expires_in']
+
+
+def exchange_code_for_token(request):
+    """Exchange the authorization code on the callback request for a token dict.
+
+    Reads ``OAUTH2_STATE``/``OAUTH2_REDIRECT_URI`` (stashed by ``oidc_login``)
+    from the session and completes the Authorization Code flow.
+    """
+    authorization_code_url = request.build_absolute_uri()
+    client_id = settings.KEYCLOAK_CLIENT_ID
+    client_secret = settings.KEYCLOAK_CLIENT_SECRET
+    token_url = settings.KEYCLOAK_TOKEN_URL
+    verify_ssl = settings.KEYCLOAK_VERIFY_SSL
+    state = request.session['OAUTH2_STATE']
+    redirect_uri = request.session['OAUTH2_REDIRECT_URI']
+    oauth2_session = OAuth2Session(client_id,
+                                   scope='openid profile email',
+                                   redirect_uri=redirect_uri,
+                                   state=state)
+    verify = verify_ssl
+    if verify_ssl and hasattr(settings, 'KEYCLOAK_CA_CERTFILE'):
+        verify = settings.KEYCLOAK_CA_CERTFILE
+    if not request.is_secure() and settings.DEBUG and not os.environ.get('OAUTHLIB_INSECURE_TRANSPORT'):
+        # For local development (DEBUG=True), allow the insecure OAuth redirect
+        # flow if OAUTHLIB_INSECURE_TRANSPORT isn't already set.
+        os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = "1"
+        logger.info("Adding env var OAUTHLIB_INSECURE_TRANSPORT=1 to allow "
+                    "OAuth redirect flow even though request is not secure")
+    return oauth2_session.fetch_token(
+        token_url, client_secret=client_secret,
+        authorization_response=authorization_code_url, verify=verify)
+
+
+def refresh_access_token(request, refresh_token=None):
+    """Refresh the access token via the refresh-token grant.
+
+    Returns the new token dict, or ``None`` if the refresh token is no longer
+    valid (e.g. session terminated by an admin or by logout elsewhere).
+    """
+    client_id = settings.KEYCLOAK_CLIENT_ID
+    client_secret = settings.KEYCLOAK_CLIENT_SECRET
+    token_url = settings.KEYCLOAK_TOKEN_URL
+    verify_ssl = settings.KEYCLOAK_VERIFY_SSL
+    oauth2_session = OAuth2Session(client_id, scope='openid profile email')
+    verify = verify_ssl
+    if verify_ssl and hasattr(settings, 'KEYCLOAK_CA_CERTFILE'):
+        verify = settings.KEYCLOAK_CA_CERTFILE
+    refresh_token_ = (refresh_token
+                      if refresh_token is not None
+                      else request.session['REFRESH_TOKEN'])
+    # refresh_token doesn't take a client_secret kwarg, so build auth explicitly
+    auth = requests.auth.HTTPBasicAuth(client_id, client_secret)
+    try:
+        return oauth2_session.refresh_token(token_url=token_url,
+                                            refresh_token=refresh_token_,
+                                            auth=auth,
+                                            verify=verify)
+    except InvalidGrantError as e:
+        logger.warning("Failed to refresh token: %s", e)
+        return None
 
 
 def _create_authz_token(request, user=None, access_token=None):
@@ -141,67 +222,6 @@ def send_new_user_email(request, username, email, first_name, last_name):
     })
     subject = Template(new_user_email_template.subject).render(context)
     body = Template(new_user_email_template.body).render(context)
-    send_email_to_admins(subject, body)
-
-
-def send_admin_alert_about_uninitialized_username(request, username, email, first_name, last_name):
-    domain, port = split_domain_port(request.get_host())
-    context = Context({
-        "username": username,
-        "email": email,
-        "first_name": first_name,
-        "last_name": last_name,
-        "portal_title": settings.PORTAL_TITLE,
-        "gateway_id": settings.GATEWAY_ID,
-        "http_host": domain,
-    })
-    subject = Template("Please fix username: a user of {{portal_title}} ({{http_host}}) has been assigned an auto-generated username ({{username}})").render(context)
-    body = Template("""
-    <p>
-    Dear Admin,
-    </p>
-
-    <p>
-    The following user has an auto-generated username because the system could
-    not determine a proper username:
-    </p>
-
-    <p>Username: {{username}}</p>
-    <p>Name: {{first_name}} {{last_name}}</p>
-    <p>Email: {{email}}</p>
-
-    <p>
-    This likely happened because there was no appropriate user attribute
-    (typically email address) to use for the user's username when the user
-    logged in through an external identity provider.  Please update the username
-    to the user's email address or some other appropriate value in the <a
-    href="https://{{http_host}}/admin/users/">Manage Users</a> view in the
-    portal.
-    </p>
-    """.strip()).render(context)
-    send_email_to_admins(subject, body)
-
-
-def send_admin_user_completed_profile(request, user_profile):
-    domain, port = split_domain_port(request.get_host())
-    user = user_profile.user
-    extended_profile_values = user_profile.extended_profile_values.filter(
-        ext_user_profile_field__deleted=False).order_by("ext_user_profile_field__order").all()
-    context = Context({
-        "username": user.username,
-        "email": user.email,
-        "first_name": user.first_name,
-        "last_name": user.last_name,
-        "portal_title": settings.PORTAL_TITLE,
-        "gateway_id": settings.GATEWAY_ID,
-        "http_host": domain,
-        "extended_profile_values": extended_profile_values
-    })
-
-    user_profile_completed_template = models.EmailTemplate.objects.get(
-        pk=models.USER_PROFILE_COMPLETED_TEMPLATE)
-    subject = Template(user_profile_completed_template.subject).render(context)
-    body = Template(user_profile_completed_template.body).render(context)
     send_email_to_admins(subject, body)
 
 

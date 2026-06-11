@@ -76,18 +76,23 @@ export default {
         )
           .then((dataProduct) => {
             this.userStoragePath = {
-              isDir: false,
+              is_dir: false,
               directories: [],
               files: [
                 {
-                  createdTime: dataProduct.creationTime,
-                  modifiedTime: dataProduct.lastModifiedTime,
-                  dataProductURI: this.dataProductUri,
-                  downloadURL: dataProduct.downloadURL,
-                  mimeType: dataProduct.productMetadata["mime-type"],
-                  name: dataProduct.productName,
-                  size: dataProduct.productSize,
-                  userHasWriteAccess: dataProduct.userHasWriteAccess,
+                  created_time: dataProduct.creation_time,
+                  modified_time: dataProduct.last_modified_time,
+                  data_product_uri: this.dataProductUri,
+                  // downloadURL is no longer on the wire; build it from the URI.
+                  downloadURL: `/sdk/download/?data-product-uri=${encodeURIComponent(
+                    this.dataProductUri
+                  )}`,
+                  content_type: dataProduct.product_metadata
+                    ? dataProduct.product_metadata["mime-type"]
+                    : null,
+                  name: dataProduct.product_name,
+                  size: dataProduct.product_size,
+                  user_has_write_access: dataProduct.user_has_write_access,
                 },
               ],
               parts: [],

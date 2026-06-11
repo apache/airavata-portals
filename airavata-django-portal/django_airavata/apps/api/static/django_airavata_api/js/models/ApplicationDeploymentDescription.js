@@ -4,56 +4,57 @@ import CommandObject from "./CommandObject";
 import SetEnvPaths from "./SetEnvPaths";
 
 const FIELDS = [
-  "appDeploymentId",
-  "appModuleId",
-  "computeHostId",
-  "executablePath",
+  "app_deployment_id",
+  "app_module_id",
+  "compute_host_id",
+  "executable_path",
   {
     name: "parallelism",
     type: ParallelismType,
     default: ParallelismType.SERIAL,
   },
-  "appDeploymentDescription",
+  "app_deployment_description",
   {
-    name: "moduleLoadCmds",
+    name: "module_load_cmds",
     type: CommandObject,
     list: true,
   },
   {
-    name: "libPrependPaths",
+    name: "lib_prepend_paths",
     type: SetEnvPaths,
     list: true,
   },
   {
-    name: "libAppendPaths",
+    name: "lib_append_paths",
     type: SetEnvPaths,
     list: true,
   },
   {
-    name: "setEnvironment",
+    name: "set_environment",
     type: SetEnvPaths,
     list: true,
   },
   {
-    name: "preJobCommands",
+    name: "pre_job_commands",
     type: CommandObject,
     list: true,
   },
   {
-    name: "postJobCommands",
+    name: "post_job_commands",
     type: CommandObject,
     list: true,
   },
-  "defaultQueueName",
-  "defaultNodeCount",
-  "defaultCPUCount",
-  "defaultWalltime",
+  "default_queue_name",
+  "default_node_count",
+  "default_cpu_count",
+  "default_walltime",
   {
-    name: "editableByUser",
+    name: "editable_by_user",
     type: "boolean",
     default: false,
   },
-  "userHasWriteAccess",
+  // WithAccess-merged scalar (not on the proto).
+  "user_has_write_access",
 ];
 
 export default class ApplicationDeploymentDescription extends BaseModel {

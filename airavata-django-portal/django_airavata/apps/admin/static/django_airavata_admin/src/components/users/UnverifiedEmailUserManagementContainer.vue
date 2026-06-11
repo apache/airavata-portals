@@ -5,12 +5,12 @@
         <div class="card">
           <div class="card-body">
             <b-table hover :fields="fields" :items="items" :fixed="true">
-              <template slot="cell(creationTime)" slot-scope="data">
+              <template slot="cell(creation_time)" slot-scope="data">
                 <human-date :date="data.value" />
               </template>
               <template slot="cell(action)" slot-scope="data">
                 <b-button
-                  v-if="data.item.userHasWriteAccess"
+                  v-if="data.item.user_has_write_access"
                   @click="toggleDetails(data)"
                 >
                   Edit
@@ -18,14 +18,14 @@
               </template>
               <template slot="row-details" slot-scope="data">
                 <enable-user-panel
-                  v-if="!data.item.enabled && !data.item.emailVerified"
-                  :username="data.item.userId"
+                  v-if="!data.item.enabled && !data.item.email_verified"
+                  :username="data.item.user_id"
                   :email="data.item.email"
                   @enable-user="enableUser"
                 />
                 <delete-user-panel
-                  v-if="!data.item.enabled && !data.item.emailVerified"
-                  :username="data.item.userId"
+                  v-if="!data.item.enabled && !data.item.email_verified"
+                  :username="data.item.user_id"
                   @delete-user="deleteUser"
                 />
               </template>
@@ -71,15 +71,15 @@ export default {
       return [
         {
           label: "First Name",
-          key: "firstName",
+          key: "first_name",
         },
         {
           label: "Last Name",
-          key: "lastName",
+          key: "last_name",
         },
         {
           label: "Username",
-          key: "userId",
+          key: "user_id",
         },
         {
           label: "Email",
@@ -87,11 +87,11 @@ export default {
         },
         {
           label: "Email Verified",
-          key: "emailVerified",
+          key: "email_verified",
         },
         {
           label: "Created",
-          key: "creationTime",
+          key: "creation_time",
         },
         {
           label: "Action",
@@ -127,8 +127,8 @@ export default {
     },
     toggleDetails(row) {
       row.toggleDetails();
-      this.showingDetails[row.item.userId] = !this.showingDetails[
-        row.item.userId
+      this.showingDetails[row.item.user_id] = !this.showingDetails[
+        row.item.user_id
       ];
     },
   },

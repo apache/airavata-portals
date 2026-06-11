@@ -23,7 +23,7 @@
           v-bind:group="group"
           v-bind:type="owner"
           v-for="group in groupsForOwners"
-          v-bind:key="group.groupID"
+          v-bind:key="group.id"
         >
         </group-list-item>
       </tbody>

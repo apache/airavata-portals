@@ -22,7 +22,7 @@
           <b-form-input
             id="executable-path"
             type="text"
-            v-model="data.executablePath"
+            v-model="data.executable_path"
             required
             :disabled="readonly"
           ></b-form-input>
@@ -44,7 +44,7 @@
         >
           <b-form-textarea
             id="deployment-description"
-            v-model="data.appDeploymentDescription"
+            v-model="data.app_deployment_description"
             :rows="3"
             :disabled="readonly"
           ></b-form-textarea>
@@ -52,43 +52,43 @@
         <command-objects-editor
           title="Module Load Commands"
           add-button-label="Add Module Load Command"
-          v-model="data.moduleLoadCmds"
+          v-model="data.module_load_cmds"
           :readonly="readonly"
         />
         <set-env-paths-editor
           title="Library Prepend Paths"
           add-button-label="Add a Library Prepend Path"
-          v-model="data.libPrependPaths"
+          v-model="data.lib_prepend_paths"
           :readonly="readonly"
         />
         <set-env-paths-editor
           title="Library Append Paths"
           add-button-label="Add a Library Append Path"
-          v-model="data.libAppendPaths"
+          v-model="data.lib_append_paths"
           :readonly="readonly"
         />
         <set-env-paths-editor
           title="Environment Variables"
           add-button-label="Add Environment Variable"
-          v-model="data.setEnvironment"
+          v-model="data.set_environment"
           :readonly="readonly"
         />
         <command-objects-editor
           title="Pre Job Commands"
           add-button-label="Add Pre Job Command"
-          v-model="data.preJobCommands"
+          v-model="data.pre_job_commands"
           :readonly="readonly"
         />
         <command-objects-editor
           title="Post Job Commands"
           add-button-label="Add Post Job Command"
-          v-model="data.postJobCommands"
+          v-model="data.post_job_commands"
           :readonly="readonly"
         />
         <b-form-group label="Default Queue Name" label-for="default-queue-name">
           <b-form-select
             id="default-queue-name"
-            v-model="data.defaultQueueName"
+            v-model="data.default_queue_name"
             :options="queueNameOptions"
             @change="defaultQueueChanged"
             :disabled="readonly"
@@ -102,7 +102,7 @@
           <b-form-input
             id="default-node-count"
             type="number"
-            v-model="data.defaultNodeCount"
+            v-model="data.default_node_count"
             min="0"
             :max="maxNodes"
             :disabled="defaultQueueAttributesDisabled"
@@ -112,7 +112,7 @@
           <b-form-input
             id="default-cpu-count"
             type="number"
-            v-model="data.defaultCPUCount"
+            v-model="data.default_cpu_count"
             min="0"
             :max="maxCPUCount"
             :disabled="defaultQueueAttributesDisabled"
@@ -128,7 +128,7 @@
           <b-form-input
             id="default-walltime"
             type="number"
-            v-model="data.defaultWalltime"
+            v-model="data.default_walltime"
             min="0"
             :max="maxWalltime"
             :disabled="defaultQueueAttributesDisabled"
@@ -184,9 +184,9 @@ export default {
   computed: {
     name() {
       if (this.computeResource) {
-        return this.computeResource.hostName;
+        return this.computeResource.host_name;
       } else {
-        return this.data.computeHostId.substring(0, 10) + "...";
+        return this.data.compute_host_id.substring(0, 10) + "...";
       }
     },
     parallelismTypeOptions() {
@@ -201,47 +201,47 @@ export default {
       if (!this.computeResource) {
         return [];
       }
-      return this.computeResource.batchQueues.map((queue) => {
+      return this.computeResource.batch_queues.map((queue) => {
         return {
-          value: queue.queueName,
-          text: queue.queueName,
+          value: queue.queue_name,
+          text: queue.queue_name,
         };
       });
     },
     maxNodes() {
       const queue = this.computeResource
-        ? this.computeResource.batchQueues.find(
-            (q) => q.queueName === this.data.defaultQueueName
+        ? this.computeResource.batch_queues.find(
+            (q) => q.queue_name === this.data.default_queue_name
           )
         : null;
-      return queue ? queue.maxNodes : 0;
+      return queue ? queue.max_nodes : 0;
     },
     maxCPUCount() {
       const queue = this.computeResource
-        ? this.computeResource.batchQueues.find(
-            (q) => q.queueName === this.data.defaultQueueName
+        ? this.computeResource.batch_queues.find(
+            (q) => q.queue_name === this.data.default_queue_name
           )
         : null;
-      return queue ? queue.maxProcessors : 0;
+      return queue ? queue.max_processors : 0;
     },
     maxWalltime() {
       const queue = this.computeResource
-        ? this.computeResource.batchQueues.find(
-            (q) => q.queueName === this.data.defaultQueueName
+        ? this.computeResource.batch_queues.find(
+            (q) => q.queue_name === this.data.default_queue_name
           )
         : null;
-      return queue ? queue.maxRuntime : 0;
+      return queue ? queue.max_run_time : 0;
     },
     cpuPerNode() {
       const queue = this.computeResource
-        ? this.computeResource.batchQueues.find(
-            (q) => q.queueName === this.data.defaultQueueName
+        ? this.computeResource.batch_queues.find(
+            (q) => q.queue_name === this.data.default_queue_name
           )
         : null;
-      return queue ? queue.cpuPerNode : 0;
+      return queue ? queue.cpu_per_node : 0;
     },
     defaultQueueAttributesDisabled() {
-      return !this.data.defaultQueueName || this.readonly;
+      return !this.data.default_queue_name || this.readonly;
     },
     owner() {
       return this.localSharedEntity && this.localSharedEntity.owner
@@ -249,13 +249,13 @@ export default {
         : null;
     },
     ownerUserId() {
-      return this.owner ? this.owner.userId : null;
+      return this.owner ? this.owner.user_id : null;
     },
     ownerTitle() {
       return this.owner
-        ? this.owner.firstName +
+        ? this.owner.first_name +
             " " +
-            this.owner.lastName +
+            this.owner.last_name +
             " (" +
             this.owner.email +
             ")"
@@ -264,7 +264,7 @@ export default {
   },
   created() {
     services.ComputeResourceService.retrieve({
-      lookup: this.data.computeHostId,
+      lookup: this.data.compute_host_id,
     }).then((computeResource) => {
       this.computeResource = computeResource;
     });
@@ -282,16 +282,16 @@ export default {
     },
     defaultQueueChanged(queueName) {
       if (queueName) {
-        const queue = this.computeResource.batchQueues.find(
-          (q) => q.queueName === queueName
+        const queue = this.computeResource.batch_queues.find(
+          (q) => q.queue_name === queueName
         );
-        this.data.defaultNodeCount = queue.defaultNodeCount;
-        this.data.defaultCPUCount = queue.defaultCPUCount;
-        this.data.defaultWalltime = queue.defaultWalltime;
+        this.data.default_node_count = queue.default_node_count;
+        this.data.default_cpu_count = queue.default_cpu_count;
+        this.data.default_walltime = queue.default_walltime;
       } else {
-        this.data.defaultNodeCount = null;
-        this.data.defaultCPUCount = null;
-        this.data.defaultWalltime = null;
+        this.data.default_node_count = null;
+        this.data.default_cpu_count = null;
+        this.data.default_walltime = null;
       }
     },
     savedSharedEntity(newSharedEntity) {

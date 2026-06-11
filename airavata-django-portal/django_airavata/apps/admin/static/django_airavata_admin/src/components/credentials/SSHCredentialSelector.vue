@@ -111,9 +111,9 @@ export default {
     },
     copySSHPublicKeyText() {
       return this.selectedCredential
-        ? this.selectedCredential.publicKey.trim()
+        ? this.selectedCredential.public_key.trim()
         : this.defaultCredentialSummary
-        ? this.defaultCredentialSummary.publicKey.trim()
+        ? this.defaultCredentialSummary.public_key.trim()
         : null;
     },
   },

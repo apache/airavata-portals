@@ -10,8 +10,9 @@ export default class UserPermission extends BaseModel {
           name: "user",
           type: UserProfile,
         },
+        // permission_type arrives as the enum member NAME string.
         {
-          name: "permissionType",
+          name: "permission_type",
           type: ResourcePermissionType,
         },
       ],

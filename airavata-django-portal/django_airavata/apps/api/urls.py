@@ -1,55 +1,52 @@
-import logging
-
 from django.urls import re_path
-from rest_framework import routers
-from rest_framework.urlpatterns import format_suffix_patterns
+
+from django_airavata.apps.api import web
 
 from . import views
 
-logger = logging.getLogger(__name__)
+# (prefix, viewset, basename) — reproduced via web.route() (DefaultRouter
+# equivalent: list/detail/@action routes, no .json suffix, no api-root, no
+# browsable API). Router routes come BEFORE the explicit re_paths (DRF order).
+_viewsets = [
+    (r'projects', views.ProjectViewSet, 'project'),
+    (r'experiments', views.ExperimentViewSet, 'experiment'),
+    (r'full-experiments', views.FullExperimentViewSet, 'full-experiment'),
+    (r'experiment-search', views.ExperimentSearchViewSet, 'experiment-search'),
+    (r'groups', views.GroupViewSet, 'group'),
+    (r'application-interfaces', views.ApplicationInterfaceViewSet,
+     'application-interface'),
+    (r'applications', views.ApplicationModuleViewSet, 'application'),
+    (r'application-deployments', views.ApplicationDeploymentViewSet,
+     'application-deployment'),
+    (r'user-profiles', views.UserProfileViewSet, 'user-profile'),
+    (r'group-resource-profiles', views.GroupResourceProfileViewSet,
+     'group-resource-profile'),
+    (r'shared-entities', views.SharedEntityViewSet, 'shared-entity'),
+    (r'compute-resources', views.ComputeResourceViewSet, 'compute-resource'),
+    (r'storage-resources', views.StorageResourceViewSet, 'storage-resource'),
+    (r'credential-summaries', views.CredentialSummaryViewSet,
+     'credential-summary'),
+    (r'storage-preferences', views.StoragePreferenceViewSet,
+     'storage-preference'),
+    (r'parsers', views.ParserViewSet, 'parser'),
+    (r'manage-notifications', views.ManageNotificationViewSet,
+     'manage-notifications'),
+    (r'iam-user-profiles', views.IAMUserViewSet, 'iam-user-profile'),
+    (r'unverified-email-users', views.UnverifiedEmailUserViewSet,
+     'unverified-email-user-profile'),
+    (r'queue-settings-calculators', views.QueueSettingsCalculatorViewSet,
+     'queue-settings-calculator'),
+]
 
-router = routers.DefaultRouter()
-router.register(r'projects', views.ProjectViewSet, basename='project')
-router.register(r'experiments', views.ExperimentViewSet,
-                basename='experiment')
-router.register(r'full-experiments', views.FullExperimentViewSet,
-                basename='full-experiment')
-router.register(r'experiment-search', views.ExperimentSearchViewSet,
-                basename='experiment-search')
-router.register(r'groups', views.GroupViewSet, basename='group')
-router.register(r'application-interfaces', views.ApplicationInterfaceViewSet,
-                basename='application-interface')
-router.register(r'applications', views.ApplicationModuleViewSet,
-                basename='application')
-router.register(r'application-deployments', views.ApplicationDeploymentViewSet,
-                basename='application-deployment')
-router.register(r'user-profiles', views.UserProfileViewSet,
-                basename='user-profile')
-router.register(r'group-resource-profiles', views.GroupResourceProfileViewSet,
-                basename='group-resource-profile')
-router.register(r'shared-entities', views.SharedEntityViewSet,
-                basename='shared-entity')
-router.register(r'compute-resources', views.ComputeResourceViewSet,
-                basename='compute-resource')
-router.register(r'storage-resources', views.StorageResourceViewSet,
-                basename='storage-resource')
-router.register(r'credential-summaries', views.CredentialSummaryViewSet,
-                basename='credential-summary')
-router.register(r'storage-preferences',
-                views.StoragePreferenceViewSet,
-                basename='storage-preference')
-router.register(r'parsers', views.ParserViewSet, basename='parser')
-router.register(r'manage-notifications', views.ManageNotificationViewSet,
-                basename='manage-notifications')
-router.register(r'iam-user-profiles', views.IAMUserViewSet,
-                basename='iam-user-profile')
-router.register(r'unverified-email-users', views.UnverifiedEmailUserViewSet,
-                basename='unverified-email-user-profile')
-router.register(r'queue-settings-calculators', views.QueueSettingsCalculatorViewSet,
-                basename='queue-settings-calculator')
+_router_urlpatterns = [
+    url
+    for prefix, viewset, basename in _viewsets
+    for url in web.route(prefix, viewset, basename)
+]
 
 app_name = 'django_airavata_api'
 urlpatterns = [
+    *_router_urlpatterns,
     re_path(r'^upload$', views.upload_input_file, name='upload_input_file'),
     re_path(r'^tus-upload-finish$', views.tus_upload_finish,
             name='tus_upload_finish'),
@@ -108,9 +105,3 @@ urlpatterns = [
             views.ExperimentArchiveView.as_view(),
             name="experiment-archives"),
 ]
-
-urlpatterns = router.urls + format_suffix_patterns(urlpatterns)
-
-if logger.isEnabledFor(logging.DEBUG):
-    for router_url in router.urls:
-        logger.debug("router url: {}".format(router_url))

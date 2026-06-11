@@ -36,7 +36,11 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'django_airavata.apps.admin.apps.AdminConfig',
-    'django.contrib.admin',
+    # The portal no longer uses the Django auth.User model (identity comes from
+    # the Keycloak token), but django.contrib.auth + contenttypes are kept here
+    # for migration-graph compatibility: existing django_airavata_auth
+    # migrations depend on auth/contenttypes parent nodes. They are removable
+    # once those migrations are squashed (Phase C).
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -44,7 +48,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_airavata.apps.auth.apps.AuthConfig',
     'django_airavata.apps.workspace.apps.WorkspaceConfig',
-    'rest_framework',
     'django_airavata.apps.api.apps.ApiConfig',
     'django_airavata.apps.groups.apps.GroupsConfig',
     'django_airavata.apps.dataparsers.apps.DataParsersConfig',
@@ -63,16 +66,28 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Derive request.user from the Keycloak access token stored in the session
+    # (OIDC session flow; no DB User, replaces AuthenticationMiddleware). Must
+    # run before authz_token_middleware so request.user is set when
+    # get_authz_token runs, and before keycloak_bearer_middleware.
+    'django_airavata.apps.auth.middleware.session_keycloak_user_middleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_airavata.apps.auth.middleware.authz_token_middleware',
+    # Validate an Authorization: Bearer <jwt> against Keycloak for token clients
+    # (no-op when a session already authenticated the request). Must run AFTER
+    # authz_token_middleware so a session login isn't clobbered, and BEFORE the
+    # lazy gRPC client / gateway_groups so request.authz_token/user are set.
+    'django_airavata.apps.auth.middleware.keycloak_bearer_middleware',
+    # Augment every request with request.data (parsed body) and
+    # request.query_params (=request.GET), which views/view_utils read (DRF used
+    # to add these on its Request wrapper).
+    'django_airavata.apps.auth.middleware.request_data_middleware',
     # gRPC AiravataClient (request.airavata). Must come after authz_token_middleware
     # (uses request.authz_token for the access token).
     'django_airavata.middleware.airavata_grpc_client',
     # Needs to come after authz_token_middleware and airavata_grpc_client.
     'django_airavata.apps.auth.middleware.gateway_groups_middleware',
-    'django_airavata.apps.auth.middleware.user_profile_completeness_check',
 ]
 
 ROOT_URLCONF = 'django_airavata.urls'
@@ -112,6 +127,18 @@ DATABASES = {
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+# Sessions are stored in the cache, not the DB (no django_session rows). The
+# default cache is file-based so dev sessions survive the autoreloader and need
+# no DB or external store.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': '/tmp/airavata-portal-cache',
+    }
+}
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
 
 
 # Password validation
@@ -204,27 +231,10 @@ PORTAL_CHROME = {
     "user_menu_links": [],
 }
 
-# Django REST Framework configuration
-REST_FRAMEWORK = {
-    # Track D: authenticate purely from a Keycloak token (no session, no DB user,
-    # no separate Django auth layer). The portal just expects a valid token.
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'django_airavata.apps.auth.token_authentication.KeycloakTokenAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
-    'EXCEPTION_HANDLER':
-        'django_airavata.apps.api.exceptions.custom_exception_handler',
-    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
-    # Force inclusion of fractional seconds (default formatting with
-    # datetime.isoformat only includes fractional seconds if non-zero)
-    'DATETIME_FORMAT': "%Y-%m-%dT%H:%M:%S.%fZ",
-}
-
-AUTHENTICATION_BACKENDS = [
-    'django_airavata.apps.auth.backends.KeycloakBackend'
-]
+# No Django auth backends: identity comes from the verified Keycloak token
+# (session_keycloak_user_middleware / keycloak_bearer_middleware), not from
+# authenticate()/login(). An empty list is valid.
+AUTHENTICATION_BACKENDS = []
 
 # Default email backend (for local development)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -233,13 +243,10 @@ LOGIN_URL = 'django_airavata_auth:login'
 LOGIN_REDIRECT_URL = 'django_airavata_workspace:dashboard'
 LOGOUT_REDIRECT_URL = '/'
 
+# Login is hosted entirely by Keycloak (username/password, self-registration,
+# external IDPs). This is retained only for the desktop/CLI login templates and
+# the settings_local.py download helper, which still read it.
 AUTHENTICATION_OPTIONS = {
-    # Control whether username/password authentication is allowed
-    'password': {
-        'name': 'your account',
-        # Static path to image
-        # 'logo': '/static/path/to/image'
-    },
     # Can have multiple external logins
     # 'external': [
     #     {
@@ -352,7 +359,7 @@ LOGGING = {
             'format': '[%(asctime)s %(name)s:%(lineno)d %(levelname)s] %(message)s',
         },
         'verbose-safe': {
-            '()': 'anticrlf.LogFormatter',
+            '()': 'django_airavata.log_utils.SafeFormatter',
             'format': '[%(asctime)s %(name)s:%(lineno)d %(levelname)s] %(message)s',
         },
     },
@@ -405,6 +412,14 @@ try:
     from django_airavata.settings_local import *  # noqa
 except ImportError:
     pass
+
+# Keycloak account console URL (self-service profile/password/email management
+# the portal no longer hosts). Defaults to the realm account console derived
+# from KEYCLOAK_AUTHORIZE_URL; override in settings_local.py if needed.
+if 'KEYCLOAK_ACCOUNT_CONSOLE_URL' not in dir() and 'KEYCLOAK_AUTHORIZE_URL' in dir():
+    KEYCLOAK_ACCOUNT_CONSOLE_URL = (
+        KEYCLOAK_AUTHORIZE_URL.split('/protocol/openid-connect/')[0] +
+        '/account/')
 
 # NOTE: custom code must be loaded last so that the above settings take effect
 # for any views, etc. defined or imported by custom code

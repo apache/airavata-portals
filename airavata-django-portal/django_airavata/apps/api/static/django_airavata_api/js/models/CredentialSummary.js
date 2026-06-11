@@ -6,16 +6,17 @@ const FIELDS = [
     name: "type",
     type: SummaryType,
   },
-  "gatewayId",
+  "gateway_id",
   "username",
-  "publicKey",
+  "public_key",
   {
-    name: "persistedTime",
-    type: Date,
+    name: "persisted_time",
+    type: "date",
   },
   "token",
   "description",
-  "userHasWriteAccess",
+  // merged onto the proto server-side by the WithAccess envelope.
+  "user_has_write_access",
 ];
 
 export default class CredentialSummary extends BaseModel {

@@ -5,12 +5,12 @@
         <tr>
           <th scope="row">Name</th>
           <td>
-            <div :title="experiment.experimentId">
-              {{ experiment.experimentName }}
+            <div :title="experiment.experiment_id">
+              {{ experiment.experiment_name }}
             </div>
             <small class="text-muted">
-              ID: {{ experiment.experimentId }} (<clipboard-copy-link
-                :text="experiment.experimentId"
+              ID: {{ experiment.experiment_id }} (<clipboard-copy-link
+                :text="experiment.experiment_id"
                 :link-classes="['text-reset']"
               >
                 copy
@@ -35,7 +35,7 @@
         </tr>
         <tr>
           <th scope="row">Owner</th>
-          <td>{{ experiment.userName }}</td>
+          <td>{{ experiment.user_name }}</td>
         </tr>
         <tr>
           <th scope="row">Application</th>
@@ -43,7 +43,8 @@
             {{ fullExperiment.applicationName }}
           </td>
           <td v-else class="font-italic text-muted">
-            Unable to load interface {{ fullExperiment.experiment.executionId }}
+            Unable to load interface
+            {{ fullExperiment.experiment.execution_id }}
           </td>
         </tr>
         <tr>
@@ -67,7 +68,7 @@
         </tr>
         <tr
           v-if="
-            fullExperiment.jobDetails && fullExperiment.jobDetails.length > 0
+            fullExperiment.job_details && fullExperiment.job_details.length > 0
           "
         >
           <th scope="row">Job</th>
@@ -81,14 +82,14 @@
               </thead>
               <tbody>
                 <tr
-                  v-for="(jobDetail, index) in fullExperiment.jobDetails"
-                  :key="jobDetail.jobId"
+                  v-for="(jobDetail, index) in fullExperiment.job_details"
+                  :key="jobDetail.job_id"
                 >
-                  <td>{{ jobDetail.jobName }}</td>
-                  <td>{{ jobDetail.jobId }}</td>
+                  <td>{{ jobDetail.job_name }}</td>
+                  <td>{{ jobDetail.job_id }}</td>
                   <td>{{ jobDetail.jobStatusStateName }}</td>
                   <td>
-                    <span :title="jobDetail.creationTime.toString()">{{
+                    <span :title="jobDetail.creation_time.toString()">{{
                       jobCreationTimes[index]
                     }}</span>
                   </td>
@@ -101,47 +102,47 @@
           <th scope="row">Notification List</th>
           <td>
             {{
-              experiment.emailAddresses
-                ? experiment.emailAddresses.join(", ")
+              experiment.email_addresses
+                ? experiment.email_addresses.join(", ")
                 : ""
             }}
           </td>
         </tr>
         <tr
           v-if="
-            fullExperiment.jobDetails && fullExperiment.jobDetails.length > 0
+            fullExperiment.job_details && fullExperiment.job_details.length > 0
           "
         >
           <th scope="row">Working Dir</th>
           <td>
             <div
-              v-for="jobDetail in fullExperiment.jobDetails"
-              :key="jobDetail.jobId"
+              v-for="jobDetail in fullExperiment.job_details"
+              :key="jobDetail.job_id"
             >
-              {{ jobDetail.jobName }}: {{ jobDetail.workingDir }}
+              {{ jobDetail.job_name }}: {{ jobDetail.working_dir }}
             </div>
           </td>
         </tr>
         <tr
           v-if="
-            fullExperiment.jobDetails && fullExperiment.jobDetails.length > 0
+            fullExperiment.job_details && fullExperiment.job_details.length > 0
           "
         >
           <th scope="row">Job Description</th>
           <td>
             <b-card
-              v-for="jobDetail in fullExperiment.jobDetails"
-              :key="jobDetail.jobId"
-              :header="jobDetail.jobName"
+              v-for="jobDetail in fullExperiment.job_details"
+              :key="jobDetail.job_id"
+              :header="jobDetail.job_name"
             >
-              <pre>{{ jobDetail.jobDescription }}</pre>
+              <pre>{{ jobDetail.job_description }}</pre>
             </b-card>
           </td>
         </tr>
         <tr>
           <th scope="row">Creation Time</th>
           <td>
-            <span :title="experiment.creationTime.toString()">{{
+            <span :title="experiment.creation_time.toString()">{{
               creationTime
             }}</span>
           </td>
@@ -151,7 +152,7 @@
           <td>
             <span
               :title="
-                fullExperiment.experimentStatus.timeOfStateChange.toString()
+                fullExperiment.experimentStatus.time_of_state_change.toString()
               "
               >{{ lastModifiedTime }}</span
             >
@@ -161,8 +162,8 @@
           <th scope="row">Wall Time Limit</th>
           <td>
             {{
-              experiment.userConfigurationData.computationalResourceScheduling
-                .wallTimeLimit
+              experiment.user_configuration_data.computational_resource_scheduling
+                .wall_time_limit
             }}
             minutes
           </td>
@@ -171,8 +172,8 @@
           <th scope="row">CPU Count</th>
           <td>
             {{
-              experiment.userConfigurationData.computationalResourceScheduling
-                .totalCPUCount
+              experiment.user_configuration_data.computational_resource_scheduling
+                .total_cpu_count
             }}
           </td>
         </tr>
@@ -180,21 +181,21 @@
           <th scope="row">Node Count</th>
           <td>
             {{
-              experiment.userConfigurationData.computationalResourceScheduling
-                .nodeCount
+              experiment.user_configuration_data.computational_resource_scheduling
+                .node_count
             }}
           </td>
         </tr>
         <tr
           v-if="
-            experiment.userConfigurationData.computationalResourceScheduling
-              .totalPhysicalMemory
+            experiment.user_configuration_data.computational_resource_scheduling
+              .total_physical_memory
           "
         >
           <th scope="row">Total Physical Memory</th>
           <td>
             {{
-              experiment.userConfigurationData.computationalResourceScheduling.totalPhysicalMemory.toLocaleString()
+              experiment.user_configuration_data.computational_resource_scheduling.total_physical_memory.toLocaleString()
             }}
             MB
           </td>
@@ -203,8 +204,8 @@
           <th scope="row">Queue</th>
           <td>
             {{
-              experiment.userConfigurationData.computationalResourceScheduling
-                .queueName
+              experiment.user_configuration_data.computational_resource_scheduling
+                .queue_name
             }}
           </td>
         </tr>
@@ -213,7 +214,7 @@
           <td>
             <ul>
               <li
-                v-for="input in experiment.experimentInputs"
+                v-for="input in experiment.experiment_inputs"
                 :key="input.name"
               >
                 {{ input.name }}:
@@ -225,7 +226,7 @@
                   v-else-if="input.type.isFileValueType"
                   :data-product="dp"
                   :input-file="true"
-                  :key="dp.productUri"
+                  :key="dp.product_uri"
                 />
               </li>
             </ul>
@@ -236,7 +237,7 @@
           <td>
             <ul>
               <li
-                v-for="output in experiment.experimentOutputs"
+                v-for="output in experiment.experiment_outputs"
                 :key="output.name"
               >
                 {{ output.name }}:
@@ -247,7 +248,7 @@
                   v-for="dp in outputDataProducts[output.name]"
                   v-else-if="output.type.isFileValueType"
                   :data-product="dp"
-                  :key="dp.productUri"
+                  :key="dp.product_uri"
                 />
               </li>
             </ul>
@@ -269,23 +270,23 @@
           <td>
             <b-card
               v-for="error in experiment.errors"
-              :key="error.errorId"
+              :key="error.error_id"
               header="Error"
             >
-              <p>{{ error.userFriendlyMessage }}</p>
-              <pre class="pre-scrollable">{{ error.actualErrorMessage }}</pre>
+              <p>{{ error.user_friendly_message }}</p>
+              <pre class="pre-scrollable">{{ error.actual_error_message }}</pre>
             </b-card>
           </td>
         </tr>
         <template v-if="failedJobs.length > 0">
-          <tr v-for="job in failedJobs" :key="job.jobId">
+          <tr v-for="job in failedJobs" :key="job.job_id">
             <th scope="row">Job Submission Response</th>
             <td>
-              <b-card v-if="job.stdOut" :header="job.jobName + ' STDOUT'">
-                <pre class="pre-scrollable">{{ job.stdOut }}</pre>
+              <b-card v-if="job.std_out" :header="job.job_name + ' STDOUT'">
+                <pre class="pre-scrollable">{{ job.std_out }}</pre>
               </b-card>
-              <b-card v-if="job.stdErr" :header="job.jobName + ' STDERR'">
-                <pre class="pre-scrollable">{{ job.stdErr }}</pre>
+              <b-card v-if="job.std_err" :header="job.job_name + ' STDERR'">
+                <pre class="pre-scrollable">{{ job.std_err }}</pre>
               </b-card>
             </td>
           </tr>
@@ -295,23 +296,23 @@
     <h2 class="h5 mb-3">Process Details</h2>
     <b-card
       v-for="process in experiment.processes"
-      :key="process.processId"
-      :header="process.processId"
+      :key="process.process_id"
+      :header="process.process_id"
     >
       <b-card
         v-for="task in process.sortedTasks"
-        :key="task.taskId"
-        :header="task.taskId"
+        :key="task.task_id"
+        :header="task.task_id"
       >
         <table class="table table-sm">
           <tbody>
             <tr>
               <th scope="row">Task Id</th>
-              <td>{{ task.taskId }}</td>
+              <td>{{ task.task_id }}</td>
             </tr>
             <tr>
               <th scope="row">Task Type</th>
-              <td>{{ task.taskType.name }}</td>
+              <td>{{ task.task_type.name }}</td>
             </tr>
             <tr>
               <th scope="row">Task Status</th>
@@ -320,25 +321,25 @@
             <tr>
               <th scope="row">Task Status Time</th>
               <td>
-                <human-date :date="task.latestStatus.timeOfStateChange" />
+                <human-date :date="task.latestStatus.time_of_state_change" />
               </td>
             </tr>
             <tr>
               <th scope="row">Task Status Reason</th>
               <td>{{ task.latestStatus.reason }}</td>
             </tr>
-            <template v-if="task.taskErrors && task.taskErrors.length > 0">
+            <template v-if="task.task_errors && task.task_errors.length > 0">
               <tr>
                 <th scope="row">Task Errors</th>
                 <td>
                   <b-card
-                    v-for="error in task.taskErrors"
-                    :key="error.errorId"
-                    :header="error.errorId"
+                    v-for="error in task.task_errors"
+                    :key="error.error_id"
+                    :header="error.error_id"
                   >
-                    <p>{{ error.userFriendlyMessage }}</p>
+                    <p>{{ error.user_friendly_message }}</p>
                     <pre class="pre-scrollable">{{
-                      error.actualErrorMessage
+                      error.actual_error_message
                     }}</pre>
                   </b-card>
                 </td>
@@ -350,10 +351,10 @@
                 <td>
                   <b-card
                     v-for="job in task.jobs"
-                    :key="job.jobId"
-                    :header="job.jobName"
+                    :key="job.job_id"
+                    :header="job.job_name"
                   >
-                    <pre>{{ job.jobDescription }}</pre>
+                    <pre>{{ job.job_description }}</pre>
                   </b-card>
                 </td>
               </tr>
@@ -363,12 +364,12 @@
       </b-card>
 
       <b-card
-        v-for="error in process.processErrors"
-        :key="error.errorId"
-        :header="'Process Error ' + error.errorId"
+        v-for="error in process.process_errors"
+        :key="error.error_id"
+        :header="'Process Error ' + error.error_id"
       >
-        <p>{{ error.userFriendlyMessage }}</p>
-        <pre class="pre-scrollable">{{ error.actualErrorMessage }}</pre>
+        <p>{{ error.user_friendly_message }}</p>
+        <pre class="pre-scrollable">{{ error.actual_error_message }}</pre>
       </b-card>
     </b-card>
   </div>
@@ -402,11 +403,11 @@ export default {
   computed: {
     inputDataProducts() {
       const result = {};
-      if (this.fullExperiment && this.fullExperiment.inputDataProducts) {
-        this.fullExperiment.experiment.experimentInputs.forEach((input) => {
+      if (this.fullExperiment && this.fullExperiment.input_data_products) {
+        this.fullExperiment.experiment.experiment_inputs.forEach((input) => {
           result[input.name] = this.getDataProducts(
             input,
-            this.fullExperiment.inputDataProducts
+            this.fullExperiment.input_data_products
           );
         });
       }
@@ -414,45 +415,45 @@ export default {
     },
     outputDataProducts() {
       const result = {};
-      if (this.fullExperiment && this.fullExperiment.outputDataProducts) {
-        this.fullExperiment.experiment.experimentOutputs.forEach((output) => {
+      if (this.fullExperiment && this.fullExperiment.output_data_products) {
+        this.fullExperiment.experiment.experiment_outputs.forEach((output) => {
           result[output.name] = this.getDataProducts(
             output,
-            this.fullExperiment.outputDataProducts
+            this.fullExperiment.output_data_products
           );
         });
       }
       return result;
     },
     creationTime: function () {
-      return moment(this.fullExperiment.experiment.creationTime).fromNow();
+      return moment(this.fullExperiment.experiment.creation_time).fromNow();
     },
     lastModifiedTime: function () {
       return moment(
-        this.fullExperiment.experimentStatus.timeOfStateChange
+        this.fullExperiment.experimentStatus.time_of_state_change
       ).fromNow();
     },
     jobCreationTimes: function () {
-      return this.fullExperiment.jobDetails.map((jobDetail) =>
-        moment(jobDetail.creationTime).fromNow()
+      return this.fullExperiment.job_details.map((jobDetail) =>
+        moment(jobDetail.creation_time).fromNow()
       );
     },
     failedJobs() {
-      if (this.fullExperiment && this.fullExperiment.jobDetails) {
-        return this.fullExperiment.jobDetails.filter(
+      if (this.fullExperiment && this.fullExperiment.job_details) {
+        return this.fullExperiment.job_details.filter(
           (job) =>
             this.experiment.latestStatus.state ===
               models.ExperimentState.FAILED ||
             (job.latestJobStatus &&
-              job.latestJobStatus.jobState === models.JobState.FAILED)
+              job.latestJobStatus.job_state === models.JobState.FAILED)
         );
       } else {
         return [];
       }
     },
     experimentDataDir() {
-      if (this.experiment && this.experiment.userConfigurationData) {
-        return this.experiment.userConfigurationData.experimentDataDir;
+      if (this.experiment && this.experiment.user_configuration_data) {
+        return this.experiment.user_configuration_data.experiment_data_dir;
       } else {
         return null;
       }
@@ -463,10 +464,10 @@ export default {
   },
   created() {
     services.FullExperimentService.retrieve({
-      lookup: this.experiment.experimentId,
+      lookup: this.experiment.experiment_id,
     }).then((fullExperiment) => (this.fullExperiment = fullExperiment));
     services.ExperimentArchiveService.get({
-      experimentId: this.experiment.experimentId,
+      experimentId: this.experiment.experiment_id,
     }).then((result) => {
       this.experimentArchive = result;
     });
@@ -480,12 +481,12 @@ export default {
       if (io.type === models.DataType.URI_COLLECTION) {
         const dataProductURIs = io.value.split(",");
         dataProducts = dataProductURIs.map((uri) =>
-          collection.find((dp) => dp.productUri === uri)
+          collection.find((dp) => dp.product_uri === uri)
         );
       } else {
         const dataProductURI = io.value;
         dataProducts = collection.filter(
-          (dp) => dp.productUri === dataProductURI
+          (dp) => dp.product_uri === dataProductURI
         );
       }
       return dataProducts

@@ -31,10 +31,10 @@ export default {
   computed: {
     filename() {
       if (this.inputFile) {
-        // productName captures the user provided name of the file, which may
+        // product_name captures the user provided name of the file, which may
         // not match the name of the file on the storage system (for example,
         // because of file name collision)
-        return this.dataProduct.productName;
+        return this.dataProduct.product_name;
       } else {
         return this.dataProduct.filename;
       }

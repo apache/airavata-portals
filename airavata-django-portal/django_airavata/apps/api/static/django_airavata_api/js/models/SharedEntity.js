@@ -5,15 +5,15 @@ import UserProfile from "./UserProfile";
 import ResourcePermissionType from "./ResourcePermissionType";
 
 const FIELDS = [
-  "entityId",
+  "entity_id",
   {
-    name: "userPermissions",
+    name: "user_permissions",
     type: UserPermission,
     list: true,
     default: BaseModel.defaultNewInstance(Array),
   },
   {
-    name: "groupPermissions",
+    name: "group_permissions",
     type: GroupPermission,
     list: true,
     default: BaseModel.defaultNewInstance(Array),
@@ -22,8 +22,8 @@ const FIELDS = [
     name: "owner",
     type: UserProfile,
   },
-  "isOwner",
-  "hasSharingPermission",
+  "is_owner",
+  "has_sharing_permission",
 ];
 
 export default class SharedEntity extends BaseModel {
@@ -32,54 +32,55 @@ export default class SharedEntity extends BaseModel {
   }
 
   addUser(user) {
-    if (!this.userPermissions) {
-      this.userPermissions = [];
+    if (!this.user_permissions) {
+      this.user_permissions = [];
     }
     if (
-      !this.userPermissions.find(
-        (up) => up.user.airavataInternalUserId === user.airavataInternalUserId
+      !this.user_permissions.find(
+        (up) =>
+          up.user.airavata_internal_user_id === user.airavata_internal_user_id
       )
     ) {
-      this.userPermissions.push(
+      this.user_permissions.push(
         new UserPermission({
           user: user,
-          permissionType: ResourcePermissionType.READ,
+          permission_type: ResourcePermissionType.READ,
         })
       );
     }
   }
 
   removeUser(user) {
-    this.userPermissions = this.userPermissions.filter(
+    this.user_permissions = this.user_permissions.filter(
       (userPermission) =>
-        userPermission.user.airavataInternalUserId !==
-        user.airavataInternalUserId
+        userPermission.user.airavata_internal_user_id !==
+        user.airavata_internal_user_id
     );
   }
 
   addGroup({ group, permissionType = ResourcePermissionType.READ }) {
-    if (!this.groupPermissions) {
-      this.groupPermissions = [];
+    if (!this.group_permissions) {
+      this.group_permissions = [];
     }
-    if (!this.groupPermissions.find((gp) => gp.group.id === group.id)) {
-      this.groupPermissions.push(
+    if (!this.group_permissions.find((gp) => gp.group.id === group.id)) {
+      this.group_permissions.push(
         new GroupPermission({
           group: group,
-          permissionType: permissionType,
+          permission_type: permissionType,
         })
       );
     }
   }
 
   removeGroup(group) {
-    this.groupPermissions = this.groupPermissions.filter(
+    this.group_permissions = this.group_permissions.filter(
       (groupPermission) => groupPermission.group.id !== group.id
     );
   }
 
   get nonAdminGroupPermissions() {
-    if (this.groupPermissions) {
-      return this.groupPermissions.filter(
+    if (this.group_permissions) {
+      return this.group_permissions.filter(
         (groupPermission) => !groupPermission.group.isAdminGroup
       );
     } else {

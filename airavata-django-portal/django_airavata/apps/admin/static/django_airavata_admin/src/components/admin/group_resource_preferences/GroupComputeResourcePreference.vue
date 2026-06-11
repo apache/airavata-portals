@@ -16,7 +16,7 @@
               <b-form-input
                 id="profile-name"
                 type="text"
-                v-model="data.groupResourceProfileName"
+                v-model="data.group_resource_profile_name"
                 :disabled="!userHasWriteAccess"
                 required
                 placeholder="Name of this Group Resource Profile"
@@ -29,7 +29,7 @@
             >
               <ssh-credential-selector
                 id="default-credential-store-token"
-                v-model="data.defaultCredentialStoreToken"
+                v-model="data.default_credential_store_token"
                 :readonly="!userHasWriteAccess"
               >
               </ssh-credential-selector>
@@ -40,7 +40,7 @@
       </div>
     </div>
     <list-layout
-      :items="data.computePreferences"
+      :items="data.compute_preferences"
       :newButtonDisabled="!userHasWriteAccess"
       title="Compute Preferences"
       new-item-button-text="New Compute Preference"
@@ -51,16 +51,16 @@
           hover
           :fields="computePreferencesFields"
           :items="slotProps.items"
-          sort-by="computeResourceId"
+          sort-by="compute_resource_id"
         >
-          <template slot="cell(computeResourceId)" slot-scope="row">
+          <template slot="cell(compute_resource_id)" slot-scope="row">
             <compute-resource-name
-              :compute-resource-id="row.item.computeResourceId"
+              :compute-resource-id="row.item.compute_resource_id"
             />
           </template>
           <template slot="cell(policy)" slot-scope="row">
             <compute-resource-policy-summary
-              :compute-resource-id="row.item.computeResourceId"
+              :compute-resource-id="row.item.compute_resource_id"
               :group-resource-profile="data"
             />
           </template>
@@ -76,13 +76,13 @@
                 params: {
                   value: row.item,
                   id: id,
-                  host_id: row.item.computeResourceId,
+                  host_id: row.item.compute_resource_id,
                   groupResourceProfile: data,
                   computeResourcePolicy: data.getComputeResourcePolicy(
-                    row.item.computeResourceId
+                    row.item.compute_resource_id
                   ),
                   batchQueueResourcePolicies: data.getBatchQueueResourcePolicies(
-                    row.item.computeResourceId
+                    row.item.compute_resource_id
                   ),
                 },
               }"
@@ -99,13 +99,13 @@
                 params: {
                   value: row.item,
                   id: id,
-                  host_id: row.item.computeResourceId,
+                  host_id: row.item.compute_resource_id,
                   groupResourceProfile: data,
                   computeResourcePolicy: data.getComputeResourcePolicy(
-                    row.item.computeResourceId
+                    row.item.compute_resource_id
                   ),
                   batchQueueResourcePolicies: data.getBatchQueueResourcePolicies(
-                    row.item.computeResourceId
+                    row.item.compute_resource_id
                   ),
                 },
               }"
@@ -117,13 +117,13 @@
             <delete-link
               class="action-link"
               v-if="userHasWriteAccess"
-              @delete="removeComputePreference(row.item.computeResourceId)"
+              @delete="removeComputePreference(row.item.compute_resource_id)"
             >
               Are you sure you want to remove the preferences for compute
               resource
               <strong>
                 <compute-resource-name
-                  :compute-resource-id="row.item.computeResourceId"
+                  :compute-resource-id="row.item.compute_resource_id"
                 /> </strong
               >?
             </delete-link>
@@ -145,7 +145,7 @@
         @delete="removeGroupResourceProfile"
       >
         Are you sure you want to remove Group Resource Profile
-        <strong>{{ data.groupResourceProfileName }}</strong
+        <strong>{{ data.group_resource_profile_name }}</strong
         >?
       </delete-button>
       <b-button class="ml-2" variant="secondary" @click="cancel"
@@ -183,11 +183,11 @@ export default {
   },
   mounted: function () {
     if (this.id) {
-      if (!this.value.groupResourceProfileId) {
+      if (!this.value.group_resource_profile_id) {
         services.GroupResourceProfileService.retrieve({ lookup: this.id }).then(
           (grp) => {
             this.data = grp;
-            this.userHasWriteAccess = this.data.userHasWriteAccess;
+            this.userHasWriteAccess = this.data.user_has_write_access;
           }
         );
       }
@@ -207,20 +207,20 @@ export default {
       data: data,
       service: services.GroupResourceProfileService,
       sharedEntity: null,
-      userHasWriteAccess: data.userHasWriteAccess,
+      userHasWriteAccess: data.user_has_write_access,
       computePreferencesFields: [
         {
           label: "Name",
-          key: "computeResourceId",
+          key: "compute_resource_id",
           sortable: true,
         },
         {
           label: "Username",
-          key: "loginUserName",
+          key: "login_user_name",
         },
         {
           label: "Allocation",
-          key: "allocationProjectNumber",
+          key: "allocation_project_number",
         },
         {
           label: "Policy",
@@ -251,16 +251,16 @@ export default {
   },
   computed: {
     excludedComputeResourceIds() {
-      const currentPrefs = this.data.computePreferences
-        ? this.data.computePreferences.map(
-            (computePreference) => computePreference.computeResourceId
+      const currentPrefs = this.data.compute_preferences
+        ? this.data.compute_preferences.map(
+            (computePreference) => computePreference.compute_resource_id
           )
         : [];
       return currentPrefs;
     },
     title: function () {
       return this.id
-        ? this.data.groupResourceProfileName
+        ? this.data.group_resource_profile_name
         : "New Group Resource Profile";
     },
     owner() {
@@ -269,13 +269,13 @@ export default {
         : null;
     },
     ownerUserId() {
-      return this.owner ? this.owner.userId : null;
+      return this.owner ? this.owner.user_id : null;
     },
     ownerTitle() {
       return this.owner
-        ? this.owner.firstName +
+        ? this.owner.first_name +
             " " +
-            this.owner.lastName +
+            this.owner.last_name +
             " (" +
             this.owner.email +
             ")"
@@ -291,7 +291,7 @@ export default {
         persist = this.service.create({ data: this.data }).then((data) => {
           // Merge sharing settings with default sharing settings created when
           // Group Resource Profile was created
-          const groupResourceProfileId = data.groupResourceProfileId;
+          const groupResourceProfileId = data.group_resource_profile_id;
           return this.$refs.shareButton.mergeAndSave(groupResourceProfileId);
         });
       }
@@ -307,13 +307,13 @@ export default {
     },
     onSelectComputeResource: function (computeResourceId) {
       const computeResourcePreference = new models.GroupComputeResourcePreference();
-      computeResourcePreference.computeResourceId = computeResourceId;
+      computeResourcePreference.compute_resource_id = computeResourceId;
       this.$router.push({
         name: "compute_preference_for_new_group_resource_profile",
         params: {
           value: computeResourcePreference,
           id: this.id,
-          host_id: computeResourcePreference.computeResourceId,
+          host_id: computeResourcePreference.compute_resource_id,
           groupResourceProfile: this.data,
         },
       });

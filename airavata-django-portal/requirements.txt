@@ -1,33 +1,11 @@
-# Pin these dependencies
 Django==5.2.15
 requests==2.25.1
 requests-oauthlib==0.7.0
-djangorestframework==3.16.1
 django-webpack-loader==0.6.0
-logging-formatter-anticrlf==1.2
-zipstream-new==1.1.8
-
-jupyter==1.0.0
+PyJWT==2.13.0
 papermill==1.0.1
-
-# gRPC libs. Bumped for the new Airavata gRPC SDK (airavata-python-sdk 3.0.0,
-# Track D): grpcio>=1.60 and protobuf>=5.26 (the generated stubs use
-# protobuf's runtime_version, added in 5.26). The unused google-api-python-client
-# was removed — its google-api-core transitive hard-pinned protobuf<4, which is
-# incompatible with the new stubs (and nothing in the portal imports it).
+nbconvert==7.17.1
 grpcio>=1.60.0
-grpcio-tools>=1.60.0
 protobuf>=5.26.0,<7.0.0
 googleapis-common-protos>=1.62.0
-
-# The gRPC Airavata SDK (import name airavata_sdk) is the portal's SOLE Airavata
-# dependency — it replaces both the retired Thrift airavata-python-sdk==2.2.7 and
-# the deleted airavata-django-portal-sdk. It is not yet published to PyPI (the
-# published 2.2.7 is the old Thrift SDK), so install it editable from a local
-# apache/airavata checkout BEFORE installing this file:
-#     pip install -e <airavata>/airavata-python-sdk
-# setup.py pins airavata-python-sdk>=3.0.0 so the editable 3.0.0 satisfies it and
-# pip never falls back to the old 2.2.7 on PyPI. Release version (2.2.8/2.3.0/3.x)
-# is TBD; bump the pin with it.
-
 -e "."

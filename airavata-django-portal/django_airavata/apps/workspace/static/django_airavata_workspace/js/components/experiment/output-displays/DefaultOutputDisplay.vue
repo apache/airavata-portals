@@ -5,11 +5,11 @@
       <pre v-if="finalOutputText">
         {{ finalOutputText }}
       </pre>
-      <div v-else v-for="dp in dataProducts" :key="dp.productUri">
+      <div v-else v-for="dp in dataProducts" :key="dp.product_uri">
         <img
-          v-if="dp.isImage && dp.downloadURL"
+          v-if="dp.isImage && dp.product_uri"
           class="image-preview rounded"
-          :src="dp.downloadURL"
+          :src="downloadUrl(dp)"
         />
         <data-product-viewer :data-product="dp" :mime-type="fileMimeType" />
       </div>
@@ -28,7 +28,7 @@
     <template v-else-if="intermediateOutputMultipleDataProducts">
       <div
         v-for="dp in intermediateOutputMultipleDataProducts"
-        :key="dp.productUri"
+        :key="dp.product_uri"
       >
         <data-product-viewer :data-product="dp" :mime-type="fileMimeType" />
       </div>
@@ -91,10 +91,10 @@ export default {
     intermediateOutputProcessStatusState() {
       if (
         this.experimentOutput &&
-        this.experimentOutput.intermediateOutput &&
-        this.experimentOutput.intermediateOutput.processStatus
+        this.experimentOutput.intermediate_output &&
+        this.experimentOutput.intermediate_output.process_status
       ) {
-        return this.experimentOutput.intermediateOutput.processStatus.state;
+        return this.experimentOutput.intermediate_output.process_status.state;
       } else {
         return null;
       }
@@ -102,11 +102,11 @@ export default {
     intermediateOutputDataProduct() {
       if (
         this.experimentOutput &&
-        this.experimentOutput.intermediateOutput &&
-        this.experimentOutput.intermediateOutput.dataProducts &&
-        this.experimentOutput.intermediateOutput.dataProducts.length === 1
+        this.experimentOutput.intermediate_output &&
+        this.experimentOutput.intermediate_output.data_products &&
+        this.experimentOutput.intermediate_output.data_products.length === 1
       ) {
-        return this.experimentOutput.intermediateOutput.dataProducts[0];
+        return this.experimentOutput.intermediate_output.data_products[0];
       } else {
         return null;
       }
@@ -114,18 +114,18 @@ export default {
     intermediateOutputMultipleDataProducts() {
       if (
         this.experimentOutput &&
-        this.experimentOutput.intermediateOutput &&
-        this.experimentOutput.intermediateOutput.dataProducts &&
-        this.experimentOutput.intermediateOutput.dataProducts.length > 1
+        this.experimentOutput.intermediate_output &&
+        this.experimentOutput.intermediate_output.data_products &&
+        this.experimentOutput.intermediate_output.data_products.length > 1
       ) {
-        return this.experimentOutput.intermediateOutput.dataProducts;
+        return this.experimentOutput.intermediate_output.data_products;
       } else {
         return null;
       }
     },
     intermediateOutputFileSize() {
       if (this.intermediateOutputDataProduct) {
-        return this.intermediateOutputDataProduct.filesize;
+        return this.intermediateOutputDataProduct.product_size;
       } else {
         return -1;
       }
@@ -135,8 +135,9 @@ export default {
         this.intermediateOutputDataProduct &&
         (this.intermediateOutputDataProduct.isText ||
           this.fileMimeType === "text/plain") &&
-        this.intermediateOutputDataProduct.downloadURL &&
-        this.intermediateOutputDataProduct.filesize < MAX_DISPLAY_TEXT_FILE_SIZE
+        this.intermediateOutputDataProduct.product_uri &&
+        this.intermediateOutputDataProduct.product_size <
+          MAX_DISPLAY_TEXT_FILE_SIZE
       );
     },
     isFinalOutputFileDisplayable() {
@@ -144,16 +145,22 @@ export default {
         this.dataProducts &&
         this.dataProducts.length === 1 &&
         (this.dataProducts[0].isText || this.fileMimeType === "text/plain") &&
-        this.dataProducts[0].downloadURL &&
-        this.dataProducts[0].filesize < MAX_DISPLAY_TEXT_FILE_SIZE
+        this.dataProducts[0].product_uri &&
+        this.dataProducts[0].product_size < MAX_DISPLAY_TEXT_FILE_SIZE
       );
     },
   },
   methods: {
+    // downloadURL is no longer on the wire; build it from the URI.
+    downloadUrl(dataProduct) {
+      return `/sdk/download/?data-product-uri=${encodeURIComponent(
+        dataProduct.product_uri
+      )}`;
+    },
     async loadIntermediateOutputText() {
       if (this.isIntermediateOutputFileDisplayable) {
         this.intermediateOutputText = await utils.FetchUtils.get(
-          this.intermediateOutputDataProduct.downloadURL,
+          this.downloadUrl(this.intermediateOutputDataProduct),
           "",
           {
             responseType: "text",
@@ -164,7 +171,7 @@ export default {
     async loadFinalOutputText() {
       if (this.isFinalOutputFileDisplayable) {
         this.finalOutputText = await utils.FetchUtils.get(
-          this.dataProducts[0].downloadURL,
+          this.downloadUrl(this.dataProducts[0]),
           "",
           {
             responseType: "text",

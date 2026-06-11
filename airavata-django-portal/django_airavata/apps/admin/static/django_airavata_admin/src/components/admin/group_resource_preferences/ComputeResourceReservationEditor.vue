@@ -8,7 +8,7 @@
     >
       <b-form-input
         id="reservation-name"
-        v-model="data.reservationName"
+        v-model="data.reservation_name"
         type="text"
         @input="nameInputBegins = true"
         :state="nameValidationState"
@@ -17,8 +17,8 @@
     <b-form-group
       label="Start Time"
       label-for="start-time"
-      :invalid-feedback="getValidationFeedback('startTime')"
-      :state="getValidationState('startTime')"
+      :invalid-feedback="getValidationFeedback('start_time')"
+      :state="getValidationState('start_time')"
     >
       <datetime
         id="start-time"
@@ -39,14 +39,14 @@
         :week-start="7"
         use12-hour
         auto
-        @input="data.startTime = stringToDate($event)"
+        @input="data.start_time = stringToDate($event)"
       ></datetime>
     </b-form-group>
     <b-form-group
       label="End Time"
       label-for="end-time"
-      :invalid-feedback="getValidationFeedback('endTime')"
-      :state="getValidationState('endTime')"
+      :invalid-feedback="getValidationFeedback('end_time')"
+      :state="getValidationState('end_time')"
     >
       <datetime
         id="end-time"
@@ -54,7 +54,7 @@
         :value="endTimeAsString"
         :input-class="{
           'form-control': true,
-          'is-invalid': getValidationState('endTime'),
+          'is-invalid': getValidationState('end_time'),
         }"
         :format="{
           year: 'numeric',
@@ -71,20 +71,20 @@
         :min-datetime="startTimeAsString"
         use12-hour
         auto
-        @input="data.endTime = stringToDate($event)"
+        @input="data.end_time = stringToDate($event)"
       ></datetime>
     </b-form-group>
     <b-form-group
       label="Queues"
       label-for="queues"
-      :invalid-feedback="getValidationFeedback('queueNames')"
-      :state="getValidationState('queueNames')"
+      :invalid-feedback="getValidationFeedback('queue_names')"
+      :state="getValidationState('queue_names')"
     >
       <b-form-checkbox-group
         id="queues"
-        v-model="data.queueNames"
+        v-model="data.queue_names"
         :options="queueNameOptions"
-        :state="getValidationState('queueNames')"
+        :state="getValidationState('queue_names')"
       />
     </b-form-group>
   </b-form>
@@ -117,19 +117,19 @@ export default {
   },
   computed: {
     startTimeAsString() {
-      return this.data.startTime.toISOString();
+      return this.data.start_time.toISOString();
     },
     endTimeAsString() {
-      return this.data.endTime.toISOString();
+      return this.data.end_time.toISOString();
     },
     nameValidationFeedback() {
-      return this.getValidationFeedback("reservationName");
+      return this.getValidationFeedback("reservation_name");
     },
     nameValidationState() {
       if (this.nameInputBegins === false) {
         return null;
       }
-      return this.getValidationState("reservationName");
+      return this.getValidationState("reservation_name");
     },
     queueNameOptions() {
       return this.queues.slice().sort();

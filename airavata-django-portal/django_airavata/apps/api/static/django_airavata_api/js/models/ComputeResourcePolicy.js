@@ -1,11 +1,11 @@
 import BaseModel from "./BaseModel";
 
 const FIELDS = [
-  "resourcePolicyId",
-  "computeResourceId",
-  "groupResourceProfileId",
+  "resource_policy_id",
+  "compute_resource_id",
+  "group_resource_profile_id",
   {
-    name: "allowedBatchQueues",
+    name: "allowed_batch_queues",
     type: "string",
     list: true,
   },
@@ -18,15 +18,15 @@ export default class ComputeResourcePolicy extends BaseModel {
 
   populateParentIdsOnBatchQueueResourcePolicy(batchQueueResourcePolicy) {
     // For new BatchQueueResourcePolicy instances, set the parent ids
-    batchQueueResourcePolicy.groupResourceProfileId = this.groupResourceProfileId;
-    batchQueueResourcePolicy.computeResourceId = this.computeResourceId;
+    batchQueueResourcePolicy.group_resource_profile_id = this.group_resource_profile_id;
+    batchQueueResourcePolicy.compute_resource_id = this.compute_resource_id;
     return batchQueueResourcePolicy;
   }
 
   validate() {
     let validationResults = {};
-    if (!this.allowedBatchQueues || this.allowedBatchQueues.length === 0) {
-      validationResults["allowedBatchQueues"] =
+    if (!this.allowed_batch_queues || this.allowed_batch_queues.length === 0) {
+      validationResults["allowed_batch_queues"] =
         "Must select at least one queue.";
     }
     return validationResults;

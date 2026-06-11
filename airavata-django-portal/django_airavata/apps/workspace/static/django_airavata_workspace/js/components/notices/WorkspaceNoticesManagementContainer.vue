@@ -5,10 +5,10 @@
         <b-alert show>
           <div class="d-flex flex-row">
             <strong class="flex-fill" style="white-space: pre;">{{ notice.title }}</strong>
-            <human-date v-if="notice.publishedTime" :date="notice.publishedTime" style="font-size: 10px;"/>
+            <human-date v-if="notice.published_time" :date="notice.published_time" style="font-size: 10px;"/>
           </div>
           <div style="white-space: pre;font-size: 12px;">
-            <linkify>{{ notice.notificationMessage }}</linkify>
+            <linkify>{{ notice.notification_message }}</linkify>
           </div>
         </b-alert>
       </li>
@@ -39,8 +39,8 @@ export default {
     } else {
       services.ManageNotificationService.list().then(notices => {
         if (!!notices && Array.isArray(notices)) {
-          this.notices = notices.filter(({showInDashboard, publishedTime, expirationTime}) => {
-            return !!showInDashboard && new Date(expirationTime) > now && new Date(publishedTime) <= now
+          this.notices = notices.filter(({show_in_dashboard, published_time, expiration_time}) => {
+            return !!show_in_dashboard && new Date(expiration_time) > now && new Date(published_time) <= now
           });
         } else {
           this.notices = [];

@@ -1,18 +1,19 @@
 import BaseModel from "./BaseModel";
 
 const FIELDS = [
-  "userId",
-  "gatewayId",
+  "user_id",
+  "gateway_id",
   "email",
-  "firstName",
-  "lastName",
+  "first_name",
+  "last_name",
   "enabled",
-  "emailVerified",
+  "email_verified",
   {
-    name: "creationTime",
+    name: "creation_time",
     type: "date",
   },
-  "userHasWriteAccess",
+  // merged onto the proto server-side by the WithAccess envelope.
+  "user_has_write_access",
 ];
 
 export default class UnverifiedEmailUserProfile extends BaseModel {

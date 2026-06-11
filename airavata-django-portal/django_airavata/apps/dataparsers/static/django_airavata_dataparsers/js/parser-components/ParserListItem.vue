@@ -1,8 +1,8 @@
 <template>
   <tr>
     <td>{{ parser.id }}</td>
-    <td>{{ parser.imageName }}</td>
-    <td>{{ parser.executionCommand }}</td>
+    <td>{{ parser.image_name }}</td>
+    <td>{{ parser.execution_command }}</td>
     <td>
       <a
         class="action-link"

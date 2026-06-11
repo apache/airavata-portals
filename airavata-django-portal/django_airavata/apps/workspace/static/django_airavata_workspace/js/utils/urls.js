@@ -2,7 +2,7 @@ export default {
   editExperiment(experiment) {
     return (
       "/workspace/experiments/" +
-      encodeURIComponent(experiment.experimentId) +
+      encodeURIComponent(experiment.experiment_id) +
       "/edit"
     );
   },
@@ -18,7 +18,7 @@ export default {
   viewExperiment(experiment, { launching = false } = {}) {
     return (
       "/workspace/experiments/" +
-      encodeURIComponent(experiment.experimentId) +
+      encodeURIComponent(experiment.experiment_id) +
       "/" +
       (launching ? "?launching=true" : "")
     );
@@ -31,7 +31,7 @@ export default {
   createExperiment(appModule) {
     return (
       "/workspace/applications/" +
-      encodeURIComponent(appModule.appModuleId) +
+      encodeURIComponent(appModule.app_module_id) +
       "/create_experiment"
     );
   },
@@ -39,7 +39,7 @@ export default {
     window.location.assign(this.createExperiment(appModule));
   },
   editProject(project) {
-    return "/workspace/projects/" + encodeURIComponent(project.projectID) + "/";
+    return "/workspace/projects/" + encodeURIComponent(project.project_id) + "/";
   },
   projectsList() {
     return "/workspace/projects";
@@ -49,7 +49,7 @@ export default {
   },
   viewGroupResourceProfile(groupResourceProfile) {
     return `/admin/group-resource-profiles/${encodeURIComponent(
-      groupResourceProfile.groupResourceProfileId
+      groupResourceProfile.group_resource_profile_id
     )}`;
   },
 };

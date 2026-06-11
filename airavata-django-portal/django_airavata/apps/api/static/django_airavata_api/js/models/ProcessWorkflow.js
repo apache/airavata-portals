@@ -1,11 +1,11 @@
 import BaseModel from "./BaseModel";
 
 const FIELDS = [
-  "processId",
-  "workflowId",
+  "process_id",
+  "workflow_id",
   {
-    name: "creationTime",
-    type: Date,
+    name: "creation_time",
+    type: "date",
   },
   "type",
 ];

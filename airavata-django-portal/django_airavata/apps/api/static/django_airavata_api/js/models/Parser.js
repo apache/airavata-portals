@@ -4,21 +4,21 @@ import ParserOutputFile from "./ParserOutput";
 
 const FIELDS = [
   "id",
-  "imageName",
-  "outputDirPath",
-  "inputDirPath",
-  "executionCommand",
+  "image_name",
+  "output_dir_path",
+  "input_dir_path",
+  "execution_command",
   {
-    name: "inputFiles",
+    name: "input_files",
     list: true,
     type: ParserInputFile,
   },
   {
-    name: "outputFiles",
+    name: "output_files",
     list: true,
     type: ParserOutputFile,
   },
-  "gatewayId",
+  "gateway_id",
 ];
 
 export default class Parser extends BaseModel {

@@ -11,7 +11,7 @@
     <div class="row" v-if="showNewUserMessage">
       <div class="col">
         <b-alert variant="info" show
-          >Welcome {{ userProfile.firstName }} {{ userProfile.lastName }}! You
+          >Welcome {{ userProfile.first_name }} {{ userProfile.last_name }}! You
           currently don't have access to run any applications but the
           administrator of this gateway has been notified and will be in contact
           to grant you the appropriate privileges.</b-alert
@@ -28,7 +28,7 @@
         <application-card
           v-for="item in favoriteApplicationsData"
           v-bind:appModule="item.appModule"
-          v-bind:key="item.appModule.appModuleId"
+          v-bind:key="item.appModule.app_module_id"
           @app-selected="handleAppSelected"
           :disabled="item.disabled"
           @favorite="markFavorite(item.appModule)"
@@ -50,7 +50,7 @@
       <application-card
         v-for="item in nonFavoriteApplicationsData"
         v-bind:appModule="item.appModule"
-        v-bind:key="item.appModule.appModuleId"
+        v-bind:key="item.appModule.app_module_id"
         @app-selected="handleAppSelected"
         :disabled="item.disabled"
         @favorite="markFavorite(item.appModule)"
@@ -97,7 +97,7 @@ export default {
     },
     markFavorite(appModule) {
       services.ApplicationModuleService.favorite({
-        lookup: appModule.appModuleId,
+        lookup: appModule.app_module_id,
       })
         .then(() => {
           return services.WorkspacePreferencesService.get().then(
@@ -106,7 +106,7 @@ export default {
         })
         .then(() => {
           const index = this.favoriteApplicationsData.findIndex(
-            (data) => data.appModule.appModuleId === appModule.appModuleId
+            (data) => data.appModule.app_module_id === appModule.app_module_id
           );
           this.$nextTick(() => {
             this.$refs.favoriteApplicationCards[index].$el.scrollIntoView({
@@ -118,7 +118,7 @@ export default {
     },
     markNotFavorite(appModule) {
       services.ApplicationModuleService.unfavorite({
-        lookup: appModule.appModuleId,
+        lookup: appModule.app_module_id,
       }).then(() => {
         return services.WorkspacePreferencesService.get().then(
           (prefs) => (this.workspacePreferences = prefs)
@@ -130,7 +130,7 @@ export default {
     isNewUser() {
       return (
         this.userProfile &&
-        Date.now() - this.userProfile.creationTime.getTime() <
+        Date.now() - this.userProfile.creation_time.getTime() <
           7 * 24 * 60 * 60 * 1000
       );
     },
@@ -144,7 +144,7 @@ export default {
     },
     accessibleModuleIds() {
       return this.accessibleAppModules
-        ? this.accessibleAppModules.map((a) => a.appModuleId)
+        ? this.accessibleAppModules.map((a) => a.app_module_id)
         : [];
     },
     allApplicationData() {
@@ -152,7 +152,7 @@ export default {
         ? this.allApplicationModules.map((app) => {
             return {
               appModule: app,
-              disabled: this.accessibleModuleIds.indexOf(app.appModuleId) < 0,
+              disabled: this.accessibleModuleIds.indexOf(app.app_module_id) < 0,
             };
           })
         : [];
@@ -160,13 +160,13 @@ export default {
     favoriteApplicationsData() {
       return this.allApplicationData.filter(
         (app) =>
-          this.favoriteApplicationIds.indexOf(app.appModule.appModuleId) >= 0
+          this.favoriteApplicationIds.indexOf(app.appModule.app_module_id) >= 0
       );
     },
     nonFavoriteApplicationsData() {
       return this.allApplicationData.filter(
         (app) =>
-          this.favoriteApplicationIds.indexOf(app.appModule.appModuleId) < 0
+          this.favoriteApplicationIds.indexOf(app.appModule.app_module_id) < 0
       );
     },
     favoriteApplicationIds() {

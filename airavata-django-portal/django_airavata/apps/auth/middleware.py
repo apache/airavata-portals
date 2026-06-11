@@ -1,10 +1,11 @@
 """Django Airavata Auth Middleware."""
+import json
 import logging
+import time
 
 from django.conf import settings
 from django.contrib.auth import logout
-from django.shortcuts import redirect
-from django.urls import reverse
+from django.contrib.auth.models import AnonymousUser
 
 from . import utils
 
@@ -58,10 +59,7 @@ def gateway_groups_middleware(get_response):
         request.is_gateway_admin = False
         request.is_read_only_gateway_admin = False
 
-        if (not request.user.is_authenticated or
-            not request.authz_token or
-            (hasattr(request.user, "user_profile") and
-                not request.user.user_profile.is_complete)):
+        if not request.user.is_authenticated or not request.authz_token:
             return get_response(request)
 
         try:
@@ -70,14 +68,6 @@ def gateway_groups_middleware(get_response):
             if not request.session.get('GATEWAY_GROUPS'):
                 request.session['GATEWAY_GROUPS'] = _gateway_groups_dict(request)
             set_admin_group_attributes(request, gateway_groups=request.session.get("GATEWAY_GROUPS"))
-            # Gateway Admins are made 'superuser' in Django so they can edit
-            # pages in the CMS
-            if request.is_gateway_admin and (
-                not request.user.is_superuser or
-                    not request.user.is_staff):
-                request.user.is_superuser = True
-                request.user.is_staff = True
-                request.user.save()
         except Exception as e:
             log.warning("Failed to set is_gateway_admin, "
                         "is_read_only_gateway_admin for user", exc_info=e)
@@ -86,28 +76,155 @@ def gateway_groups_middleware(get_response):
     return middleware
 
 
-def user_profile_completeness_check(get_response):
-    """Check if user profile is complete and if not, redirect to user profile editor."""
+# ---------------------------------------------------------------------------
+# DRF-replacement middleware (Phase B). NOT wired into settings yet — defined
+# here so the cutover can add them to MIDDLEWARE in one step.
+# ---------------------------------------------------------------------------
+
+def request_data_middleware(get_response):
+    """Augment every request with ``request.data`` and ``request.query_params``.
+
+    DRF supplied these on its ``Request`` wrapper; views/view_utils read them.
+    ``request.data`` is the parsed JSON body when the content type is JSON, else
+    the form POST dict, else an empty dict. ``request.query_params`` is
+    ``request.GET``. Idempotent and safe for all paths (parse failures degrade to
+    an empty dict).
+    """
     def middleware(request):
+        request.query_params = request.GET
 
-        if not request.user.is_authenticated:
-            return get_response(request)
-
-        allowed_paths = [
-            reverse('django_airavata_auth:user_profile'),
-            reverse('django_airavata_auth:logout'),
-        ]
-        incomplete_user_profile = (hasattr(request.user, "user_profile") and
-                                   not request.user.user_profile.is_complete)
-        # Exclude admin's from the ext user profile check since they will be
-        # creating/editing the ext user profile fields
-        invalid_ext_user_profile = (not getattr(request, "is_gateway_admin", False) and
-                                    hasattr(request.user, "user_profile") and
-                                    not request.user.user_profile.is_ext_user_profile_valid)
-        if ((incomplete_user_profile or invalid_ext_user_profile) and
-            request.path not in allowed_paths and
-                'text/html' in request.META['HTTP_ACCEPT']):
-            return redirect('django_airavata_auth:user_profile')
+        content_type = (request.META.get('CONTENT_TYPE', '') or '').lower()
+        if 'application/json' in content_type:
+            try:
+                body = request.body
+                request.data = json.loads(body) if body else {}
+            except (ValueError, json.JSONDecodeError):
+                request.data = {}
+        elif request.method in ('POST', 'PUT', 'PATCH'):
+            # form-encoded / multipart — Django parsed it into request.POST.
+            request.data = request.POST.dict()
         else:
+            request.data = {}
+
+        return get_response(request)
+
+    return middleware
+
+
+def session_keycloak_user_middleware(get_response):
+    """Derive ``request.user`` from the Keycloak access token in the session.
+
+    Replaces ``AuthenticationMiddleware`` for the OIDC session flow: there is no
+    DB ``User`` and no ``login()`` call, so identity comes from the verified JWT
+    stored in the session by the OIDC callback. If the access token is expired
+    but a valid refresh token is present, the token is refreshed in place. On any
+    failure the session is flushed and the request is left Anonymous (the
+    permission/login_required layer then redirects to Keycloak).
+
+    Must run before ``authz_token_middleware`` so ``request.user`` is set when
+    ``get_authz_token`` runs, and before ``keycloak_bearer_middleware`` (which
+    no-ops when a session already authenticated the request).
+    """
+    import jwt
+
+    from .token_authentication import KeycloakUser, _jwks
+
+    def _decode(token):
+        signing_key = _jwks().get_signing_key_from_jwt(token)
+        return jwt.decode(
+            token, signing_key.key, algorithms=['RS256'],
+            options={'verify_aud': False})
+
+    def middleware(request):
+        # If a prior middleware already authenticated the request, no-op.
+        user = getattr(request, 'user', None)
+        if user is not None and getattr(user, 'is_authenticated', False):
             return get_response(request)
+
+        # This middleware replaces AuthenticationMiddleware, so it owns
+        # request.user. Default to Anonymous; the token paths below upgrade it.
+        request.user = AnonymousUser()
+
+        if 'ACCESS_TOKEN' not in request.session:
+            return get_response(request)
+
+        now = time.time()
+        access_token = request.session['ACCESS_TOKEN']
+        access_expires_at = request.session.get('ACCESS_TOKEN_EXPIRES_AT', 0)
+        refresh_expires_at = request.session.get('REFRESH_TOKEN_EXPIRES_AT', 0)
+
+        try:
+            if access_expires_at > now:
+                claims = _decode(access_token)
+                request.user = KeycloakUser(claims)
+            elif ('REFRESH_TOKEN' in request.session and
+                    refresh_expires_at > now):
+                token = utils.refresh_access_token(request)
+                if token is None:
+                    request.session.flush()
+                    return get_response(request)
+                utils.store_token_in_session(request, token)
+                claims = _decode(token['access_token'])
+                request.user = KeycloakUser(claims)
+            # else: token expired and no usable refresh token; leave Anonymous.
+        except Exception as e:  # noqa: BLE001 - any failure is an auth failure
+            log.warning("Failed to derive user from session token: %s", e)
+            request.session.flush()
+
+        return get_response(request)
+
+    return middleware
+
+
+def keycloak_bearer_middleware(get_response):
+    """Authenticate ``Authorization: Bearer <jwt>`` requests against Keycloak.
+
+    Mirrors ``token_authentication.KeycloakTokenAuthentication`` (reusing
+    ``_jwks`` / ``KeycloakUser`` / ``AuthzToken``): if ``request.user`` is already
+    authenticated (session) this is a no-op; elif a Bearer token is present it is
+    validated and ``request.user`` / ``request.authz_token`` (+ the
+    ``is_gateway_admin`` / ``is_read_only_gateway_admin`` defaults) are set; else
+    the request is left Anonymous. An invalid token leaves the user Anonymous (no
+    raise — the permission layer returns 401).
+
+    NOT wired into settings yet.
+    """
+    import jwt
+
+    from .token_authentication import KeycloakUser, _jwks
+
+    def middleware(request):
+        user = getattr(request, 'user', None)
+        if user is not None and getattr(user, 'is_authenticated', False):
+            return get_response(request)
+
+        header = request.META.get('HTTP_AUTHORIZATION', '')
+        if not header.startswith('Bearer '):
+            return get_response(request)
+
+        token = header[len('Bearer '):].strip()
+        try:
+            signing_key = _jwks().get_signing_key_from_jwt(token)
+            claims = jwt.decode(
+                token, signing_key.key, algorithms=['RS256'],
+                options={'verify_aud': False})
+        except Exception as e:  # noqa: BLE001 - any failure is an auth failure
+            log.warning("Keycloak bearer token validation failed: %s", e)
+            request.user = AnonymousUser()
+            return get_response(request)
+
+        keycloak_user = KeycloakUser(claims)
+        authz_token = utils.AuthzToken(
+            accessToken=token,
+            claimsMap={'gatewayID': settings.GATEWAY_ID,
+                       'userName': keycloak_user.username})
+        request.user = keycloak_user
+        request.authz_token = authz_token
+        # The session-based gateway_groups_middleware sets these; pure-token auth
+        # skips it, so default to non-admin (matches KeycloakTokenAuthentication).
+        request.is_gateway_admin = False
+        request.is_read_only_gateway_admin = False
+
+        return get_response(request)
+
     return middleware

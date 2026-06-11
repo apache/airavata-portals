@@ -71,9 +71,9 @@ export default {
       return this.combinedGroups
         ? this.combinedGroups.filter((g) => {
             return (
-              !g.isDefaultGatewayUsersGroup &&
-              !g.isGatewayAdminsGroup &&
-              !g.isReadOnlyGatewayAdminsGroup
+              !g.is_default_gateway_users_group &&
+              !g.is_gateway_admins_group &&
+              !g.is_read_only_gateway_admins_group
             );
           })
         : [];
@@ -85,7 +85,7 @@ export default {
       return utils.StringUtils.sortIgnoreCase(options, (o) => o.text);
     },
     gatewayUsersGroup() {
-      return this.combinedGroups.find((g) => g.isDefaultGatewayUsersGroup);
+      return this.combinedGroups.find((g) => g.is_default_gateway_users_group);
     },
     gatewayUsersGroupOption() {
       return this.gatewayUsersGroup
@@ -93,13 +93,13 @@ export default {
         : null;
     },
     adminsGroup() {
-      return this.combinedGroups.find((g) => g.isGatewayAdminsGroup);
+      return this.combinedGroups.find((g) => g.is_gateway_admins_group);
     },
     adminsGroupOption() {
       return this.adminsGroup ? this.createGroupOption(this.adminsGroup) : null;
     },
     readOnlyAdminsGroup() {
-      return this.combinedGroups.find((g) => g.isReadOnlyGatewayAdminsGroup);
+      return this.combinedGroups.find((g) => g.is_read_only_gateway_admins_group);
     },
     readOnlyAdminsGroupOption() {
       return this.readOnlyAdminsGroup
@@ -132,7 +132,7 @@ export default {
         value: group.id,
         disabled:
           !group.userHasWriteAccess ||
-          group.ownerId === this.airavataInternalUserId,
+          group.owner_id === this.airavataInternalUserId,
       };
     },
   },

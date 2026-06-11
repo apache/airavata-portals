@@ -2,29 +2,32 @@ import BaseModel from "./BaseModel";
 import NotificationPriority from "./NotificationPriority";
 
 const FIELDS = [
-  "notificationId",
-  "gatewayId",
+  "notification_id",
+  "gateway_id",
   "title",
-  "notificationMessage",
+  "notification_message",
   {
-    name: "creationTime",
-    type: Date,
+    name: "creation_time",
+    type: "date",
   },
   {
-    name: "publishedTime",
-    type: Date,
+    name: "published_time",
+    type: "date",
   },
   {
-    name: "expirationTime",
-    type: Date,
+    name: "expiration_time",
+    type: "date",
   },
   {
     name: "priority",
     type: NotificationPriority,
   },
-  "userHasWriteAccess",
+  // WithAccess-merged scalars (not proto fields).
+  "user_has_write_access",
+  "is_owner",
+  // Portal-only NotificationExtension flag, merged on top of the proto.
   {
-    name: "showInDashboard",
+    name: "show_in_dashboard",
     type: "boolean",
     default: false,
   },
@@ -41,17 +44,17 @@ export default class Notification extends BaseModel {
       validationResults["title"] = "Please provide a Title for this notice.";
     }
     if (
-      this.isEmpty(this.notificationMessage) ||
-      this.notificationMessage.length < 10
+      this.isEmpty(this.notification_message) ||
+      this.notification_message.length < 10
     ) {
-      validationResults["notificationMessage"] =
+      validationResults["notification_message"] =
         "Please provide the message with minimum 10 characters.";
     }
-    if (this.isEmpty(this.publishedTime)) {
-      validationResults["publishedTime"] = "Please select the publish time";
+    if (this.isEmpty(this.published_time)) {
+      validationResults["published_time"] = "Please select the publish time";
     }
-    if (this.isEmpty(this.expirationTime)) {
-      validationResults["expirationTime"] = "Please select the expiration time";
+    if (this.isEmpty(this.expiration_time)) {
+      validationResults["expiration_time"] = "Please select the expiration time";
     }
     if (this.isEmpty(this.priority)) {
       validationResults["priority"] = "Please select the priority";

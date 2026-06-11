@@ -41,7 +41,7 @@
       <b-form-input
         :id="id + '-argument'"
         type="text"
-        v-model="data.applicationArgument"
+        v-model="data.application_argument"
         :disabled="readonly"
       ></b-form-input>
     </b-form-group>
@@ -53,7 +53,7 @@
       >
         <b-form-radio-group
           :id="id + '-required'"
-          v-model="data.isRequired"
+          v-model="data.is_required"
           :options="trueFalseOptions"
           :disabled="readonly"
         >
@@ -66,7 +66,7 @@
       >
         <b-form-radio-group
           :id="id + '-required-command-line'"
-          v-model="data.requiredToAddedToCommandLine"
+          v-model="data.required_to_added_to_command_line"
           :options="trueFalseOptions"
           :disabled="readonly"
         >
@@ -80,7 +80,7 @@
     >
       <json-editor
         :id="id + '-metadata'"
-        v-model="data.metaData"
+        v-model="metadata"
         :rows="5"
         :disabled="readonly"
       />
@@ -129,6 +129,20 @@ export default {
     id() {
       return "id-" + this.data.key;
     },
+    // meta_data is a raw JSON string on the wire; JSONEditor works with objects.
+    metadata: {
+      get() {
+        if (!this.data.meta_data) {
+          return null;
+        }
+        return typeof this.data.meta_data === "string"
+          ? JSON.parse(this.data.meta_data)
+          : this.data.meta_data;
+      },
+      set(value) {
+        this.data.meta_data = value ? JSON.stringify(value) : null;
+      },
+    },
   },
   methods: {
     doFocus() {
@@ -139,10 +153,9 @@ export default {
       this.$emit("delete");
     },
     setPlainText() {
-      const metadata = this.data.metaData || {};
+      const metadata = this.metadata || {};
       metadata["file-metadata"] = { "mime-type": "text/plain" };
-      // Clone so that JSONEditor updates with new value
-      this.data.metaData = JSON.parse(JSON.stringify(metadata));
+      this.metadata = metadata;
     },
   },
   mounted() {

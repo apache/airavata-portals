@@ -3,7 +3,7 @@
     <b-form-group label="Login username" label-for="login-username">
       <b-form-input
         id="login-username"
-        v-model="data.loginUserName"
+        v-model="data.login_user_name"
         type="text"
       />
     </b-form-group>
@@ -13,7 +13,7 @@
     >
       <b-form-input
         id="filesystem-root-location"
-        v-model="data.fileSystemRootLocation"
+        v-model="data.file_system_root_location"
         type="text"
       />
     </b-form-group>
@@ -24,7 +24,7 @@
     >
       <ssh-credential-selector
         id="default-credential-store-token"
-        v-model="data.resourceSpecificCredentialStoreToken"
+        v-model="data.resource_specific_credential_store_token"
         :null-option-default-credential-token="defaultCredentialStoreToken"
         :null-option-disabled="!defaultCredentialStoreToken"
       >

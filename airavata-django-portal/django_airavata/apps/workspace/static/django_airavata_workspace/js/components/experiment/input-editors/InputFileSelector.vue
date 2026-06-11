@@ -66,7 +66,7 @@ export default {
     },
     uploadSuccess(result) {
       const dataProduct = new models.DataProduct(result["data-product"]);
-      this.$emit("selected", dataProduct.productUri, dataProduct);
+      this.$emit("selected", dataProduct.product_uri, dataProduct);
     },
     uploadFinished() {
       this.$emit("uploadend");

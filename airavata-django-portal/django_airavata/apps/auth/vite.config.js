@@ -1,4 +1,3 @@
-import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue2";
 
@@ -61,12 +60,10 @@ export default defineConfig({
     emptyOutDir: true,
     modulePreload: false,
     rollupOptions: {
-      input: {
-        "user-profile": resolve(
-          __dirname,
-          "static/django_airavata_auth/js/entry-user-profile.js"
-        ),
-      },
+      // Login/account self-service is hosted by Keycloak now, so this app has
+      // no page bundles. The previous "user-profile" entry was removed with the
+      // Vue profile editor; add an entry here if a page bundle is reintroduced.
+      input: {},
       output: {
         entryFileNames: "js/[name].js",
         chunkFileNames: "js/[name].js",

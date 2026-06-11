@@ -13,17 +13,17 @@
           hover
           :fields="fields"
           :items="slotProps.items"
-          sort-by="computeHostId"
+          sort-by="compute_host_id"
         >
           <template slot="cell(action)" slot-scope="data">
             <router-link
               class="action-link"
-              v-if="!data.item.userHasWriteAccess"
+              v-if="!data.item.user_has_write_access"
               :to="{
                 name: 'application_deployment',
                 params: {
                   id: id,
-                  deploymentId: data.item.appDeploymentId,
+                  deploymentId: data.item.app_deployment_id,
                   readonly: true,
                 },
               }"
@@ -33,12 +33,12 @@
             </router-link>
             <router-link
               class="action-link"
-              v-if="data.item.userHasWriteAccess && data.item.appDeploymentId"
+              v-if="data.item.user_has_write_access && data.item.app_deployment_id"
               :to="{
                 name: 'application_deployment',
                 params: {
                   id: id,
-                  deploymentId: data.item.appDeploymentId,
+                  deploymentId: data.item.app_deployment_id,
                   readonly: false,
                 },
               }"
@@ -48,12 +48,12 @@
             </router-link>
             <router-link
               class="action-link"
-              v-if="data.item.userHasWriteAccess && !data.item.appDeploymentId"
+              v-if="data.item.user_has_write_access && !data.item.app_deployment_id"
               :to="{
                 name: 'new_application_deployment',
                 params: {
                   id: id,
-                  hostId: data.item.computeHostId,
+                  hostId: data.item.compute_host_id,
                   readonly: false,
                 },
               }"
@@ -62,13 +62,13 @@
               <i class="fa fa-edit" aria-hidden="true"></i>
             </router-link>
             <delete-link
-              v-if="data.item.userHasWriteAccess"
+              v-if="data.item.user_has_write_access"
               @delete="removeApplicationDeployment(data.item)"
               class="action-link"
             >
               Are you sure you want to remove the
               <strong>{{
-                getComputeResourceName(data.item.computeHostId)
+                getComputeResourceName(data.item.compute_host_id)
               }}</strong>
               deployment?
             </delete-link>
@@ -123,13 +123,13 @@ export default {
       return [
         {
           label: "Compute Resource",
-          key: "computeHostId",
+          key: "compute_host_id",
           sortable: true,
           formatter: (value) => this.getComputeResourceName(value),
         },
         {
           label: "Description",
-          key: "appDeploymentDescription",
+          key: "app_deployment_description",
         },
         {
           label: "Action",
@@ -144,9 +144,9 @@ export default {
         // Create a set of all computeResourceIds in GroupResourceProfiles
         const groupResourceProfileCompResources = {};
         for (const groupResourceProfile of this.groupResourceProfiles) {
-          for (const computePreference of groupResourceProfile.computePreferences) {
+          for (const computePreference of groupResourceProfile.compute_preferences) {
             groupResourceProfileCompResources[
-              computePreference.computeResourceId
+              computePreference.compute_resource_id
             ] = null;
           }
         }
@@ -178,7 +178,7 @@ export default {
       }
     },
     excludedComputeResourceIds() {
-      return this.deployments.map((dep) => dep.computeHostId);
+      return this.deployments.map((dep) => dep.compute_host_id);
     },
   },
   mounted() {

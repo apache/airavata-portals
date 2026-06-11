@@ -12,7 +12,7 @@
       <project-list-item
         v-bind:project="project"
         v-for="project in projects"
-        v-bind:key="project.projectID"
+        v-bind:key="project.project_id"
       >
       </project-list-item>
     </tbody>
