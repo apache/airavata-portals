@@ -38,7 +38,13 @@ export default class Job extends BaseModel {
   }
 
   get jobStatusStateName() {
-    return this.latestJobStatus ? this.latestJobStatus.job_state.name : null;
+    if (!this.latestJobStatus) {
+      return null;
+    }
+    // Strip the JOB_STATE_ proto prefix for display; the wire carries the full
+    // proto member name.
+    const state = this.latestJobStatus.job_state;
+    return state.constructor.shortAlias(state.name);
   }
 
   get jobStatusTimeOfStateChange() {

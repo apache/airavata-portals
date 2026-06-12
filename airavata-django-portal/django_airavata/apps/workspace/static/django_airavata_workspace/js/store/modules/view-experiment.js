@@ -120,7 +120,8 @@ export const actions = {
       });
       dispatch("setLaunching", { launching: true });
     } catch (error) {
-      // TODO: handle launch error
+      // Surface launch failures to the user instead of silently swallowing them.
+      errors.UnhandledErrorDispatcher.reportUnhandledError(error);
     }
   },
   async cancel({ dispatch, getters }) {

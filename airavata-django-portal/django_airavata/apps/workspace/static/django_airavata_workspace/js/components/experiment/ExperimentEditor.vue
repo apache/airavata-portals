@@ -31,8 +31,8 @@
           <b-form-group
             label="Experiment Name"
             label-for="experiment-name"
-            :feedback="getValidationFeedback("experiment_name")"
-            :state="getValidationState("experiment_name")"
+            :feedback="getValidationFeedback('experiment_name')"
+            :state="getValidationState('experiment_name')"
           >
             <b-form-input
               id="experiment-name"
@@ -40,7 +40,7 @@
               v-model="localExperiment.experiment_name"
               required
               placeholder="Experiment name"
-              :state="getValidationState("experiment_name")"
+              :state="getValidationState('experiment_name')"
             ></b-form-input>
           </b-form-group>
           <experiment-description-editor
@@ -53,14 +53,14 @@
           <b-form-group
             label="Project"
             label-for="project"
-            :feedback="getValidationFeedback("project_id")"
-            :state="getValidationState("project_id")"
+            :feedback="getValidationFeedback('project_id')"
+            :state="getValidationState('project_id')"
           >
             <b-form-select
               id="project"
               v-model="localExperiment.project_id"
               required
-              :state="getValidationState("project_id")"
+              :state="getValidationState('project_id')"
             >
               <template slot="first">
                 <option :value="null" disabled>Select a Project</option>

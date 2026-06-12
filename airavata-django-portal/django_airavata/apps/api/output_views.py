@@ -112,7 +112,7 @@ def _get_output_view_provider(output_view_provider_id):
 
 def _get_output_view_providers(experiment_output, application_interface):
     output_view_providers = []
-    logger.debug(f"experiment_output={experiment_output}")
+    logger.debug("Resolving output view providers for output %s", experiment_output.name)
     if experiment_output.meta_data:
         try:
             output_metadata = json.loads(experiment_output.meta_data)
@@ -141,7 +141,7 @@ def _get_application_output_view_providers(application_interface, output_name):
         o for o in application_interface.application_outputs if o.name == output_name
     ]
     if len(app_output) == 1:
-        logger.debug(f"{output_name}: {app_output}")
+        logger.debug("Found application output definition for %s", output_name)
         app_output = app_output[0]
     else:
         return []

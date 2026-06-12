@@ -73,6 +73,13 @@ export default class FullExperiment extends BaseModel {
   }
 
   get experimentStatusName() {
-    return this.experimentStatus ? this.experimentStatus.state.name : null;
+    if (!this.experimentStatus) {
+      return null;
+    }
+    // Wire carries the full proto member name (EXPERIMENT_STATE_CREATED); strip
+    // the enum prefix for a human-readable label. Display formatting is the
+    // portal's call — the SDK leaves enums in their proto type.
+    const state = this.experimentStatus.state;
+    return state.constructor.shortAlias(state.name);
   }
 }

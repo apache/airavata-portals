@@ -5,8 +5,8 @@
   "author": "Apache Airavata <dev@airavata.apache.org>",
   "private": true,
   "scripts": {
-    "build": "vite build",
-    "watch": "vite build --watch",
+    "build": "node build-stats.mjs",
+    "watch": "node build-stats.mjs",
     "lint": "eslint ./static/django_airavata_auth/js",
     "format": "prettier --write ."
   },

@@ -5,6 +5,7 @@ from . import views
 app_name = "django_airavata_dataparsers"
 urlpatterns = [
     re_path(r"^$", views.home, name="home"),
+    re_path(r"^create/$", views.create_parser, name="create_parser"),
     re_path(
         r"^parsers/(?P<parser_id>[^/]+)/$", views.parser_details, name="parser_details"
     ),

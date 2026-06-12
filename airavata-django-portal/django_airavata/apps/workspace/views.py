@@ -15,6 +15,9 @@ from django_airavata.apps.api.views import (
     ProjectViewSet,
 )
 from django_airavata.apps.auth.decorators import login_required
+from airavata_sdk.generated.org.apache.airavata.model.application.io.application_io_pb2 import (
+    DataType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -96,15 +99,14 @@ def create_experiment(request, app_module_id):
             )
         )
     user_input_values = {}
-    # The serialized application-input `type` is the DataType member NAME; the
-    # historical Thrift DataType integers are kept here so the comparisons below
-    # behave exactly as before (a string never equals an int, as was already the
-    # case with the Thrift IntEnum members).
-    DataType_URI = 3
-    DataType_STRING = 0
-    for app_input in app_interface.data["applicationInputs"]:
-        if app_input["type"] == DataType_URI and app_input["name"] in request.GET:
-            user_file_value = request.GET[app_input["name"]]
+    # `application_interface` returns a proto-direct WithAccess envelope, so read
+    # the ApplicationInterfaceDescription proto and its inputs directly (rather
+    # than subscripting a serialized dict). app_input.type stays the proto DataType
+    # enum; compare against its named members.
+    application_interface = app_interface.data.message
+    for app_input in application_interface.application_inputs:
+        if app_input.type == DataType.URI and app_input.name in request.GET:
+            user_file_value = request.GET[app_input.name]
             try:
                 user_file_url = urlparse(user_file_value)
                 if user_file_url.scheme == "airavata-dp":
@@ -117,7 +119,7 @@ def create_experiment(request, app_module_id):
                         if file_path and request.airavata.storage.file_exists(
                             file_path
                         ):
-                            user_input_values[app_input["name"]] = dp_uri
+                            user_input_values[app_input.name] = dp_uri
                     except Exception:
                         logger.exception(
                             f"Failed checking data product uri: {dp_uri}",
@@ -128,8 +130,8 @@ def create_experiment(request, app_module_id):
                     f"Invalid user file value: {user_file_value}",
                     extra={"request": request},
                 )
-        elif app_input["type"] == DataType_STRING and app_input["name"] in request.GET:
-            name = app_input["name"]
+        elif app_input.type == DataType.STRING and app_input.name in request.GET:
+            name = app_input.name
             user_input_values[name] = request.GET[name]
     context = {
         "bundle_name": "create-experiment",

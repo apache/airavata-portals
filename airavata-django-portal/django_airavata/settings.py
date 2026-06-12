@@ -106,6 +106,7 @@ TEMPLATES = [
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
+                "django.template.context_processors.csrf",
                 "django_airavata.context_processors.user",
                 "django.contrib.messages.context_processors.messages",
                 "django_airavata.context_processors.airavata_app_registry",
@@ -437,6 +438,9 @@ LOGGING = {
         "django_airavata": {
             "handlers": ["console", "console_debug", "mail_admins"],
             "level": "DEBUG",
+            # Don't also bubble up to the root logger, whose handlers (console/console_debug)
+            # would otherwise re-emit every django_airavata record a second time.
+            "propagate": False,
         },
         "root": {"handlers": ["console", "console_debug"], "level": "WARNING"},
     },

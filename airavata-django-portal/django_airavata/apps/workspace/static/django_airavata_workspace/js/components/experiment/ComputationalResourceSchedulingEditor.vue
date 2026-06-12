@@ -5,8 +5,8 @@
         <b-form-group
           label="Compute Resource"
           label-for="compute-resource"
-          :feedback="getValidationFeedback("resource_host_id")"
-          :state="getValidationState("resource_host_id")"
+          :feedback="getValidationFeedback('resource_host_id')"
+          :state="getValidationState('resource_host_id')"
         >
           <b-form-select
             id="compute-resource"
@@ -14,7 +14,7 @@
             :options="computeResourceOptions"
             required
             @change="computeResourceChanged"
-            :state="getValidationState("resource_host_id")"
+            :state="getValidationState('resource_host_id')"
             :disabled="
               !computeResourceOptions || computeResourceOptions.length === 0
             "

@@ -25,3 +25,13 @@ def edit_parser(request, parser_id):
         "django_airavata_dataparsers/edit-parser.html",
         {"parser_id": parser_id, "bundle_name": "parser-edit"},
     )
+
+
+def create_parser(request):
+    # Same editor bundle as edit, but with no parser_id — the Vue ParserEditContainer
+    # treats an empty data-parser-id as "new parser" (it only fetches when an id is set).
+    return render(
+        request,
+        "django_airavata_dataparsers/edit-parser.html",
+        {"parser_id": "", "bundle_name": "parser-edit"},
+    )

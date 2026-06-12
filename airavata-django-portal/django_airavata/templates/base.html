@@ -145,6 +145,8 @@
 </style>
 
 <body>
+  {# Sets the csrftoken cookie on every page so the SPA's FetchUtils can send X-CSRFToken on POST/PUT/DELETE. #}
+  {% csrf_token %}
   <header class=c-header>
     {% block header %}
     {% portal_logo %}

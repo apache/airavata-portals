@@ -362,20 +362,48 @@ class ReadOnly(web.permissions.BasePermission):
         return request.method in web.SAFE_METHODS
 
 
+def _storage_root_relative(path):
+    """Reduce a storage path to its form relative to the storage filesystem root so
+    it can be compared uniformly against the configured shared-directory names.
+
+    The server now resolves paths against the storage root, so the same logical
+    location may arrive as a bare-relative ("Proj/Exp"), home ("~/Proj/Exp") or
+    absolute ("/storage/Proj/Exp") path. Previously an absolute path was treated as
+    "not shared" outright, which silently bypassed the admin-only write gate on
+    gateway-shared directories. Normalize all three forms here instead.
+    """
+    if not path:
+        return ""
+    if path == "~":
+        return ""
+    if path.startswith("~/"):
+        return path[2:]
+    if os.path.isabs(path):
+        root = getattr(settings, "GATEWAY_DATA_STORAGE_ROOT", None)
+        if root:
+            root = root.rstrip("/") + "/"
+            if path.startswith(root):
+                return path[len(root):]
+        return path.lstrip("/")
+    return path
+
+
 def is_shared_dir(path):
     shared_dirs: dict = getattr(settings, "GATEWAY_DATA_SHARED_DIRECTORIES", {})
-    return any(Path(n) == Path(path) for n in shared_dirs)
+    rel = _storage_root_relative(path)
+    return any(Path(_storage_root_relative(n)) == Path(rel) for n in shared_dirs)
 
 
 def is_shared_path(path):
     shared_dirs: dict = getattr(settings, "GATEWAY_DATA_SHARED_DIRECTORIES", {})
-    # FIXME: path returned when creating a new directory in user storage is an
-    # absolute path. Assume that when an absolute path is given that it was for
-    # a newly created directory and so it is not a shared path
-    if os.path.isabs(path):
+    rel = _storage_root_relative(path)
+    if not rel:
         return False
-    # check if path starts with a shared directory
-    return any(os.path.commonpath((n, path)) == n for n in shared_dirs)
+    # check if path starts with a shared directory (compared root-relative)
+    return any(
+        os.path.commonpath((_storage_root_relative(n), rel)) == _storage_root_relative(n)
+        for n in shared_dirs
+    )
 
 
 class BaseSharedDirPermission(web.permissions.BasePermission):

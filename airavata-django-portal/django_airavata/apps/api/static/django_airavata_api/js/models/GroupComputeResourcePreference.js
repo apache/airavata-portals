@@ -48,9 +48,9 @@ export default class GroupComputeResourcePreference extends BaseModel {
 
   toJSON() {
     const json = { ...this };
-    if (this.resource_type && this.resource_type.value !== undefined) {
-      json.resource_type = this.resource_type.value;
-    } else if (this.resource_type && this.resource_type.name) {
+    // Emit the proto member NAME (e.g. "SLURM"); the SDK resolves it to the
+    // proto int. Proto enum = type-truth.
+    if (this.resource_type && this.resource_type.name) {
       json.resource_type = this.resource_type.name;
     }
 

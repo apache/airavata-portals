@@ -1227,6 +1227,7 @@ def tus_upload_finish(request):
             }
         )
     except Exception as e:
+        log.error("Failed to finish tus upload", exc_info=True, extra={"request": request})
         return exceptions.generic_json_exception_response(e, status=400)
 
 
@@ -1445,10 +1446,6 @@ class SharedEntityViewSet(
 
     lookup_field = "entity_id"
 
-    # Legacy ``ResourcePermissionType`` integers → member NAME (write bodies may
-    # still carry the historical int ``permission_type``).
-    _PERMISSION_INT_TO_NAME = {0: "WRITE", 1: "READ", 2: "OWNER", 3: "MANAGE_SHARING"}
-
     @staticmethod
     def _sdk():
         from airavata_sdk.helpers import sharing_resources
@@ -1489,12 +1486,16 @@ class SharedEntityViewSet(
     def _normalize_permission(cls, value):
         """Coerce a body ``permission_type`` to the member NAME string.
 
-        Accepts either the legacy ``ResourcePermissionType`` integer or the new
-        member NAME, so the write path is stable across the camelCase→snake_case
-        cutover.
+        Accepts either a legacy ``ResourcePermissionType`` integer (resolved via
+        the proto enum's own ``Name()``, so it tracks the proto numbering) or the
+        new member NAME, so the write path is stable across the cutover.
         """
         if isinstance(value, int):
-            return cls._PERMISSION_INT_TO_NAME[value]
+            from airavata_sdk.generated.org.apache.airavata.model.group.group_manager_pb2 import (
+                ResourcePermissionType,
+            )
+
+            return ResourcePermissionType.Name(value)
         return value
 
     @classmethod

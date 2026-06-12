@@ -61,14 +61,14 @@
                   </option>
                 </template>
                 <option value="ALL">ALL</option>
-                <option value="CREATED">Created</option>
-                <option value="VALIDATED">Validated</option>
-                <option value="SCHEDULED">Scheduled</option>
-                <option value="LAUNCHED">Launched</option>
-                <option value="EXECUTING">Executing</option>
-                <option value="CANCELED">Canceled</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="FAILED">Failed</option>
+                <option value="EXPERIMENT_STATE_CREATED">Created</option>
+                <option value="EXPERIMENT_STATE_VALIDATED">Validated</option>
+                <option value="EXPERIMENT_STATE_SCHEDULED">Scheduled</option>
+                <option value="EXPERIMENT_STATE_LAUNCHED">Launched</option>
+                <option value="EXPERIMENT_STATE_EXECUTING">Executing</option>
+                <option value="EXPERIMENT_STATE_CANCELED">Canceled</option>
+                <option value="EXPERIMENT_STATE_COMPLETED">Completed</option>
+                <option value="EXPERIMENT_STATE_FAILED">Failed</option>
               </b-form-select>
               <b-input-group-append>
                 <b-button @click="resetSearch">Reset</b-button>
