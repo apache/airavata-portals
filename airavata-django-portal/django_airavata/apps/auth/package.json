@@ -12,10 +12,7 @@
   },
   "dependencies": {
     "django-airavata-api": "link:../api/",
-    "django-airavata-common-ui": "link:../../static/common/",
-    "vue": "^2.7.16",
-    "vuelidate": "^0.7.6",
-    "vuex": "^3.6.2"
+    "django-airavata-common-ui": "link:../../static/common/"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",

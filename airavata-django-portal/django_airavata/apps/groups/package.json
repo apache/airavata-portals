@@ -11,10 +11,8 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "bootstrap": "^4.0.0-beta.2",
     "django-airavata-api": "link:../api",
     "django-airavata-common-ui": "link:../../static/common",
-    "moment": "^2.18.1",
     "vue": "^2.7.16"
   },
   "devDependencies": {
