@@ -1,8 +1,6 @@
 import BaseModel from "./BaseModel";
 import DataReplicaLocation from "./DataReplicaLocation";
 
-import URL from "url-parse";
-
 const FIELDS = [
   "product_uri",
   "gateway_id",
@@ -48,9 +46,8 @@ export default class DataProduct extends BaseModel {
 
   get filename() {
     if (this.replica_locations && this.replica_locations.length > 0) {
-      const firstReplicaLocation = this.replica_locations[0];
-      const fileURL = new URL(firstReplicaLocation.file_path);
-      const filenameMatch = FILENAME_REGEX.exec(fileURL.pathname);
+      // file_path is a file:// URI or plain path; the last path segment is the filename.
+      const filenameMatch = FILENAME_REGEX.exec(this.replica_locations[0].file_path);
       if (filenameMatch) {
         return filenameMatch[0];
       }
