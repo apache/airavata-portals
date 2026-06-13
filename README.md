@@ -34,6 +34,25 @@ as a container; `settings_local.py` is generated automatically on first `tilt up
 if the file does not exist. Only the Django portal is wired into the Tiltfile today;
 other portals can be added as additional resources later.
 
+### Log in and run your first experiment (Echo)
+
+The backend stack seeds a ready-to-use tenant outside the JVM when its database is first
+created — directly from SQL, before the server starts (default gateway, SFTP storage, a
+docker-SLURM compute resource with a `normal` queue, the **Echo** application, and a
+**Default Project**, all shared with `default-admin`). So once both stacks are green you can
+run an experiment with zero manual setup:
+
+1. Open **https://gateway.airavata.host** and log in as **`default-admin`** / **`ade4#21242ftfd`**.
+2. Create an experiment: choose the **Echo** application, the **Default Project**, and the
+   **slurm** compute resource (queue `normal`). The `Input_to_Echo` field defaults to
+   `Hello, Airavata!`.
+3. Launch it — it runs on the docker-SLURM cluster (env setup → `sbatch` over SSH → `sacct`
+   monitoring → SFTP output staging) and reaches **COMPLETED**, with `Echo.stdout` holding
+   the echoed input.
+
+`tilt down` then `tilt up` brings the same working state back up (the database volume
+persists); `./devstack/devstack reset` (or wiping the `db_data` volume) re-seeds it from scratch.
+
 ## Repository Structure
 
 This repository contains the following sub-projects and templates:

@@ -30,7 +30,7 @@ import grpc
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers.json import DjangoJSONEncoder
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseBase
 from django.urls import re_path, reverse  # noqa: F401  (reverse re-exported)
 from django.views import View
 
@@ -424,7 +424,10 @@ def _render_response(result):
     ``HttpResponse(status=204)``) passes through untouched. A handler that
     returned raw data is defensively wrapped in a :class:`Response`.
     """
-    if isinstance(result, HttpResponse):
+    # HttpResponseBase (not HttpResponse) — FileResponse / StreamingHttpResponse extend
+    # HttpResponseBase directly, so checking HttpResponse alone would wrap (and JSON-encode)
+    # streamed file downloads, breaking them.
+    if isinstance(result, HttpResponseBase):
         return result
     return Response(result)
 

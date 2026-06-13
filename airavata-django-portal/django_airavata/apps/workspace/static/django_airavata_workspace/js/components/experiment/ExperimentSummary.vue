@@ -115,36 +115,47 @@
                     {{ localFullExperiment.experimentStatusName }}
                   </td>
                 </tr>
-                <tr
-                  v-if="
-                    localFullExperiment.job_details &&
-                    localFullExperiment.job_details.length > 0
-                  "
-                >
-                  <th scope="row">Job</th>
+                <tr v-if="stages.length > 0">
+                  <th scope="row">Tasks</th>
                   <td>
-                    <table class="table">
-                      <thead>
-                        <th>Name</th>
-                        <th>ID</th>
-                        <th>Status</th>
-                        <th>Creation Time</th>
-                      </thead>
-                      <tr
-                        v-for="(jobDetail,
-                        index) in localFullExperiment.job_details"
-                        :key="jobDetail.job_id"
+                    <ul class="list-unstyled mb-0">
+                      <li
+                        v-for="stage in stages"
+                        :key="stage.taskId"
+                        class="d-flex align-items-start mb-2"
                       >
-                        <td>{{ jobDetail.job_name }}</td>
-                        <td>{{ jobDetail.job_id }}</td>
-                        <td>{{ jobDetail.jobStatusStateName }}</td>
-                        <td>
-                          <span :title="jobDetail.creation_time.toString()">{{
-                            jobCreationTimes[index]
-                          }}</span>
-                        </td>
-                      </tr>
-                    </table>
+                        <b-badge
+                          :variant="stage.variant"
+                          class="mr-2 mt-1 text-uppercase"
+                          style="min-width: 6rem"
+                          >{{ stage.stateLabel }}</b-badge
+                        >
+                        <div>
+                          <strong>{{ stage.typeLabel }}</strong>
+                          <span v-if="stage.reason" class="text-muted">
+                            — {{ stage.reason }}</span
+                          >
+                          <small v-if="stage.time" class="text-muted d-block">{{
+                            stage.time
+                          }}</small>
+                          <div v-if="stage.job" class="mt-1">
+                            <b-badge
+                              :variant="stage.job.variant"
+                              class="mr-2 text-uppercase"
+                              style="min-width: 6rem"
+                              >{{ stage.job.stateLabel }}</b-badge
+                            >
+                            <span class="text-muted"
+                              >Job {{ stage.job.name }} (ID
+                              {{ stage.job.id }})</span
+                            >
+                            <span v-if="stage.job.reason" class="text-muted">
+                              — {{ stage.job.reason }}</span
+                            >
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
                   </td>
                 </tr>
                 <!--  TODO: leave this out for now -->
@@ -380,6 +391,50 @@ export default {
         moment(jobDetail.creation_time).fromNow()
       );
     },
+    // The experiment's PROCESS -> TASK pipeline as an ordered stage list (env setup, data
+    // staging, job submission, monitoring), each with its current state, the latest reason, and
+    // timing. The job (with its own live status) is nested under the Job Submission stage. Surfaces
+    // exactly which stage the experiment is in instead of a single job row frozen at QUEUED.
+    stages() {
+      const exp =
+        this.localFullExperiment && this.localFullExperiment.experiment;
+      if (!exp || !exp.processes || exp.processes.length === 0) {
+        return [];
+      }
+      const result = [];
+      exp.processes.forEach((process) => {
+        process.sortedTasks.forEach((task) => {
+          const latest = task.latestStatus;
+          const stateName = latest && latest.state ? latest.state.name : null;
+          const stage = {
+            taskId: task.task_id,
+            typeLabel: this.taskTypeLabel(task.task_type),
+            stateLabel: this.taskStateLabel(stateName),
+            variant: this.taskStateVariant(stateName),
+            reason: latest ? latest.reason : "",
+            time:
+              latest && latest.time_of_state_change
+                ? moment(latest.time_of_state_change).fromNow()
+                : "",
+            job: null,
+          };
+          if (task.jobs && task.jobs.length > 0) {
+            const job = task.jobs[0];
+            const js = job.latestJobStatus;
+            const jobStateName = js && js.job_state ? js.job_state.name : null;
+            stage.job = {
+              id: job.job_id,
+              name: job.job_name,
+              stateLabel: this.titleCase(jobStateName) || "Pending",
+              variant: this.jobStateVariant(jobStateName),
+              reason: js ? js.reason : "",
+            };
+          }
+          result.push(stage);
+        });
+      });
+      return result;
+    },
     editLink() {
       return urls.editExperiment(this.experiment);
     },
@@ -456,6 +511,65 @@ export default {
       return dataProducts
         ? dataProducts.filter((dp) => (dp ? true : false))
         : [];
+    },
+    titleCase(s) {
+      if (!s) return "";
+      return s
+        .toLowerCase()
+        .split("_")
+        .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : ""))
+        .join(" ");
+    },
+    taskTypeLabel(taskType) {
+      const name = taskType && taskType.name ? taskType.name : "";
+      const labels = {
+        ENV_SETUP: "Environment Setup",
+        DATA_STAGING: "Data Staging",
+        JOB_SUBMISSION: "Job Submission",
+        ENV_CLEANUP: "Environment Cleanup",
+        MONITORING: "Job Monitoring",
+        OUTPUT_FETCHING: "Output Fetching",
+      };
+      return labels[name] || this.titleCase(name) || "Task";
+    },
+    taskStateLabel(stateName) {
+      if (!stateName) return "Pending";
+      return this.titleCase(stateName.replace(/^TASK_STATE_/, ""));
+    },
+    taskStateVariant(stateName) {
+      switch (stateName) {
+        case "TASK_STATE_COMPLETED":
+          return "success";
+        case "TASK_STATE_EXECUTING":
+          return "info";
+        case "TASK_STATE_FAILED":
+          return "danger";
+        case "TASK_STATE_CANCELED":
+          return "warning";
+        case "TASK_STATE_CREATED":
+          return "secondary";
+        default:
+          return "light";
+      }
+    },
+    jobStateVariant(jobStateName) {
+      switch (jobStateName) {
+        case "COMPLETE":
+          return "success";
+        case "ACTIVE":
+          return "info";
+        case "SUBMITTED":
+        case "QUEUED":
+          return "secondary";
+        case "FAILED":
+        case "NON_CRITICAL_FAIL":
+          return "danger";
+        case "CANCELED":
+        case "SUSPENDED":
+          return "warning";
+        default:
+          return "light";
+      }
     },
   },
 };

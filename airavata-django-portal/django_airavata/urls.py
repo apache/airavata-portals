@@ -21,6 +21,7 @@ from django.urls import path, re_path
 
 from . import views
 from .apps.api import downloads as api_downloads
+from .apps.api import views as api_views
 
 urlpatterns = [
     re_path(r"^admin/", include("django_airavata.apps.admin.urls")),
@@ -29,9 +30,10 @@ urlpatterns = [
     re_path(r"^api/", include("django_airavata.apps.api.urls")),
     re_path(r"^groups/", include("django_airavata.apps.groups.urls")),
     re_path(r"^dataparsers/", include("django_airavata.apps.dataparsers.urls")),
-    # Directory zip downloads the file browser links to (paths kept under /sdk/
-    # so the built frontend's hardcoded hrefs keep working). Single-file
-    # downloads go through the api app's download/download-file views.
+    # Directory zip + single-file downloads the file browser / output displays link
+    # to. Paths kept under /sdk/ so the built frontend's hardcoded hrefs keep working
+    # (the retired airavata_django_portal_sdk served these from /sdk/).
+    path("sdk/download/", api_views.download, name="sdk_download"),
     path("sdk/download-dir/", api_downloads.download_dir, name="download_dir"),
     path(
         "sdk/download-experiment-dir/<experiment_id>/",
