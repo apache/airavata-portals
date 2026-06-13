@@ -1,6 +1,5 @@
 import { PrivacyEnum } from "./PrivacyEnum";
 import { ResourceTypeEnum } from "./ResourceTypeEnum";
-import { StatusEnum } from "./StatusEnum";
 import { Tag } from "./TagType";
 // import { User } from "./UserType";
 
@@ -11,7 +10,6 @@ export interface Resource {
   headerImage: string;
   authors: string[];
   tags: Tag[];
-  status: StatusEnum;
   privacy: PrivacyEnum;
   type: ResourceTypeEnum;
 }

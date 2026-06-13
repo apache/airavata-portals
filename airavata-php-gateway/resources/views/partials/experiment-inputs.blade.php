@@ -126,16 +126,4 @@
             <button type="button" class="addEmail btn btn-default">Add another Email</button>
         </div>
     </div>
-
-    @if( $expInputs["advancedOptions"])
-    <h3>Advanced Options</h3>
-
-    <div class="form-group well">
-        <h4>Enter UserDN</h4>
-
-        <div class="userdninfo">
-            <input type="text" class="form-control" name="userDN" placeholder="user" value="{{$expInputs['userDN']}}"/>
-        </div>
-    </div>
-    @endif
 </div>

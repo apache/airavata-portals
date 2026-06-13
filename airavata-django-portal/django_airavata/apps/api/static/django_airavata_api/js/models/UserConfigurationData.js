@@ -27,12 +27,6 @@ const FIELDS = [
     type: "boolean",
     default: false,
   },
-  "user_dn",
-  {
-    name: "generate_cert",
-    type: "boolean",
-    default: false,
-  },
   "input_storage_resource_id",
   "output_storage_resource_id",
   "experiment_data_dir",

@@ -5,7 +5,6 @@ import OutputDataObjectType from "./OutputDataObjectType";
 import ComputationalResourceSchedulingModel from "./ComputationalResourceSchedulingModel";
 import Task from "./Task";
 import ErrorModel from "./ErrorModel";
-import ProcessWorkflow from "./ProcessWorkflow";
 
 const FIELDS = [
   "process_id",
@@ -57,17 +56,10 @@ const FIELDS = [
   "email_addresses",
   "input_storage_resource_id",
   "output_storage_resource_id",
-  "user_dn",
-  "generate_cert",
   "experiment_data_dir",
   "user_name",
   "use_user_cr_pref",
   "group_resource_profile_id",
-  {
-    name: "process_workflows",
-    type: ProcessWorkflow,
-    list: true,
-  },
 ];
 
 export default class ProcessModel extends BaseModel {

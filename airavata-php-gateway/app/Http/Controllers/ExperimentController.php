@@ -338,7 +338,6 @@ class ExperimentController extends BaseController
             "experimentDescription" => $experiment->description,
             "application" => $experiment->executionId,
             "autoSchedule" => $experiment->userConfigurationData->airavataAutoSchedule,
-            "userDN" => $experiment->userConfigurationData->userDN,
             "userHasComputeResourcePreference" => $userHasComputeResourcePreference,
             "useUserCRPref" => $experiment->userConfigurationData->useUserCRPref,
             "allowedFileSize" => $this->getAllowedFileSize(),

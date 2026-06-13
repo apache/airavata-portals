@@ -17,150 +17,6 @@ use Thrift\Protocol\TBinaryProtocolAccelerated;
 use Thrift\Exception\TApplicationException;
 
 
-class ProcessWorkflow {
-  static $_TSPEC;
-
-  /**
-   * @var string
-   */
-  public $processId = null;
-  /**
-   * @var string
-   */
-  public $workflowId = null;
-  /**
-   * @var int
-   */
-  public $creationTime = null;
-  /**
-   * @var string
-   */
-  public $type = null;
-
-  public function __construct($vals=null) {
-    if (!isset(self::$_TSPEC)) {
-      self::$_TSPEC = array(
-        1 => array(
-          'var' => 'processId',
-          'type' => TType::STRING,
-          ),
-        2 => array(
-          'var' => 'workflowId',
-          'type' => TType::STRING,
-          ),
-        3 => array(
-          'var' => 'creationTime',
-          'type' => TType::I64,
-          ),
-        4 => array(
-          'var' => 'type',
-          'type' => TType::STRING,
-          ),
-        );
-    }
-    if (is_array($vals)) {
-      if (isset($vals['processId'])) {
-        $this->processId = $vals['processId'];
-      }
-      if (isset($vals['workflowId'])) {
-        $this->workflowId = $vals['workflowId'];
-      }
-      if (isset($vals['creationTime'])) {
-        $this->creationTime = $vals['creationTime'];
-      }
-      if (isset($vals['type'])) {
-        $this->type = $vals['type'];
-      }
-    }
-  }
-
-  public function getName() {
-    return 'ProcessWorkflow';
-  }
-
-  public function read($input)
-  {
-    $xfer = 0;
-    $fname = null;
-    $ftype = 0;
-    $fid = 0;
-    $xfer += $input->readStructBegin($fname);
-    while (true)
-    {
-      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
-      if ($ftype == TType::STOP) {
-        break;
-      }
-      switch ($fid)
-      {
-        case 1:
-          if ($ftype == TType::STRING) {
-            $xfer += $input->readString($this->processId);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        case 2:
-          if ($ftype == TType::STRING) {
-            $xfer += $input->readString($this->workflowId);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        case 3:
-          if ($ftype == TType::I64) {
-            $xfer += $input->readI64($this->creationTime);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        case 4:
-          if ($ftype == TType::STRING) {
-            $xfer += $input->readString($this->type);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        default:
-          $xfer += $input->skip($ftype);
-          break;
-      }
-      $xfer += $input->readFieldEnd();
-    }
-    $xfer += $input->readStructEnd();
-    return $xfer;
-  }
-
-  public function write($output) {
-    $xfer = 0;
-    $xfer += $output->writeStructBegin('ProcessWorkflow');
-    if ($this->processId !== null) {
-      $xfer += $output->writeFieldBegin('processId', TType::STRING, 1);
-      $xfer += $output->writeString($this->processId);
-      $xfer += $output->writeFieldEnd();
-    }
-    if ($this->workflowId !== null) {
-      $xfer += $output->writeFieldBegin('workflowId', TType::STRING, 2);
-      $xfer += $output->writeString($this->workflowId);
-      $xfer += $output->writeFieldEnd();
-    }
-    if ($this->creationTime !== null) {
-      $xfer += $output->writeFieldBegin('creationTime', TType::I64, 3);
-      $xfer += $output->writeI64($this->creationTime);
-      $xfer += $output->writeFieldEnd();
-    }
-    if ($this->type !== null) {
-      $xfer += $output->writeFieldBegin('type', TType::STRING, 4);
-      $xfer += $output->writeString($this->type);
-      $xfer += $output->writeFieldEnd();
-    }
-    $xfer += $output->writeFieldStop();
-    $xfer += $output->writeStructEnd();
-    return $xfer;
-  }
-
-}
-
 /**
  * ProcessModel: A structure holding the process details. The infromation is derived based on user provided
  *          configuration data or system inferred information from scheduling and QoS parameters.
@@ -252,14 +108,6 @@ class ProcessModel {
   /**
    * @var string
    */
-  public $userDn = null;
-  /**
-   * @var bool
-   */
-  public $generateCert = false;
-  /**
-   * @var string
-   */
   public $experimentDataDir = null;
   /**
    * @var string
@@ -273,10 +121,6 @@ class ProcessModel {
    * @var string
    */
   public $groupResourceProfileId = null;
-  /**
-   * @var \Airavata\Model\Process\ProcessWorkflow[]
-   */
-  public $processWorkflows = null;
 
   public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
@@ -387,14 +231,6 @@ class ProcessModel {
           'var' => 'storageResourceId',
           'type' => TType::STRING,
           ),
-        20 => array(
-          'var' => 'userDn',
-          'type' => TType::STRING,
-          ),
-        21 => array(
-          'var' => 'generateCert',
-          'type' => TType::BOOL,
-          ),
         22 => array(
           'var' => 'experimentDataDir',
           'type' => TType::STRING,
@@ -410,15 +246,6 @@ class ProcessModel {
         25 => array(
           'var' => 'groupResourceProfileId',
           'type' => TType::STRING,
-          ),
-        26 => array(
-          'var' => 'processWorkflows',
-          'type' => TType::LST,
-          'etype' => TType::STRUCT,
-          'elem' => array(
-            'type' => TType::STRUCT,
-            'class' => '\Airavata\Model\Process\ProcessWorkflow',
-            ),
           ),
         );
     }
@@ -480,12 +307,6 @@ class ProcessModel {
       if (isset($vals['storageResourceId'])) {
         $this->storageResourceId = $vals['storageResourceId'];
       }
-      if (isset($vals['userDn'])) {
-        $this->userDn = $vals['userDn'];
-      }
-      if (isset($vals['generateCert'])) {
-        $this->generateCert = $vals['generateCert'];
-      }
       if (isset($vals['experimentDataDir'])) {
         $this->experimentDataDir = $vals['experimentDataDir'];
       }
@@ -497,9 +318,6 @@ class ProcessModel {
       }
       if (isset($vals['groupResourceProfileId'])) {
         $this->groupResourceProfileId = $vals['groupResourceProfileId'];
-      }
-      if (isset($vals['processWorkflows'])) {
-        $this->processWorkflows = $vals['processWorkflows'];
       }
     }
   }
@@ -722,20 +540,6 @@ class ProcessModel {
             $xfer += $input->skip($ftype);
           }
           break;
-        case 20:
-          if ($ftype == TType::STRING) {
-            $xfer += $input->readString($this->userDn);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        case 21:
-          if ($ftype == TType::BOOL) {
-            $xfer += $input->readBool($this->generateCert);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
         case 22:
           if ($ftype == TType::STRING) {
             $xfer += $input->readString($this->experimentDataDir);
@@ -760,24 +564,6 @@ class ProcessModel {
         case 25:
           if ($ftype == TType::STRING) {
             $xfer += $input->readString($this->groupResourceProfileId);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        case 26:
-          if ($ftype == TType::LST) {
-            $this->processWorkflows = array();
-            $_size36 = 0;
-            $_etype39 = 0;
-            $xfer += $input->readListBegin($_etype39, $_size36);
-            for ($_i40 = 0; $_i40 < $_size36; ++$_i40)
-            {
-              $elem41 = null;
-              $elem41 = new \Airavata\Model\Process\ProcessWorkflow();
-              $xfer += $elem41->read($input);
-              $this->processWorkflows []= $elem41;
-            }
-            $xfer += $input->readListEnd();
           } else {
             $xfer += $input->skip($ftype);
           }
@@ -965,16 +751,6 @@ class ProcessModel {
       $xfer += $output->writeString($this->storageResourceId);
       $xfer += $output->writeFieldEnd();
     }
-    if ($this->userDn !== null) {
-      $xfer += $output->writeFieldBegin('userDn', TType::STRING, 20);
-      $xfer += $output->writeString($this->userDn);
-      $xfer += $output->writeFieldEnd();
-    }
-    if ($this->generateCert !== null) {
-      $xfer += $output->writeFieldBegin('generateCert', TType::BOOL, 21);
-      $xfer += $output->writeBool($this->generateCert);
-      $xfer += $output->writeFieldEnd();
-    }
     if ($this->experimentDataDir !== null) {
       $xfer += $output->writeFieldBegin('experimentDataDir', TType::STRING, 22);
       $xfer += $output->writeString($this->experimentDataDir);
@@ -993,23 +769,6 @@ class ProcessModel {
     if ($this->groupResourceProfileId !== null) {
       $xfer += $output->writeFieldBegin('groupResourceProfileId', TType::STRING, 25);
       $xfer += $output->writeString($this->groupResourceProfileId);
-      $xfer += $output->writeFieldEnd();
-    }
-    if ($this->processWorkflows !== null) {
-      if (!is_array($this->processWorkflows)) {
-        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
-      }
-      $xfer += $output->writeFieldBegin('processWorkflows', TType::LST, 26);
-      {
-        $output->writeListBegin(TType::STRUCT, count($this->processWorkflows));
-        {
-          foreach ($this->processWorkflows as $iter48)
-          {
-            $xfer += $iter48->write($output);
-          }
-        }
-        $output->writeListEnd();
-      }
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();

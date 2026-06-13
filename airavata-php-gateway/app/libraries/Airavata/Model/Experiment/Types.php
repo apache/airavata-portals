@@ -89,14 +89,6 @@ class UserConfigurationDataModel {
   /**
    * @var string
    */
-  public $userDN = null;
-  /**
-   * @var bool
-   */
-  public $generateCert = false;
-  /**
-   * @var string
-   */
   public $storageId = null;
   /**
    * @var string
@@ -135,14 +127,6 @@ class UserConfigurationDataModel {
           'var' => 'throttleResources',
           'type' => TType::BOOL,
           ),
-        6 => array(
-          'var' => 'userDN',
-          'type' => TType::STRING,
-          ),
-        7 => array(
-          'var' => 'generateCert',
-          'type' => TType::BOOL,
-          ),
         8 => array(
           'var' => 'storageId',
           'type' => TType::STRING,
@@ -176,12 +160,6 @@ class UserConfigurationDataModel {
       }
       if (isset($vals['throttleResources'])) {
         $this->throttleResources = $vals['throttleResources'];
-      }
-      if (isset($vals['userDN'])) {
-        $this->userDN = $vals['userDN'];
-      }
-      if (isset($vals['generateCert'])) {
-        $this->generateCert = $vals['generateCert'];
       }
       if (isset($vals['storageId'])) {
         $this->storageId = $vals['storageId'];
@@ -253,20 +231,6 @@ class UserConfigurationDataModel {
             $xfer += $input->skip($ftype);
           }
           break;
-        case 6:
-          if ($ftype == TType::STRING) {
-            $xfer += $input->readString($this->userDN);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        case 7:
-          if ($ftype == TType::BOOL) {
-            $xfer += $input->readBool($this->generateCert);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
         case 8:
           if ($ftype == TType::STRING) {
             $xfer += $input->readString($this->storageId);
@@ -334,16 +298,6 @@ class UserConfigurationDataModel {
     if ($this->throttleResources !== null) {
       $xfer += $output->writeFieldBegin('throttleResources', TType::BOOL, 5);
       $xfer += $output->writeBool($this->throttleResources);
-      $xfer += $output->writeFieldEnd();
-    }
-    if ($this->userDN !== null) {
-      $xfer += $output->writeFieldBegin('userDN', TType::STRING, 6);
-      $xfer += $output->writeString($this->userDN);
-      $xfer += $output->writeFieldEnd();
-    }
-    if ($this->generateCert !== null) {
-      $xfer += $output->writeFieldBegin('generateCert', TType::BOOL, 7);
-      $xfer += $output->writeBool($this->generateCert);
       $xfer += $output->writeFieldEnd();
     }
     if ($this->storageId !== null) {

@@ -331,10 +331,6 @@ class ExperimentUtilities
         $userConfigData->computationalResourceScheduling = $scheduling;
         $userConfigData->storageId =  Config::get('pga_config.airavata')['gateway-data-store-resource-id'];
         $userConfigData->airavataAutoSchedule = isset($_POST['enable-auto-scheduling']) ? true : false;
-        if (isset($_POST["userDN"])) {
-            $userConfigData->generateCert = 1;
-            $userConfigData->userDN = $_POST["userDN"];
-        }
         $userConfigData->useUserCRPref = isset($_POST['use-user-cr-pref']) ? true : false;
         if (isset(Config::get('pga_config.airavata')['group-resource-profile-id'])) {
             $userConfigData->groupResourceProfileId = Config::get('pga_config.airavata')['group-resource-profile-id'];
@@ -1408,10 +1404,6 @@ class ExperimentUtilities
 
         $userConfigDataUpdated->computationalResourceScheduling = $schedulingUpdated;
         $userConfigDataUpdated->airavataAutoSchedule = isset($_POST['enable-auto-scheduling']) ? true : false;
-        if (isset($input["userDN"])) {
-            $userConfigDataUpdated->generateCert = 1;
-            $userConfigDataUpdated->userDN = $input["userDN"];
-        }
         $userConfigDataUpdated->useUserCRPref = isset($_POST['use-user-cr-pref']) ? true : false;
         if (isset(Config::get('pga_config.airavata')['group-resource-profile-id'])) {
             $userConfigDataUpdated->groupResourceProfileId = Config::get('pga_config.airavata')['group-resource-profile-id'];
