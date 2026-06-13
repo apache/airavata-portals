@@ -274,18 +274,6 @@ class NOT:
 
 # Make the operators on BasePermission subclasses return _OperandHolder so that
 # ``ClassA | ClassB`` (classes, not instances) composes into a callable class.
-def _cls_or(cls, other):
-    return _OperandHolder(OR, cls, other)
-
-
-def _cls_and(cls, other):
-    return _OperandHolder(AND, cls, other)
-
-
-def _cls_invert(cls):
-    return _OperandHolder(NOT, cls)
-
-
 OperationHolderMixin.__or__ = lambda self, other: _OperandHolder(OR, self, other)  # ty: ignore[invalid-assignment]  # intentional monkeypatch so class-level operators return _OperandHolder
 OperationHolderMixin.__and__ = lambda self, other: _OperandHolder(AND, self, other)  # ty: ignore[invalid-assignment]  # intentional monkeypatch so class-level operators return _OperandHolder
 OperationHolderMixin.__invert__ = lambda self: _OperandHolder(NOT, self)  # ty: ignore[invalid-assignment]  # intentional monkeypatch so class-level operators return _OperandHolder

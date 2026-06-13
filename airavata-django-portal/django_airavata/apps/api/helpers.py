@@ -195,8 +195,3 @@ class WorkspacePreferencesHelper:
 
     def _can_write(self, request, entity_id):
         return compute_resources.user_can_write(request.airavata, entity_id)
-
-    def _can_read(self, request, entity_id):
-        return request.airavata.sharing.user_has_access(
-            resource_id=entity_id, user_id=request.user.username, permission_type="READ"
-        )

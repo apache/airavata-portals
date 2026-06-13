@@ -89,8 +89,8 @@ def gateway_groups_middleware(get_response):
 
 
 # ---------------------------------------------------------------------------
-# DRF-replacement middleware (Phase B). NOT wired into settings yet — defined
-# here so the cutover can add them to MIDDLEWARE in one step.
+# DRF-replacement auth middleware (session + Keycloak bearer token), wired into
+# settings.MIDDLEWARE.
 # ---------------------------------------------------------------------------
 
 
@@ -192,15 +192,13 @@ def session_keycloak_user_middleware(get_response):
 def keycloak_bearer_middleware(get_response):
     """Authenticate ``Authorization: Bearer <jwt>`` requests against Keycloak.
 
-    Mirrors ``token_authentication.KeycloakTokenAuthentication`` (reusing
-    ``_jwks`` / ``KeycloakUser`` / ``AuthzToken``): if ``request.user`` is already
+    Reuses ``token_authentication``'s ``_jwks`` / ``KeycloakUser`` / ``AuthzToken``:
+    if ``request.user`` is already
     authenticated (session) this is a no-op; elif a Bearer token is present it is
     validated and ``request.user`` / ``request.authz_token`` (+ the
     ``is_gateway_admin`` / ``is_read_only_gateway_admin`` defaults) are set; else
     the request is left Anonymous. An invalid token leaves the user Anonymous (no
     raise — the permission layer returns 401).
-
-    NOT wired into settings yet.
     """
     import jwt
 
@@ -240,7 +238,7 @@ def keycloak_bearer_middleware(get_response):
         request.user = keycloak_user
         request.authz_token = authz_token
         # The session-based gateway_groups_middleware sets these; pure-token auth
-        # skips it, so default to non-admin (matches KeycloakTokenAuthentication).
+        # skips it, so default to non-admin.
         request.is_gateway_admin = False
         request.is_read_only_gateway_admin = False
 
