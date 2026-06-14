@@ -1,9 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Scan this package's Vue components plus the consuming apps for class names so the
-   shared bundle ships every utility the common components need. */
+/* Scan this package's Vue components and the Django chrome templates (base.html,
+   home.html, the page shell, ...) so the shared bundle ships every utility the
+   common components and server-rendered chrome need. */
 @source "../js";
+@source "../../../templates";
 
 @custom-variant dark (&:is(.dark *));
 
