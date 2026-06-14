@@ -10,14 +10,14 @@
 <script>
 import ParserEditor from "../parser-components/ParserEditor.vue";
 
-import { services } from "django-airavata-api";
+import { models, services } from "django-airavata-api";
 
 export default {
   name: "parser-edit-container",
   props: {
     parserId: {
       type: String,
-      required: true,
+      default: null,
     },
   },
   data() {
@@ -38,9 +38,15 @@ export default {
   },
   computed: {},
   mounted: function () {
-    services.ParserService.retrieve({ lookup: this.parserId }).then(
-      (parser) => (this.parser = parser)
-    );
+    // No parserId means this is the "create parser" page: start from an empty
+    // parser instead of fetching (retrieving a null id errors server-side).
+    if (this.parserId) {
+      services.ParserService.retrieve({ lookup: this.parserId }).then(
+        (parser) => (this.parser = parser)
+      );
+    } else {
+      this.parser = new models.Parser();
+    }
   },
 };
 </script>
