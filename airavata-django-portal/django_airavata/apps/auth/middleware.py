@@ -34,55 +34,23 @@ def authz_token_middleware(get_response):
     return middleware
 
 
-def _gateway_groups_dict(request):
-    """Fetch the gateway's admin group ids via the gRPC compute facade."""
-    gg = request.airavata.compute.get_gateway_groups()
-    return {
-        "adminsGroupId": gg.admins_group_id,
-        "readOnlyAdminsGroupId": gg.read_only_admins_group_id,
-        "defaultGatewayUsersGroupId": gg.default_gateway_users_group_id,
-    }
+# Keycloak realm roles that map to the coarse gateway-admin flags.
+GATEWAY_ADMIN_ROLE = "admin-rw"
+READ_ONLY_ADMIN_ROLE = "admin-ro"
 
 
-def set_admin_group_attributes(request, gateway_groups=None):
-    """Set is_gateway_admin and is_read_only_gateway_admin request attrs."""
-    if gateway_groups is None:
-        gateway_groups = _gateway_groups_dict(request)
-    admins_group_id = gateway_groups["adminsGroupId"]
-    read_only_admins_group_id = gateway_groups["readOnlyAdminsGroupId"]
-    group_memberships = request.airavata.sharing.gm_get_all_groups_user_belongs(
-        request.user.username + "@" + settings.GATEWAY_ID
-    )
-    group_ids = [group.id for group in group_memberships]
-    request.is_gateway_admin = admins_group_id in group_ids
-    request.is_read_only_gateway_admin = read_only_admins_group_id in group_ids
+def set_admin_flags_from_roles(request):
+    """Set is_gateway_admin / is_read_only_gateway_admin from the JWT realm roles."""
+    roles = set(getattr(request.user, "realm_roles", []) or [])
+    request.is_gateway_admin = GATEWAY_ADMIN_ROLE in roles
+    request.is_read_only_gateway_admin = READ_ONLY_ADMIN_ROLE in roles
 
 
-def gateway_groups_middleware(get_response):
-    """Add 'is_gateway_admin' and 'is_read_only_gateway_admin' to request."""
+def admin_flags_middleware(get_response):
+    """Add 'is_gateway_admin' / 'is_read_only_gateway_admin' from the user's realm roles."""
 
     def middleware(request):
-
-        request.is_gateway_admin = False
-        request.is_read_only_gateway_admin = False
-
-        if not request.user.is_authenticated or not request.authz_token:
-            return get_response(request)
-
-        try:
-            # Load the GatewayGroups and check if user is in the Admins and/or
-            # Read Only Admins groups
-            if not request.session.get("GATEWAY_GROUPS"):
-                request.session["GATEWAY_GROUPS"] = _gateway_groups_dict(request)
-            set_admin_group_attributes(
-                request, gateway_groups=request.session.get("GATEWAY_GROUPS")
-            )
-        except Exception as e:
-            log.warning(
-                "Failed to set is_gateway_admin, is_read_only_gateway_admin for user",
-                exc_info=e,
-            )
-
+        set_admin_flags_from_roles(request)
         return get_response(request)
 
     return middleware
@@ -195,8 +163,8 @@ def keycloak_bearer_middleware(get_response):
     Reuses ``token_authentication``'s ``_jwks`` / ``KeycloakUser`` / ``AuthzToken``:
     if ``request.user`` is already
     authenticated (session) this is a no-op; elif a Bearer token is present it is
-    validated and ``request.user`` / ``request.authz_token`` (+ the
-    ``is_gateway_admin`` / ``is_read_only_gateway_admin`` defaults) are set; else
+    validated and ``request.user`` / ``request.authz_token`` are set (the
+    ``admin_flags_middleware`` then derives the admin flags from realm roles); else
     the request is left Anonymous. An invalid token leaves the user Anonymous (no
     raise — the permission layer returns 401).
     """
@@ -237,10 +205,6 @@ def keycloak_bearer_middleware(get_response):
         )
         request.user = keycloak_user
         request.authz_token = authz_token
-        # The session-based gateway_groups_middleware sets these; pure-token auth
-        # skips it, so default to non-admin.
-        request.is_gateway_admin = False
-        request.is_read_only_gateway_admin = False
 
         return get_response(request)
 

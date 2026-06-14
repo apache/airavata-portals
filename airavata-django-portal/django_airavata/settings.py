@@ -91,8 +91,9 @@ MIDDLEWARE = [
     # gRPC AiravataClient (request.airavata). Must come after authz_token_middleware
     # (uses request.authz_token for the access token).
     "django_airavata.middleware.airavata_grpc_client",
-    # Needs to come after authz_token_middleware and airavata_grpc_client.
-    "django_airavata.apps.auth.middleware.gateway_groups_middleware",
+    # Set is_gateway_admin / is_read_only_gateway_admin from the JWT realm roles.
+    # Must come after the auth middlewares so request.user is set.
+    "django_airavata.apps.auth.middleware.admin_flags_middleware",
 ]
 
 ROOT_URLCONF = "django_airavata.urls"

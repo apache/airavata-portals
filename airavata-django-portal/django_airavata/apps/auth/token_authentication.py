@@ -53,6 +53,10 @@ class KeycloakUser:
         return self.username or "<anonymous>"
 
     @property
+    def realm_roles(self):
+        return (self.claims.get("realm_access") or {}).get("roles") or []
+
+    @property
     def is_staff(self):
         return False
 
