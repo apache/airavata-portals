@@ -1,34 +1,44 @@
 <template>
   <div>
-    <b-alert
-      dismissible
-      :variant="alertVariant"
-      :model-value="showDismissibleAlert"
-      @dismissed="showDismissibleAlert = false"
-      >{{ alertMsg }}</b-alert
+    <Alert
+      v-if="showDismissibleAlert"
+      :variant="alertVariant === 'destructive' ? 'destructive' : 'default'"
+      class="mb-4"
     >
-    <table class="table table-hover">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Image Name</th>
-          <th>Execution Command</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
+      <AlertDescription class="flex w-full items-start gap-2">
+        <span>{{ alertMsg }}</span>
+        <button
+          type="button"
+          class="ml-auto shrink-0"
+          @click="showDismissibleAlert = false"
+        >
+          <X class="size-4" />
+        </button>
+      </AlertDescription>
+    </Alert>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Image Name</TableHead>
+          <TableHead>Execution Command</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         <parser-list-item
           v-bind:parser="parser"
           v-for="parser in parsers"
           v-bind:key="parser.id"
         >
         </parser-list-item>
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   </div>
 </template>
 
 <script>
+import { X } from "@lucide/vue";
 import ParserListItem from "./ParserListItem.vue";
 
 export default {
@@ -38,19 +48,14 @@ export default {
     return {
       owner: "owner",
       alertMsg: null,
-      alertVariant: "primary",
+      alertVariant: "default",
       showDismissibleAlert: false,
     };
   },
   components: {
+    X,
     ParserListItem,
   },
   methods: {},
 };
 </script>
-
-<style>
-#parser-list-actions-header {
-  min-width: 150px;
-}
-</style>

@@ -8,6 +8,11 @@ import entry from "django-airavata-common-ui/js/entry";
 import MainLayout from "django-airavata-common-ui/js/components/MainLayout.vue";
 import ParserDetailsContainer from "./containers/ParserDetailsContainer.vue";
 
+// Tailwind v4 + shadcn-vue design tokens and base styles (loads the shared
+// common bundle's CSS). The shadcn-vue UI components are registered globally by
+// common's entry(), so templates use <Button>/<Card>/<Input>/... with no imports.
+import "django-airavata-common-ui/css/app.css";
+
 // Read the mount element's data-* attributes before mounting; Vue 3 replaces the
 // element's contents on mount.
 const el = document.getElementById("parser-details");

@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import tailwindcss from "@tailwindcss/vite";
 
 const publicPath = "/static/django_airavata_groups/dist/";
 
@@ -54,15 +55,21 @@ const entry = (name) =>
 
 export default defineConfig({
   base: publicPath,
-  plugins: [vue(), djangoWebpackStats()],
+  plugins: [vue(), tailwindcss(), djangoWebpackStats()],
   // The source uses extensionless `.vue` imports (Vue CLI resolved them
   // automatically); add `.vue` so Vite/Rollup resolves them too. Dedupe Vue and
   // friends so the yarn-linked common/api packages share this package's single
   // copy (avoids "multiple Vue copies"/invalid-hook errors).
   resolve: {
     extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json", ".vue"],
-    dedupe: ["vue", "bootstrap-vue-next"],
+    dedupe: ["vue", "reka-ui"],
     alias: {
+      // The shadcn-vue UI components live in the linked common package's source
+      // and import each other via `@/lib/utils` / `@/components/ui/*`. This app
+      // pulls that source into its bundle (via common's globally-registered UI
+      // barrel), so `@` must resolve to common's `js` dir for those imports to
+      // load. This app has no `@`-prefixed imports of its own.
+      "@": resolve(__dirname, "../../static/common/js"),
       // The linked common-ui's Uppy.vue imports Uppy 5.x CSS via the legacy
       // `dist/` path, which Uppy's `exports` field no longer maps when the file
       // is bundled as a linked dependency. Point those deep paths at the real

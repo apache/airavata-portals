@@ -1,31 +1,22 @@
 <template>
   <div>
-    <div class="row">
-      <div class="col">
-        <h1 class="h4 mb-4">Parsers</h1>
-      </div>
-      <div id="col-new-group" class="col-sm-2">
-        <b-button href="create" :variant="'primary'"
-          >Create New Parser&nbsp;&nbsp;<i
-            class="fa fa-plus"
-            aria-hidden="true"
-          ></i
-        ></b-button>
-      </div>
+    <div class="mb-4 flex items-center justify-between gap-2">
+      <h1 class="text-xl font-semibold">Parsers</h1>
+      <Button as="a" href="create" variant="default">
+        Create New Parser
+        <Plus class="size-4" aria-hidden="true" />
+      </Button>
     </div>
-    <div class="row">
-      <div class="col">
-        <div class="card">
-          <div class="card-body">
-            <parser-list v-bind:parsers="parsers"></parser-list>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Card>
+      <CardContent>
+        <parser-list v-bind:parsers="parsers"></parser-list>
+      </CardContent>
+    </Card>
   </div>
 </template>
 
 <script>
+import { Plus } from "@lucide/vue";
 import ParserList from "../parser-components/ParserList.vue";
 
 import { services } from "django-airavata-api";
@@ -39,6 +30,7 @@ export default {
     };
   },
   components: {
+    Plus,
     "parser-list": ParserList,
   },
   methods: {
@@ -59,12 +51,3 @@ export default {
   },
 };
 </script>
-
-<style>
-#col-new-group {
-  text-align: right;
-}
-#modal-new-group {
-  text-align: left;
-}
-</style>

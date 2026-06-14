@@ -1,223 +1,214 @@
 <template>
   <div>
-    <div class="row">
-      <div class="col">
-        <b-card title="Gateway Users" title-tag="h6">
-
-          <b-form-group>
-            <b-input-group>
-              <template #prepend>
-                <b-input-group-text>
-                  <i class="fa fa-filter"></i>
-                </b-input-group-text>
-              </template>
-              <b-form-input
+    <div class="flex flex-col items-stretch gap-4 md:flex-row md:items-start">
+      <div class="flex-1">
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-base">Gateway Users</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div class="mb-4 flex items-center gap-2">
+              <FilterIcon class="size-4 text-muted-foreground" />
+              <Input
                 v-model="userFilter"
                 placeholder="Filter list of users"
                 @change="onUserFilterChange"
               />
-            </b-input-group>
-          </b-form-group>
+            </div>
 
-          <b-table
-            hover
-            selectable
-            sticky-header
-            :items="nonMembers"
-            :fields="userFields"
-            :filter="userFilter"
-            select-mode="multi"
-            :sort-compare="sortCompare"
-            responsive="sm"
-            ref="usersTable"
-            head-variant="light"
-            :sort-by="initialSortBy"
-            v-model:selected-items="selectedUsers"
-          >
-           <template #cell(selected)="data">
-              <span v-if="isUserSelected(data.item)">
-                <i class="far fa-check-circle"></i>
-              </span>
-           </template>
-
-            <template #cell(action)="data">
-              <b-button @click="data.toggleExpansion()">
-                {{data.expansionShowing ? 'Hide' : 'Show'}} Details
-              </b-button>
-            </template>
-
-            <template #row-expansion="data">
-              <group-members-details-container
-                :userProfile="data.item"
-                :name="data.item.name"
-                :id="data.item.id"
-                @change-role="changeRole"
-              />
-            </template>
-
-          </b-table>
-
-        </b-card>
+            <div class="max-h-80 overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead class="w-8"></TableHead>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <template v-for="item in displayedNonMembers" :key="item.id">
+                    <TableRow
+                      class="cursor-pointer"
+                      :data-state="isUserSelected(item) ? 'selected' : undefined"
+                      @click="toggleUserSelection(item)"
+                    >
+                      <TableCell>
+                        <CircleCheckBig
+                          v-if="isUserSelected(item)"
+                          class="size-4 text-primary"
+                        />
+                      </TableCell>
+                      <TableCell>{{ item.username }}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          @click.stop="toggleUserExpansion(item.id)"
+                        >
+                          {{ expandedUsers[item.id] ? "Hide" : "Show" }} Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow v-if="expandedUsers[item.id]" :key="item.id + '-expansion'">
+                      <TableCell colspan="3">
+                        <group-members-details-container
+                          :userProfile="item"
+                          :name="item.name"
+                          :id="item.id"
+                          @change-role="changeRole"
+                        />
+                      </TableCell>
+                    </TableRow>
+                  </template>
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div>
-        <b-button-group vertical>
+      <div class="flex flex-row justify-center gap-2 md:flex-col md:justify-start">
+        <Button
+          :disabled="selectedUsers.length < 1"
+          @click="addSelectedMembers"
+          title="Add selected members"
+        >
+          <ChevronRight class="size-5" />
+        </Button>
 
-          <b-button
-            style="margin-top:10px; margin-bottom:10px;"
-            variant="primary"
-            :disabled = "selectedUsers.length<1"
-            @click="addSelectedMembers">
-            <!--Add Selected Members-->
-            <i class="fas fa-angle-right fa-lg"></i>
-          </b-button>
+        <Button
+          :disabled="nonMembers.length < 1"
+          @click="showAdd = true"
+          title="Add all members"
+        >
+          <ChevronsRight class="size-5" />
+        </Button>
 
-          <b-button
-            style="margin-top:10px; margin-bottom:10px;"
-            variant="primary"
-            :disabled = "nonMembers.length<1"
-            @click="showAdd = true">
-            <!--Add All Members-->
-            <i class="fas fa-angle-double-right fa-lg"></i>
-          </b-button>
+        <Button
+          :disabled="membersCount < 2"
+          @click="showRemove = true"
+          title="Remove all members"
+        >
+          <ChevronsLeft class="size-5" />
+        </Button>
 
-          <b-button
-            style="margin-top:10px; margin-bottom:10px;"
-            variant="primary"
-            :disabled = "membersCount<2"
-            @click="showRemove = true">
-            <i class="fas fa-angle-double-left fa-lg"></i>
-            <!--Remove All Members-->
-          </b-button>
+        <Button
+          :disabled="selectedMembers.length < 1"
+          @click="removeSelectedMembers"
+          title="Remove selected members"
+        >
+          <ChevronLeft class="size-5" />
+        </Button>
 
-          <b-button
-            style="margin-top:10px; margin-bottom:10px;"
-            variant="primary"
-            :disabled = "selectedMembers.length<1"
-              @click="removeSelectedMembers">
-              <i class="fas fa-angle-left fa-lg"></i>
-              <!--Remove Selected Members-->
-          </b-button>
-
-          <b-modal
-            v-model="showRemove"
-            title="Are you sure?">
-            <p class="my-4">
+        <Dialog v-model:open="showRemove">
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Are you sure?</DialogTitle>
+            </DialogHeader>
+            <p class="text-sm">
               Do you really want to remove all members from
-              '<strong>{{group.name}}</strong>'?
+              '<strong>{{ group.name }}</strong>'?
             </p>
-            <template #footer>
-              <div class="w-100">
-                <b-button
-                  class="float-end ms-1"
-                  @click="removeAllMembers">
-                  Yes
-                </b-button>
-                <b-button
-                  class="float-end ms-1"
-                  @click="showRemove = false">
-                  No
-                </b-button>
-              </div>
-            </template>
-          </b-modal>
+            <DialogFooter>
+              <Button variant="secondary" @click="showRemove = false">No</Button>
+              <Button variant="destructive" @click="removeAllMembers">Yes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-          <b-modal
-            v-model="showAdd"
-            title="Are you sure?">
-            <p class="my-4">
+        <Dialog v-model:open="showAdd">
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Are you sure?</DialogTitle>
+            </DialogHeader>
+            <p class="text-sm">
               Do you really want to add all users to
-              '<strong>{{group.name}}</strong>'?
+              '<strong>{{ group.name }}</strong>'?
             </p>
-            <template #footer>
-              <div class="w-100">
-                <b-button
-                  class="float-end ms-1"
-                  @click="addAllMembers">
-                  Yes
-                </b-button>
-                <b-button
-                  class="float-end ms-1"
-                  @click="showAdd = false">
-                  No
-                </b-button>
-              </div>
-            </template>
-          </b-modal>
-
-        </b-button-group>
+            <DialogFooter>
+              <Button variant="secondary" @click="showAdd = false">No</Button>
+              <Button @click="addAllMembers">Yes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <div class="col">
-        <b-card title="Group Members" title-tag="h6">
-
-          <b-form-group>
-            <b-input-group>
-              <template #prepend>
-                <b-input-group-text>
-                  <i class="fa fa-filter"></i>
-                </b-input-group-text>
-              </template>
-              <b-form-input
+      <div class="flex-1">
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-base">Group Members</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div class="mb-4 flex items-center gap-2">
+              <FilterIcon class="size-4 text-muted-foreground" />
+              <Input
                 v-model="memberFilter"
                 placeholder="Filter list of members"
                 @change="onMemberFilterChange"
               />
-            </b-input-group>
-          </b-form-group>
+            </div>
 
-          <b-table
-            v-if="membersCount > 0"
-            hover
-            selectable
-            sticky-header
-            :items="currentMembers"
-            :fields="memberFields"
-            :filter="memberFilter"
-            :select-mode="selectMode"
-            :sort-compare="sortCompare"
-            head-variant="light"
-            responsive="sm"
-            ref="membersTable"
-            :sort-by="initialSortBy"
-            v-model:selected-items="selectedMembers"
-          >
-
-           <template #cell(selected)="data">
-              <span v-if="isMemberSelected(data.item)">
-                <i class="far fa-check-circle"></i>
-              </span>
-           </template>
-
-            <template #cell(username)="data" >
-              {{data.value}}
-              <span
-                v-if= "data.item.role == 'OWNER'"
-                class="badge text-bg-primary">
-                  Owner
-              </span>
-            </template>
-
-            <template #cell(action)="data" >
-              <b-button @click="data.toggleExpansion()">
-                {{data.expansionShowing ? 'Hide' : 'Show'}} Details
-              </b-button>
-            </template>
-
-            <template #row-expansion="data">
-              <group-members-details-container
-                :userProfile="data.item"
-                :name="data.item.name"
-                :id="data.item.id"
-                :role="data.item.role"
-                :isOwner="group.is_owner"
-                @change-role="changeRole"
-              />
-            </template>
-
-          </b-table>
-
-        </b-card>
+            <div v-if="membersCount > 0" class="max-h-80 overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead class="w-8"></TableHead>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <template v-for="item in displayedMembers" :key="item.id">
+                    <TableRow
+                      class="cursor-pointer"
+                      :class="item.isNew ? 'bg-success/10' : ''"
+                      :data-state="
+                        isMemberSelected(item) ? 'selected' : undefined
+                      "
+                      @click="toggleMemberSelection(item)"
+                    >
+                      <TableCell>
+                        <CircleCheckBig
+                          v-if="isMemberSelected(item)"
+                          class="size-4 text-primary"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {{ item.username }}
+                        <Badge v-if="item.role == 'OWNER'">Owner</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          @click.stop="toggleMemberExpansion(item.id)"
+                        >
+                          {{ expandedMembers[item.id] ? "Hide" : "Show" }}
+                          Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow
+                      v-if="expandedMembers[item.id]"
+                      :key="item.id + '-expansion'"
+                    >
+                      <TableCell colspan="3">
+                        <group-members-details-container
+                          :userProfile="item"
+                          :name="item.name"
+                          :id="item.id"
+                          :role="item.role"
+                          :isOwner="group.is_owner"
+                          @change-role="changeRole"
+                        />
+                      </TableCell>
+                    </TableRow>
+                  </template>
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   </div>
@@ -226,11 +217,25 @@
 <script>
 import { models, services } from "django-airavata-api";
 import GroupMembersDetailsContainer from "./GroupMembersDetailsContainer.vue";
+import {
+  Filter as FilterIcon,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  CircleCheckBig,
+} from "@lucide/vue";
 
 export default {
   name: "group-members-editor",
   components: {
     GroupMembersDetailsContainer,
+    FilterIcon,
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight,
+    CircleCheckBig,
   },
   props: {
     group: {
@@ -246,10 +251,10 @@ export default {
       memberFilter: null,
       selectedMembers: [],
       selectedUsers: [],
-      selectMode: "multi",
-      // bootstrap-vue-next's b-table sort-by expects an array of
-      // { key, order }; previously this was the string "name".
-      initialSortBy: [{ key: "name", order: "asc" }],
+      // Per-row expansion state keyed by row id (replaces b-table's
+      // toggleExpansion/#row-expansion mechanics).
+      expandedUsers: {},
+      expandedMembers: {},
       showRemove: false,
       showAdd: false,
     };
@@ -261,20 +266,6 @@ export default {
     },
     admins() {
       return this.group.admins;
-    },
-    memberFields() {
-      return [
-        { key: "selected", label: "", sortable: false },
-        { key: "username", label: "Username", sortable: true },
-        { key: "action", label: "Action", sortable: false },
-      ];
-    },
-    userFields() {
-      return [
-        { key: "selected", label: "", sortable: false },
-        { key: "username", label: "Username", sortable: true },
-        { key: "action", label: "Action", sortable: false },
-      ];
     },
     userProfilesMap() {
       if (!this.userProfiles) {
@@ -311,7 +302,8 @@ export default {
               role: isOwner ? "OWNER" : isAdmin ? "ADMIN" : "MEMBER",
               editable: editable,
               isOwner: isOwner,
-              _rowVariant: this.newMembers.indexOf(m) >= 0 ? "success" : null,
+              // Highlight newly-added members (replaces b-table's _rowVariant).
+              isNew: this.newMembers.indexOf(m) >= 0,
             };
           })
       );
@@ -340,6 +332,21 @@ export default {
 
     membersCount() {
       return this.members.length;
+    },
+    // Filtered + sorted rows for the Gateway Users table (b-table previously
+    // applied :filter and :sort-compare/:sort-by internally).
+    displayedNonMembers() {
+      return this.nonMembers
+        .filter((u) => this.filterUserProfile(u, this.userFilter))
+        .slice()
+        .sort((a, b) => this.sortCompare(a, b, "username"));
+    },
+    // Filtered + sorted rows for the Group Members table.
+    displayedMembers() {
+      return this.currentMembers
+        .filter((m) => this.filterUserProfile(m, this.memberFilter))
+        .slice()
+        .sort((a, b) => this.sortCompare(a, b, "username"));
     },
   },
 
@@ -391,6 +398,39 @@ export default {
         }
       }
       return false;
+    },
+    // Multi-select toggle on row click (replaces b-table's selectable rows).
+    toggleUserSelection(user) {
+      const index = this.selectedUsers.indexOf(user);
+      if (index >= 0) {
+        this.selectedUsers = this.selectedUsers.filter((u) => u !== user);
+      } else {
+        this.selectedUsers = [...this.selectedUsers, user];
+      }
+    },
+    toggleMemberSelection(member) {
+      // The owner row is not removable, so never select it.
+      if (member.role === "OWNER") {
+        return;
+      }
+      const index = this.selectedMembers.indexOf(member);
+      if (index >= 0) {
+        this.selectedMembers = this.selectedMembers.filter((m) => m !== member);
+      } else {
+        this.selectedMembers = [...this.selectedMembers, member];
+      }
+    },
+    toggleUserExpansion(id) {
+      this.expandedUsers = {
+        ...this.expandedUsers,
+        [id]: !this.expandedUsers[id],
+      };
+    },
+    toggleMemberExpansion(id) {
+      this.expandedMembers = {
+        ...this.expandedMembers,
+        [id]: !this.expandedMembers[id],
+      };
     },
     addSelectedMembers(){
       this.selectedUsers.forEach((user)=>  {

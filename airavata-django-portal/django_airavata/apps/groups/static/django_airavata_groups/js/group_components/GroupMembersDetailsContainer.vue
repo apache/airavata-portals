@@ -1,30 +1,45 @@
 <template>
-<div>
-    <b-card header="Details">
-      <b>Name: </b> {{name}}<br>
-      <b>Email: </b> {{userProfile.email}}<br>
-      
-      <span v-if="role"><b>Role: </b></span>
-      <b-form-select
+  <Card>
+    <CardHeader>
+      <CardTitle>Details</CardTitle>
+    </CardHeader>
+    <CardContent class="space-y-1 text-sm">
+      <div><b>Name: </b>{{ name }}</div>
+      <div><b>Email: </b>{{ userProfile.email }}</div>
+
+      <div class="flex items-center gap-2">
+        <span v-if="role"><b>Role: </b></span>
+        <Select
           v-if="isOwner && role !== 'OWNER'"
           :model-value="role"
           @update:model-value="changeRole($event)"
-          :options="groupRoleOptions"
         >
-      </b-form-select>
-      <span v-if="(!isOwner && role) || (isOwner && role=='OWNER')">{{ role }}</span>
-
-    </b-card>
-    
-</div>
+          <SelectTrigger class="w-40">
+            <SelectValue placeholder="Select role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem
+              v-for="option in groupRoleOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.text }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <span v-if="(!isOwner && role) || (isOwner && role == 'OWNER')">{{
+          role
+        }}</span>
+      </div>
+    </CardContent>
+  </Card>
 </template>
 
 <script>
-
 import { models } from "django-airavata-api";
 //GroupMembersDetailsContainer
 export default {
- name: "group-members-details-container",
+  name: "group-members-details-container",
   props: {
     userProfile: {
       type: models.userProfile,
@@ -48,7 +63,7 @@ export default {
       required: true,
     },
   },
-  
+
   methods: {
     changeRole(role) {
       this.$emit("change-role", [this.id, role]);

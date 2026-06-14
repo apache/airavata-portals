@@ -8,6 +8,11 @@ import entry from "django-airavata-common-ui/js/entry";
 import MainLayout from "django-airavata-common-ui/js/components/MainLayout.vue";
 import ParsersManageContainer from "./containers/ParsersManageContainer.vue";
 
+// Tailwind v4 + shadcn-vue design tokens and base styles (loads the shared
+// common bundle's CSS). The shadcn-vue UI components are registered globally by
+// common's entry(), so templates use <Button>/<Card>/<Input>/... with no imports.
+import "django-airavata-common-ui/css/app.css";
+
 const App = {
   render() {
     return h(MainLayout, () => [h(ParsersManageContainer)]);

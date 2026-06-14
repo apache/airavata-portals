@@ -1,21 +1,14 @@
 <template>
   <div>
-    <div class="row">
-      <div class="col">
-        <h1 class="h4 mb-4">
-          <div>{{ parserId }}</div>
-        </h1>
-      </div>
+    <div class="mb-4">
+      <h1 class="text-xl font-semibold">
+        <div>{{ parserId }}</div>
+      </h1>
     </div>
-    <div class="row" v-if="parser">
-      <div class="col">
-        <b-form-group label="Image Name" label-for="image-name">
-          <b-form-input
-            id="image-name"
-            type="text"
-            v-model="parser.image_name"
-          />
-        </b-form-group>
+    <div v-if="parser">
+      <div class="grid gap-2">
+        <Label for="image-name">Image Name</Label>
+        <Input id="image-name" type="text" v-model="parser.image_name" />
       </div>
     </div>
   </div>

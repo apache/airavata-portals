@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import tailwindcss from "@tailwindcss/vite";
 
 const publicPath = "/static/django_airavata_dataparsers/dist/";
 
@@ -55,15 +56,25 @@ const entry = (name) =>
 
 export default defineConfig({
   base: publicPath,
-  plugins: [vue(), djangoWebpackStats()],
+  plugins: [vue(), tailwindcss(), djangoWebpackStats()],
   // The source uses extensionless `.vue` imports (Vue CLI resolved them
   // automatically); add `.vue` so Vite/Rollup resolves them too.
   resolve: {
     extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json", ".vue"],
-    // This package yarn-links django-airavata-common-ui (already Vue 3); dedupe
-    // so the linked package and this one share a single Vue/bootstrap-vue-next
-    // copy (otherwise: "Vue is not defined" / invalid-hook errors).
-    dedupe: ["vue", "bootstrap-vue-next"],
+    // The shadcn-vue UI components live in the linked common package's source and
+    // import each other via `@/lib/utils` / `@/components/ui/*`. This app pulls
+    // that source into its bundle (via common's globally-registered UI barrel),
+    // so `@` must resolve to common's `js` dir for those imports to load. This
+    // app has no `@`-prefixed imports of its own.
+    alias: {
+      "@": resolve(__dirname, "../../static/common/js"),
+    },
+    // This package yarn-links django-airavata-common-ui (already migrated to
+    // shadcn-vue). reka-ui (shadcn-vue's primitive layer) is provided
+    // transitively via the common package; dedupe vue + reka-ui so the linked
+    // package and this one share a single copy (otherwise: "Vue is not defined"
+    // / invalid-hook errors, and reka-ui relies on module-level singletons).
+    dedupe: ["vue", "reka-ui"],
   },
   build: {
     outDir: "static/django_airavata_dataparsers/dist",
