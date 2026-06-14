@@ -30,14 +30,14 @@
       sort-by="name"
       :sort-compare="sortCompare"
     >
-      <template slot="cell(name)" slot-scope="data">
+      <template #cell(name)="data">
         <b-link
           v-if="data.item.type === 'dir'"
           @click="directorySelected(data.item)"
         >
           <i class="fa fa-folder-open"></i> {{ data.item.name }}
           <template v-if="data.item.is_shared_dir">
-            <b-badge class="ml-1">shared</b-badge>
+            <b-badge class="ms-1">shared</b-badge>
           </template>
         </b-link>
         <user-storage-link
@@ -48,10 +48,10 @@
           :allow-preview="allowPreview"
         />
       </template>
-      <template slot="cell(modifiedTimestamp)" slot-scope="data">
+      <template #cell(modifiedTimestamp)="data">
         <human-date :date="data.item.modified_time" />
       </template>
-      <template slot="cell(actions)" slot-scope="data">
+      <template #cell(actions)="data">
         <b-button
           v-if="includeSelectFileAction && data.item.type === 'file'"
           @click="$emit('file-selected', data.item)"
@@ -204,7 +204,7 @@ export default {
             data_product_uri: f.data_product_uri,
             // downloadURL is no longer on the wire; build it from the URI.
             downloadURL: `/sdk/download/?data-product-uri=${encodeURIComponent(
-              f.data_product_uri
+              f.data_product_uri,
             )}`,
             modified_time: f.modified_time,
             modifiedTimestamp: f.modified_time.getTime(), // for sorting
@@ -249,7 +249,7 @@ export default {
     isAlreadySelected(item) {
       return (
         this.selectedDataProductUris.find(
-          (uri) => item.type === "file" && uri === item.data_product_uri
+          (uri) => item.type === "file" && uri === item.data_product_uri,
         ) !== undefined
       );
     },

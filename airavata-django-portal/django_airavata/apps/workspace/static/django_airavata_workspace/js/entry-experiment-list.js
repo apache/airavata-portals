@@ -1,29 +1,20 @@
+import { h } from "vue";
 import { components, entry } from "django-airavata-common-ui";
 import ExperimentListContainer from "./containers/ExperimentListContainer.vue";
-import VueFlatPickr from "vue-flatpickr-component";
-import "flatpickr/dist/flatpickr.css";
 
-entry((Vue) => {
-  Vue.use(VueFlatPickr);
-  new Vue({
-    render(h) {
-      return h(components.MainLayout, [
-        h(ExperimentListContainer, {
-          props: {
-            initialExperimentsData: this.experimentsData,
-          },
-        }),
-      ]);
-    },
-    data() {
-      return {
-        experimentsData: null,
-      };
-    },
-    beforeMount() {
-      if (this.$el.dataset.experimentsData) {
-        this.experimentsData = JSON.parse(this.$el.dataset.experimentsData);
-      }
-    },
-  }).$mount("#experiment-list");
-});
+// Read the mount element's data-* attributes before mounting; Vue 3 replaces the
+// element's contents on mount.
+const el = document.getElementById("experiment-list");
+const initialExperimentsData = el?.dataset.experimentsData
+  ? JSON.parse(el.dataset.experimentsData)
+  : null;
+
+const App = {
+  render() {
+    return h(components.MainLayout, () => [
+      h(ExperimentListContainer, { initialExperimentsData }),
+    ]);
+  },
+};
+
+entry(App).mount("#experiment-list");

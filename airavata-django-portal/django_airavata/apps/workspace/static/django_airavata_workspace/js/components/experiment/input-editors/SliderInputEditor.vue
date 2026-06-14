@@ -14,7 +14,9 @@
 
 <script>
 import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
-import VueSlider from "vue-slider-component";
+// vue-3-slider-component is the Vue 3 port of vue-slider-component (v3 was Vue 2
+// only); it exposes the same `vue-slider` component and props.
+import VueSlider from "vue-3-slider-component";
 
 export default {
   name: "slider-input-editor",
@@ -55,22 +57,22 @@ export default {
       return typeof this.min !== "undefined"
         ? this.min
         : "min" in this.editorConfig
-        ? this.editorConfig.min
-        : 0;
+          ? this.editorConfig.min
+          : 0;
     },
     sliderMax: function () {
       return typeof this.max !== "undefined"
         ? this.max
         : "max" in this.editorConfig
-        ? this.editorConfig.max
-        : 100;
+          ? this.editorConfig.max
+          : 100;
     },
     sliderStep: function () {
       return typeof this.step !== "undefined"
         ? this.step
         : "step" in this.editorConfig
-        ? this.editorConfig.step
-        : 1;
+          ? this.editorConfig.step
+          : 1;
     },
   },
   methods: {

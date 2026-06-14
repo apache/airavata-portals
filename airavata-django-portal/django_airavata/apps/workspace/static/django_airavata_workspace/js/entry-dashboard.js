@@ -1,30 +1,27 @@
+import { h } from "vue";
 import { components, entry } from "django-airavata-common-ui";
 import DashboardContainer from "./containers/DashboardContainer.vue";
 import RecentExperimentsContainer from "./containers/RecentExperimentsContainer.vue";
 
-entry((Vue) => {
-  new Vue({
-    render(h) {
-      return h(components.MainLayout, [
-        h(DashboardContainer),
-        h(RecentExperimentsContainer, {
-          props: {
-            viewAllExperiments: this.viewAllExperiments,
-            username: this.username,
-          },
-          slot: "sidebar",
-        }),
-      ]);
-    },
-    data() {
-      return {
-        viewAllExperiments: null,
-        username: null,
-      };
-    },
-    beforeMount() {
-      this.viewAllExperiments = this.$el.dataset.viewAllExperiments;
-      this.username = this.$el.dataset.username;
-    },
-  }).$mount("#dashboard");
-});
+// Read the mount element's data-* attributes before mounting; Vue 3 replaces the
+// element's contents on mount.
+const el = document.getElementById("dashboard");
+const viewAllExperiments = el?.dataset.viewAllExperiments ?? null;
+const username = el?.dataset.username ?? null;
+
+const App = {
+  render() {
+    return h(
+      components.MainLayout,
+      {},
+      {
+        default: () => [h(DashboardContainer)],
+        sidebar: () => [
+          h(RecentExperimentsContainer, { viewAllExperiments, username }),
+        ],
+      },
+    );
+  },
+};
+
+entry(App).mount("#dashboard");

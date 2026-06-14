@@ -2,14 +2,13 @@
   <b-form-group :label="label" label-for="group-resource-profile">
     <b-form-select
       id="group-resource-profile"
-      :value="groupResourceProfileId"
+      :model-value="groupResourceProfileId"
       :options="groupResourceProfileOptions"
       required
       @change="groupResourceProfileChanged"
-      @input.native.stop
       :disabled="disabled"
     >
-      <template slot="first">
+      <template #first>
         <option :value="null" disabled>
           <slot name="null-option">Select an allocation</slot>
         </option>
@@ -19,11 +18,8 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { BootstrapVue } from "bootstrap-vue";
-import store from "./store";
-import { mapGetters } from "vuex";
-Vue.use(BootstrapVue);
+import { mapState } from "pinia";
+import { useExperimentStore } from "./store";
 
 export default {
   name: "group-resource-profile-selector",
@@ -39,17 +35,20 @@ export default {
     disabled: {
       type: Boolean,
       default: false,
-    }
+    },
   },
-  store: store,
   created() {
-    this.$store.dispatch("initializeGroupResourceProfileId", {
+    const store = useExperimentStore();
+    store.initializeGroupResourceProfileId({
       groupResourceProfileId: this.value,
     });
-    this.$store.dispatch("loadGroupResourceProfiles");
+    store.loadGroupResourceProfiles();
   },
   computed: {
-    ...mapGetters(["groupResourceProfileId", "groupResourceProfiles"]),
+    ...mapState(useExperimentStore, {
+      groupResourceProfileId: "getGroupResourceProfileId",
+      groupResourceProfiles: "groupResourceProfiles",
+    }),
     groupResourceProfileOptions: function () {
       if (this.groupResourceProfiles && this.groupResourceProfiles.length > 0) {
         const groupResourceProfileOptions = this.groupResourceProfiles.map(
@@ -58,10 +57,10 @@ export default {
               value: groupResourceProfile.group_resource_profile_id,
               text: groupResourceProfile.group_resource_profile_name,
             };
-          }
+          },
         );
         groupResourceProfileOptions.sort((a, b) =>
-          a.text.localeCompare(b.text)
+          a.text.localeCompare(b.text),
         );
         return groupResourceProfileOptions;
       } else {
@@ -71,7 +70,7 @@ export default {
   },
   methods: {
     groupResourceProfileChanged: function (groupResourceProfileId) {
-      this.$store.dispatch("updateGroupResourceProfileId", {
+      useExperimentStore().updateGroupResourceProfileId({
         groupResourceProfileId,
       });
     },
@@ -87,7 +86,7 @@ export default {
   watch: {
     value(newValue) {
       if (newValue !== this.groupResourceProfileId) {
-        this.$store.dispatch("updateGroupResourceProfileId", {
+        useExperimentStore().updateGroupResourceProfileId({
           groupResourceProfileId: newValue,
         });
       }

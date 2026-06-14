@@ -34,7 +34,7 @@ export default {
   },
   methods: {
     async setStoragePath() {
-      let _storagePath = null;
+      let _storagePath;
       if (this.dataProductUri) {
         /**
          * TODO fix: storage path is set to home when it's a file referenced by dataProductUri because
@@ -72,7 +72,7 @@ export default {
          * there's no way of retrieving the path and this is to be fixed once a workaround is found.
          */
         return utils.FetchUtils.get(
-          `/api/data-products?product-uri=${this.dataProductUri}`
+          `/api/data-products?product-uri=${this.dataProductUri}`,
         )
           .then((dataProduct) => {
             this.userStoragePath = {
@@ -85,7 +85,7 @@ export default {
                   data_product_uri: this.dataProductUri,
                   // downloadURL is no longer on the wire; build it from the URI.
                   downloadURL: `/sdk/download/?data-product-uri=${encodeURIComponent(
-                    this.dataProductUri
+                    this.dataProductUri,
                   )}`,
                   content_type: dataProduct.product_metadata
                     ? dataProduct.product_metadata["mime-type"]
@@ -102,7 +102,7 @@ export default {
       } else {
         return services.UserStoragePathService.get(
           { path },
-          { ignoreErrors: true }
+          { ignoreErrors: true },
         )
           .then((result) => {
             this.userStoragePath = result;
@@ -118,7 +118,7 @@ export default {
           type: "WARNING",
           message: "Path does not exist: " + path,
           duration: 2,
-        })
+        }),
       );
     },
     fileChanged() {
@@ -127,7 +127,7 @@ export default {
         data.append("file", this.file);
         utils.FetchUtils.post(
           "/api/user-storage/" + this.storagePath,
-          data
+          data,
         ).then(() => {
           // this.file = null;
           this.$refs["file-input"].reset();
@@ -161,7 +161,7 @@ export default {
     deleteFile(dataProductURI) {
       utils.FetchUtils.delete(
         "/api/delete-file?data-product-uri=" +
-          encodeURIComponent(dataProductURI)
+          encodeURIComponent(dataProductURI),
       ).then(() => {
         this.loadUserStoragePath(this.storagePath);
       });

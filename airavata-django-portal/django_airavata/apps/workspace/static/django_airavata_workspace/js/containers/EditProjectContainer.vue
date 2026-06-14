@@ -6,7 +6,9 @@
       @valid="valid = true"
       @invalid="valid = false"
     >
-      <share-button slot="buttons" :entity-id="projectId" />
+      <template #buttons>
+        <share-button :entity-id="projectId" />
+      </template>
     </project-editor>
     <div class="d-flex justify-content-end">
       <b-button @click="saveProject" variant="primary" :disabled="!valid"
@@ -43,7 +45,7 @@ export default {
   },
   created() {
     services.ProjectService.retrieve({ lookup: this.projectId }).then(
-      (project) => (this.project = project)
+      (project) => (this.project = project),
     );
   },
   methods: {

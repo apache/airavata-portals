@@ -6,7 +6,7 @@
     stacked
     :disabled="readOnly"
     :state="componentValidState"
-    @input="valueChanged"
+    @update:model-value="valueChanged"
   />
 </template>
 

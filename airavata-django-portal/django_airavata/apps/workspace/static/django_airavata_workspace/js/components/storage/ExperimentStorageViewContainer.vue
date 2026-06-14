@@ -6,7 +6,7 @@
         <b-link
           v-if="canDownloadDataDirectory"
           :href="`/sdk/download-experiment-dir/${encodeURIComponent(
-            experimentId
+            experimentId,
           )}/`"
         >
           Download Zip
@@ -82,7 +82,7 @@ export default {
           experimentId: encodeURIComponent(this.experimentId),
           path,
         },
-        { ignoreErrors: true }
+        { ignoreErrors: true },
       )
         .then((result) => (this.experimentStoragePath = result))
         .catch((error) => {

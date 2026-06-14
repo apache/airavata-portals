@@ -7,7 +7,7 @@
     @saved="handleSavedExperiment"
     @savedAndLaunched="handleSavedAndLaunchedExperiment"
   >
-    <span slot="title">Edit Experiment</span>
+    <template #title><span>Edit Experiment</span></template>
   </experiment-editor>
 </template>
 
@@ -29,7 +29,7 @@ export default {
     return {
       experiment: null,
       appModule: null,
-      appInterface: null
+      appInterface: null,
     };
   },
   components: {
@@ -57,7 +57,7 @@ export default {
           },
           {
             ignoreErrors: true,
-          }
+          },
         );
       })
       .then((appInterface) => {
@@ -79,7 +79,7 @@ export default {
           new notifications.Notification({
             type: "ERROR",
             message,
-          })
+          }),
         );
       });
   },

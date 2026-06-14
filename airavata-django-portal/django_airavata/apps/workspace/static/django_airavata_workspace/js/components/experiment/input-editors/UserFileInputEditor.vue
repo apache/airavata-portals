@@ -5,7 +5,7 @@
       v-model="data"
       style="width: auto"
       :state="componentValidState"
-      @input="valueChanged"
+      @update:model-value="valueChanged"
     >
       <option
         v-for="userfile in userfiles"
@@ -33,7 +33,7 @@ export default {
   beforeMount: function () {
     // loads the list of file entries in django UserFiles model
     return apiUtils.FetchUtils.get("/api/get-ufiles").then(
-      (res) => (this.userfiles = res["user-files"])
+      (res) => (this.userfiles = res["user-files"]),
     );
   },
 };

@@ -18,10 +18,10 @@
       <b-link
         @click="cancelEditing"
         title="Cancel editing"
-        class="text-secondary ml-3"
+        class="text-secondary ms-3"
       >
         <i class="fas fa-times"></i>
-        <span class="sr-only">Cancel editing</span>
+        <span class="visually-hidden">Cancel editing</span>
       </b-link>
     </div>
   </b-form-group>
@@ -31,7 +31,7 @@
       <span v-if="data"> Edit the description</span>
       <span v-else> Add a description</span>
     </b-link>
-    <div v-if="data" class="ml-3">
+    <div v-if="data" class="ms-3">
       {{ data }}
     </div>
   </div>

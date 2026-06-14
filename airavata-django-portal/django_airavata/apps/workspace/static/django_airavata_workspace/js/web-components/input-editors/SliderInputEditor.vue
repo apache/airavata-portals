@@ -55,9 +55,10 @@ export default {
 
 <style lang="scss">
 @import "../styles";
-// Need to explicitly import VueSlider's CSS because importing component scss doesn't work
+// Need to explicitly import the slider CSS because importing component scss doesn't work
 // https://github.com/vuejs/vue-web-component-wrapper/issues/12
-@import "~vue-slider-component/dist-css/vue-slider-component.css";
+// vue-3-slider-component (Vue 3 port) ships its styles under lib/styles.
+@import "vue-3-slider-component/lib/styles/style.scss";
 :host {
   display: block;
 }

@@ -7,8 +7,7 @@
     :rows="editorRows"
     :disabled="readOnly"
     :state="componentValidState"
-    @input="valueChanged"
-    @input.native.stop
+    @update:model-value="valueChanged"
   />
 </template>
 

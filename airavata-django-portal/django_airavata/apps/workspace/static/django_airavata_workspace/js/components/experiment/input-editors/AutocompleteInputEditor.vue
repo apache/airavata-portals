@@ -1,7 +1,7 @@
 <template>
-  <div v-if="value" class="d-flex pl-3">
+  <div v-if="value" class="d-flex ps-3">
     {{ text }}
-    <b-link @click="cancel" class="ml-auto text-danger"
+    <b-link @click="cancel" class="ms-auto text-danger"
       >Cancel
       <i class="fa fa-times" aria-hidden="true"></i>
     </b-link>
@@ -59,7 +59,6 @@ export default {
       ) {
         return this.experimentInput.editorConfig.url;
       } else {
-        // eslint-disable-next-line no-console
         console.warn(
           "editor config is missing 'url'. Make sure input " +
             this.experimentInput.name +
@@ -74,8 +73,8 @@ export default {
                 },
               },
               null,
-              4
-            )
+              4,
+            ),
         );
         return null;
       }
@@ -91,7 +90,7 @@ export default {
           },
           {
             ignoreErrors: true, // don't automatically report errors to user - code will handle 404s
-          }
+          },
         )
           .then((resp) => {
             if (resp.results && resp.results.length > 0) {
@@ -131,7 +130,7 @@ export default {
           {
             search: this.searchString,
           },
-          { showSpinner: false }
+          { showSpinner: false },
         ).then((resp) => {
           // Prevent older responses from overwriting newer ones
           if (currentTime > this.lastUpdate) {

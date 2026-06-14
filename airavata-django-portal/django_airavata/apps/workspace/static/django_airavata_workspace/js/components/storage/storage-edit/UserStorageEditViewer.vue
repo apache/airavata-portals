@@ -80,7 +80,7 @@ export default {
     },
     mimeType: {
       required: true,
-    }
+    },
   },
   computed: {
     isText() {
@@ -100,7 +100,7 @@ export default {
     },
     downloadUrl() {
       return `/sdk/download/?data-product-uri=${this.dataProductUri}`;
-    }
+    },
   },
   components: {
     UserStorageTextEditViewer,
@@ -120,18 +120,18 @@ export default {
 }
 
 .user-storage-file-edit-viewer-status
-.user-storage-file-edit-viewer-status-message {
+  .user-storage-file-edit-viewer-status-message {
   flex: 1;
   color: #919191;
   font-size: 14px;
 }
 
 .user-storage-file-edit-viewer-status
-.user-storage-file-edit-viewer-status-actions
-button,
+  .user-storage-file-edit-viewer-status-actions
+  button,
 .user-storage-file-edit-viewer-status
-.user-storage-file-edit-viewer-status-actions
-a {
+  .user-storage-file-edit-viewer-status-actions
+  a {
   margin-right: 3px;
   margin-left: 3px;
 }

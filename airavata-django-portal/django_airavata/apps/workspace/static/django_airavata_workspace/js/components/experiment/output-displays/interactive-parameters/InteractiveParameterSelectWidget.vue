@@ -1,8 +1,8 @@
 <template>
   <b-form-select
-    :value="value"
+    :model-value="value"
     :options="options"
-    @input="$emit('input', $event)"
+    @update:model-value="$emit('input', $event)"
   />
 </template>
 

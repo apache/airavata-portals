@@ -1,16 +1,4 @@
-import Vuex from "vuex";
-import viewExperiment from "./modules/view-experiment";
-
-const debug = process.env.NODE_ENV !== "production";
-
-function createStore(Vue) {
-  Vue.use(Vuex);
-  return new Vuex.Store({
-    modules: {
-      viewExperiment,
-    },
-    strict: debug,
-  });
-}
-
-export default createStore;
+// The Vuex `viewExperiment` namespaced module is now a Pinia store. Re-export it
+// so existing imports (`import { useViewExperimentStore } from "../store"`)
+// continue to resolve. The Pinia instance itself is created in the entry point.
+export { useViewExperimentStore, default } from "./modules/view-experiment";

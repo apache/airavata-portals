@@ -2,7 +2,7 @@
   <div>
     <div class="d-flex">
       <slot name="title">
-        <h1 class="h4 mb-4 mr-auto">Edit Project</h1>
+        <h1 class="h4 mb-4 me-auto">Edit Project</h1>
       </slot>
       <slot name="buttons"> </slot>
     </div>
@@ -49,7 +49,6 @@ export default {
     },
   },
   mounted() {
-    this.$on("input", this.validate);
     this.validate();
   },
   data() {
@@ -103,6 +102,14 @@ export default {
   watch: {
     value() {
       this.validate();
+    },
+    // Re-validate on internal edits of the working copy. (Replaces the Vue 2
+    // `this.$on("input", ...)` self-listener, which is removed in Vue 3.)
+    data: {
+      handler() {
+        this.validate();
+      },
+      deep: true,
     },
   },
 };

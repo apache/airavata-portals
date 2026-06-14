@@ -1,36 +1,27 @@
+import { h } from "vue";
 import { components, entry } from "django-airavata-common-ui";
 import CreateExperimentContainer from "./containers/CreateExperimentContainer.vue";
 import "../../scss/styles.scss";
 
-entry((Vue) => {
-  new Vue({
-    render(h) {
-      return h(components.MainLayout, [
-        h(CreateExperimentContainer, {
-          props: {
-            appModuleId: this.appModuleId,
-            userInputValues: this.userInputValues,
-            experimentDataDir: this.experimentDataDir,
-          },
-        }),
-      ]);
-    },
-    data() {
-      return {
-        appModuleId: null,
-        userInputValues: null,
-      };
-    },
-    beforeMount() {
-      if (this.$el.dataset.appModuleId) {
-        this.appModuleId = this.$el.dataset.appModuleId;
-      }
-      if (this.$el.dataset.userInputValues) {
-        this.userInputValues = JSON.parse(this.$el.dataset.userInputValues);
-      }
-      if (this.$el.dataset.experimentDataDir) {
-        this.experimentDataDir = this.$el.dataset.experimentDataDir;
-      }
-    },
-  }).$mount("#create-experiment");
-});
+// Read the mount element's data-* attributes before mounting; Vue 3 replaces the
+// element's contents on mount.
+const el = document.getElementById("create-experiment");
+const appModuleId = el?.dataset.appModuleId ?? null;
+const userInputValues = el?.dataset.userInputValues
+  ? JSON.parse(el.dataset.userInputValues)
+  : null;
+const experimentDataDir = el?.dataset.experimentDataDir ?? null;
+
+const App = {
+  render() {
+    return h(components.MainLayout, () => [
+      h(CreateExperimentContainer, {
+        appModuleId,
+        userInputValues,
+        experimentDataDir,
+      }),
+    ]);
+  },
+};
+
+entry(App).mount("#create-experiment");

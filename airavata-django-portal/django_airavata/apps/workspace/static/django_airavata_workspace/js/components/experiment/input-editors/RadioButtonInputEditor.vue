@@ -8,8 +8,7 @@
     stacked
     :state="componentValidState"
     :disabled="readOnly"
-    @input="valueChanged"
-    @input.native.stop
+    @update:model-value="valueChanged"
   />
 </template>
 

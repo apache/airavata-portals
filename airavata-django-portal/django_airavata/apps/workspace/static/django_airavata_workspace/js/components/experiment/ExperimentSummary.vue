@@ -1,7 +1,7 @@
 <template>
   <div v-if="localFullExperiment">
     <div class="row">
-      <div class="col-auto mr-auto">
+      <div class="col-auto me-auto">
         <h1 class="h4 mb-4">
           <slot name="title">Experiment Summary</slot>
         </h1>
@@ -16,14 +16,14 @@
           Launch
           <i class="fa fa-running" aria-hidden="true"></i>
         </b-link>
-        <b-btn v-if="isClonable" variant="primary" @click="onClone">
+        <b-button v-if="isClonable" variant="primary" @click="onClone">
           Clone
           <i class="fa fa-copy" aria-hidden="true"></i>
-        </b-btn>
-        <b-btn v-if="isCancelable" variant="primary" @click="onCancel">
+        </b-button>
+        <b-button v-if="isCancelable" variant="primary" @click="onCancel">
           Cancel
-          <i class="fa fa-window-close" aria-hidden="true"></i>
-        </b-btn>
+          <i class="fa fa-window-btn-close" aria-hidden="true"></i>
+        </b-button>
       </div>
     </div>
     <template v-for="output in experiment.experiment_outputs">
@@ -58,9 +58,9 @@
                         :link-classes="['text-reset']"
                       >
                         copy
-                        <span slot="icon"></span>
-                        <span slot="tooltip"
-                          >Copied ID!</span
+                        <template #icon><span></span></template>
+                        <template #tooltip
+                          ><span>Copied ID!</span></template
                         > </clipboard-copy-link
                       >)
                     </small>
@@ -88,7 +88,7 @@
                   <td v-if="localFullExperiment.applicationName">
                     {{ localFullExperiment.applicationName }}
                   </td>
-                  <td v-else class="font-italic text-muted">
+                  <td v-else class="fst-italic text-muted">
                     Unable to load interface
                     {{ localFullExperiment.experiment.executionId }}
                   </td>
@@ -98,7 +98,7 @@
                   <td v-if="localFullExperiment.computeHostName">
                     {{ localFullExperiment.computeHostName }}
                   </td>
-                  <td v-else class="font-italic text-muted">
+                  <td v-else class="fst-italic text-muted">
                     Unable to load compute resource
                     {{ localFullExperiment.resourceHostId }}
                   </td>
@@ -110,7 +110,7 @@
                       v-if="localFullExperiment.experiment.isProgressing"
                     >
                       <i class="fa fa-sync-alt fa-spin"></i>
-                      <span class="sr-only">Progressing...</span>
+                      <span class="visually-hidden">Progressing...</span>
                     </template>
                     {{ localFullExperiment.experimentStatusName }}
                   </td>
@@ -138,7 +138,9 @@
                             :class="'timeline-dot--' + stage.kind"
                             :title="stage.taskId"
                           ></span>
-                          <span class="sr-only">{{ stage.stateLabel }}</span>
+                          <span class="visually-hidden">{{
+                            stage.stateLabel
+                          }}</span>
                         </div>
                         <div class="timeline-content">
                           <strong>{{ stage.typeLabel }}</strong>
@@ -324,7 +326,8 @@ import urls from "../../utils/urls";
 import moment from "moment";
 import ExperimentStorageViewContainer from "../storage/ExperimentStorageViewContainer.vue";
 import DataProductViewer from "django-airavata-common-ui/js/components/DataProductViewer.vue";
-import { mapActions, mapGetters, mapState } from "vuex";
+import { mapActions, mapState } from "pinia";
+import { useViewExperimentStore } from "../../store";
 
 export default {
   name: "experiment-summary",
@@ -336,13 +339,11 @@ export default {
     DataProductViewer,
   },
   computed: {
-    ...mapState("viewExperiment", [
+    ...mapState(useViewExperimentStore, [
       "fullExperiment",
       "launching",
       "clonedExperiment",
       "groupResourceProfile",
-    ]),
-    ...mapGetters("viewExperiment", [
       "finishedOrExecuting",
       "showQueueSettings",
     ]),
@@ -359,9 +360,9 @@ export default {
           (input) => {
             result[input.name] = this.getDataProducts(
               input,
-              this.localFullExperiment.input_data_products
+              this.localFullExperiment.input_data_products,
             );
-          }
+          },
         );
       }
       return result;
@@ -376,19 +377,21 @@ export default {
           (output) => {
             result[output.name] = this.getDataProducts(
               output,
-              this.localFullExperiment.output_data_products
+              this.localFullExperiment.output_data_products,
             );
-          }
+          },
         );
       }
       return result;
     },
     creationTime: function () {
-      return moment(this.localFullExperiment.experiment.creation_time).fromNow();
+      return moment(
+        this.localFullExperiment.experiment.creation_time,
+      ).fromNow();
     },
     lastModifiedTime: function () {
       return moment(
-        this.localFullExperiment.experimentStatus.time_of_state_change
+        this.localFullExperiment.experimentStatus.time_of_state_change,
       ).fromNow();
     },
     experiment: function () {
@@ -396,7 +399,7 @@ export default {
     },
     jobCreationTimes: function () {
       return this.localFullExperiment.job_details.map((jobDetail) =>
-        moment(jobDetail.creation_time).fromNow()
+        moment(jobDetail.creation_time).fromNow(),
       );
     },
     // The experiment's PROCESS -> TASK pipeline as an ordered stage list (env setup, data
@@ -469,7 +472,7 @@ export default {
             this.experiment.latestStatus.state ===
               models.ExperimentState.FAILED ||
             (job.latestJobStatus &&
-              job.latestJobStatus.job_state === models.JobState.FAILED)
+              job.latestJobStatus.job_state === models.JobState.FAILED),
         );
       } else {
         return [];
@@ -482,7 +485,7 @@ export default {
     },
   },
   methods: {
-    ...mapActions("viewExperiment", ["clone", "launch", "cancel"]),
+    ...mapActions(useViewExperimentStore, ["clone", "launch", "cancel"]),
     async onClone() {
       await this.clone();
       urls.navigateToEditExperiment(this.clonedExperiment);
@@ -497,23 +500,23 @@ export default {
           type: "SUCCESS",
           message: "Cancel-experiment requested",
           duration: 5,
-        })
+        }),
       );
     },
     getDataProducts(io, collection) {
       if (!io.value || !collection) {
         return [];
       }
-      let dataProducts = null;
+      let dataProducts;
       if (io.type === models.DataType.URI_COLLECTION) {
         const dataProductURIs = io.value.split(",");
         dataProducts = dataProductURIs.map((uri) =>
-          collection.find((dp) => dp.product_uri === uri)
+          collection.find((dp) => dp.product_uri === uri),
         );
       } else {
         const dataProductURI = io.value;
         dataProducts = collection.filter(
-          (dp) => dp.product_uri === dataProductURI
+          (dp) => dp.product_uri === dataProductURI,
         );
       }
       return dataProducts

@@ -1,8 +1,8 @@
 <template>
   <div>
-    <b-btn v-b-modal.modal-new-project variant="primary">
+    <b-button v-b-modal.modal-new-project variant="primary">
       <slot> New Project <i class="fa fa-plus" aria-hidden="true"></i> </slot>
-    </b-btn>
+    </b-button>
     <b-modal
       id="modal-new-project"
       ref="modalNewProject"
@@ -18,7 +18,7 @@
         @valid="valid = true"
         @invalid="valid = false"
       >
-        <div slot="title"></div>
+        <template #title></template>
       </project-editor>
     </b-modal>
   </div>
@@ -50,7 +50,7 @@ export default {
           // Reset state
           this.newProject = new models.Project();
           this.$refs.projectEditor.reset();
-        }
+        },
       );
     },
     onCancelNewProject() {

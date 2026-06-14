@@ -2,7 +2,7 @@
   <div>
     <unsaved-changes-guard :dirty="dirty" />
     <div class="row">
-      <div class="col-auto mr-auto">
+      <div class="col-auto me-auto">
         <h1 class="h4 mb-4">
           <div
             v-if="appModule"
@@ -62,7 +62,7 @@
               required
               :state="getValidationState('project_id')"
             >
-              <template slot="first">
+              <template #first>
                 <option :value="null" disabled>Select a Project</option>
               </template>
               <optgroup label="My Projects">
@@ -129,7 +129,9 @@
         </div>
       </div>
       <group-resource-profile-selector
-        v-model="localExperiment.user_configuration_data.group_resource_profile_id"
+        v-model="
+          localExperiment.user_configuration_data.group_resource_profile_id
+        "
         @invalid="invalidGroupResourceProfileSelector = true"
         @valid="invalidGroupResourceProfileSelector = false"
       >
@@ -141,7 +143,9 @@
               localExperiment.user_configuration_data
                 .computational_resource_scheduling
             "
-            v-if="localExperiment.user_configuration_data.group_resource_profile_id"
+            v-if="
+              localExperiment.user_configuration_data.group_resource_profile_id
+            "
             :app-module-id="appModule.app_module_id"
             :group-resource-profile-id="
               localExperiment.user_configuration_data.group_resource_profile_id
@@ -155,7 +159,9 @@
       <div class="row">
         <div class="col">
           <b-form-group label="Email Settings">
-            <b-form-checkbox v-model="localExperiment.enable_email_notification">
+            <b-form-checkbox
+              v-model="localExperiment.enable_email_notification"
+            >
               Receive email notification of experiment status
             </b-form-checkbox>
           </b-form-group>
@@ -240,7 +246,7 @@ export default {
               this.localExperiment.project_id =
                 workspacePreferences.most_recent_project_id;
             }
-          }
+          },
         );
       }
     });
@@ -354,19 +360,20 @@ export default {
       this.localExperiment.evaluateInputDependencies();
     },
     calculateQueueSettings: _.debounce(async function () {
-      const queueSettingsUpdate = await services.QueueSettingsCalculatorService.calculate(
-        {
-          lookup: this.appInterface.queue_settings_calculator_id,
-          data: this.localExperiment,
-        },
-        { showSpinner: false }
-      );
+      const queueSettingsUpdate =
+        await services.QueueSettingsCalculatorService.calculate(
+          {
+            lookup: this.appInterface.queue_settings_calculator_id,
+            data: this.localExperiment,
+          },
+          { showSpinner: false },
+        );
       // Override values in computational_resource_scheduling with the values
       // returned from the queue settings calculator
       Object.assign(
         this.localExperiment.user_configuration_data
           .computational_resource_scheduling,
-        queueSettingsUpdate
+        queueSettingsUpdate,
       );
     }, 500),
     experimentInputsChanged() {
@@ -396,9 +403,10 @@ export default {
       },
       deep: true,
     },
-    "experiment.user_configuration_data.computational_resource_scheduling.resource_host_id": function () {
-      this.resourceHostIdChanged();
-    },
+    "experiment.user_configuration_data.computational_resource_scheduling.resource_host_id":
+      function () {
+        this.resourceHostIdChanged();
+      },
   },
 };
 </script>

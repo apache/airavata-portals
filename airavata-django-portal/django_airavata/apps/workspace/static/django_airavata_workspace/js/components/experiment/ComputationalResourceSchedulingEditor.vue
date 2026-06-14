@@ -19,7 +19,7 @@
               !computeResourceOptions || computeResourceOptions.length === 0
             "
           >
-            <template slot="first">
+            <template #first>
               <option :value="null" disabled>Select a Compute Resource</option>
             </template>
           </b-form-select>
@@ -35,7 +35,7 @@
           :app-deployment-id="appDeploymentId"
           :compute-resource-policy="selectedComputeResourcePolicy"
           :batch-queue-resource-policies="batchQueueResourcePolicies"
-          @input="queueSettingsChanged"
+          @update:model-value="queueSettingsChanged"
           @valid="queueSettingsValidityChanged(true)"
           @invalid="queueSettingsValidityChanged(false)"
         >
@@ -88,13 +88,12 @@ export default {
     this.loadWorkspacePreferences().then(() => {
       this.loadApplicationDeployments(
         this.appModuleId,
-        this.groupResourceProfileId
+        this.groupResourceProfileId,
       );
     });
     this.loadComputeResourceNames();
     this.loadGroupResourceProfile();
     this.validate();
-    this.$on("input", () => this.validate());
   },
   computed: {
     localComputationalResourceScheduling() {
@@ -123,7 +122,7 @@ export default {
             crp.compute_resource_id ===
             this.localComputationalResourceScheduling.resource_host_id
           );
-        }
+        },
       );
     },
     batchQueueResourcePolicies: function () {
@@ -136,7 +135,7 @@ export default {
             bqrp.compute_resource_id ===
             this.localComputationalResourceScheduling.resource_host_id
           );
-        }
+        },
       );
     },
     appDeploymentId: function () {
@@ -148,7 +147,7 @@ export default {
       }
       // Find application deployment that corresponds to this compute resource
       let selectedApplicationDeployment = this.applicationDeployments.find(
-        (dep) => dep.compute_host_id === this.resourceHostId
+        (dep) => dep.compute_host_id === this.resourceHostId,
       );
       if (!selectedApplicationDeployment) {
         throw new Error("Failed to find application deployment!");
@@ -175,7 +174,7 @@ export default {
           appModuleId: appModuleId,
           groupResourceProfileId: groupResourceProfileId,
         },
-        { ignoreErrors: true }
+        { ignoreErrors: true },
       )
         .then((applicationDeployments) => {
           this.applicationDeployments = applicationDeployments;
@@ -192,7 +191,7 @@ export default {
     loadGroupResourceProfile: function () {
       services.GroupResourceProfileService.retrieve(
         { lookup: this.groupResourceProfileId },
-        { ignoreErrors: true }
+        { ignoreErrors: true },
       )
         .then((groupResourceProfile) => {
           this.selectedGroupResourceProfileData = groupResourceProfile;
@@ -208,13 +207,14 @@ export default {
     },
     loadComputeResourceNames: function () {
       services.ComputeResourceService.names().then(
-        (computeResourceNames) => (this.computeResources = computeResourceNames)
+        (computeResourceNames) =>
+          (this.computeResources = computeResourceNames),
       );
     },
     loadWorkspacePreferences() {
       return services.WorkspacePreferencesService.get().then(
         (workspacePreferences) =>
-          (this.workspacePreferences = workspacePreferences)
+          (this.workspacePreferences = workspacePreferences),
       );
     },
     queueSettingsChanged: function () {
@@ -222,7 +222,8 @@ export default {
       // ComputationalResourceSchedulingModel instance but doesn't know
       // the resourceHostId so we need to copy it back into the instance
       // whenever it changes
-      this.localComputationalResourceScheduling.resource_host_id = this.resourceHostId;
+      this.localComputationalResourceScheduling.resource_host_id =
+        this.resourceHostId;
       this.$emit("input", this.data);
     },
     queueSettingsValidityChanged(valid) {
@@ -248,6 +249,14 @@ export default {
     },
   },
   watch: {
+    // Re-validate whenever the editor's working copy changes. (Replaces the Vue 2
+    // `this.$on("input", ...)` self-listener, which is removed in Vue 3.)
+    data: {
+      handler() {
+        this.validate();
+      },
+      deep: true,
+    },
     computeResourceOptions: function (newOptions) {
       // If the selected resourceHostId is not in the new list of
       // computeResourceOptions, reset it to null
@@ -264,10 +273,11 @@ export default {
         newOptions.find(
           (opt) =>
             opt.value ===
-            this.workspacePreferences.most_recent_compute_resource_id
+            this.workspacePreferences.most_recent_compute_resource_id,
         )
       ) {
-        this.resourceHostId = this.workspacePreferences.most_recent_compute_resource_id;
+        this.resourceHostId =
+          this.workspacePreferences.most_recent_compute_resource_id;
       }
       // If none selected, just pick the first one
       if (this.resourceHostId === null && newOptions.length > 0) {
@@ -278,7 +288,7 @@ export default {
     groupResourceProfileId: function (newGroupResourceProfileId) {
       this.loadApplicationDeployments(
         this.appModuleId,
-        newGroupResourceProfileId
+        newGroupResourceProfileId,
       );
       if (
         this.selectedGroupResourceProfileData &&

@@ -7,7 +7,7 @@
     @saved="handleSavedExperiment"
     @savedAndLaunched="handleSavedAndLaunchedExperiment"
   >
-    <span slot="title">Create a New Experiment</span>
+    <template #title><span>Create a New Experiment</span></template>
   </experiment-editor>
 </template>
 
@@ -21,12 +21,12 @@ import moment from "moment";
 
 export default {
   name: "create-experiment-container",
-  props: ["app-module-id", "user-input-values", "experiment-data-dir"],
+  props: ["appModuleId", "userInputValues", "experimentDataDir"],
   data() {
     return {
       experiment: null,
       appModule: null,
-      appInterface: null
+      appInterface: null,
     };
   },
   components: {
@@ -46,12 +46,13 @@ export default {
   mounted: function () {
     const loadAppModule = services.ApplicationModuleService.retrieve(
       { lookup: this.appModuleId },
-      { ignoreErrors: true }
+      { ignoreErrors: true },
     );
-    const loadAppInterface = services.ApplicationModuleService.getApplicationInterface(
-      { lookup: this.appModuleId },
-      { ignoreErrors: true }
-    );
+    const loadAppInterface =
+      services.ApplicationModuleService.getApplicationInterface(
+        { lookup: this.appModuleId },
+        { ignoreErrors: true },
+      );
     Promise.all([loadAppModule, loadAppInterface])
       .then(([appModule, appInterface]) => {
         const experiment = appInterface.createExperiment();
@@ -62,7 +63,7 @@ export default {
         if (this.userInputValues) {
           Object.keys(this.userInputValues).forEach((k) => {
             const experimentInput = experiment.experiment_inputs.find(
-              (inp) => inp.name === k
+              (inp) => inp.name === k,
             );
             if (experimentInput) {
               experimentInput.value = this.userInputValues[k];
@@ -70,7 +71,8 @@ export default {
           });
         }
         if (this.experimentDataDir) {
-          experiment.user_configuration_data.experiment_data_dir = this.experimentDataDir;
+          experiment.user_configuration_data.experiment_data_dir =
+            this.experimentDataDir;
         }
         this.experiment = experiment;
       })

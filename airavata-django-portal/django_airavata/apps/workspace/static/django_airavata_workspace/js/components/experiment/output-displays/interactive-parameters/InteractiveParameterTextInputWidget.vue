@@ -2,15 +2,13 @@
   <b-input-group>
     <b-form-input
       ref="textInput"
-      :value="value"
-      @input="currentValue = $event"
-      @keydown.native.enter="enterKeyPressed"
+      :model-value="value"
+      @update:model-value="currentValue = $event"
+      @keydown.enter="enterKeyPressed"
     />
-    <b-input-group-append>
-      <b-button variant="primary" :disabled="disabled" @click="submit"
-        >Submit</b-button
-      >
-    </b-input-group-append>
+    <b-button variant="primary" :disabled="disabled" @click="submit"
+      >Submit</b-button
+    >
   </b-input-group>
 </template>
 

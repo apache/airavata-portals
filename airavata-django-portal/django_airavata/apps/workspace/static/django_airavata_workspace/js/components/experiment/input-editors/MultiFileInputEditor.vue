@@ -59,7 +59,7 @@ export default {
     },
     removeFile(dataProductURI) {
       const index = this.selectedDataProductURIs.findIndex(
-        (u) => u === dataProductURI
+        (u) => u === dataProductURI,
       );
       const copyDataProductURIs = this.selectedDataProductURIs.slice();
       copyDataProductURIs.splice(index, 1);

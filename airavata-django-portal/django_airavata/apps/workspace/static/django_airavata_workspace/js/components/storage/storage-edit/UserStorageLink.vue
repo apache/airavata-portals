@@ -12,7 +12,7 @@
           (fileContent) => $emit('file-content-changed', fileContent)
         "
       />
-      <template slot="modal-footer">
+      <template #modal-footer>
         <a :href="storageFileViewRouteUrl()" target="_blank"
           >Open in a new window</a
         >

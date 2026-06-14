@@ -22,7 +22,7 @@ export default {
       this.addInlineOptionsChangeListener();
     });
   },
-  destroyed() {
+  unmounted() {
     this.removeInlineOptionsChangeListener();
   },
   methods: {

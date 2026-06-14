@@ -5,11 +5,10 @@
       v-model="resourceHostId"
       :options="computeResourceOptions"
       required
-      @input="computeResourceChanged"
-      @input.native.stop
+      @update:model-value="computeResourceChanged"
       :disabled="disabled || computeResourceOptions.length === 0"
     >
-      <template slot="first">
+      <template #first>
         <option :value="null" disabled>Select a Compute Resource</option>
       </template>
     </b-form-select>
@@ -17,8 +16,8 @@
 </template>
 
 <script>
-import store from "./store";
-import { mapGetters } from "vuex";
+import { mapState } from "pinia";
+import { useExperimentStore } from "./store";
 
 export default {
   name: "compute-resource-selector",
@@ -37,16 +36,16 @@ export default {
       default: false,
     },
   },
-  store: store,
   data() {
     return {
       resourceHostId: this.value,
     };
   },
   created() {
-    this.$store.dispatch("loadComputeResourceNames");
+    useExperimentStore().loadComputeResourceNames();
   },
   computed: {
+    ...mapState(useExperimentStore, ["computeResourceNames"]),
     computeResourceOptions: function () {
       const computeResourceIds = Object.keys(this.computeResourceNames).filter(
         (crid) => {
@@ -55,7 +54,7 @@ export default {
           } else {
             return true;
           }
-        }
+        },
       );
       const computeResourceOptions = computeResourceIds.map((computeHostId) => {
         return {
@@ -69,7 +68,6 @@ export default {
       computeResourceOptions.sort((a, b) => a.text.localeCompare(b.text));
       return computeResourceOptions;
     },
-    ...mapGetters(["computeResourceNames"]),
   },
   methods: {
     computeResourceChanged() {

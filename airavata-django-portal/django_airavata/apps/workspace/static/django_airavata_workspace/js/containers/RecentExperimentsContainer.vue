@@ -5,11 +5,11 @@
       :view-all-url="viewAllExperiments"
     />
     <sidebar-feed :feed-items="feedItems">
-      <template slot="description" slot-scope="slotProps">
+      <template #description="slotProps">
         <experiment-status-badge :status-name="slotProps.feedItem.statusName" />
         <i
           v-if="slotProps.feedItem.isProgressing"
-          class="fa fa-sync-alt fa-spin ml-1"
+          class="fa fa-sync-alt fa-spin ms-1"
         ></i>
       </template>
     </sidebar-feed>
@@ -43,7 +43,7 @@ export default {
             function () {
               this.pollExperiments();
             }.bind(this),
-            this.refreshDelay
+            this.refreshDelay,
           );
         })
         .catch(() => {
@@ -61,7 +61,7 @@ export default {
         {
           showSpinner: false,
           ignoreErrors: true,
-        }
+        },
       ).then((experiments) => {
         this.feedItems = experiments.results.map((e) => {
           return {
@@ -84,7 +84,7 @@ export default {
         Promise.all(
           Object.keys(unloadedInterfaceIds).map((interfaceId) => {
             return this.loadApplicationInterface(interfaceId);
-          })
+          }),
         ).then(() => {
           this.populateApplicationNames();
         });
@@ -98,7 +98,7 @@ export default {
         {
           showSpinner: false,
           ignoreErrors: true,
-        }
+        },
       )
         .then((applicationInterface) => {
           this.applicationInterfaces[interfaceId] = applicationInterface;
@@ -121,9 +121,8 @@ export default {
             feedItem.interfaceId in this.applicationInterfaces &&
             this.applicationInterfaces[feedItem.interfaceId]
           ) {
-            feedItem.type = this.applicationInterfaces[
-              feedItem.interfaceId
-            ].application_name;
+            feedItem.type =
+              this.applicationInterfaces[feedItem.interfaceId].application_name;
           }
         });
     },

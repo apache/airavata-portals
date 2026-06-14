@@ -54,7 +54,7 @@ export default {
     },
     onNewProject: function () {
       services.ProjectService.list().then(
-        (result) => (this.projectsPaginator = result)
+        (result) => (this.projectsPaginator = result),
       );
     },
   },

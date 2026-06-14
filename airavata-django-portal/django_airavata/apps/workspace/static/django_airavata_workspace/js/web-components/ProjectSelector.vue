@@ -1,7 +1,7 @@
 <template>
   <b-form-group label="Project">
     <b-form-select v-model="projectId" required>
-      <template slot="first">
+      <template #first>
         <option :value="null" disabled>Select a Project</option>
       </template>
       <optgroup label="My Projects">
@@ -27,11 +27,8 @@
 </template>
 
 <script>
-import Vue from "vue";
-import store from "./store";
-import { mapGetters } from "vuex";
-import { BootstrapVue } from "bootstrap-vue";
-Vue.use(BootstrapVue);
+import { mapState } from "pinia";
+import { useExperimentStore } from "./store";
 
 export default {
   props: {
@@ -40,17 +37,16 @@ export default {
       default: null,
     },
   },
-  store: store,
   data() {
     return {
       projectId: this.value,
     };
   },
   async mounted() {
-    await this.$store.dispatch("loadProjects");
+    await useExperimentStore().loadProjects();
   },
   computed: {
-    ...mapGetters(["projects"]),
+    ...mapState(useExperimentStore, ["projects"]),
     sharedProjectOptions: function () {
       return this.projects
         ? this.projects

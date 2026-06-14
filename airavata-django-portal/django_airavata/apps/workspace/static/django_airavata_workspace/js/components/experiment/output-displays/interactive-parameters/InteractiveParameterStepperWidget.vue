@@ -3,18 +3,16 @@
     <b-form-input
       ref="textInput"
       type="number"
-      :value="value"
+      :model-value="value"
       :min="parameter.min"
       :max="parameter.max"
       :step="parameter.step || 'any'"
-      @input="updateValue"
-      @keydown.native.enter="enterKeyPressed"
+      @update:model-value="updateValue"
+      @keydown.enter="enterKeyPressed"
     />
-    <b-input-group-append>
-      <b-button variant="primary" :disabled="disabled" @click="submit"
-        >Submit</b-button
-      >
-    </b-input-group-append>
+    <b-button variant="primary" :disabled="disabled" @click="submit"
+      >Submit</b-button
+    >
   </b-input-group>
 </template>
 

@@ -4,7 +4,7 @@
     <div class="row">
       <div class="col">
         <h1 class="h4 mb-4">Dashboard</h1>
-        <workspace-notices-management-container/>
+        <workspace-notices-management-container />
         <h2 class="h6 mb-2 text-uppercase text-muted">Applications</h2>
       </div>
     </div>
@@ -35,13 +35,14 @@
           @unfavorite="markNotFavorite(item.appModule)"
           ref="favoriteApplicationCards"
         >
-          <favorite-toggle
-            slot="card-actions"
-            :favorite="true"
-            class="card-link"
-            @favorite="markFavorite(item.appModule)"
-            @unfavorite="markNotFavorite(item.appModule)"
-          />
+          <template #card-actions>
+            <favorite-toggle
+              :favorite="true"
+              class="card-link"
+              @favorite="markFavorite(item.appModule)"
+              @unfavorite="markNotFavorite(item.appModule)"
+            />
+          </template>
         </application-card>
       </div>
       <hr />
@@ -56,13 +57,14 @@
         @favorite="markFavorite(item.appModule)"
         @unfavorite="markNotFavorite(item.appModule)"
       >
-        <favorite-toggle
-          slot="card-actions"
-          :favorite="false"
-          class="card-link"
-          @favorite="markFavorite(item.appModule)"
-          @unfavorite="markNotFavorite(item.appModule)"
-        />
+        <template #card-actions>
+          <favorite-toggle
+            :favorite="false"
+            class="card-link"
+            @favorite="markFavorite(item.appModule)"
+            @unfavorite="markNotFavorite(item.appModule)"
+          />
+        </template>
       </application-card>
     </div>
   </div>
@@ -101,12 +103,12 @@ export default {
       })
         .then(() => {
           return services.WorkspacePreferencesService.get().then(
-            (prefs) => (this.workspacePreferences = prefs)
+            (prefs) => (this.workspacePreferences = prefs),
           );
         })
         .then(() => {
           const index = this.favoriteApplicationsData.findIndex(
-            (data) => data.appModule.app_module_id === appModule.app_module_id
+            (data) => data.appModule.app_module_id === appModule.app_module_id,
           );
           this.$nextTick(() => {
             this.$refs.favoriteApplicationCards[index].$el.scrollIntoView({
@@ -121,7 +123,7 @@ export default {
         lookup: appModule.app_module_id,
       }).then(() => {
         return services.WorkspacePreferencesService.get().then(
-          (prefs) => (this.workspacePreferences = prefs)
+          (prefs) => (this.workspacePreferences = prefs),
         );
       });
     },
@@ -160,13 +162,13 @@ export default {
     favoriteApplicationsData() {
       return this.allApplicationData.filter(
         (app) =>
-          this.favoriteApplicationIds.indexOf(app.appModule.app_module_id) >= 0
+          this.favoriteApplicationIds.indexOf(app.appModule.app_module_id) >= 0,
       );
     },
     nonFavoriteApplicationsData() {
       return this.allApplicationData.filter(
         (app) =>
-          this.favoriteApplicationIds.indexOf(app.appModule.app_module_id) < 0
+          this.favoriteApplicationIds.indexOf(app.appModule.app_module_id) < 0,
       );
     },
     favoriteApplicationIds() {
@@ -184,17 +186,17 @@ export default {
   },
   beforeMount: function () {
     services.ApplicationModuleService.list().then(
-      (result) => (this.accessibleAppModules = result)
+      (result) => (this.accessibleAppModules = result),
     );
     services.UserProfileService.retrieve({
       lookup: session.Session.username,
     }).then((userProfile) => (this.userProfile = userProfile));
     // Load all application, including ones that aren't accessible by this user
     services.ApplicationModuleService.listAll().then(
-      (result) => (this.allApplicationModules = result)
+      (result) => (this.allApplicationModules = result),
     );
     services.WorkspacePreferencesService.get().then(
-      (prefs) => (this.workspacePreferences = prefs)
+      (prefs) => (this.workspacePreferences = prefs),
     );
   },
 };

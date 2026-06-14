@@ -13,7 +13,7 @@
       :items="items"
       sort-by="name"
     >
-      <template slot="cell(name)" slot-scope="data">
+      <template #cell(name)="data">
         <b-link
           v-if="data.item.type === 'dir'"
           @click="directorySelected(data.item)"
@@ -24,10 +24,10 @@
           {{ data.item.name }}</b-link
         >
       </template>
-      <template slot="cell(modifiedTimestamp)" slot-scope="data">
+      <template #cell(modifiedTimestamp)="data">
         <human-date :date="data.item.modified_time" />
       </template>
-      <template slot="cell(actions)" slot-scope="data">
+      <template #cell(actions)="data">
         <b-link
           v-if="data.item.type === 'file'"
           class="action-link"
@@ -40,7 +40,7 @@
           v-if="data.item.type === 'dir'"
           class="action-link"
           :href="`/sdk/download-experiment-dir/${encodeURIComponent(
-            experimentId
+            experimentId,
           )}/?path=${data.item.path}`"
         >
           Download Zip
@@ -117,7 +117,7 @@ export default {
             data_product_uri: f.data_product_uri,
             // downloadURL is no longer on the wire; build it from the URI.
             downloadURL: `/sdk/download/?data-product-uri=${encodeURIComponent(
-              f.data_product_uri
+              f.data_product_uri,
             )}`,
             modified_time: f.modified_time,
             modifiedTimestamp: f.modified_time.getTime(), // for sorting

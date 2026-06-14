@@ -9,7 +9,7 @@
           required
           @change="groupResourceProfileChanged"
         >
-          <template slot="first">
+          <template #first>
             <option :value="null" disabled>Select an allocation</option>
           </template>
         </b-form-select>
@@ -49,10 +49,10 @@ export default {
               value: groupResourceProfile.group_resource_profile_id,
               text: groupResourceProfile.group_resource_profile_name,
             };
-          }
+          },
         );
         groupResourceProfileOptions.sort((a, b) =>
-          a.text.localeCompare(b.text)
+          a.text.localeCompare(b.text),
         );
         return groupResourceProfileOptions;
       } else {
@@ -71,22 +71,23 @@ export default {
           if (
             (!this.value ||
               !this.selectedValueInGroupResourceProfileList(
-                groupResourceProfiles
+                groupResourceProfiles,
               )) &&
             this.groupResourceProfiles &&
             this.groupResourceProfiles.length > 0
           ) {
             // automatically select the last one user selected
-            this.groupResourceProfileId = this.workspacePreferences.most_recent_group_resource_profile_id;
+            this.groupResourceProfileId =
+              this.workspacePreferences.most_recent_group_resource_profile_id;
             this.emitValueChanged();
           }
-        }
+        },
       );
     },
     loadWorkspacePreferences() {
       return services.WorkspacePreferencesService.get().then(
         (workspacePreferences) =>
-          (this.workspacePreferences = workspacePreferences)
+          (this.workspacePreferences = workspacePreferences),
       );
     },
     groupResourceProfileChanged: function (groupResourceProfileId) {

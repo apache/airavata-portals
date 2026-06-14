@@ -1,5 +1,7 @@
 /* common styles for all web components */
-@import "~bootstrap/dist/css/bootstrap.css";
-@import "~bootstrap-vue/dist/bootstrap-vue.css";
-@import "~@fortawesome/fontawesome-free/css/all.css";
+/* Bootstrap 5.3 + bootstrap-vue-next replace Bootstrap 4 + bootstrap-vue. The
+   webpack `~` module-prefix is dropped (Vite resolves bare module specifiers). */
+@import "bootstrap/dist/css/bootstrap.css";
+@import "bootstrap-vue-next/dist/bootstrap-vue-next.css";
+@import "@fortawesome/fontawesome-free/css/all.css";
 @import "../../../scss/styles";

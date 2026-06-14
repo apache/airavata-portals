@@ -44,7 +44,8 @@
 <script>
 import { models, utils } from "django-airavata-api";
 import DataProductViewer from "django-airavata-common-ui/js/components/DataProductViewer.vue";
-import { mapGetters } from 'vuex';
+import { mapState } from "pinia";
+import { useViewExperimentStore } from "../../../store";
 
 const MAX_DISPLAY_TEXT_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -75,7 +76,7 @@ export default {
     this.loadFinalOutputText();
   },
   computed: {
-    ...mapGetters("viewExperiment", ["isExecuting"]),
+    ...mapState(useViewExperimentStore, ["isExecuting"]),
     fileMimeType() {
       if (this.experimentOutput.fileMetadataMimeType) {
         return this.experimentOutput.fileMetadataMimeType;
@@ -154,7 +155,7 @@ export default {
     // downloadURL is no longer on the wire; build it from the URI.
     downloadUrl(dataProduct) {
       return `/sdk/download/?data-product-uri=${encodeURIComponent(
-        dataProduct.product_uri
+        dataProduct.product_uri,
       )}`;
     },
     async loadIntermediateOutputText() {
@@ -164,7 +165,7 @@ export default {
           "",
           {
             responseType: "text",
-          }
+          },
         );
       }
     },
@@ -175,7 +176,7 @@ export default {
           "",
           {
             responseType: "text",
-          }
+          },
         );
       }
     },

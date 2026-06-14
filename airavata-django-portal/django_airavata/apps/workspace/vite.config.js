@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue2";
+import vue from "@vitejs/plugin-vue";
 
 const publicPath = "/static/django_airavata_workspace/dist/";
 const jsDir = resolve(__dirname, "static/django_airavata_workspace/js");
@@ -67,6 +67,29 @@ export default defineConfig({
   resolve: {
     // `.vue` so extensionless imports resolve like they did under Vue CLI.
     extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json", ".vue"],
+    // This app links to common/api/plugin-api (already Vue 3). Dedupe so a single
+    // copy of these is used and component instances / Pinia stores are shared.
+    dedupe: ["vue", "bootstrap-vue-next", "pinia", "vue-router"],
+    alias: [
+      // The linked common package's Uppy.vue (pulled in via the `components`
+      // barrel) imports the Uppy CSS via the `dist/` path, which the @uppy/*
+      // packages' `exports` field does not expose (only `css/style.min.css` is).
+      // Rewrite those deep imports to the exports-allowed path so the build's
+      // stricter resolver (rolldown) can resolve them. Behavior is identical
+      // (same stylesheet); this is purely a resolution shim.
+      {
+        find: "@uppy/core/dist/style.min.css",
+        replacement: "@uppy/core/css/style.min.css",
+      },
+      {
+        find: "@uppy/status-bar/dist/style.min.css",
+        replacement: "@uppy/status-bar/css/style.min.css",
+      },
+      {
+        find: "@uppy/drag-drop/dist/style.min.css",
+        replacement: "@uppy/drag-drop/css/style.min.css",
+      },
+    ],
   },
   css: {
     preprocessorOptions: { scss: { quietDeps: true } },
@@ -91,7 +114,9 @@ export default defineConfig({
         chunkFileNames: "js/[name].js",
         assetFileNames: (info) => {
           const name = info.names?.[0] ?? info.name ?? "";
-          return name.endsWith(".css") ? "css/[name][extname]" : "assets/[name][extname]";
+          return name.endsWith(".css")
+            ? "css/[name][extname]"
+            : "assets/[name][extname]";
         },
       },
     },

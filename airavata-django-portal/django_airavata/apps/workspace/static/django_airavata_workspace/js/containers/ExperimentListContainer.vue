@@ -14,14 +14,14 @@
                 v-if="defaultOptionSelected"
                 v-model="search"
                 placeholder="Search Experiments"
-                @keydown.native.enter="searchExperiments"
+                @keydown.enter="searchExperiments"
               />
               <b-form-select
                 v-if="applicationSelected"
                 v-model="applicationSelect"
                 :options="applicationNameOptions"
               >
-                <template slot="first">
+                <template #first>
                   <option :value="null" disabled>
                     Select an application to search by
                   </option>
@@ -32,7 +32,7 @@
                 v-model="projectSelect"
                 :options="projectNameOptions"
               >
-                <template slot="first">
+                <template #first>
                   <option :value="null" disabled>
                     Select a project to search by
                   </option>
@@ -40,9 +40,9 @@
               </b-form-select>
               <b-form-select
                 v-model="experimentAttributeSelect"
-                @input="checkSearchOptions"
+                @update:model-value="checkSearchOptions"
               >
-                <template slot="first">
+                <template #first>
                   <option :value="null" disabled>
                     Select an attribute to search by
                   </option>
@@ -55,7 +55,7 @@
                 <option value="JOB_ID">Job Id</option>
               </b-form-select>
               <b-form-select v-model="experimentStatusSelect">
-                <template slot="first">
+                <template #first>
                   <option :value="null" disabled>
                     Select an experiment status to filter by
                   </option>
@@ -70,17 +70,15 @@
                 <option value="EXPERIMENT_STATE_COMPLETED">Completed</option>
                 <option value="EXPERIMENT_STATE_FAILED">Failed</option>
               </b-form-select>
-              <b-input-group-append>
-                <b-button @click="resetSearch">Reset</b-button>
-                <b-button variant="primary" @click="searchExperiments"
-                  >Search</b-button
-                >
-              </b-input-group-append>
+              <b-button @click="resetSearch">Reset</b-button>
+              <b-button variant="primary" @click="searchExperiments"
+                >Search</b-button
+              >
             </b-input-group>
             <b-input-group class="w-100 mb-2">
-              <b-input-group-prepend is-text>
+              <b-input-group-text>
                 <i class="fa fa-calendar-week" aria-hidden="true"></i>
-              </b-input-group-prepend>
+              </b-input-group-text>
               <flat-pickr
                 v-model="dateSelect"
                 :config="dateConfig"
@@ -121,7 +119,7 @@
                   <td v-if="applicationName(experiment)">
                     {{ applicationName(experiment) }}
                   </td>
-                  <td v-else class="font-italic text-muted">N/A</td>
+                  <td v-else class="fst-italic text-muted">N/A</td>
                   <td>{{ experiment.user_name }}</td>
                   <td>
                     <span :title="experiment.creation_time">{{
@@ -174,6 +172,8 @@
 <script>
 import { errors, models, services, utils } from "django-airavata-api";
 import { components as comps } from "django-airavata-common-ui";
+import FlatPickr from "vue-flatpickr-component";
+import "flatpickr/dist/flatpickr.css";
 
 import moment from "moment";
 import urls from "../utils/urls";
@@ -209,6 +209,7 @@ export default {
   components: {
     pager: comps.Pager,
     "experiment-status-badge": comps.ExperimentStatusBadge,
+    "flat-pickr": FlatPickr,
   },
   methods: {
     searchExperiments: function () {
@@ -256,7 +257,7 @@ export default {
       }
 
       services.ExperimentSearchService.list(searchParams).then(
-        (result) => (this.experimentsPaginator = result)
+        (result) => (this.experimentsPaginator = result),
       );
     },
     checkSearchOptions: function () {
@@ -273,12 +274,12 @@ export default {
     },
     loadApplicationInterfaces: function () {
       return services.ApplicationInterfaceService.list().then(
-        (appInterfaces) => (this.appInterfaces = appInterfaces)
+        (appInterfaces) => (this.appInterfaces = appInterfaces),
       );
     },
     loadProjectInterfaces: function () {
       return services.ProjectService.listAll().then(
-        (projectInterfaces) => (this.projectInterfaces = projectInterfaces)
+        (projectInterfaces) => (this.projectInterfaces = projectInterfaces),
       );
     },
     dateRangeChanged: function (selectedDates) {
@@ -308,7 +309,8 @@ export default {
           this.applicationInterfaces[experiment.execution_id] instanceof
           models.ApplicationInterfaceDefinition
         ) {
-          return this.applicationInterfaces[experiment.execution_id].application_name;
+          return this.applicationInterfaces[experiment.execution_id]
+            .application_name;
         } else if (
           this.applicationInterfaces[experiment.execution_id] === null
         ) {
@@ -321,28 +323,21 @@ export default {
           },
           {
             ignoreErrors: true,
-          }
+          },
         )
           .then((result) => {
-            this.$set(
-              this.applicationInterfaces,
-              experiment.execution_id,
-              result
-            );
+            // Vue 3 reactivity is Proxy-based; plain assignment replaces $set.
+            this.applicationInterfaces[experiment.execution_id] = result;
           })
           .catch((error) => {
             if (errors.ErrorUtils.isNotFoundError(error)) {
-              this.$set(
-                this.applicationInterfaces,
-                experiment.execution_id,
-                null
-              );
+              this.applicationInterfaces[experiment.execution_id] = null;
             } else {
               throw error;
             }
           })
           .catch(utils.FetchUtils.reportError);
-        this.$set(this.applicationInterfaces, experiment.execution_id, request);
+        this.applicationInterfaces[experiment.execution_id] = request;
       }
       return "...";
     },

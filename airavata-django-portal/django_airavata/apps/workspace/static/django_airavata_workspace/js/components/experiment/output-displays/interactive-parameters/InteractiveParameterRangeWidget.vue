@@ -3,11 +3,11 @@
     <b-form-input
       ref="rangeInput"
       type="range"
-      :value="value"
+      :model-value="value"
       :min="parameter.min"
       :max="parameter.max"
       :step="parameter.step || 'any'"
-      @input="updateValue"
+      @update:model-value="updateValue"
       @mouseup="mouseUp"
       @keyup="keyUp"
     />

@@ -4,14 +4,14 @@
       :value="resourceHostId"
       :disabled="disabled"
       :includedComputeResources="computeResources"
-      @input.native.stop="computeResourceChanged"
+      @input="computeResourceChanged"
     />
   </div>
 </template>
 
 <script>
-import store from "./store";
-import { mapGetters } from "vuex";
+import { mapState } from "pinia";
+import { useExperimentStore } from "./store";
 import ComputeResourceSelector from "./ComputeResourceSelector.vue";
 
 export default {
@@ -31,27 +31,26 @@ export default {
     },
   },
   created() {
-    this.$store.dispatch("initializeComputeResources", {
+    useExperimentStore().initializeComputeResources({
       applicationModuleId: this.applicationModuleId,
       resourceHostId: this.value,
     });
   },
-  store: store,
   components: {
     ComputeResourceSelector,
   },
   computed: {
-    ...mapGetters([
+    ...mapState(useExperimentStore, {
       // compute resources for the current set of application deployments
-      "computeResources",
-      "resourceHostId",
-      "groupResourceProfileId",
-    ]),
+      computeResources: "computeResources",
+      resourceHostId: "getResourceHostId",
+      groupResourceProfileId: "getGroupResourceProfileId",
+    }),
   },
   methods: {
     computeResourceChanged(event) {
       const [resourceHostId] = event.detail;
-      this.$store.dispatch("updateComputeResourceHostId", {
+      useExperimentStore().updateComputeResourceHostId({
         resourceHostId,
       });
       this.emitValueChanged(resourceHostId);
@@ -68,7 +67,7 @@ export default {
   watch: {
     value(value) {
       if (value && value !== this.resourceHostId) {
-        this.$store.dispatch("updateComputeResourceHostId", {
+        useExperimentStore().updateComputeResourceHostId({
           resourceHostId: value,
         });
       }

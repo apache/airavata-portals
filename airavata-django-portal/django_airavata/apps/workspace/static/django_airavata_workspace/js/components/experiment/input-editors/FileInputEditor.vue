@@ -2,14 +2,14 @@
   <div class="file-input-editor">
     <div class="d-flex" v-if="isDataProductURI && dataProduct">
       <user-storage-link
-        class="mr-auto"
+        class="me-auto"
         :data-product-uri="dataProduct.product_uri"
         :mime-type="dataProduct.mimeType"
         :file-name="dataProduct.product_name"
       />
       <delete-link
         v-if="!readOnly && dataProduct.isInputFileUpload"
-        class="ml-2"
+        class="ms-2"
         @delete="deleteDataProduct"
       >
         Are you sure you want to delete input file
@@ -19,7 +19,7 @@
       <b-link
         v-else-if="!readOnly"
         @click="unselect"
-        class="ml-2 text-secondary"
+        class="ms-2 text-secondary"
       >
         Unselect
         <i class="fa fa-times" aria-hidden="true"></i>
@@ -113,7 +113,7 @@ export default {
     deleteDataProduct() {
       utils.FetchUtils.delete(
         "/api/delete-file?data-product-uri=" + encodeURIComponent(this.value),
-        { ignoreErrors: true }
+        { ignoreErrors: true },
       )
         .then(() => {
           this.data = null;

@@ -6,7 +6,7 @@
     :description="description"
   >
     <slot></slot>
-    <template slot="invalid-feedback">
+    <template #invalid-feedback>
       <ul v-if="feedbackMessages && feedbackMessages.length > 1">
         <li v-for="feedback in feedbackMessages" :key="feedback">
           {{ feedback }}
@@ -16,7 +16,9 @@
         {{ feedbackMessages[0] }}
       </div>
     </template>
-    <linkify slot="description">{{ description }}</linkify>
+    <template #description
+      ><linkify>{{ description }}</linkify></template
+    >
   </b-form-group>
 </template>
 
@@ -27,24 +29,24 @@ export default {
   props: {
     label: {
       type: String,
-      required: true
+      required: true,
     },
     labelFor: {
       type: String,
-      required: true
+      required: true,
     },
     state: {
-      type: Boolean
+      type: Boolean,
     },
     feedbackMessages: {
-      type: Array
+      type: Array,
     },
     description: {
-      type: String
-    }
+      type: String,
+    },
   },
   components: {
-    linkify: components.Linkify
-  }
+    linkify: components.Linkify,
+  },
 };
 </script>

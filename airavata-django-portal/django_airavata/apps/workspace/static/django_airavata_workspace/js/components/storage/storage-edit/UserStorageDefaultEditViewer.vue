@@ -3,7 +3,10 @@
     <div class="user-storage-file-edit-viewer-status">
       <div class="user-storage-file-edit-viewer-status-message"></div>
       <div class="user-storage-file-edit-viewer-status-actions">
-        <user-storage-download-button :data-product-uri="dataProductUri" :file-name="fileName"/>
+        <user-storage-download-button
+          :data-product-uri="dataProductUri"
+          :file-name="fileName"
+        />
       </div>
     </div>
     <div class="user-storage-file-edit-viewer-no-preview">
@@ -29,7 +32,7 @@ export default {
     },
     downloadUrl: {
       required: true,
-    }
+    },
   },
   components: {
     UserStorageDownloadButton: UserStorageDownloadButton,

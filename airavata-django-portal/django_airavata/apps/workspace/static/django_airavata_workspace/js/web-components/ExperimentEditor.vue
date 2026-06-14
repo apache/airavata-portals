@@ -8,12 +8,8 @@
       <!-- programmatically define slot for experiment-project as native slot
            (not Vue slots), see #mounted() -->
     </div>
-    <template v-for="input in experiment.experiment_inputs">
-      <div
-        :ref="input.name"
-        :key="input.name"
-        @input="updateInputValue(input.name, $event)"
-      >
+    <template v-for="input in experiment.experiment_inputs" :key="input.name">
+      <div :ref="input.name" @input="updateInputValue(input.name, $event)">
         <!-- programmatically define slots as native slots (not Vue slots), see #mounted() -->
       </div>
     </template>
@@ -34,12 +30,9 @@
 </template>
 
 <script>
-import Vue from "vue";
-import store from "./store";
-import { mapGetters } from "vuex";
-import { BootstrapVue } from "bootstrap-vue";
+import { mapState } from "pinia";
+import { useExperimentStore } from "./store";
 import urls from "../utils/urls";
-Vue.use(BootstrapVue);
 
 export default {
   props: {
@@ -53,15 +46,14 @@ export default {
       required: false,
     },
   },
-  store: store,
-  async created() {},
   async mounted() {
+    const store = useExperimentStore();
     if (this.experimentId) {
-      await this.$store.dispatch("loadExperiment", {
+      await store.loadExperiment({
         experimentId: this.experimentId,
       });
     } else {
-      await this.$store.dispatch("loadNewExperiment", {
+      await store.loadNewExperiment({
         applicationId: this.applicationId,
       });
     }
@@ -79,7 +71,7 @@ export default {
           const textInput = document.createElement("adpf-string-input-editor");
           textInput.setAttribute(
             "value",
-            input.value !== null ? input.value : ""
+            input.value !== null ? input.value : "",
           );
           textInput.setAttribute("name", input.name);
           slot.appendChild(textInput);
@@ -87,11 +79,11 @@ export default {
         } else if (input.type.name === "URI") {
           slot.textContent = `${input.name} `;
           const fileInputEditor = document.createElement(
-            "adpf-file-input-editor"
+            "adpf-file-input-editor",
           );
           fileInputEditor.setAttribute(
             "value",
-            input.value !== null ? input.value : ""
+            input.value !== null ? input.value : "",
           );
           fileInputEditor.setAttribute("name", input.name);
           slot.appendChild(fileInputEditor);
@@ -99,11 +91,11 @@ export default {
         } else if (input.type.name === "URI_COLLECTION") {
           slot.textContent = `${input.name} `;
           const multiFileInputEditor = document.createElement(
-            "adpf-multi-file-input-editor"
+            "adpf-multi-file-input-editor",
           );
           multiFileInputEditor.setAttribute(
             "value",
-            input.value !== null ? input.value : ""
+            input.value !== null ? input.value : "",
           );
           multiFileInputEditor.setAttribute("name", input.name);
           slot.appendChild(multiFileInputEditor);
@@ -138,15 +130,15 @@ export default {
       experimentNameInputEl.setAttribute("name", "experiment-name");
       experimentNameInputEl.setAttribute(
         "value",
-        this.experiment.experiment_name
+        this.experiment.experiment_name,
       );
       experimentNameInputEl.setAttribute("required", "required");
       experimentNameGroupEl.append(
         experimentNameLabelEl,
-        experimentNameInputEl
+        experimentNameInputEl,
       );
       this.$refs.experimentName.append(
-        this.createSlot("experiment-name", experimentNameGroupEl)
+        this.createSlot("experiment-name", experimentNameGroupEl),
       );
 
       const projectSelectorEl = document.createElement("adpf-project-selector");
@@ -154,44 +146,44 @@ export default {
         projectSelectorEl.setAttribute("value", this.experiment.project_id);
       }
       this.$refs.projectSelector.append(
-        this.createSlot("experiment-project", projectSelectorEl)
+        this.createSlot("experiment-project", projectSelectorEl),
       );
 
       const groupResourceProfileSelectorEl = document.createElement(
-        "adpf-group-resource-profile-selector"
+        "adpf-group-resource-profile-selector",
       );
       if (this.groupResourceProfileId) {
         groupResourceProfileSelectorEl.setAttribute(
           "value",
-          this.groupResourceProfileId
+          this.groupResourceProfileId,
         );
       }
       this.$refs.groupResourceProfileSelector.append(
         this.createSlot(
           "experiment-group-resource-profile",
-          groupResourceProfileSelectorEl
-        )
+          groupResourceProfileSelectorEl,
+        ),
       );
 
       const computeResourceSelectorEl = document.createElement(
-        "adpf-experiment-compute-resource-selector"
+        "adpf-experiment-compute-resource-selector",
       );
       computeResourceSelectorEl.setAttribute(
         "application-module-id",
-        this.applicationId
+        this.applicationId,
       );
       this.$refs.computeResourceSelector.append(
         this.createSlot(
           "experiment-compute-resource",
-          computeResourceSelectorEl
-        )
+          computeResourceSelectorEl,
+        ),
       );
 
       const queueSettingsEditorEl = document.createElement(
-        "adpf-queue-settings-editor"
+        "adpf-queue-settings-editor",
       );
       this.$refs.queueSettingsEditor.append(
-        this.createSlot("experiment-queue-settings", queueSettingsEditorEl)
+        this.createSlot("experiment-queue-settings", queueSettingsEditorEl),
       );
 
       /*
@@ -203,7 +195,7 @@ export default {
       //       type="submit"
       //       variant="success"
       //       name="save-and-launch-experiment-button"
-      //       class="mr-2"
+      //       class="me-2"
       //     >
       //       Save and Launch
       //     </b-button>
@@ -218,9 +210,9 @@ export default {
       saveAndLaunchButtonEl.setAttribute("type", "submit");
       saveAndLaunchButtonEl.setAttribute(
         "name",
-        "save-and-launch-experiment-button"
+        "save-and-launch-experiment-button",
       );
-      saveAndLaunchButtonEl.classList.add("btn", "btn-success", "mr-2");
+      saveAndLaunchButtonEl.classList.add("btn", "btn-success", "me-2");
       saveAndLaunchButtonEl.textContent = "Save and Launch";
       const saveButtonEl = document.createElement("button");
       saveButtonEl.setAttribute("type", "submit");
@@ -229,16 +221,19 @@ export default {
       saveButtonEl.textContent = "Save";
       buttonsRowEl.append(saveAndLaunchButtonEl, saveButtonEl);
       this.$refs.experimentButtons.append(
-        this.createSlot("experiment-buttons", buttonsRowEl)
+        this.createSlot("experiment-buttons", buttonsRowEl),
       );
     });
   },
   computed: {
-    ...mapGetters(["experiment", "groupResourceProfileId"]),
+    ...mapState(useExperimentStore, {
+      experiment: "experiment",
+      groupResourceProfileId: "getGroupResourceProfileId",
+    }),
   },
   methods: {
     updateExperimentName(event) {
-      this.$store.dispatch("updateExperimentName", {
+      useExperimentStore().updateExperimentName({
         name: event.target.value,
       });
     },
@@ -248,13 +243,13 @@ export default {
       const value = Array.isArray(event.detail)
         ? event.detail[0]
         : event.target // Backwards compatibility: second argument changed from the value to the 'event'
-        ? event.target.value
-        : event;
-      this.$store.dispatch("updateExperimentInputValue", { inputName, value });
+          ? event.target.value
+          : event;
+      useExperimentStore().updateExperimentInputValue({ inputName, value });
     },
     updateProjectId(event) {
       const [projectId] = event.detail;
-      this.$store.dispatch("updateProjectId", { projectId });
+      useExperimentStore().updateProjectId({ projectId });
     },
     async onSubmit(event) {
       // console.log(event);
@@ -269,14 +264,15 @@ export default {
       if (saveEvent.defaultPrevented) {
         return;
       }
+      const store = useExperimentStore();
       if (event.submitter.name === "save-experiment-button") {
-        await this.$store.dispatch("saveExperiment");
+        await store.saveExperiment();
         this.postSave();
         return;
       } else {
         // Default submit button handling is save and launch
-        await this.$store.dispatch("saveExperiment");
-        await this.$store.dispatch("launchExperiment");
+        await store.saveExperiment();
+        await store.launchExperiment();
         this.postSaveAndLaunch(this.experiment);
         return;
       }

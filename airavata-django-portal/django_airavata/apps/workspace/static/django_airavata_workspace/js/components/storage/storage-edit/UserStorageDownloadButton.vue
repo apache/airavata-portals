@@ -11,12 +11,12 @@ export default {
     },
     dataProductUri: {
       required: true,
-    }
+    },
   },
   computed: {
     downloadUrl() {
       return `/sdk/download/?data-product-uri=${this.dataProductUri}`;
-    }
-  }
+    },
+  },
 };
 </script>
