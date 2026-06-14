@@ -1,5 +1,4 @@
 import BaseModel from "./BaseModel";
-import uuidv4 from "uuid/v4";
 
 function currentTimeTopOfHour() {
   const d = new Date();
@@ -31,7 +30,7 @@ const FIELDS = [
 export default class ComputeResourceReservation extends BaseModel {
   constructor(data = {}) {
     super(FIELDS, data);
-    this._key = data.key ? data.key : uuidv4();
+    this._key = data.key ? data.key : crypto.randomUUID();
   }
   get key() {
     return this._key;

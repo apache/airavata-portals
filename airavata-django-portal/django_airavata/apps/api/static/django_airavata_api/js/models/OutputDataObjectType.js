@@ -1,6 +1,5 @@
 import BaseModel from "./BaseModel";
 import DataType from "./DataType";
-import uuidv4 from "uuid/v4";
 import IntermediateOutput from "./IntermediateOutput";
 
 const FIELDS = [
@@ -48,7 +47,7 @@ export default class OutputDataObjectType extends BaseModel {
   constructor(data = {}) {
     super(FIELDS, data);
     // Copy key when cloning a model
-    this._key = data.key ? data.key : uuidv4();
+    this._key = data.key ? data.key : crypto.randomUUID();
   }
 
   get key() {

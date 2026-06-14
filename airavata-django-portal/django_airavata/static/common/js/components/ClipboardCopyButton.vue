@@ -3,7 +3,7 @@
     ref="copyButton"
     :variant="variant"
     :disabled="disabled"
-    :data-clipboard-text="text"
+    @click="onCopy"
   >
     <slot></slot>
     <slot name="icon">
@@ -16,8 +16,6 @@
 </template>
 
 <script>
-import ClipboardJS from "clipboard";
-
 export default {
   name: "clipboard-copy-button",
   props: {
@@ -39,18 +37,15 @@ export default {
       return !this.text;
     },
   },
-  mounted() {
-    let clipboard = new ClipboardJS(this.$refs.copyButton);
-    clipboard.on("success", this.onCopySuccess);
-  },
-  beforeDestroy() {
-    let clipboard = new ClipboardJS(this.$refs.copyButton);
-    clipboard.destroy();
-  },
   methods: {
-    onCopySuccess() {
-      this.show = true;
-      setTimeout(() => (this.show = false), 2000);
+    async onCopy() {
+      try {
+        await navigator.clipboard.writeText(this.text);
+        this.show = true;
+        setTimeout(() => (this.show = false), 2000);
+      } catch (e) {
+        // Clipboard write can fail (permissions / insecure context); ignore.
+      }
     },
   },
 };

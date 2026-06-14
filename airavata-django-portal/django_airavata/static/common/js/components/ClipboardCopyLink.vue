@@ -3,9 +3,9 @@
     <a
       href="#"
       ref="copyLink"
-      :data-clipboard-text="text"
       class="action-link"
       :class="linkClasses"
+      @click.prevent="onCopy"
     >
       <slot>
         Copy Key
@@ -21,8 +21,6 @@
 </template>
 
 <script>
-import ClipboardJS from "clipboard";
-
 export default {
   name: "clipboard-copy-link",
   props: {
@@ -39,18 +37,15 @@ export default {
       show: false,
     };
   },
-  mounted() {
-    let clipboard = new ClipboardJS(this.$refs.copyLink);
-    clipboard.on("success", this.onCopySuccess);
-  },
-  beforeDestroy() {
-    let clipboard = new ClipboardJS(this.$refs.copyLink);
-    clipboard.destroy();
-  },
   methods: {
-    onCopySuccess() {
-      this.show = true;
-      setTimeout(() => (this.show = false), 2000);
+    async onCopy() {
+      try {
+        await navigator.clipboard.writeText(this.text);
+        this.show = true;
+        setTimeout(() => (this.show = false), 2000);
+      } catch (e) {
+        // Clipboard write can fail (permissions / insecure context); ignore.
+      }
     },
   },
 };

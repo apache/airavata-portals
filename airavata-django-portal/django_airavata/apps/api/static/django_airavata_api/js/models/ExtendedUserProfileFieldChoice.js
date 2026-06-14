@@ -1,12 +1,11 @@
 import BaseModel from "./BaseModel";
-import uuidv4 from "uuid/v4";
 
 const FIELDS = ["id", "display_text", "order"];
 
 export default class ExtendedUserProfileFieldChoice extends BaseModel {
   constructor(data = {}) {
     super(FIELDS, data);
-    this._key = data.key ? data.key : uuidv4();
+    this._key = data.key ? data.key : crypto.randomUUID();
   }
 
   get key() {

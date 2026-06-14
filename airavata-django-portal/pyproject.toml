@@ -18,11 +18,11 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
 ]
 dependencies = [
-    "Django==5.2.15",
-    "requests==2.25.1",
-    "requests-oauthlib==0.7.0",
+    "Django>=5.2.15,<6",
+    "requests>=2.32",
+    "requests-oauthlib>=2.0",
     "django-webpack-loader==0.6.0",
-    "PyJWT==2.13.0",
+    "PyJWT>=2.10",
     # Notebook output rendering (apps/api/output_views.py).
     "papermill>=2.6.0",
     "nbconvert>=7.16.0",

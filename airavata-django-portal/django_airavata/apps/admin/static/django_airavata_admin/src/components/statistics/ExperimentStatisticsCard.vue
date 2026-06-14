@@ -16,7 +16,9 @@
       @click="$emit('click')"
     >
       <slot name="link-text">
-        <div v-for="state in states" :key="state.value">{{ state.name }}</div>
+        <div v-for="state in states" :key="state.value">
+          {{ shortName(state) }}
+        </div>
       </slot>
     </b-link>
   </b-card>
@@ -61,6 +63,14 @@ export default {
       } else {
         return this.count;
       }
+    },
+  },
+  methods: {
+    // Render the prefix-stripped short alias (e.g. "COMPLETED") instead of the
+    // raw proto member name ("EXPERIMENT_STATE_COMPLETED"), matching the rest of
+    // the portal (see ExperimentStatusBadge).
+    shortName(state) {
+      return state.constructor.shortAlias(state.name);
     },
   },
 };

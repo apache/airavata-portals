@@ -1,7 +1,6 @@
 import BaseModel from "./BaseModel";
 import DataType from "./DataType";
 import BooleanExpressionEvaluator from "./dependencies/BooleanExpressionEvaluator";
-import uuidv4 from "uuid/v4";
 import ValidatorFactory from "./validators/ValidatorFactory";
 
 const FIELDS = [
@@ -51,7 +50,7 @@ const IS_REQUIRED_URI_COLLECTION = "At least one file must be selected.";
 export default class InputDataObjectType extends BaseModel {
   constructor(data = {}) {
     super(FIELDS, data);
-    this._key = data.key ? data.key : uuidv4();
+    this._key = data.key ? data.key : crypto.randomUUID();
     this.show = true;
   }
 

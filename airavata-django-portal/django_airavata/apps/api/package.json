@@ -17,8 +17,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "stacktrace-js": "^2.0.0",
-    "uuid": "^3.3.2"
+    "stacktrace-js": "^2.0.0"
   },
   "devDependencies": {
     "eslint": "^5.12.0",
