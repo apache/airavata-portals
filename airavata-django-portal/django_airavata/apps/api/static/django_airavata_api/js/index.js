@@ -37,6 +37,9 @@ import Notification from "./models/Notification";
 import NotificationPriority from "./models/NotificationPriority";
 import OutputDataObjectType from "./models/OutputDataObjectType";
 import ParallelismType from "./models/ParallelismType";
+import Parser from "./models/Parser";
+import ParserInput from "./models/ParserInput";
+import ParserOutput from "./models/ParserOutput";
 import Project from "./models/Project";
 import ResourcePermissionType from "./models/ResourcePermissionType";
 import SetEnvPaths from "./models/SetEnvPaths";
@@ -104,6 +107,9 @@ const models = {
   NotificationPriority,
   OutputDataObjectType,
   ParallelismType,
+  Parser,
+  ParserInput,
+  ParserOutput,
   Project,
   ResourcePermissionType,
   ResourceType,
