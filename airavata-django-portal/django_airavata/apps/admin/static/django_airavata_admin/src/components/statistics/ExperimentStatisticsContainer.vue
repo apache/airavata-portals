@@ -1,365 +1,433 @@
 <template>
   <main-layout
     title="Experiment Statistics"
-    subtitle="Browse experiment activity and details across the gateway."
+    subtitle="Gateway experiment activity over time."
   >
-    <div class="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Load experiment details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs default-value="by-experiment-id">
-            <TabsList>
-              <TabsTrigger value="by-experiment-id"
-                >By Experiment ID</TabsTrigger
-              >
-              <TabsTrigger value="by-job-id">By Job ID</TabsTrigger>
-            </TabsList>
-            <TabsContent value="by-experiment-id" class="pt-4">
-              <div class="flex items-stretch gap-2">
-                <Input
-                  v-model.trim="experimentId"
-                  placeholder="Experiment ID"
-                  @keydown.enter="
-                    experimentId && showExperimentDetails(experimentId)
-                  "
+    <Tabs v-model="activeTab" ref="tabs" class="space-y-4">
+      <TabsList>
+        <TabsTrigger value="statistics">Statistics</TabsTrigger>
+        <TabsTrigger
+          v-for="experimentTab in experimentDetailTabs"
+          :key="experimentTab.experiment.experiment_id"
+          :value="experimentTab.experiment.experiment_id"
+        >
+          {{ experimentTab.tabTitle }}
+          <a
+            href="#"
+            @click.prevent="
+              removeExperimentDetailTab(experimentTab.experiment.experiment_id)
+            "
+            class="text-muted-foreground ml-1"
+          >
+            <X class="size-3.5" />
+            <span class="sr-only">Close experiment tab</span>
+          </a>
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="statistics" class="space-y-4">
+        <!-- Primary deliverable: the time-series graph with an inline filter
+             bar (date range + shortcuts + optional scoping filters). -->
+        <Card>
+          <CardContent class="space-y-4 pt-6">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <span
+                  class="border-input flex items-center rounded-md border px-3"
+                >
+                  <CalendarDays class="size-4" aria-hidden="true" />
+                </span>
+                <flat-pickr
+                  v-model="dateRange"
+                  :config="dateConfig"
+                  @on-change="dateRangeChanged"
+                  placeholder="Select a date range"
+                  class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-56 rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
                 />
                 <Button
-                  :disabled="!experimentId"
-                  @click="showExperimentDetails(experimentId)"
-                  variant="default"
-                  >Load</Button
-                >
-              </div>
-            </TabsContent>
-            <TabsContent value="by-job-id" class="pt-4">
-              <div class="flex items-stretch gap-2">
-                <Input
-                  v-model.trim="jobId"
-                  placeholder="Job ID"
-                  @keydown.enter="jobId && showExperimentDetailsForJobId(jobId)"
-                />
-                <Button
-                  :disabled="!jobId"
-                  @click="showExperimentDetailsForJobId(jobId)"
-                  variant="default"
-                  >Load</Button
-                >
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent>
-          <Tabs v-model="activeTab" ref="tabs">
-            <TabsList>
-              <TabsTrigger value="statistics">{{
-                selectedExperimentsTabTitle
-              }}</TabsTrigger>
-              <TabsTrigger
-                v-for="experimentTab in experimentDetailTabs"
-                :key="experimentTab.experiment.experiment_id"
-                :value="experimentTab.experiment.experiment_id"
-              >
-                {{ experimentTab.tabTitle }}
-                <a
-                  href="#"
-                  @click.prevent="
-                    removeExperimentDetailTab(
-                      experimentTab.experiment.experiment_id,
-                    )
+                  v-for="shortcut in rangeShortcuts"
+                  :key="shortcut.key"
+                  :variant="
+                    activeShortcut === shortcut.key ? 'default' : 'outline'
                   "
-                  class="text-muted-foreground ml-1"
+                  size="sm"
+                  @click="applyShortcut(shortcut.key)"
+                  >{{ shortcut.label }}</Button
                 >
-                  <X class="size-3.5" />
-                  <span class="sr-only">Close experiment tab</span>
-                </a>
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="statistics" class="space-y-4 pt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Filter Options</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div class="mb-2 flex w-full items-stretch gap-2">
-                    <span
-                      class="border-input flex items-center rounded-md border px-3"
-                    >
-                      <CalendarDays class="size-4" aria-hidden="true" />
-                    </span>
-                    <flat-pickr
-                      :value="dateRange"
-                      :config="dateConfig"
-                      @on-change="dateRangeChanged"
-                      class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
-                    />
-                    <Button @click="getPast24Hours" variant="outline"
-                      >Past 24 Hours</Button
-                    >
-                    <Button @click="getPastWeek" variant="outline"
-                      >Past Week</Button
-                    >
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger as-child>
-                      <Button variant="outline" class="mb-2"
-                        >Add Filters</Button
-                      >
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem
-                        v-if="!usernameFilterEnabled"
-                        @click="usernameFilterEnabled = true"
-                        >Username</DropdownMenuItem
-                      >
-                      <DropdownMenuItem
-                        v-if="!applicationNameFilterEnabled"
-                        @click="applicationNameFilterEnabled = true"
-                        >Application Name</DropdownMenuItem
-                      >
-                      <DropdownMenuItem
-                        v-if="!hostnameFilterEnabled"
-                        @click="hostnameFilterEnabled = true"
-                        >Hostname</DropdownMenuItem
-                      >
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <div
-                    v-if="usernameFilterEnabled"
-                    class="mb-2 flex items-stretch gap-2"
-                  >
-                    <Input
-                      v-model="usernameFilter"
-                      placeholder="Username"
-                      @keydown.enter="loadStatistics"
-                    />
-                    <Button variant="outline" @click="removeUsernameFilter">
-                      <X class="size-4" />
-                      <span class="sr-only">Remove username filter</span>
-                    </Button>
-                  </div>
-                  <div
-                    v-if="applicationNameFilterEnabled"
-                    class="mb-2 flex items-stretch gap-2"
-                  >
-                    <select
-                      v-model="applicationNameFilter"
-                      @change="loadStatistics"
-                      class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
-                    >
-                      <option :value="null" disabled>
-                        Select an application to filter on
-                      </option>
-                      <option
-                        v-for="opt in applicationNameOptions"
-                        :key="opt.value"
-                        :value="opt.value"
-                      >
-                        {{ opt.text }}
-                      </option>
-                    </select>
-                    <Button
-                      variant="outline"
-                      @click="removeApplicationNameFilter"
-                    >
-                      <X class="size-4" />
-                      <span class="sr-only"
-                        >Remove application name filter</span
-                      >
-                    </Button>
-                  </div>
-                  <div
-                    v-if="hostnameFilterEnabled"
-                    class="mb-2 flex items-stretch gap-2"
-                  >
-                    <select
-                      v-model="hostnameFilter"
-                      @change="loadStatistics"
-                      class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
-                    >
-                      <option :value="null" disabled>
-                        Select compute resource to filter on
-                      </option>
-                      <option
-                        v-for="opt in hostnameOptions"
-                        :key="opt.value"
-                        :value="opt.value"
-                      >
-                        {{ opt.text }}
-                      </option>
-                    </select>
-                    <Button variant="outline" @click="removeHostnameFilter">
-                      <X class="size-4" />
-                      <span class="sr-only">Remove hostname filter</span>
-                    </Button>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <div class="flex w-full justify-end">
-                    <Button @click="loadStatistics" class="ml-auto"
-                      >Get Statistics</Button
-                    >
-                  </div>
-                </CardFooter>
-              </Card>
-              <div>
-                <h2 class="mb-4 text-lg font-semibold">
-                  Experiment Statistics from {{ fromTimeDisplay }} to
-                  {{ toTimeDisplay }}
-                </h2>
               </div>
-              <div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
-                <experiment-statistics-card
-                  :count="experimentStatistics.all_experiment_count || 0"
-                  title="Total Experiments"
-                  @click="selectExperiments('all_experiments')"
-                >
-                  <template v-slot:link-text>
-                    <span>All</span>
-                  </template>
-                </experiment-statistics-card>
-                <experiment-statistics-card
-                  :count="experimentStatistics.created_experiment_count || 0"
-                  :states="createdStates"
-                  title="Created Experiments"
-                  @click="selectExperiments('created_experiments')"
-                >
-                </experiment-statistics-card>
-                <experiment-statistics-card
-                  :count="experimentStatistics.running_experiment_count || 0"
-                  :states="runningStates"
-                  title="Running Experiments"
-                  @click="selectExperiments('running_experiments')"
-                >
-                </experiment-statistics-card>
-                <experiment-statistics-card
-                  :count="experimentStatistics.completed_experiment_count || 0"
-                  :states="completedStates"
-                  title="Completed Experiments"
-                  @click="selectExperiments('completed_experiments')"
-                >
-                </experiment-statistics-card>
-                <experiment-statistics-card
-                  :count="experimentStatistics.cancelled_experiment_count || 0"
-                  :states="canceledStates"
-                  title="Cancelled Experiments"
-                  @click="selectExperiments('cancelled_experiments')"
-                >
-                </experiment-statistics-card>
-                <experiment-statistics-card
-                  :count="experimentStatistics.failed_experiment_count || 0"
-                  :states="failedStates"
-                  title="Failed Experiments"
-                  @click="selectExperiments('failed_experiments')"
-                >
-                </experiment-statistics-card>
+              <div class="flex flex-wrap items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger as-child>
+                    <Button variant="outline" size="sm">
+                      <FilterIcon class="size-4" />
+                      Add filter
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      v-if="!usernameFilterEnabled"
+                      @click="usernameFilterEnabled = true"
+                      >Username</DropdownMenuItem
+                    >
+                    <DropdownMenuItem
+                      v-if="!applicationNameFilterEnabled"
+                      @click="applicationNameFilterEnabled = true"
+                      >Application Name</DropdownMenuItem
+                    >
+                    <DropdownMenuItem
+                      v-if="!hostnameFilterEnabled"
+                      @click="hostnameFilterEnabled = true"
+                      >Hostname</DropdownMenuItem
+                    >
+                    <DropdownMenuItem
+                      v-if="allFiltersEnabled"
+                      disabled
+                      class="text-muted-foreground"
+                      >No more filters</DropdownMenuItem
+                    >
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <div v-if="items.length > 0">
-                <Card>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead v-for="field in fields" :key="field.key">
-                            {{ field.label }}
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <TableRow
-                          v-for="item in items"
-                          :key="item.experiment_id"
-                        >
-                          <TableCell>{{ item.name }}</TableCell>
-                          <TableCell>{{ item.user_name }}</TableCell>
-                          <TableCell>
-                            <application-name
-                              :application-interface-id="item.execution_id"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <compute-resource-name
-                              :compute-resource-id="item.resource_host_id"
-                            />
-                          </TableCell>
-                          <TableCell
-                            ><human-date :date="item.creation_time"
-                          /></TableCell>
-                          <TableCell>
-                            <experiment-status-badge
-                              :status-name="item.experiment_status.name"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <a
-                              href="#"
-                              class="inline-flex items-center gap-1 text-primary hover:underline"
-                              @click.prevent="
-                                showExperimentDetails(item.experiment_id)
-                              "
-                            >
-                              View Details
-                              <BarChart3 class="size-4" aria-hidden="true" />
-                            </a>
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-                <pager
-                  v-if="experimentStatistics.all_experiment_count > 0"
-                  :paginator="experimentStatisticsPaginator"
-                  @next="experimentStatisticsPaginator.next()"
-                  @previous="experimentStatisticsPaginator.previous()"
-                ></pager>
-              </div>
-            </TabsContent>
-            <TabsContent
-              v-for="experimentTab in experimentDetailTabs"
-              :key="experimentTab.experiment.experiment_id"
-              :value="experimentTab.experiment.experiment_id"
-              class="pt-4"
+            </div>
+
+            <!-- Active scoping filters, shown inline only when enabled. -->
+            <div
+              v-if="anyFilterEnabled"
+              class="flex flex-wrap items-center gap-2"
             >
-              <experiment-details-view :experiment="experimentTab.experiment" />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+              <div
+                v-if="usernameFilterEnabled"
+                class="flex items-stretch gap-1"
+              >
+                <Input
+                  v-model="usernameFilter"
+                  placeholder="Username"
+                  class="h-9 w-48"
+                  @keydown.enter="loadStatistics"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  @click="removeUsernameFilter"
+                >
+                  <X class="size-4" />
+                  <span class="sr-only">Remove username filter</span>
+                </Button>
+              </div>
+              <div
+                v-if="applicationNameFilterEnabled"
+                class="flex items-stretch gap-1"
+              >
+                <select
+                  v-model="applicationNameFilter"
+                  @change="loadStatistics"
+                  class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-56 rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
+                >
+                  <option :value="null" disabled>Application name</option>
+                  <option
+                    v-for="opt in applicationNameOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.text }}
+                  </option>
+                </select>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  @click="removeApplicationNameFilter"
+                >
+                  <X class="size-4" />
+                  <span class="sr-only">Remove application name filter</span>
+                </Button>
+              </div>
+              <div
+                v-if="hostnameFilterEnabled"
+                class="flex items-stretch gap-1"
+              >
+                <select
+                  v-model="hostnameFilter"
+                  @change="loadStatistics"
+                  class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-56 rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
+                >
+                  <option :value="null" disabled>Compute resource</option>
+                  <option
+                    v-for="opt in hostnameOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.text }}
+                  </option>
+                </select>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  @click="removeHostnameFilter"
+                >
+                  <X class="size-4" />
+                  <span class="sr-only">Remove hostname filter</span>
+                </Button>
+              </div>
+            </div>
+
+            <!-- The chart (with its legend/toggles). A loading overlay covers it
+                 while the per-bucket requests are in flight. -->
+            <div class="relative">
+              <div
+                v-if="loading"
+                class="absolute inset-0 z-10 flex items-center justify-center bg-background/60"
+              >
+                <Loader2 class="size-6 animate-spin text-muted-foreground" />
+              </div>
+              <experiment-statistics-chart
+                :buckets="buckets"
+                :series="series"
+                @toggle-series="toggleSeries"
+              />
+            </div>
+            <p class="text-xs text-muted-foreground">
+              {{ rangeSummary }}
+            </p>
+          </CardContent>
+        </Card>
+
+        <!-- Secondary "find" affordances: a compact lookup and a drill-down
+             experiments list for the selected status. -->
+        <div class="grid gap-4 lg:grid-cols-3">
+          <Card class="lg:col-span-1">
+            <CardHeader>
+              <CardTitle class="text-base">Find an experiment</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs default-value="by-experiment-id">
+                <TabsList>
+                  <TabsTrigger value="by-experiment-id"
+                    >By Experiment ID</TabsTrigger
+                  >
+                  <TabsTrigger value="by-job-id">By Job ID</TabsTrigger>
+                </TabsList>
+                <TabsContent value="by-experiment-id" class="pt-4">
+                  <div class="flex items-stretch gap-2">
+                    <Input
+                      v-model.trim="experimentId"
+                      placeholder="Experiment ID"
+                      @keydown.enter="
+                        experimentId && showExperimentDetails(experimentId)
+                      "
+                    />
+                    <Button
+                      :disabled="!experimentId"
+                      @click="showExperimentDetails(experimentId)"
+                      variant="default"
+                      >Load</Button
+                    >
+                  </div>
+                </TabsContent>
+                <TabsContent value="by-job-id" class="pt-4">
+                  <div class="flex items-stretch gap-2">
+                    <Input
+                      v-model.trim="jobId"
+                      placeholder="Job ID"
+                      @keydown.enter="
+                        jobId && showExperimentDetailsForJobId(jobId)
+                      "
+                    />
+                    <Button
+                      :disabled="!jobId"
+                      @click="showExperimentDetailsForJobId(jobId)"
+                      variant="default"
+                      >Load</Button
+                    >
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          <Card class="lg:col-span-2">
+            <CardHeader class="flex-row items-center justify-between space-y-0">
+              <CardTitle class="text-base">{{ selectedStatusLabel }}</CardTitle>
+              <select
+                v-model="selectedExperimentSummariesKey"
+                class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-48 rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
+              >
+                <option
+                  v-for="opt in summaryOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.text }} ({{ totalForKey(opt.value) }})
+                </option>
+              </select>
+            </CardHeader>
+            <CardContent>
+              <Table v-if="items.length > 0">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead v-for="field in fields" :key="field.key">
+                      {{ field.label }}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow v-for="item in items" :key="item.experiment_id">
+                    <TableCell>{{ item.name }}</TableCell>
+                    <TableCell>{{ item.user_name }}</TableCell>
+                    <TableCell>
+                      <application-name
+                        :application-interface-id="item.execution_id"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <compute-resource-name
+                        :compute-resource-id="item.resource_host_id"
+                      />
+                    </TableCell>
+                    <TableCell
+                      ><human-date :date="item.creation_time"
+                    /></TableCell>
+                    <TableCell>
+                      <experiment-status-badge
+                        :status-name="item.experiment_status.name"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <a
+                        href="#"
+                        class="inline-flex items-center gap-1 text-primary hover:underline"
+                        @click.prevent="
+                          showExperimentDetails(item.experiment_id)
+                        "
+                      >
+                        View Details
+                        <BarChart3 class="size-4" aria-hidden="true" />
+                      </a>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+              <p v-else class="py-6 text-center text-sm text-muted-foreground">
+                No experiments in this range for the selected status.
+              </p>
+              <pager
+                v-if="experimentStatistics.all_experiment_count > 0"
+                :paginator="experimentStatisticsPaginator"
+                @next="experimentStatisticsPaginator.next()"
+                @previous="experimentStatisticsPaginator.previous()"
+              ></pager>
+            </CardContent>
+          </Card>
+        </div>
+      </TabsContent>
+
+      <TabsContent
+        v-for="experimentTab in experimentDetailTabs"
+        :key="experimentTab.experiment.experiment_id"
+        :value="experimentTab.experiment.experiment_id"
+        class="pt-4"
+      >
+        <experiment-details-view :experiment="experimentTab.experiment" />
+      </TabsContent>
+    </Tabs>
   </main-layout>
 </template>
 <script>
-import { BarChart3, CalendarDays, X } from "@lucide/vue";
+import {
+  BarChart3,
+  CalendarDays,
+  Filter as FilterIcon,
+  Loader2,
+  X,
+} from "@lucide/vue";
 import { errors, models, services, utils } from "django-airavata-api";
 import { components, notifications } from "django-airavata-common-ui";
-import ExperimentStatisticsCard from "./ExperimentStatisticsCard";
+import ExperimentStatisticsChart from "./ExperimentStatisticsChart.vue";
 import ExperimentDetailsView from "./ExperimentDetailsView";
 
 import moment from "moment";
 
+const MS_PER_HOUR = 60 * 60 * 1000;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
+// Cap on concurrent per-bucket requests so long ranges stay responsive.
+const MAX_BUCKETS = 30;
+
+// The six status series plotted on the chart. `countKey`/`summaryKey` map to the
+// ExperimentStatistics model's aggregate count + ExperimentSummary list fields.
+// Colors use the shadcn design tokens (see app.css): neutral/primary for "all",
+// then distinct accessible hues per status.
+const SERIES_DEFS = [
+  {
+    key: "all",
+    label: "All",
+    countKey: "all_experiment_count",
+    summaryKey: "all_experiments",
+    color: "var(--primary)",
+  },
+  {
+    key: "created",
+    label: "Created",
+    countKey: "created_experiment_count",
+    summaryKey: "created_experiments",
+    color: "var(--chart-3)",
+  },
+  {
+    key: "running",
+    label: "Running",
+    countKey: "running_experiment_count",
+    summaryKey: "running_experiments",
+    color: "var(--warning)",
+  },
+  {
+    key: "completed",
+    label: "Completed",
+    countKey: "completed_experiment_count",
+    summaryKey: "completed_experiments",
+    color: "var(--success)",
+  },
+  {
+    key: "cancelled",
+    label: "Cancelled",
+    countKey: "cancelled_experiment_count",
+    summaryKey: "cancelled_experiments",
+    color: "var(--muted-foreground)",
+  },
+  {
+    key: "failed",
+    label: "Failed",
+    countKey: "failed_experiment_count",
+    summaryKey: "failed_experiments",
+    color: "var(--destructive)",
+  },
+];
+
 export default {
   name: "experiment-statistics-container",
   data() {
-    //fp_incr sets the time of the date to midnight.
-    //Calculating from today midnight to tomorrow midnight.
-    const fromTime = new Date().fp_incr(0);
-    const toTime = new Date().fp_incr(1);
+    // Default range: the last 24 hours, ending now.
+    const toTime = new Date();
+    const fromTime = new Date(toTime.getTime() - MS_PER_DAY);
     return {
       experimentStatisticsPaginator: null,
-      selectedExperimentSummariesKey: null,
-      fromTime: fromTime,
-      toTime: toTime,
+      selectedExperimentSummariesKey: "all_experiments",
+      fromTime,
+      toTime,
       dateRange: [fromTime, toTime],
       dateConfig: {
         mode: "range",
-        wrap: true,
         dateFormat: "Y-m-d",
-        maxDate: new Date().fp_incr(1),
+        maxDate: new Date(),
       },
+      activeShortcut: "24h",
+      suppressDateChange: false,
+      loading: false,
+      // Per-bucket aggregate counts: buckets[i] holds the ExperimentStatistics
+      // results for the i-th time window.
+      bucketStats: [],
+      buckets: [],
+      seriesVisible: SERIES_DEFS.reduce((acc, def) => {
+        acc[def.key] = true;
+        return acc;
+      }, {}),
       usernameFilterEnabled: false,
       usernameFilter: null,
       applicationNameFilterEnabled: false,
@@ -384,9 +452,11 @@ export default {
   components: {
     BarChart3,
     CalendarDays,
+    FilterIcon,
+    Loader2,
     X,
     ExperimentDetailsView,
-    ExperimentStatisticsCard,
+    ExperimentStatisticsChart,
     "application-name": components.ApplicationName,
     "compute-resource-name": components.ComputeResourceName,
     "human-date": components.HumanDate,
@@ -395,78 +465,86 @@ export default {
     pager: components.Pager,
   },
   computed: {
+    rangeShortcuts() {
+      return [
+        { key: "24h", label: "Last 24 hours" },
+        { key: "week", label: "Last week" },
+        { key: "30d", label: "Last 30 days" },
+      ];
+    },
+    anyFilterEnabled() {
+      return (
+        this.usernameFilterEnabled ||
+        this.applicationNameFilterEnabled ||
+        this.hostnameFilterEnabled
+      );
+    },
+    allFiltersEnabled() {
+      return (
+        this.usernameFilterEnabled &&
+        this.applicationNameFilterEnabled &&
+        this.hostnameFilterEnabled
+      );
+    },
+    // The aggregate ExperimentStatistics for the whole range (used by the
+    // drill-down list + counts). Returned by the final/full-range request.
     experimentStatistics() {
       return this.experimentStatisticsPaginator
         ? this.experimentStatisticsPaginator.results
         : {};
     },
-    createdStates() {
-      // TODO: moved to ExperimentStatistics model
-      return [models.ExperimentState.CREATED, models.ExperimentState.VALIDATED];
+    // Chart series: each status' per-bucket count, in the series color, with the
+    // current on/off visibility and a range total.
+    series() {
+      return SERIES_DEFS.map((def) => {
+        const values = this.bucketStats.map(
+          (stats) => (stats && stats[def.countKey]) || 0,
+        );
+        const total = values.reduce((sum, v) => sum + v, 0);
+        return {
+          key: def.key,
+          label: def.label,
+          color: def.color,
+          visible: this.seriesVisible[def.key],
+          values,
+          total,
+        };
+      });
     },
-    runningStates() {
-      return [
-        models.ExperimentState.SCHEDULED,
-        models.ExperimentState.LAUNCHED,
-        models.ExperimentState.EXECUTING,
-      ];
-    },
-    completedStates() {
-      return [models.ExperimentState.COMPLETED];
-    },
-    canceledStates() {
-      return [
-        models.ExperimentState.CANCELING,
-        models.ExperimentState.CANCELED,
-      ];
-    },
-    failedStates() {
-      return [models.ExperimentState.FAILED];
+    rangeSummary() {
+      const from = moment(this.fromTime).format("MMM D, YYYY HH:mm");
+      const to = moment(this.toTime).format("MMM D, YYYY HH:mm");
+      const n = this.buckets.length;
+      const granularity = n > 0 ? this.buckets[0].granularity : "";
+      return `${from} – ${to} · ${n} ${granularity} bucket${
+        n === 1 ? "" : "s"
+      }`;
     },
     fields() {
       return [
-        {
-          key: "name",
-          label: "Name",
-        },
-        {
-          key: "user_name",
-          label: "Owner",
-        },
-        {
-          key: "execution_id",
-          label: "Application",
-        },
-        {
-          key: "resource_host_id",
-          label: "Resource",
-        },
-        {
-          key: "creation_time",
-          label: "Creation Time",
-        },
-        {
-          key: "experiment_status",
-          label: "Status",
-        },
-        {
-          key: "actions",
-          label: "Actions",
-        },
+        { key: "name", label: "Name" },
+        { key: "user_name", label: "Owner" },
+        { key: "execution_id", label: "Application" },
+        { key: "resource_host_id", label: "Resource" },
+        { key: "creation_time", label: "Creation Time" },
+        { key: "experiment_status", label: "Status" },
+        { key: "actions", label: "Actions" },
       ];
     },
+    summaryOptions() {
+      return SERIES_DEFS.map((def) => ({
+        value: def.summaryKey,
+        text: `${def.label} Experiments`,
+      }));
+    },
+    selectedStatusLabel() {
+      const opt = this.summaryOptions.find(
+        (o) => o.value === this.selectedExperimentSummariesKey,
+      );
+      return opt ? opt.text : "Experiments";
+    },
     items() {
-      if (this.selectedExperimentSummaries) {
-        return this.selectedExperimentSummaries;
-      } else {
-        return [];
-      }
-    },
-    fromTimeDisplay() {
-      return moment(this.fromTime).format("MMM Do YYYY");
-    },
-    toTimeDisplay() {
-      return moment(this.toTime).format("MMM Do YYYY");
+      return this.selectedExperimentSummaries;
     },
     selectedExperimentSummaries() {
       if (
@@ -481,12 +559,10 @@ export default {
     },
     applicationNameOptions() {
       if (this.appInterfaces) {
-        const options = this.appInterfaces.map((appInterface) => {
-          return {
-            value: appInterface.application_interface_id,
-            text: appInterface.application_name,
-          };
-        });
+        const options = this.appInterfaces.map((appInterface) => ({
+          value: appInterface.application_interface_id,
+          text: appInterface.application_name,
+        }));
         return utils.StringUtils.sortIgnoreCase(options, (o) => o.text);
       } else {
         return [];
@@ -495,7 +571,6 @@ export default {
     hostnameOptions() {
       if (this.computeResourceNames && this.groupResourceProfiles) {
         // Only show compute resources that are configured in the Group Resource Profiles
-        // First create a Set of all compute resource ids in the GRPs
         const groupResourceProfileCompResources = new Set(
           this.groupResourceProfiles.flatMap((grp) =>
             grp.compute_preferences.map((cp) => cp.compute_resource_id),
@@ -503,49 +578,156 @@ export default {
         );
         const options = this.computeResourceNames
           .filter((name) => groupResourceProfileCompResources.has(name.host_id))
-          .map((name) => {
-            return {
-              value: name.host_id,
-              text: name.host,
-            };
-          });
+          .map((name) => ({
+            value: name.host_id,
+            text: name.host,
+          }));
         return utils.StringUtils.sortIgnoreCase(options, (o) => o.text);
       } else {
         return [];
       }
     },
-    selectedExperimentsTabTitle() {
-      if (this.selectedExperimentSummariesKey === "all_experiments") {
-        return "All Experiments";
-      } else if (
-        this.selectedExperimentSummariesKey === "created_experiments"
-      ) {
-        return "Created Experiments";
-      } else if (
-        this.selectedExperimentSummariesKey === "running_experiments"
-      ) {
-        return "Running Experiments";
-      } else if (
-        this.selectedExperimentSummariesKey === "completed_experiments"
-      ) {
-        return "Completed Experiments";
-      } else if (
-        this.selectedExperimentSummariesKey === "cancelled_experiments"
-      ) {
-        return "Cancelled Experiments";
-      } else if (this.selectedExperimentSummariesKey === "failed_experiments") {
-        return "Failed Experiments";
-      } else {
-        return "Experiments";
-      }
-    },
   },
   methods: {
+    totalForKey(summaryKey) {
+      const def = SERIES_DEFS.find((d) => d.summaryKey === summaryKey);
+      const stats = this.experimentStatistics;
+      return (def && stats && stats[def.countKey]) || 0;
+    },
+    toggleSeries(key) {
+      this.seriesVisible = {
+        ...this.seriesVisible,
+        [key]: !this.seriesVisible[key],
+      };
+    },
+    // Split [fromTime, toTime] into N time windows. Granularity adapts to the
+    // range length to keep the bucket count at or below MAX_BUCKETS: hourly for
+    // short ranges, daily for medium, weekly for long.
+    computeBuckets() {
+      const from = this.fromTime.getTime();
+      const to = this.toTime.getTime();
+      const span = Math.max(to - from, MS_PER_HOUR);
+
+      let step;
+      let granularity;
+      if (span <= MAX_BUCKETS * MS_PER_HOUR) {
+        step = MS_PER_HOUR;
+        granularity = "hourly";
+      } else if (span <= MAX_BUCKETS * MS_PER_DAY) {
+        step = MS_PER_DAY;
+        granularity = "daily";
+      } else {
+        step = 7 * MS_PER_DAY;
+        granularity = "weekly";
+      }
+      // If even the chosen granularity exceeds the cap (very long custom ranges),
+      // widen the step so the count stays within MAX_BUCKETS.
+      let count = Math.ceil(span / step);
+      if (count > MAX_BUCKETS) {
+        step = Math.ceil(span / MAX_BUCKETS);
+        count = MAX_BUCKETS;
+        granularity = "interval";
+      }
+
+      const buckets = [];
+      for (let i = 0; i < count; i++) {
+        const start = from + i * step;
+        const end = Math.min(start + step, to);
+        if (start >= to) break;
+        buckets.push({
+          start,
+          end,
+          granularity,
+          label:
+            granularity === "hourly"
+              ? moment(start).format("HH:mm")
+              : moment(start).format("MMM D"),
+        });
+      }
+      return buckets;
+    },
+    baseRequestParams() {
+      const params = {};
+      if (this.usernameFilterEnabled && this.usernameFilter) {
+        params.userName = this.usernameFilter;
+      }
+      if (this.applicationNameFilterEnabled && this.applicationNameFilter) {
+        params.applicationName = this.applicationNameFilter;
+      }
+      if (this.hostnameFilterEnabled && this.hostnameFilter) {
+        params.resourceHostName = this.hostnameFilter;
+      }
+      return params;
+    },
+    async loadStatistics() {
+      this.loading = true;
+      const buckets = this.computeBuckets();
+      const baseParams = this.baseRequestParams();
+      try {
+        // One aggregate request per bucket, issued concurrently, plus one
+        // full-range request that feeds the drill-down list + total counts.
+        const bucketPromises = buckets.map((bucket) =>
+          services.ExperimentStatisticsService.get({
+            ...baseParams,
+            fromTime: new Date(bucket.start).toJSON(),
+            toTime: new Date(bucket.end).toJSON(),
+          }),
+        );
+        const fullRangePromise = services.ExperimentStatisticsService.get({
+          ...baseParams,
+          fromTime: this.fromTime.toJSON(),
+          toTime: this.toTime.toJSON(),
+        });
+        const [fullRange, ...bucketResults] = await Promise.all([
+          fullRangePromise,
+          ...bucketPromises,
+        ]);
+        this.experimentStatisticsPaginator = fullRange;
+        this.bucketStats = bucketResults.map((paginator) =>
+          paginator ? paginator.results : null,
+        );
+        this.buckets = buckets;
+      } catch (error) {
+        utils.FetchUtils.reportError(error);
+      } finally {
+        this.loading = false;
+      }
+    },
     dateRangeChanged(selectedDates) {
-      [this.fromTime, this.toTime] = selectedDates;
-      if (this.fromTime && this.toTime) {
+      // Ignore the onChange that flatpickr fires when a shortcut updates the
+      // picker programmatically; that path already set the range + reloaded.
+      if (this.suppressDateChange) {
+        return;
+      }
+      if (selectedDates.length === 2) {
+        this.fromTime = selectedDates[0];
+        // flatpickr range end is midnight of the end day; include the whole day.
+        this.toTime = new Date(selectedDates[1].getTime() + MS_PER_DAY);
+        this.activeShortcut = null;
         this.loadStatistics();
       }
+    },
+    applyShortcut(key) {
+      const to = new Date();
+      let from;
+      if (key === "24h") {
+        from = new Date(to.getTime() - MS_PER_DAY);
+      } else if (key === "week") {
+        from = new Date(to.getTime() - 7 * MS_PER_DAY);
+      } else {
+        from = new Date(to.getTime() - 30 * MS_PER_DAY);
+      }
+      this.fromTime = from;
+      this.toTime = to;
+      this.activeShortcut = key;
+      // Update the picker without letting its onChange clobber the shortcut
+      // state; reset the flag after the change has been flushed.
+      this.suppressDateChange = true;
+      this.dateRange = [from, to];
+      this.$nextTick(() => {
+        this.suppressDateChange = false;
+      });
+      this.loadStatistics();
     },
     loadApplicationInterfaces() {
       return services.ApplicationInterfaceService.list().then(
@@ -560,46 +742,6 @@ export default {
     async loadGroupResourceProfiles() {
       this.groupResourceProfiles =
         await services.GroupResourceProfileService.list();
-    },
-    loadStatistics() {
-      const requestData = {
-        fromTime: this.fromTime.toJSON(),
-        toTime: this.toTime.toJSON(),
-      };
-      if (this.usernameFilterEnabled && this.usernameFilter) {
-        requestData["userName"] = this.usernameFilter;
-      }
-      if (this.applicationNameFilterEnabled && this.applicationNameFilter) {
-        requestData["applicationName"] = this.applicationNameFilter;
-      }
-      if (this.hostnameFilterEnabled && this.hostnameFilter) {
-        requestData["resourceHostName"] = this.hostnameFilter;
-      }
-      return services.ExperimentStatisticsService.get(requestData).then(
-        (stats) => {
-          this.experimentStatisticsPaginator = stats;
-        },
-      );
-    },
-    getPast24Hours() {
-      this.fromTime = new Date().fp_incr(0);
-      //this.fromTime = new Date(this.fromTime.setHours(0,0,0));
-      this.toTime = new Date().fp_incr(1);
-      this.updateDateRange();
-    },
-    getPastWeek() {
-      this.fromTime = new Date().fp_incr(-7);
-      this.toTime = new Date().fp_incr(1);
-      this.updateDateRange();
-    },
-    updateDateRange() {
-      this.dateRange = [
-        moment(this.fromTime).format("YYYY-MM-DD"),
-        moment(this.toTime).format("YYYY-MM-DD"),
-      ];
-    },
-    daysAgo(days) {
-      return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     },
     removeUsernameFilter() {
       this.usernameFilter = null;
@@ -704,15 +846,6 @@ export default {
     },
     scrollTabsIntoView() {
       this.$refs.tabs.$el.scrollIntoView({ behavior: "smooth" });
-    },
-    selectExperiments(experimentSummariesKey) {
-      if (
-        this.experimentStatisticsPaginator &&
-        this.experimentStatisticsPaginator.offset > 0
-      ) {
-        this.loadStatistics();
-      }
-      this.selectedExperimentSummariesKey = experimentSummariesKey;
     },
   },
 };

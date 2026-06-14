@@ -72,6 +72,36 @@ vi.mock("django-airavata-api", async () => {
   };
 });
 
+// The container issues one ExperimentStatistics request per time bucket plus a
+// full-range request, all concurrently. Return a fresh empty-stats paginator on
+// every call so a single mock satisfies them all.
+function emptyStatsPaginator() {
+  return new utils.PaginationIterator(
+    {
+      count: 0,
+      next: null,
+      previous: null,
+      results: {
+        all_experiment_count: 0,
+        completed_experiment_count: 0,
+        cancelled_experiment_count: 0,
+        failed_experiment_count: 0,
+        created_experiment_count: 0,
+        running_experiment_count: 0,
+        all_experiments: [],
+        completed_experiments: [],
+        failed_experiments: [],
+        cancelled_experiments: [],
+        created_experiments: [],
+        running_experiments: [],
+      },
+      limit: 50,
+      offset: 0,
+    },
+    models.ExperimentStatistics,
+  );
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
 
@@ -86,31 +116,8 @@ beforeEach(() => {
 test("load experiment by job id when job id matches unique experiment", async () => {
   // Service call mocks
   services.ApplicationInterfaceService.list.mockResolvedValue([]);
-  services.ExperimentStatisticsService.get.mockResolvedValue(
-    new utils.PaginationIterator(
-      {
-        count: 0,
-        next: null,
-        previous: null,
-        results: {
-          all_experiment_count: 0,
-          completed_experiment_count: 0,
-          cancelled_experiment_count: 0,
-          failed_experiment_count: 0,
-          created_experiment_count: 0,
-          running_experiment_count: 0,
-          all_experiments: [],
-          completed_experiments: [],
-          failed_experiments: [],
-          cancelled_experiments: [],
-          created_experiments: [],
-          running_experiments: [],
-        },
-        limit: 50,
-        offset: 0,
-      },
-      models.ExperimentStatistics
-    )
+  services.ExperimentStatisticsService.get.mockImplementation(() =>
+    Promise.resolve(emptyStatsPaginator()),
   );
   services.ComputeResourceService.namesList.mockResolvedValue([]);
   services.ExperimentSearchService.list.mockResolvedValue(
@@ -121,8 +128,8 @@ test("load experiment by job id when job id matches unique experiment", async ()
         previous: null,
         results: [{ experiment_id: "test-experiment-id" }],
       },
-      models.ExperimentSummary
-    )
+      models.ExperimentSummary,
+    ),
   );
   // Mock just enough of Experiment and FullExperiment to get ExperimentDetailsView to render
   const experiment = new models.Experiment({
@@ -141,7 +148,7 @@ test("load experiment by job id when job id matches unique experiment", async ()
     new models.FullExperiment({
       experiment_id: "test-experiment-id",
       experiment,
-    })
+    }),
   );
   services.ExperimentArchiveService.get.mockResolvedValue({
     archived: false,
@@ -152,7 +159,7 @@ test("load experiment by job id when job id matches unique experiment", async ()
 
   // The render method returns a collection of utilities to query your component.
   const { findByText, findByPlaceholderText } = renderWithProviders(
-    ExperimentStatisticsContainer
+    ExperimentStatisticsContainer,
   );
 
   const byJobIDTab = await findByText("By Job ID");
@@ -169,7 +176,7 @@ test("load experiment by job id when job id matches unique experiment", async ()
   await fireEvent.update(jobIDInputField, "12345");
 
   const loadButton = await within(jobIDInputField.parentElement).findByText(
-    "Load"
+    "Load",
   );
 
   await fireEvent.click(loadButton);
@@ -186,7 +193,7 @@ test("load experiment by job id when job id matches unique experiment", async ()
     },
     {
       ignoreErrors: true,
-    }
+    },
   );
   // The experiment-details tab is activated asynchronously (setTimeout) and its
   // panel (ExperimentDetailsView) mounts lazily on activation, which is when it
@@ -194,38 +201,15 @@ test("load experiment by job id when job id matches unique experiment", async ()
   await waitFor(() =>
     expect(services.FullExperimentService.retrieve).toHaveBeenCalledWith({
       lookup: experiment.experiment_id,
-    })
+    }),
   );
 });
 
 test("Hostname filter only shows compute resources that are configured in a GRP", async () => {
   // Service call mocks
   services.ApplicationInterfaceService.list.mockResolvedValue([]);
-  services.ExperimentStatisticsService.get.mockResolvedValue(
-    new utils.PaginationIterator(
-      {
-        count: 0,
-        next: null,
-        previous: null,
-        results: {
-          all_experiment_count: 0,
-          completed_experiment_count: 0,
-          cancelled_experiment_count: 0,
-          failed_experiment_count: 0,
-          created_experiment_count: 0,
-          running_experiment_count: 0,
-          all_experiments: [],
-          completed_experiments: [],
-          failed_experiments: [],
-          cancelled_experiments: [],
-          created_experiments: [],
-          running_experiments: [],
-        },
-        limit: 50,
-        offset: 0,
-      },
-      models.ExperimentStatistics
-    )
+  services.ExperimentStatisticsService.get.mockImplementation(() =>
+    Promise.resolve(emptyStatsPaginator()),
   );
   services.ComputeResourceService.namesList.mockResolvedValue([
     { host_id: "compute4-abcd", host: "d-compute4" },
@@ -261,7 +245,7 @@ test("Hostname filter only shows compute resources that are configured in a GRP"
   // The render method returns a collection of utilities to query your component.
   const { findByText } = renderWithProviders(ExperimentStatisticsContainer);
 
-  const addFiltersMenu = await findByText("Add Filters");
+  const addFiltersMenu = await findByText("Add filter");
 
   await fireEvent.click(addFiltersMenu);
 
@@ -269,14 +253,12 @@ test("Hostname filter only shows compute resources that are configured in a GRP"
 
   await fireEvent.click(hostnameMenuItem);
 
-  const computeResourcesSelect = await findByText(
-    "Select compute resource to filter on"
-  );
+  const computeResourcesSelect = await findByText("Compute resource");
 
   const options = computeResourcesSelect.parentElement.options;
 
   expect(options.length).toBe(4);
-  // option 0 is the null one ("Select compute resource to filter on")
+  // option 0 is the null one ("Compute resource")
   // verify that options 1-3 are compute resources 1, 3, 4. That is, verify that
   // filtering worked and that they were sorted.
   expect(options[1].value).toBe("compute1-abcd");
