@@ -116,21 +116,31 @@
                   </td>
                 </tr>
                 <tr v-if="stages.length > 0">
-                  <th scope="row">Tasks</th>
+                  <th scope="row">Progress</th>
                   <td>
-                    <ul class="list-unstyled mb-0">
+                    <ul class="timeline list-unstyled mb-0">
                       <li
                         v-for="stage in stages"
                         :key="stage.taskId"
-                        class="d-flex align-items-start mb-2"
+                        class="timeline-item"
                       >
-                        <b-badge
-                          :variant="stage.variant"
-                          class="mr-2 mt-1 text-uppercase"
-                          style="min-width: 6rem"
-                          >{{ stage.stateLabel }}</b-badge
-                        >
-                        <div>
+                        <div class="timeline-marker">
+                          <span
+                            v-if="stage.kind === 'running'"
+                            class="timeline-node timeline-node--running"
+                            :title="stage.taskId"
+                          >
+                            <i class="fa fa-circle-notch fa-spin"></i>
+                          </span>
+                          <span
+                            v-else
+                            class="timeline-node timeline-dot"
+                            :class="'timeline-dot--' + stage.kind"
+                            :title="stage.taskId"
+                          ></span>
+                          <span class="sr-only">{{ stage.stateLabel }}</span>
+                        </div>
+                        <div class="timeline-content">
                           <strong>{{ stage.typeLabel }}</strong>
                           <span v-if="stage.reason" class="text-muted">
                             — {{ stage.reason }}</span
@@ -138,13 +148,11 @@
                           <small v-if="stage.time" class="text-muted d-block">{{
                             stage.time
                           }}</small>
-                          <div v-if="stage.job" class="mt-1">
-                            <b-badge
-                              :variant="stage.job.variant"
-                              class="mr-2 text-uppercase"
-                              style="min-width: 6rem"
-                              >{{ stage.job.stateLabel }}</b-badge
-                            >
+                          <div v-if="stage.job" class="mt-1 small">
+                            <span
+                              class="timeline-dot timeline-dot--inline"
+                              :class="'timeline-dot--' + stage.job.kind"
+                            ></span>
                             <span class="text-muted"
                               >Job {{ stage.job.name }} (ID
                               {{ stage.job.id }})</span
@@ -410,8 +418,8 @@ export default {
             taskId: task.task_id,
             typeLabel: this.taskTypeLabel(task.task_type),
             stateLabel: this.taskStateLabel(stateName),
-            variant: this.taskStateVariant(stateName),
-            reason: latest ? latest.reason : "",
+            kind: this.taskStateKind(stateName),
+            reason: this.cleanReason(latest ? latest.reason : ""),
             time:
               latest && latest.time_of_state_change
                 ? moment(latest.time_of_state_change).fromNow()
@@ -426,8 +434,8 @@ export default {
               id: job.job_id,
               name: job.job_name,
               stateLabel: this.titleCase(jobStateName) || "Pending",
-              variant: this.jobStateVariant(jobStateName),
-              reason: js ? js.reason : "",
+              kind: this.jobStateKind(jobStateName),
+              reason: this.cleanReason(js ? js.reason : ""),
             };
           }
           result.push(stage);
@@ -536,41 +544,141 @@ export default {
       if (!stateName) return "Pending";
       return this.titleCase(stateName.replace(/^TASK_STATE_/, ""));
     },
-    taskStateVariant(stateName) {
+    // Normalize task/job states to a small set of timeline "kinds" that map to a dot
+    // color (completed=green, failed=red, canceled=yellow, pending=gray) or a spinner
+    // (running) in the Progress timeline.
+    taskStateKind(stateName) {
       switch (stateName) {
         case "TASK_STATE_COMPLETED":
-          return "success";
+          return "completed";
         case "TASK_STATE_EXECUTING":
-          return "info";
+          return "running";
         case "TASK_STATE_FAILED":
-          return "danger";
+          return "failed";
         case "TASK_STATE_CANCELED":
-          return "warning";
-        case "TASK_STATE_CREATED":
-          return "secondary";
+          return "canceled";
         default:
-          return "light";
+          // TASK_STATE_CREATED, null, or anything not yet started.
+          return "pending";
       }
     },
-    jobStateVariant(jobStateName) {
+    jobStateKind(jobStateName) {
       switch (jobStateName) {
         case "COMPLETE":
-          return "success";
+          return "completed";
         case "ACTIVE":
-          return "info";
-        case "SUBMITTED":
-        case "QUEUED":
-          return "secondary";
+          return "running";
         case "FAILED":
         case "NON_CRITICAL_FAIL":
-          return "danger";
+          return "failed";
         case "CANCELED":
         case "SUSPENDED":
-          return "warning";
+          return "canceled";
         default:
-          return "light";
+          // SUBMITTED, QUEUED, null — waiting to start.
+          return "pending";
       }
+    },
+    cleanReason(reason) {
+      if (!reason) return "";
+      // The server embeds the raw task id in some status reasons; the id is surfaced via
+      // the timeline node tooltip instead, so strip it from the human-readable text.
+      return reason
+        .replace(/\bTASK_[0-9A-Za-z-]+/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
     },
   },
 };
 </script>
+
+<style scoped>
+/* Vertical timeline for the experiment Progress (PROCESS -> TASK pipeline). Each task is a
+   node (colored dot, or a spinner while running) connected by a vertical line. */
+.timeline {
+  position: relative;
+}
+.timeline-item {
+  display: flex;
+  align-items: stretch;
+}
+.timeline-item:not(:last-child) {
+  padding-bottom: 0.75rem;
+}
+.timeline-marker {
+  position: relative;
+  flex: 0 0 1.25rem;
+  display: flex;
+  justify-content: center;
+}
+/* the connector line running vertically through the nodes */
+.timeline-marker::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background-color: #dee2e6;
+}
+/* trim the line so it starts/ends at the first/last node instead of overshooting */
+.timeline-item:first-child .timeline-marker::before {
+  top: 0.7rem;
+}
+.timeline-item:last-child .timeline-marker::before {
+  bottom: auto;
+  height: 0.7rem;
+}
+.timeline-node {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.2rem;
+  box-shadow: 0 0 0 2px #fff;
+}
+.timeline-dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background-color: #adb5bd;
+}
+.timeline-dot--completed {
+  background-color: #28a745;
+}
+.timeline-dot--failed {
+  background-color: #dc3545;
+}
+.timeline-dot--canceled {
+  background-color: #ffc107;
+}
+.timeline-dot--running {
+  background-color: #007bff;
+}
+.timeline-dot--pending {
+  background-color: #adb5bd;
+}
+.timeline-node--running {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background-color: #fff;
+  color: #007bff;
+  font-size: 0.95rem;
+}
+.timeline-content {
+  padding-left: 0.5rem;
+}
+/* small inline dot used for the nested SLURM job state */
+.timeline-dot--inline {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-top: 0;
+  margin-right: 0.25rem;
+  box-shadow: none;
+  vertical-align: middle;
+}
+</style>
