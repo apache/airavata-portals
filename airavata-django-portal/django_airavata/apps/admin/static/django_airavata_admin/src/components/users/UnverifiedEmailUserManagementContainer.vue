@@ -5,10 +5,10 @@
         <div class="card">
           <div class="card-body">
             <b-table hover :fields="fields" :items="items" :fixed="true">
-              <template slot="cell(creation_time)" slot-scope="data">
+              <template #cell(creation_time)="data">
                 <human-date :date="data.value" />
               </template>
-              <template slot="cell(action)" slot-scope="data">
+              <template #cell(action)="data">
                 <b-button
                   v-if="data.item.user_has_write_access"
                   @click="toggleDetails(data)"
@@ -16,7 +16,7 @@
                   Edit
                 </b-button>
               </template>
-              <template slot="row-details" slot-scope="data">
+              <template v-slot:row-details="data">
                 <enable-user-panel
                   v-if="!data.item.enabled && !data.item.email_verified"
                   :username="data.item.user_id"
@@ -63,7 +63,7 @@ export default {
   },
   created() {
     services.UnverifiedEmailUserProfileService.list({ limit: 10 }).then(
-      (users) => (this.usersPaginator = users)
+      (users) => (this.usersPaginator = users),
     );
   },
   computed: {
@@ -112,12 +112,12 @@ export default {
     },
     enableUser(username) {
       services.IAMUserProfileService.enable({ lookup: username }).finally(() =>
-        this.loadUnverifiedEmailUsers()
+        this.loadUnverifiedEmailUsers(),
       );
     },
     deleteUser(username) {
       services.IAMUserProfileService.delete({ lookup: username }).finally(() =>
-        this.loadUnverifiedEmailUsers()
+        this.loadUnverifiedEmailUsers(),
       );
     },
     loadUnverifiedEmailUsers() {
@@ -127,9 +127,8 @@ export default {
     },
     toggleDetails(row) {
       row.toggleDetails();
-      this.showingDetails[row.item.user_id] = !this.showingDetails[
-        row.item.user_id
-      ];
+      this.showingDetails[row.item.user_id] =
+        !this.showingDetails[row.item.user_id];
     },
   },
 };

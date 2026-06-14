@@ -2,7 +2,9 @@
   <div>
     <div class="row">
       <div class="col">
-        <h1 class="h4 mb-4">Gateway Resource Profile - {{ data.gateway_id }}</h1>
+        <h1 class="h4 mb-4">
+          Gateway Resource Profile - {{ data.gateway_id }}
+        </h1>
         <b-form-group
           label="Default SSH Credential"
           label-for="default-credential-store-token"

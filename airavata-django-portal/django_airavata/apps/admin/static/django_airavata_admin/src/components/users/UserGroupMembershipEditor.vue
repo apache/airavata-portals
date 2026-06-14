@@ -6,7 +6,7 @@
       @input="groupsUpdated"
       stacked
     >
-      <template slot="first">
+      <template v-slot:first>
         <b-form-checkbox
           v-if="gatewayUsersGroupOption"
           :value="gatewayUsersGroupOption.value"
@@ -80,7 +80,7 @@ export default {
     },
     userDefinedGroupOptions() {
       const options = this.userDefinedGroups.map((g) =>
-        this.createGroupOption(g)
+        this.createGroupOption(g),
       );
       return utils.StringUtils.sortIgnoreCase(options, (o) => o.text);
     },
@@ -99,7 +99,9 @@ export default {
       return this.adminsGroup ? this.createGroupOption(this.adminsGroup) : null;
     },
     readOnlyAdminsGroup() {
-      return this.combinedGroups.find((g) => g.is_read_only_gateway_admins_group);
+      return this.combinedGroups.find(
+        (g) => g.is_read_only_gateway_admins_group,
+      );
     },
     readOnlyAdminsGroupOption() {
       return this.readOnlyAdminsGroup
@@ -113,7 +115,7 @@ export default {
       for (const checkedGroupId of checkedGroups) {
         if (!this.data.find((g) => g.id === checkedGroupId)) {
           const addedGroup = this.editableGroups.find(
-            (g) => g.id === checkedGroupId
+            (g) => g.id === checkedGroupId,
           );
           this.data.push(addedGroup);
         }

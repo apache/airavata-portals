@@ -6,13 +6,13 @@
     >
       <b-alert
         variant="warning"
-        show
+        :model-value="true"
         v-if="!iamUserProfile.userProfileComplete"
       >
         This user has not completed their user profile. An incomplete user
         profile is shown below.
       </b-alert>
-      <b-alert variant="danger" show v-if="isUsernameInvalid">
+      <b-alert variant="danger" :model-value="true" v-if="isUsernameInvalid">
         The user has an invalid username. Please use
         <strong>Change Username</strong> under the
         <strong>Troubleshooting</strong> tab to fix the user's username.
@@ -56,14 +56,16 @@
         :username="iamUserProfile.user_id"
         @delete-user="$emit('delete-user', $event)"
       />
-      <b-alert variant="danger" show v-if="isUsernameInvalid">
+      <b-alert variant="danger" :model-value="true" v-if="isUsernameInvalid">
         The user has an invalid username. Please fix the user's username so that
         they can complete their user profile.
       </b-alert>
       <change-username-panel
         :username="iamUserProfile.user_id"
         :email="iamUserProfile.email"
-        :airavata-user-profile-exists="iamUserProfile.airavata_user_profile_exists"
+        :airavata-user-profile-exists="
+          iamUserProfile.airavata_user_profile_exists
+        "
         @update-username="$emit('update-username', $event)"
       />
     </b-tab>
@@ -121,7 +123,8 @@ export default {
   computed: {
     hasExternalIDPUserInfo() {
       return (
-        Object.keys(this.localIAMUserProfile.external_idp_user_info).length !== 0
+        Object.keys(this.localIAMUserProfile.external_idp_user_info).length !==
+        0
       );
     },
     isUsernameInvalid() {

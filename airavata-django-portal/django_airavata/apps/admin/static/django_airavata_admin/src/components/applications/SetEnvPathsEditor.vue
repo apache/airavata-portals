@@ -21,12 +21,14 @@
         placeholder="VALUE"
         :disabled="readonly"
       />
-      <b-input-group-append v-if="!readonly">
-        <b-button variant="secondary" @click="deleteEnvPath(setEnvPath)">
-          <i class="fa fa-trash"></i>
-          <span class="sr-only">Delete</span>
-        </b-button>
-      </b-input-group-append>
+      <b-button
+        v-if="!readonly"
+        variant="secondary"
+        @click="deleteEnvPath(setEnvPath)"
+      >
+        <i class="fa fa-trash"></i>
+        <span class="visually-hidden">Delete</span>
+      </b-button>
     </b-input-group>
     <b-button v-if="!readonly" variant="secondary" @click="addEnvPath">{{
       addButtonLabel
@@ -65,7 +67,7 @@ export default {
       }
       this.data.push(new models.SetEnvPaths());
       this.$nextTick(() =>
-        this.$refs.nameInputs[this.$refs.nameInputs.length - 1].focus()
+        this.$refs.nameInputs[this.$refs.nameInputs.length - 1].focus(),
       );
     },
     deleteEnvPath(setEnvPath) {

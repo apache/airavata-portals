@@ -7,7 +7,7 @@
     new-item-button-text="New Application"
     :new-button-disabled="!isGatewayAdmin"
   >
-    <template slot="item-list" slot-scope="slotProps">
+    <template v-slot:item-list="slotProps">
       <div class="row">
         <application-card
           v-for="item in slotProps.items"
@@ -43,7 +43,7 @@ export default {
       if (this.appModules) {
         return utils.StringUtils.sortIgnoreCase(
           this.appModules.slice(),
-          (a) => a.app_module_name
+          (a) => a.app_module_name,
         );
       } else {
         return [];
@@ -65,7 +65,7 @@ export default {
     },
     loadApplications() {
       services.ApplicationModuleService.listAll().then(
-        (appModules) => (this.appModules = appModules)
+        (appModules) => (this.appModules = appModules),
       );
     },
   },

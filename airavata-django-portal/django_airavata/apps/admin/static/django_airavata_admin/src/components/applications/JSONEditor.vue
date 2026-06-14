@@ -39,7 +39,7 @@ export default {
           this.$emit("input", null);
         }
         this.state = true;
-      } catch (e) {
+      } catch {
         this.state = false;
       }
     },

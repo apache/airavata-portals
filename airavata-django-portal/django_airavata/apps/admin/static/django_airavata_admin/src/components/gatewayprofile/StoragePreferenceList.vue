@@ -6,7 +6,7 @@
     new-item-button-text="New Storage Preference"
     :new-button-disabled="readonly"
   >
-    <template slot="new-item-editor">
+    <template v-slot:new-item-editor>
       <b-card v-if="showNewItemEditor" title="New Storage Preference">
         <b-form-group label="Storage Resource" label-for="storage-resource">
           <b-form-select
@@ -31,7 +31,7 @@
         </div>
       </b-card>
     </template>
-    <template slot="item-list" slot-scope="slotProps">
+    <template v-slot:item-list="slotProps">
       <b-table
         striped
         hover
@@ -39,10 +39,7 @@
         :items="slotProps.items"
         sort-by="storage_resource_id"
       >
-        <template
-          slot="cell(resource_specific_credential_store_token)"
-          slot-scope="data"
-        >
+        <template #cell(resource_specific_credential_store_token)="data">
           {{ data.value }}
           <b-badge
             v-if="
@@ -53,7 +50,7 @@
             Default
           </b-badge>
         </template>
-        <template slot="cell(action)" slot-scope="data">
+        <template #cell(action)="data">
           <b-link
             v-if="!readonly"
             class="action-link"
@@ -74,7 +71,7 @@
             >?
           </delete-link>
         </template>
-        <template slot="row-details" slot-scope="row">
+        <template v-slot:row-details="row">
           <b-card>
             <storage-preference-editor
               :value="row.item"
@@ -167,7 +164,7 @@ export default {
         if (
           Object.prototype.hasOwnProperty.call(
             this.storageResourceNames,
-            key
+            key,
           ) &&
           this.currentStoragePreferenceIds.indexOf(key) < 0
         ) {
@@ -183,7 +180,7 @@ export default {
     defaultCredentialSummary() {
       if (this.defaultCredentialStoreToken && this.credentials) {
         return this.credentials.find(
-          (cred) => cred.token === this.defaultCredentialStoreToken
+          (cred) => cred.token === this.defaultCredentialStoreToken,
         );
       } else {
         return null;
@@ -195,7 +192,7 @@ export default {
       this.storageResourceNames = names;
     });
     services.CredentialSummaryService.allSSHCredentials().then(
-      (creds) => (this.credentials = creds)
+      (creds) => (this.credentials = creds),
     );
   },
   methods: {
@@ -225,9 +222,8 @@ export default {
     },
     toggleDetails(row) {
       row.toggleDetails();
-      this.showingDetails[row.item.storage_resource_id] = !this.showingDetails[
-        row.item.storage_resource_id
-      ];
+      this.showingDetails[row.item.storage_resource_id] =
+        !this.showingDetails[row.item.storage_resource_id];
     },
     deleteStoragePreference(storageResourceId) {
       this.$emit("delete", storageResourceId);

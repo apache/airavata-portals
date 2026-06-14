@@ -1,193 +1,184 @@
+import { defineStore } from "pinia";
 import { models, services } from "django-airavata-api";
 
-const state = () => ({
-  extendedUserProfileFields: null,
-  extendedUserProfileValues: null,
-  deletedExtendedUserProfileFields: [],
-});
-
-const getters = {
-  extendedUserProfileFields: (state) => state.extendedUserProfileFields,
-  extendedUserProfileValues: (state) => state.extendedUserProfileValues,
-};
-
-const actions = {
-  async loadExtendedUserProfileFields({ commit }) {
-    const extendedUserProfileFields = await services.ExtendedUserProfileFieldService.list();
-    commit("setExtendedUserProfileFields", { extendedUserProfileFields });
-  },
-  async loadExtendedUserProfileValues({ commit }, { username }) {
-    const extendedUserProfileValues = await services.ExtendedUserProfileValueService.list(
-      { username }
-    );
-    commit("setExtendedUserProfileValues", { extendedUserProfileValues });
-  },
-  async saveExtendedUserProfileFields({ commit, dispatch, state }) {
-    let order = 1;
-    for (const field of state.extendedUserProfileFields) {
-      commit("setOrder", { field, order: order++ });
-      if (field.supportsChoices) {
-        for (let index = 0; index < field.choices.length; index++) {
-          const choice = field.choices[index];
-          commit("setChoiceOrder", { choice, order: index });
-        }
-      }
-      for (let index = 0; index < field.links.length; index++) {
-        const link = field.links[index];
-        commit("setLinkOrder", { link, order: index });
-      }
-      // Create or update each field
-      if (field.id) {
-        await services.ExtendedUserProfileFieldService.update({
-          lookup: field.id,
-          data: field,
-        });
-      } else {
-        await services.ExtendedUserProfileFieldService.create({ data: field });
-      }
-    }
-    if (state.deletedExtendedUserProfileFields.length > 0) {
-      for (const field of state.deletedExtendedUserProfileFields) {
-        await services.ExtendedUserProfileFieldService.delete({
-          lookup: field.id,
-        });
-      }
-      commit("resetDeletedExtendedUserProfileFields");
-    }
-    // Reload the fields
-    dispatch("loadExtendedUserProfileFields");
-  },
-  async addExtendedUserProfileField({ state, commit }, { field_type }) {
-    const field = new models.ExtendedUserProfileField({
-      field_type,
-      name: `New Field ${state.extendedUserProfileFields.length + 1}`,
-      description: "",
-      help_text: "",
-      required: true,
-      links: [],
-      other: false,
-      choices: [],
-      checkbox_label: "",
-    });
-    commit("addExtendedUserProfileField", { field });
-  },
-};
-
 function getField(state, field) {
-  const extendedUserProfileField = state.extendedUserProfileFields.find(
-    (f) => f === field
-  );
-  return extendedUserProfileField;
+  return state.extendedUserProfileFields.find((f) => f === field);
 }
 function setFieldProp(state, field, prop, value) {
   const extendedUserProfileField = getField(state, field);
   extendedUserProfileField[prop] = value;
 }
 
-const mutations = {
-  setExtendedUserProfileFields(state, { extendedUserProfileFields }) {
-    state.extendedUserProfileFields = extendedUserProfileFields;
+// Pinia store replacing the namespaced Vuex `extendedUserProfile` module. Pinia
+// has no mutations, so the former mutations are folded in as actions.
+export const useExtendedUserProfileStore = defineStore("extendedUserProfile", {
+  state: () => ({
+    extendedUserProfileFields: null,
+    extendedUserProfileValues: null,
+    deletedExtendedUserProfileFields: [],
+  }),
+  getters: {
+    getExtendedUserProfileFields: (state) => state.extendedUserProfileFields,
+    getExtendedUserProfileValues: (state) => state.extendedUserProfileValues,
   },
-  setExtendedUserProfileValues(state, { extendedUserProfileValues }) {
-    state.extendedUserProfileValues = extendedUserProfileValues;
+  actions: {
+    async loadExtendedUserProfileFields() {
+      const extendedUserProfileFields =
+        await services.ExtendedUserProfileFieldService.list();
+      this.setExtendedUserProfileFields({ extendedUserProfileFields });
+    },
+    async loadExtendedUserProfileValues({ username }) {
+      const extendedUserProfileValues =
+        await services.ExtendedUserProfileValueService.list({ username });
+      this.setExtendedUserProfileValues({ extendedUserProfileValues });
+    },
+    async saveExtendedUserProfileFields() {
+      let order = 1;
+      for (const field of this.extendedUserProfileFields) {
+        this.setOrder({ field, order: order++ });
+        if (field.supportsChoices) {
+          for (let index = 0; index < field.choices.length; index++) {
+            const choice = field.choices[index];
+            this.setChoiceOrder({ choice, order: index });
+          }
+        }
+        for (let index = 0; index < field.links.length; index++) {
+          const link = field.links[index];
+          this.setLinkOrder({ link, order: index });
+        }
+        // Create or update each field
+        if (field.id) {
+          await services.ExtendedUserProfileFieldService.update({
+            lookup: field.id,
+            data: field,
+          });
+        } else {
+          await services.ExtendedUserProfileFieldService.create({
+            data: field,
+          });
+        }
+      }
+      if (this.deletedExtendedUserProfileFields.length > 0) {
+        for (const field of this.deletedExtendedUserProfileFields) {
+          await services.ExtendedUserProfileFieldService.delete({
+            lookup: field.id,
+          });
+        }
+        this.resetDeletedExtendedUserProfileFields();
+      }
+      // Reload the fields
+      this.loadExtendedUserProfileFields();
+    },
+    addExtendedUserProfileFieldOfType({ field_type }) {
+      const field = new models.ExtendedUserProfileField({
+        field_type,
+        name: `New Field ${this.extendedUserProfileFields.length + 1}`,
+        description: "",
+        help_text: "",
+        required: true,
+        links: [],
+        other: false,
+        choices: [],
+        checkbox_label: "",
+      });
+      this.addExtendedUserProfileField({ field });
+    },
+    setExtendedUserProfileFields({ extendedUserProfileFields }) {
+      this.extendedUserProfileFields = extendedUserProfileFields;
+    },
+    setExtendedUserProfileValues({ extendedUserProfileValues }) {
+      this.extendedUserProfileValues = extendedUserProfileValues;
+    },
+    setName({ value, field }) {
+      setFieldProp(this, field, "name", value);
+    },
+    setCheckboxLabel({ value, field }) {
+      setFieldProp(this, field, "checkbox_label", value);
+    },
+    setHelpText({ value, field }) {
+      setFieldProp(this, field, "help_text", value);
+    },
+    setRequired({ value, field }) {
+      setFieldProp(this, field, "required", value);
+    },
+    setOrder({ order, field }) {
+      setFieldProp(this, field, "order", order);
+    },
+    setOther({ value, field }) {
+      setFieldProp(this, field, "other", value);
+    },
+    addExtendedUserProfileField({ field }) {
+      if (!this.extendedUserProfileFields) {
+        this.extendedUserProfileFields = [];
+      }
+      this.extendedUserProfileFields.push(field);
+    },
+    addChoice({ field }) {
+      field.choices.push(
+        new models.ExtendedUserProfileFieldChoice({
+          display_text: "",
+        }),
+      );
+    },
+    setChoiceOrder({ choice, order }) {
+      choice.order = order;
+    },
+    updateChoiceDisplayText({ choice, display_text }) {
+      choice.display_text = display_text;
+    },
+    updateChoiceIndex({ field, choice, index }) {
+      const currentIndex = field.choices.indexOf(choice);
+      field.choices.splice(currentIndex, 1);
+      field.choices.splice(index, 0, choice);
+    },
+    deleteChoice({ field, choice }) {
+      const index = field.choices.indexOf(choice);
+      field.choices.splice(index, 1);
+    },
+    addLink({ field }) {
+      field.links.push(
+        new models.ExtendedUserProfileFieldLink({
+          label: "",
+          url: "",
+          display_link: true,
+          display_inline: false,
+        }),
+      );
+    },
+    updateLinkLabel({ link, label }) {
+      link.label = label;
+    },
+    updateLinkURL({ link, url }) {
+      link.url = url;
+    },
+    updateLinkDisplayLink({ link, display_link }) {
+      link.display_link = display_link;
+    },
+    updateLinkDisplayInline({ link, display_inline }) {
+      link.display_inline = display_inline;
+    },
+    setLinkOrder({ link, order }) {
+      link.order = order;
+    },
+    deleteLink({ field, link }) {
+      const index = field.links.indexOf(link);
+      field.links.splice(index, 1);
+    },
+    updateFieldIndex({ field, index }) {
+      const currentIndex = this.extendedUserProfileFields.indexOf(field);
+      this.extendedUserProfileFields.splice(currentIndex, 1);
+      this.extendedUserProfileFields.splice(index, 0, field);
+    },
+    deleteField({ field }) {
+      const index = this.extendedUserProfileFields.indexOf(field);
+      this.extendedUserProfileFields.splice(index, 1);
+      // later when we save we'll need to sync this delete with the server
+      if (field.id) {
+        this.deletedExtendedUserProfileFields.push(field);
+      }
+    },
+    resetDeletedExtendedUserProfileFields() {
+      this.deletedExtendedUserProfileFields = [];
+    },
   },
-  setName(state, { value, field }) {
-    setFieldProp(state, field, "name", value);
-  },
-  setCheckboxLabel(state, { value, field }) {
-    setFieldProp(state, field, "checkbox_label", value);
-  },
-  setHelpText(state, { value, field }) {
-    setFieldProp(state, field, "help_text", value);
-  },
-  setRequired(state, { value, field }) {
-    setFieldProp(state, field, "required", value);
-  },
-  setOrder(state, { order, field }) {
-    setFieldProp(state, field, "order", order);
-  },
-  setOther(state, { value, field }) {
-    setFieldProp(state, field, "other", value);
-  },
-  addExtendedUserProfileField(state, { field }) {
-    if (!state.extendedUserProfileFields) {
-      state.extendedUserProfileFields = [];
-    }
-    state.extendedUserProfileFields.push(field);
-  },
-  addChoice(state, { field }) {
-    field.choices.push(
-      new models.ExtendedUserProfileFieldChoice({
-        display_text: "",
-      })
-    );
-  },
-  setChoiceOrder(state, { choice, order }) {
-    choice.order = order;
-  },
-  updateChoiceDisplayText(state, { choice, display_text }) {
-    choice.display_text = display_text;
-  },
-  updateChoiceIndex(state, { field, choice, index }) {
-    const currentIndex = field.choices.indexOf(choice);
-    field.choices.splice(currentIndex, 1);
-    field.choices.splice(index, 0, choice);
-  },
-  deleteChoice(state, { field, choice }) {
-    const index = field.choices.indexOf(choice);
-    field.choices.splice(index, 1);
-  },
-  addLink(state, { field }) {
-    field.links.push(
-      new models.ExtendedUserProfileFieldLink({
-        label: "",
-        url: "",
-        display_link: true,
-        display_inline: false,
-      })
-    );
-  },
-  updateLinkLabel(state, { link, label }) {
-    link.label = label;
-  },
-  updateLinkURL(state, { link, url }) {
-    link.url = url;
-  },
-  updateLinkDisplayLink(state, { link, display_link }) {
-    link.display_link = display_link;
-  },
-  updateLinkDisplayInline(state, { link, display_inline }) {
-    link.display_inline = display_inline;
-  },
-  setLinkOrder(state, { link, order }) {
-    link.order = order;
-  },
-  deleteLink(state, { field, link }) {
-    const index = field.links.indexOf(link);
-    field.links.splice(index, 1);
-  },
-  updateFieldIndex(state, { field, index }) {
-    const currentIndex = state.extendedUserProfileFields.indexOf(field);
-    state.extendedUserProfileFields.splice(currentIndex, 1);
-    state.extendedUserProfileFields.splice(index, 0, field);
-  },
-  deleteField(state, { field }) {
-    const index = state.extendedUserProfileFields.indexOf(field);
-    state.extendedUserProfileFields.splice(index, 1);
-    // later when we save we'll need to sync this delete with the server
-    if (field.id) {
-      state.deletedExtendedUserProfileFields.push(field);
-    }
-  },
-  resetDeletedExtendedUserProfileFields(state) {
-    state.deletedExtendedUserProfileFields = [];
-  },
-};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+});

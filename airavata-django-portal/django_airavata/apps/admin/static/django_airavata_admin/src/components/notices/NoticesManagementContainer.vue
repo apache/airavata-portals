@@ -15,7 +15,7 @@
               new-item-button-text="New Notice"
               :new-button-disabled="!isGatewayAdmin"
             >
-              <template slot="new-item-editor">
+              <template v-slot:new-item-editor>
                 <b-card v-if="showNewItemEditor">
                   <notice-editor
                     v-model="newNotice"
@@ -23,21 +23,21 @@
                     @cancelNewNotice="cancelNewNotice"
                     @saveNewNotice="saveNewNotice"
                   >
-                    <template slot="title">
-                      <h1 class="h4 mb-4 mr-auto">New Notice</h1>
+                    <template v-slot:title>
+                      <h1 class="h4 mb-4 me-auto">New Notice</h1>
                     </template>
                   </notice-editor>
                 </b-card>
               </template>
-              <template slot="item-list">
+              <template v-slot:item-list>
                 <b-table hover :fields="fields" :items="items">
-                  <template slot="cell(published_time)" slot-scope="data">
+                  <template #cell(published_time)="data">
                     <human-date :date="data.value" /> </template
                   >row
-                  <template slot="cell(expiration_time)" slot-scope="data">
+                  <template #cell(expiration_time)="data">
                     <human-date :date="data.value" />
                   </template>
-                  <template slot="cell(action)" slot-scope="data">
+                  <template #cell(action)="data">
                     <template v-if="data.item.user_has_write_access">
                       <b-link class="action-link" @click="toggleDetails(data)">
                         Edit
@@ -50,15 +50,15 @@
                       </delete-link>
                     </template>
                   </template>
-                  <template slot="row-details" slot-scope="row">
+                  <template v-slot:row-details="row">
                     <b-card>
                       <notice-editor
                         :value="row.item"
                         v-model="updatedNotice"
                         @userBeginsInput="isUserBeginInput = false"
                       >
-                        <template slot="title">
-                          <h1 class="h4 mb-4 mr-auto">Update Notice</h1>
+                        <template v-slot:title>
+                          <h1 class="h4 mb-4 me-auto">Update Notice</h1>
                         </template>
                       </notice-editor>
                       <b-button
@@ -109,7 +109,7 @@ export default {
   },
   created() {
     services.ManageNotificationService.list().then(
-      (notices) => (this.notices = notices)
+      (notices) => (this.notices = notices),
     );
   },
   computed: {
@@ -157,7 +157,7 @@ export default {
       services.ManageNotificationService.create({ data: this.newNotice }).then(
         (sp) => {
           this.notices.push(sp);
-        }
+        },
       );
       this.showNewItemEditor = true;
     },
@@ -165,7 +165,7 @@ export default {
       const validation = this.updatedNotice.validate();
       if (Object.keys(validation).length === 0) {
         const index = this.notices.findIndex(
-          (sp) => sp.notification_id === this.updatedNotice.notification_id
+          (sp) => sp.notification_id === this.updatedNotice.notification_id,
         );
         services.ManageNotificationService.update({
           lookup: this.updatedNotice.notification_id,
@@ -187,18 +187,17 @@ export default {
         lookup: notificationId,
       }).then(() => {
         const index = this.notices.findIndex(
-          (sp) => sp.notification_id === notificationId
+          (sp) => sp.notification_id === notificationId,
         );
         this.notices.splice(index, 1);
       });
     },
     toggleDetails(row) {
-      (this.updatedNotice = new models.Notification()),
-        (this.updatedNotice = row.item);
+      ((this.updatedNotice = new models.Notification()),
+        (this.updatedNotice = row.item));
       row.toggleDetails();
-      this.showingDetails[row.item.notification_id] = !this.showingDetails[
-        row.item.notification_id
-      ];
+      this.showingDetails[row.item.notification_id] =
+        !this.showingDetails[row.item.notification_id];
     },
   },
 };

@@ -1,9 +1,19 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue2";
+import vue from "@vitejs/plugin-vue";
 
 const publicPath = "/static/django_airavata_admin/dist/";
 const srcDir = resolve(__dirname, "static/django_airavata_admin/src");
+// The linked common-ui's Uppy.vue imports `@uppy/<pkg>/dist/style.min.css`, but
+// Uppy 5's `exports` field only maps `./css/style.min.css`. Under the strict
+// rolldown resolver these deep paths fail, so map them to the physical files in
+// common-ui's node_modules. (Admin doesn't use Uppy itself; it's pulled in only
+// via the common-ui barrel.)
+const commonNodeModules = resolve(__dirname, "../../static/common/node_modules");
+const uppyCssAliases = ["core", "status-bar", "drag-drop"].map((pkg) => ({
+  find: `@uppy/${pkg}/dist/style.min.css`,
+  replacement: resolve(commonNodeModules, `@uppy/${pkg}/dist/style.min.css`),
+}));
 
 // Emit a webpack-stats.json compatible with django-webpack-loader so admin_base.html
 // keeps resolving the single-page bundle by name ('app') after the Vue CLI/webpack
@@ -55,8 +65,11 @@ export default defineConfig({
   resolve: {
     // `@` -> src (Vue CLI default, used by the unit specs); `.vue` so extensionless
     // imports resolve like they did under Vue CLI.
-    alias: { "@": srcDir },
+    alias: [{ find: "@", replacement: srcDir }, ...uppyCssAliases],
     extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json", ".vue"],
+    // This package links to common/api (already Vue 3). Dedupe so a single copy
+    // of these singletons is used and Vue's runtime hooks stay valid.
+    dedupe: ["vue", "bootstrap-vue-next", "pinia", "vue-router"],
   },
   build: {
     outDir: "static/django_airavata_admin/dist",

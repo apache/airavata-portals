@@ -38,51 +38,21 @@
       </b-form-group>
 
       <b-form-group label="Publish Date" label-for="publish-date">
-        <datetime
-          type="datetime"
+        <flat-pickr
+          id="publish-date"
           v-model="inputPublishedTime"
-          input-class="my-class"
-          value-zone="UTC"
-          :format="{
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            timeZoneName: 'short',
-          }"
-          :phrases="{ ok: 'Continue', cancel: 'Exit' }"
-          :hour-step="1"
-          :minute-step="5"
-          :min-datetime="today"
-          :week-start="7"
-          use12-hour
-          auto
-        ></datetime>
+          class="form-control my-class"
+          :config="publishDateConfig"
+        />
       </b-form-group>
 
       <b-form-group label="Expiration Date" label-for="expiration-date">
-        <datetime
-          type="datetime"
+        <flat-pickr
+          id="expiration-date"
           v-model="inputExpirationTime"
-          input-class="my-class"
-          value-zone="UTC"
-          :format="{
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            timeZoneName: 'short',
-          }"
-          :phrases="{ ok: 'Continue', cancel: 'Exit' }"
-          :hour-step="1"
-          :minute-step="5"
-          :min-datetime="inputPublishedTime"
-          :week-start="7"
-          use12-hour
-          auto
-        ></datetime>
+          class="form-control my-class"
+          :config="expirationDateConfig"
+        />
       </b-form-group>
 
       <b-form-group
@@ -140,15 +110,12 @@
 <script>
 import { models } from "django-airavata-api";
 import { mixins, utils } from "django-airavata-common-ui";
-import { Datetime } from "vue-datetime";
 import moment from "moment";
-import "vue-datetime/dist/vue-datetime.css";
 
 export default {
   name: "notice-editor",
-  components: {
-    datetime: Datetime,
-  },
+  // <flat-pickr> is registered globally in main.js (vue-flatpickr-component),
+  // replacing the Vue 2-only vue-datetime <datetime> picker.
   mixins: [mixins.VModelMixin],
   props: {
     value: {
@@ -161,18 +128,20 @@ export default {
     if (this.value.notification_id != null) {
       this.editNotification = true;
       this.inputPublishedTime = new moment(
-        this.value.published_time.toISOString()
+        this.value.published_time.toISOString(),
       )
         .utc()
         .format();
       this.inputExpirationTime = new moment(
-        this.value.expiration_time.toISOString()
+        this.value.expiration_time.toISOString(),
       )
         .utc()
         .format();
       this.data.priority = this.value.priority.name;
       this.data.show_in_dashboard = this.value.show_in_dashboard;
-      this.today = new moment(this.value.expiration_time.toISOString()).format();
+      this.today = new moment(
+        this.value.expiration_time.toISOString(),
+      ).format();
     }
   },
   data() {
@@ -199,6 +168,30 @@ export default {
     },
     isSaveDisabled: function () {
       return !this.valid;
+    },
+    // flatpickr datetime config. dateFormat "Z" emits an ISO-8601 string so the
+    // v-model value stays an ISO string like vue-datetime did.
+    publishDateConfig() {
+      return {
+        enableTime: true,
+        dateFormat: "Z",
+        altInput: true,
+        altFormat: "F j, Y h:i K",
+        minuteIncrement: 5,
+        time_24hr: false,
+        minDate: this.today,
+      };
+    },
+    expirationDateConfig() {
+      return {
+        enableTime: true,
+        dateFormat: "Z",
+        altInput: true,
+        altFormat: "F j, Y h:i K",
+        minuteIncrement: 5,
+        time_24hr: false,
+        minDate: this.inputPublishedTime,
+      };
     },
   },
   methods: {

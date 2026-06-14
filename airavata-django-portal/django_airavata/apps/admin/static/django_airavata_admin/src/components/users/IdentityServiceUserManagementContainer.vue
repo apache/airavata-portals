@@ -8,14 +8,10 @@
               <b-form-input
                 v-model="search"
                 placeholder="Search by name, email or username"
-                @keydown.native.enter="searchUsers"
+                @keydown.enter="searchUsers"
               />
-              <b-input-group-append>
-                <b-button @click="resetSearch">Reset</b-button>
-                <b-button variant="primary" @click="searchUsers"
-                  >Search</b-button
-                >
-              </b-input-group-append>
+              <b-button @click="resetSearch">Reset</b-button>
+              <b-button variant="primary" @click="searchUsers">Search</b-button>
             </b-input-group>
           </div>
         </div>
@@ -26,13 +22,13 @@
         <div class="card">
           <div class="card-body">
             <b-table hover :fields="fields" :items="items" :fixed="true">
-              <template slot="cell(creation_time)" slot-scope="data">
+              <template #cell(creation_time)="data">
                 <human-date :date="data.value" />
               </template>
-              <template slot="cell(groups)" slot-scope="data">
+              <template #cell(groups)="data">
                 <group-membership-display :groups="data.item.groups" />
               </template>
-              <template slot="cell(action)" slot-scope="data">
+              <template #cell(action)="data">
                 <b-button
                   v-if="data.item.user_has_write_access"
                   @click="toggleDetails(data)"
@@ -40,7 +36,7 @@
                   Edit
                 </b-button>
               </template>
-              <template slot="row-details" slot-scope="data">
+              <template v-slot:row-details="data">
                 <user-details-container
                   :iam-user-profile="data.item"
                   :editable-groups="editableGroups"
@@ -87,10 +83,10 @@ export default {
   },
   created() {
     services.IAMUserProfileService.list({ limit: 10 }).then(
-      (users) => (this.usersPaginator = users)
+      (users) => (this.usersPaginator = users),
     );
     services.GroupService.list({ limit: -1 }).then(
-      (groups) => (this.allGroups = groups)
+      (groups) => (this.allGroups = groups),
     );
   },
   computed: {
@@ -177,13 +173,13 @@ export default {
         params["search"] = this.search;
       }
       services.IAMUserProfileService.list(params).then(
-        (users) => (this.usersPaginator = users)
+        (users) => (this.usersPaginator = users),
       );
     },
     toggleDetails(row) {
       row.toggleDetails();
-      this.showingDetails[row.item.airavata_internal_user_id] = !this
-        .showingDetails[row.item.airavata_internal_user_id];
+      this.showingDetails[row.item.airavata_internal_user_id] =
+        !this.showingDetails[row.item.airavata_internal_user_id];
     },
     searchUsers() {
       // Reset paginator when starting a search
@@ -197,12 +193,12 @@ export default {
     },
     enableUser(username) {
       services.IAMUserProfileService.enable({ lookup: username }).finally(() =>
-        this.reloadUserProfiles()
+        this.reloadUserProfiles(),
       );
     },
     deleteUser(username) {
       services.IAMUserProfileService.delete({ lookup: username }).finally(() =>
-        this.reloadUserProfiles()
+        this.reloadUserProfiles(),
       );
     },
     updateUsername(userProfile, username, newUsername) {

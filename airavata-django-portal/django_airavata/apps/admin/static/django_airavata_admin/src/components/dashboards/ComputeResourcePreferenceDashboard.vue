@@ -5,12 +5,12 @@
     title="Group Resource Profiles"
     new-item-button-text="New Group Resource Profile"
   >
-    <template slot="item-list" slot-scope="slotProps">
+    <template v-slot:item-list="slotProps">
       <b-table striped hover :fields="fields" :items="slotProps.items">
-        <template slot="cell(updated_time)" slot-scope="data">
+        <template #cell(updated_time)="data">
           <human-date :date="data.value" />
         </template>
-        <template slot="cell(action)" slot-scope="data">
+        <template #cell(action)="data">
           <router-link
             class="action-link"
             v-if="data.item.user_has_write_access"
@@ -94,7 +94,7 @@ export default {
       services.GroupResourceProfileService.list().then(
         (groupResourceProfiles) => {
           this.groupResourceProfiles = groupResourceProfiles;
-        }
+        },
       );
     },
     removeGroupResourceProfile: function (groupResourceProfile) {
@@ -104,7 +104,7 @@ export default {
         .then(() => services.GroupResourceProfileService.list())
         .then(
           (groupResourceProfiles) =>
-            (this.groupResourceProfiles = groupResourceProfiles)
+            (this.groupResourceProfiles = groupResourceProfiles),
         );
     },
   },

@@ -86,14 +86,23 @@ export default {
       required: true,
       type: models.BatchQueue,
     },
-    readonly:{
+    readonly: {
       type: Boolean,
       default: false,
     },
   },
   created() {
-    this.$on("input", this.validate);
     this.validate();
+  },
+  watch: {
+    // Vue 3 removed component $on; replaces `this.$on("input", this.validate)`
+    // self-listener by re-validating whenever the local model changes.
+    data: {
+      handler() {
+        this.validate();
+      },
+      deep: true,
+    },
   },
   data: function () {
     const localValue = this.value
@@ -138,7 +147,7 @@ export default {
     validationFeedback() {
       return uiErrors.ValidationErrors.createValidationFeedback(
         this.data,
-        this.validation
+        this.validation,
       );
     },
   },

@@ -52,13 +52,13 @@
                   !localGroupResourceProfile.default_credential_store_token
                 "
               >
-                <template
-                  slot="null-option-label"
-                  slot-scope="nullOptionLabelScope"
-                >
+                <template v-slot:null-option-label="nullOptionLabelScope">
                   <span v-if="nullOptionLabelScope.defaultCredentialSummary">
                     Use the default SSH credential for
-                    {{ localGroupResourceProfile.group_resource_profile_name }} ({{
+                    {{
+                      localGroupResourceProfile.group_resource_profile_name
+                    }}
+                    ({{
                       nullOptionLabelScope.defaultCredentialSummary.username
                     }}
                     -
@@ -73,7 +73,9 @@
             <b-form-group
               label="Resource Type"
               label-for="resource-type"
-              :invalid-feedback="validationFeedback.resource_type.invalidFeedback"
+              :invalid-feedback="
+                validationFeedback.resource_type.invalidFeedback
+              "
               :state="validationFeedback.resource_type.state"
             >
               <b-form-select
@@ -84,7 +86,7 @@
                 :state="validationFeedback.resource_type.state"
                 @change="onResourceTypeChange"
               >
-                <template slot="first">
+                <template v-slot:first>
                   <option :value="null">Select a resource type</option>
                 </template>
               </b-form-select>
@@ -106,10 +108,7 @@
             </template>
             <!-- AWS-specific fields -->
             <template v-if="isResourceType('AWS')">
-              <b-form-group
-                label="Region"
-                label-for="aws-region"
-              >
+              <b-form-group label="Region" label-for="aws-region">
                 <b-form-input
                   id="aws-region"
                   type="text"
@@ -213,31 +212,39 @@
         variant="primary"
         @click="save"
         :disabled="!valid || !userHasWriteAccess"
-      >Save
-      </b-button
-      >
+        >Save
+      </b-button>
       <delete-button
-        class="ml-2"
+        class="ms-2"
         :disabled="!userHasWriteAccess"
-        @delete="remove">
+        @delete="remove"
+      >
         Are you sure you want to remove the preferences for compute resource
         <strong>{{ computeResource.host_name }}</strong
         >?
       </delete-button>
-      <b-button class="ml-2" variant="secondary" @click="cancel"
-      >Cancel
-      </b-button
-      >
+      <b-button class="ms-2" variant="secondary" @click="cancel"
+        >Cancel
+      </b-button>
     </div>
   </div>
 </template>
 
 <script>
-import DjangoAiravataAPI, {errors, models, services} from "django-airavata-api";
+import DjangoAiravataAPI, {
+  errors,
+  models,
+  services,
+} from "django-airavata-api";
 import SSHCredentialSelector from "../../credentials/SSHCredentialSelector.vue";
 import ComputeResourceReservationList from "./ComputeResourceReservationList";
 import ComputeResourcePolicyEditor from "./ComputeResourcePolicyEditor";
-import {components, errors as uiErrors, mixins, notifications,} from "django-airavata-common-ui";
+import {
+  components,
+  errors as uiErrors,
+  mixins,
+  notifications,
+} from "django-airavata-common-ui";
 
 export default {
   name: "compute-preference",
@@ -268,31 +275,30 @@ export default {
   mounted: function () {
     const computeResourcePromise = this.fetchComputeResource(this.host_id);
     if (this.localGroupResourceProfile) {
-      this.userHasWriteAccess = this.localGroupResourceProfile.user_has_write_access;
+      this.userHasWriteAccess =
+        this.localGroupResourceProfile.user_has_write_access;
     }
     if (!this.value && this.id && this.host_id) {
-      services.GroupResourceProfileService.retrieve({lookup: this.id}).then(
+      services.GroupResourceProfileService.retrieve({ lookup: this.id }).then(
         (groupResourceProfile) => {
           this.localGroupResourceProfile = groupResourceProfile;
-          this.userHasWriteAccess = this.localGroupResourceProfile.user_has_write_access;
-          const computeResourcePreference = groupResourceProfile.getComputePreference(
-            this.host_id
-          );
+          this.userHasWriteAccess =
+            this.localGroupResourceProfile.user_has_write_access;
+          const computeResourcePreference =
+            groupResourceProfile.getComputePreference(this.host_id);
           if (computeResourcePreference) {
             this.data = computeResourcePreference;
           }
-          const computeResourcePolicy = groupResourceProfile.getComputeResourcePolicy(
-            this.host_id
-          );
+          const computeResourcePolicy =
+            groupResourceProfile.getComputeResourcePolicy(this.host_id);
           if (computeResourcePolicy) {
             this.localComputeResourcePolicy = computeResourcePolicy;
           } else {
             this.createDefaultComputeResourcePolicy(computeResourcePromise);
           }
-          this.localBatchQueueResourcePolicies = groupResourceProfile.getBatchQueueResourcePolicies(
-            this.host_id
-          );
-        }
+          this.localBatchQueueResourcePolicies =
+            groupResourceProfile.getBatchQueueResourcePolicies(this.host_id);
+        },
       );
     } else if (!this.computeResourcePolicy) {
       this.createDefaultComputeResourcePolicy(computeResourcePromise);
@@ -300,16 +306,24 @@ export default {
     if (!this.id) {
       this.userHasWriteAccess = true;
     }
-    this.$on("input", this.validate);
-
+  },
+  watch: {
+    // Vue 3 removed component $on; replaces `this.$on("input", this.validate)`
+    // self-listener by re-validating whenever the local model changes.
+    data: {
+      handler() {
+        this.validate();
+      },
+      deep: true,
+    },
   },
   data: function () {
     return {
       data: this.value
         ? this.value.clone()
         : new models.GroupComputeResourcePreference({
-          compute_resource_id: this.host_id,
-        }),
+            compute_resource_id: this.host_id,
+          }),
       localGroupResourceProfile: this.groupResourceProfile
         ? this.groupResourceProfile.clone()
         : null,
@@ -327,7 +341,7 @@ export default {
       reservationsInvalid: false,
       computeResourcePolicyInvalid: false,
       userHasWriteAccess: false,
-      resourceTypeOptions: models.ResourceType.values.map(rt => ({
+      resourceTypeOptions: models.ResourceType.values.map((rt) => ({
         value: rt,
         text: rt.name,
       })),
@@ -340,7 +354,7 @@ export default {
     validationFeedback() {
       return uiErrors.ValidationErrors.createValidationFeedback(
         this.data,
-        this.groupComputeResourceValidation
+        this.groupComputeResourceValidation,
       );
     },
     valid() {
@@ -358,7 +372,7 @@ export default {
   methods: {
     fetchComputeResource: function (id) {
       return DjangoAiravataAPI.utils.FetchUtils.get(
-        "/api/compute-resources/" + encodeURIComponent(id) + "/"
+        "/api/compute-resources/" + encodeURIComponent(id) + "/",
       ).then((value) => {
         return (this.computeResource = value);
       });
@@ -368,7 +382,7 @@ export default {
       groupResourceProfile.mergeComputeResourcePreference(
         this.data,
         this.localComputeResourcePolicy,
-        this.localBatchQueueResourcePolicies
+        this.localBatchQueueResourcePolicies,
       );
       return this.saveOrUpdate(groupResourceProfile)
         .then((groupResourceProfile) => {
@@ -386,13 +400,14 @@ export default {
             errors.ErrorUtils.isValidationError(error) &&
             "compute_preferences" in error.details.response
           ) {
-            const computePreferencesIndex = groupResourceProfile.compute_preferences.findIndex(
-              (cp) => cp.compute_resource_id === this.host_id
-            );
+            const computePreferencesIndex =
+              groupResourceProfile.compute_preferences.findIndex(
+                (cp) => cp.compute_resource_id === this.host_id,
+              );
             this.validationErrors =
               error.details.response.compute_preferences[
                 computePreferencesIndex
-                ];
+              ];
           } else {
             this.validationErrors = null;
             notifications.NotificationList.addError(error);
@@ -402,20 +417,20 @@ export default {
     saveOrUpdate(groupResourceProfile) {
       if (this.id) {
         return DjangoAiravataAPI.services.GroupResourceProfileService.update(
-          {data: groupResourceProfile, lookup: this.id},
-          {ignoreErrors: true}
+          { data: groupResourceProfile, lookup: this.id },
+          { ignoreErrors: true },
         );
       } else {
         return DjangoAiravataAPI.services.GroupResourceProfileService.create(
-          {data: groupResourceProfile},
-          {ignoreErrors: true}
+          { data: groupResourceProfile },
+          { ignoreErrors: true },
         );
       }
     },
     remove: function () {
       let groupResourceProfile = this.localGroupResourceProfile.clone();
       const removedChildren = groupResourceProfile.removeComputeResource(
-        this.host_id
+        this.host_id,
       );
       if (removedChildren) {
         DjangoAiravataAPI.services.GroupResourceProfileService.update({
@@ -440,12 +455,12 @@ export default {
       if (this.id) {
         this.$router.push({
           name: "group_resource_preference",
-          params: {id: this.id},
+          params: { id: this.id },
         });
       } else {
         this.$router.push({
           name: "new_group_resource_preference",
-          params: {value: this.localGroupResourceProfile},
+          params: { value: this.localGroupResourceProfile },
         });
       }
     },
@@ -454,9 +469,8 @@ export default {
         const defaultComputeResourcePolicy = new models.ComputeResourcePolicy();
         defaultComputeResourcePolicy.compute_resource_id = this.host_id;
         defaultComputeResourcePolicy.group_resource_profile_id = this.id;
-        defaultComputeResourcePolicy.allowed_batch_queues = computeResource.batch_queues.map(
-          (queue) => queue.queue_name
-        );
+        defaultComputeResourcePolicy.allowed_batch_queues =
+          computeResource.batch_queues.map((queue) => queue.queue_name);
         this.localComputeResourcePolicy = defaultComputeResourcePolicy;
       });
     },
@@ -470,18 +484,18 @@ export default {
     addReservation(reservation) {
       this.data.reservations.push(reservation);
       this.data.reservations.sort((a, b) =>
-        a.start_time < b.start_time ? -1 : 1
+        a.start_time < b.start_time ? -1 : 1,
       );
     },
     deleteReservation(reservation) {
       const reservationIndex = this.data.reservations.findIndex(
-        (r) => r.key === reservation.key
+        (r) => r.key === reservation.key,
       );
       this.data.reservations.splice(reservationIndex, 1);
     },
     updateReservation(reservation) {
       const reservationIndex = this.data.reservations.findIndex(
-        (r) => r.key === reservation.key
+        (r) => r.key === reservation.key,
       );
       this.data.reservations.splice(reservationIndex, 1, reservation);
     },
@@ -495,7 +509,8 @@ export default {
         this.data.resetSpecificPreferences();
       } else {
         const resourceTypeName = this.data.resource_type.name;
-        const modelClassName = this._getPreferenceModelClassName(resourceTypeName);
+        const modelClassName =
+          this._getPreferenceModelClassName(resourceTypeName);
         if (modelClassName && models[modelClassName]) {
           const PreferenceModel = models[modelClassName];
           this.data.specific_preferences = new PreferenceModel();
@@ -510,14 +525,18 @@ export default {
       // 'SLURM' -> 'SlurmComputeResourcePreference'
       // 'AWS' -> 'AwsComputeResourcePreference'
       if (!resourceTypeName) return null;
-      const capitalized = resourceTypeName.charAt(0) + resourceTypeName.slice(1).toLowerCase();
-      return capitalized + 'ComputeResourcePreference';
+      const capitalized =
+        resourceTypeName.charAt(0) + resourceTypeName.slice(1).toLowerCase();
+      return capitalized + "ComputeResourcePreference";
     },
     isResourceType(resourceTypeName) {
       if (this.data.isResourceType) {
         return this.data.isResourceType(resourceTypeName);
       }
-      return this.data.resource_type && this.data.resource_type.name === resourceTypeName;
+      return (
+        this.data.resource_type &&
+        this.data.resource_type.name === resourceTypeName
+      );
     },
   },
   beforeRouteEnter: function (to, from, next) {
@@ -525,7 +544,7 @@ export default {
     // Group Resource Profile wasn't created and we need to just go back to
     // the dashboard
     if (!to.params.id && !to.params.groupResourceProfile) {
-      next({name: "group_resource_preference_dashboard"});
+      next({ name: "group_resource_preference_dashboard" });
     } else {
       next();
     }

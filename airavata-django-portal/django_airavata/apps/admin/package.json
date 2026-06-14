@@ -13,48 +13,33 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "bootstrap": "^4.3.1",
-    "bootstrap-vue": "^2.21.2",
+    "@popperjs/core": "^2.11.8",
+    "@vuelidate/core": "^2.0.3",
+    "@vuelidate/validators": "^2.0.4",
+    "bootstrap": "^5.3.8",
+    "bootstrap-vue-next": "^0.45.6",
     "django-airavata-api": "link:../api",
     "django-airavata-common-ui": "link:../../static/common/",
-    "luxon": "^1.16.0",
-    "moment": "^2.22.2",
-    "vue": "^2.7.16",
-    "vue-datetime": "^1.0.0-beta.10",
-    "vue-flatpickr-component": "^8.1.2",
-    "vue-router": "^2.7.0",
-    "vuedraggable": "^2.16.0",
-    "vuelidate": "^0.7.6",
-    "vuex": "^2.4.0",
-    "weekstart": "^1.0.0"
+    "moment": "^2.30.1",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.38",
+    "vue-flatpickr-component": "^12.0.0",
+    "vue-router": "^5.1.0",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.16",
-    "@babel/eslint-parser": "^7.12.16",
-    "@testing-library/jest-dom": "^5.16.5",
-    "@testing-library/vue": "5",
-    "@vitejs/plugin-vue2": "^2.3.3",
-    "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3",
-    "jsdom": "^25.0.0",
-    "prettier": "^2.1.2",
-    "vite": "^5.4.0",
-    "vitest": "^2.1.0",
-    "vue-template-compiler": "^2.7.16"
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/essential",
-      "eslint:recommended"
-    ],
-    "rules": {},
-    "parserOptions": {
-      "parser": "@babel/eslint-parser",
-      "requireConfigFile": false
-    }
+    "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/vue": "^8.1.0",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "eslint": "^10.5.0",
+    "eslint-plugin-vue": "^10.9.2",
+    "globals": "^17.6.0",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.8.4",
+    "sass": "^1.101.0",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8",
+    "vue-eslint-parser": "^10.4.1"
   }
 }

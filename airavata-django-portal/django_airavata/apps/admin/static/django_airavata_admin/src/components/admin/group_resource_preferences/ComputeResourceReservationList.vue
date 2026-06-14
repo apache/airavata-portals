@@ -6,9 +6,9 @@
     new-item-button-text="New Reservation"
     :newButtonDisabled="readonly"
   >
-    <template slot="additional-buttons">
+    <template v-slot:additional-buttons>
       <delete-button
-        class="mr-2"
+        class="me-2"
         @delete="deleteAllExpiredReservations"
         label="Delete All Expired"
         :disabled="expiredReservations.length === 0"
@@ -16,7 +16,7 @@
         Are you sure you want to delete all expired reservations?
       </delete-button>
     </template>
-    <template slot="new-item-editor">
+    <template v-slot:new-item-editor>
       <b-card v-if="showNewItemEditor" title="New Reservation">
         <compute-resource-reservation-editor
           v-model="newReservation"
@@ -46,20 +46,20 @@
         </div>
       </b-card>
     </template>
-    <template slot="item-list" slot-scope="slotProps">
+    <template v-slot:item-list="slotProps">
       <b-table hover :fields="fields" :items="slotProps.items">
-        <template slot="cell(reservation_name)" slot-scope="data">
+        <template #cell(reservation_name)="data">
           {{ data.value }}
           <b-badge v-if="data.item.isExpired">Expired</b-badge>
           <b-badge v-if="data.item.isActive" variant="success">Active</b-badge>
           <b-badge v-if="data.item.isUpcoming" variant="info">Upcoming</b-badge>
         </template>
-        <template slot="cell(queue_names)" slot-scope="data">
+        <template #cell(queue_names)="data">
           <ul v-for="queueName in data.item.queue_names" :key="queueName">
             <li>{{ queueName }}</li>
           </ul>
         </template>
-        <template slot="cell(action)" slot-scope="data">
+        <template #cell(action)="data">
           <b-link
             v-if="!readonly"
             class="action-link"
@@ -79,7 +79,7 @@
             >?
           </delete-link>
         </template>
-        <template slot="row-details" slot-scope="row">
+        <template v-slot:row-details="row">
           <b-card>
             <compute-resource-reservation-editor
               :value="row.item"

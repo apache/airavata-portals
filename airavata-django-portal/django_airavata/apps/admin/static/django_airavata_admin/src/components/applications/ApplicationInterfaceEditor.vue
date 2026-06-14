@@ -32,10 +32,12 @@
             :disabled="readonly"
           >
           </b-form-radio-group>
-          <div slot="description">
-            Show a queue selector along with queue related settings (nodes,
-            cores, walltime limit).
-          </div>
+          <template v-slot:description>
+            <div>
+              Show a queue selector along with queue related settings (nodes,
+              cores, walltime limit).
+            </div>
+          </template>
         </b-form-group>
         <b-form-group
           label="Queue Settings Calculator"
@@ -46,7 +48,7 @@
             :options="queueSettingsCalculatorOptions"
             :disabled="queueSettingsCalculatorOptions.length === 0"
           >
-            <template slot="first">
+            <template v-slot:first>
               <option :value="null">
                 If applicable, select a queue settings calculator
               </option>
@@ -83,20 +85,21 @@
         <h1 class="h5 mb-4">Input Fields</h1>
         <draggable
           v-model="data.application_inputs"
-          :options="dragOptions"
+          item-key="key"
+          handle=".drag-handle"
           @start="onDragStart"
           @end="onDragEnd"
         >
-          <application-input-field-editor
-            v-for="input in data.application_inputs"
-            :value="input"
-            :key="input.key"
-            :focus="input.key === focusApplicationInputKey"
-            :collapse="collapseApplicationInputs"
-            @input="updatedInput"
-            @delete="deleteInput(input)"
-            :readonly="readonly"
-          />
+          <template #item="{ element: input }">
+            <application-input-field-editor
+              :value="input"
+              :focus="input.key === focusApplicationInputKey"
+              :collapse="collapseApplicationInputs"
+              @input="updatedInput"
+              @delete="deleteInput(input)"
+              :readonly="readonly"
+            />
+          </template>
         </draggable>
       </div>
     </div>
@@ -191,9 +194,6 @@ export default {
     return {
       focusApplicationInputKey: null,
       focusApplicationOutputKey: null,
-      dragOptions: {
-        handle: ".drag-handle",
-      },
       collapseApplicationInputs: false,
       queueSettingsCalculators: null,
     };
@@ -207,7 +207,7 @@ export default {
     },
     updatedInput(newValue) {
       const input = this.data.application_inputs.find(
-        (input) => input.key === newValue.key
+        (input) => input.key === newValue.key,
       );
       Object.assign(input, newValue);
     },
@@ -218,13 +218,13 @@ export default {
     },
     deleteInput(input) {
       const inputIndex = this.data.application_inputs.findIndex(
-        (inp) => inp.key === input.key
+        (inp) => inp.key === input.key,
       );
       this.data.application_inputs.splice(inputIndex, 1);
     },
     updatedOutput(newValue) {
       const output = this.data.application_outputs.find(
-        (o) => o.key === newValue.key
+        (o) => o.key === newValue.key,
       );
       Object.assign(output, newValue);
     },
@@ -235,7 +235,7 @@ export default {
     },
     deleteOutput(output) {
       const outputIndex = this.data.application_outputs.findIndex(
-        (o) => o.key === output.key
+        (o) => o.key === output.key,
       );
       this.data.application_outputs.splice(outputIndex, 1);
     },
@@ -246,7 +246,8 @@ export default {
       this.collapseApplicationInputs = false;
     },
     async loadQueueSettingsCalculators() {
-      this.queueSettingsCalculators = await services.QueueSettingsCalculatorService.list();
+      this.queueSettingsCalculators =
+        await services.QueueSettingsCalculatorService.list();
     },
   },
 };

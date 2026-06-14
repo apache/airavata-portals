@@ -6,36 +6,35 @@
         :options="credentialStoreTokenOptions"
         :disabled="readonly"
       >
-        <option
-          v-if="nullOption"
-          slot="first"
-          :value="null"
-          :disabled="nullOptionDisabled"
-        >
-          <slot
-            name="null-option-label"
-            :defaultCredentialSummary="defaultCredentialSummary"
+        <template v-slot:first>
+          <option
+            v-if="nullOption"
+            :value="null"
+            :disabled="nullOptionDisabled"
           >
-            <span v-if="defaultCredentialSummary">
-              Use the default SSH credential ({{
-                createCredentialDescription(defaultCredentialSummary)
-              }})
-            </span>
-            <span v-else> Unset the default SSH credential </span>
-          </slot>
-        </option>
+            <slot
+              name="null-option-label"
+              :defaultCredentialSummary="defaultCredentialSummary"
+            >
+              <span v-if="defaultCredentialSummary">
+                Use the default SSH credential ({{
+                  createCredentialDescription(defaultCredentialSummary)
+                }})
+              </span>
+              <span v-else> Unset the default SSH credential </span>
+            </slot>
+          </option>
+        </template>
       </b-form-select>
-      <b-input-group-append>
-        <clipboard-copy-button variant="secondary" :text="copySSHPublicKeyText">
-        </clipboard-copy-button>
-        <b-button
-          v-if="!readonly"
-          variant="secondary"
-          @click="showNewSSHCredentialModal"
-        >
-          <i class="fa fa-plus"></i>
-        </b-button>
-      </b-input-group-append>
+      <clipboard-copy-button variant="secondary" :text="copySSHPublicKeyText">
+      </clipboard-copy-button>
+      <b-button
+        v-if="!readonly"
+        variant="secondary"
+        @click="showNewSSHCredentialModal"
+      >
+        <i class="fa fa-plus"></i>
+      </b-button>
     </b-input-group>
     <new-ssh-credential-modal
       ref="newSSHCredentialModal"
@@ -93,7 +92,7 @@ export default {
           })
         : [];
       options.sort((a, b) =>
-        a.text.toLowerCase().localeCompare(b.text.toLowerCase())
+        a.text.toLowerCase().localeCompare(b.text.toLowerCase()),
       );
       return options;
     },
@@ -105,7 +104,7 @@ export default {
     defaultCredentialSummary() {
       return this.nullOptionDefaultCredentialToken && this.credentials
         ? this.credentials.find(
-            (cred) => cred.token === this.nullOptionDefaultCredentialToken
+            (cred) => cred.token === this.nullOptionDefaultCredentialToken,
           )
         : null;
     },
@@ -113,8 +112,8 @@ export default {
       return this.selectedCredential
         ? this.selectedCredential.public_key.trim()
         : this.defaultCredentialSummary
-        ? this.defaultCredentialSummary.public_key.trim()
-        : null;
+          ? this.defaultCredentialSummary.public_key.trim()
+          : null;
     },
   },
   methods: {
@@ -126,7 +125,7 @@ export default {
         (cred) => {
           this.credentials.push(cred);
           this.data = cred.token;
-        }
+        },
       );
     },
     createCredentialDescription(summary) {
@@ -142,7 +141,7 @@ export default {
   created() {
     if (!this.credentials) {
       services.CredentialSummaryService.allSSHCredentials().then(
-        (creds) => (this.credentials = creds)
+        (creds) => (this.credentials = creds),
       );
     }
   },

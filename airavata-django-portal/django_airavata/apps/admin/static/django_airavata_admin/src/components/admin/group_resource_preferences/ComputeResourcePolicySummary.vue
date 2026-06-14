@@ -48,9 +48,10 @@ export default {
   },
   computed: {
     queues: function () {
-      const computeResourcePolicy = this.groupResourceProfile.getComputeResourcePolicy(
-        this.computeResourceId
-      );
+      const computeResourcePolicy =
+        this.groupResourceProfile.getComputeResourcePolicy(
+          this.computeResourceId,
+        );
       if (computeResourcePolicy && computeResourcePolicy.allowed_batch_queues) {
         const queues = computeResourcePolicy.allowed_batch_queues.slice();
         queues.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
@@ -62,11 +63,12 @@ export default {
     queuePolicies: function () {
       const result = [];
       for (const queue of this.queues) {
-        const batchQueueResourcePolicies = this.groupResourceProfile.getBatchQueueResourcePolicies(
-          this.computeResourceId
-        );
+        const batchQueueResourcePolicies =
+          this.groupResourceProfile.getBatchQueueResourcePolicies(
+            this.computeResourceId,
+          );
         const batchQueueResourcePolicy = batchQueueResourcePolicies.find(
-          (pol) => pol.queuename === queue
+          (pol) => pol.queuename === queue,
         );
         result.push({
           name: queue,

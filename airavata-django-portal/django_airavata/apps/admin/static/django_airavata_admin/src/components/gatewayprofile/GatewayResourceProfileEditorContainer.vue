@@ -33,7 +33,9 @@
     </div>
     <div
       class="row"
-      v-if="gatewayResourceProfile && gatewayResourceProfile.user_has_write_access"
+      v-if="
+        gatewayResourceProfile && gatewayResourceProfile.user_has_write_access
+      "
     >
       <div class="col">
         <b-button variant="primary" @click="save"> Save </b-button>
@@ -81,12 +83,13 @@ export default {
     updatedStoragePreference(updatedStoragePreference) {
       const index = this.gatewayResourceProfile.storage_preferences.findIndex(
         (sp) =>
-          sp.storage_resource_id === updatedStoragePreference.storage_resource_id
+          sp.storage_resource_id ===
+          updatedStoragePreference.storage_resource_id,
       );
       this.gatewayResourceProfile.storage_preferences.splice(
         index,
         1,
-        updatedStoragePreference
+        updatedStoragePreference,
       );
     },
     addedStoragePreference(newStoragePreference) {
@@ -101,7 +104,7 @@ export default {
         lookup: storageResourceId,
       }).then(() => {
         const index = this.gatewayResourceProfile.storage_preferences.findIndex(
-          (sp) => sp.storage_resource_id === storageResourceId
+          (sp) => sp.storage_resource_id === storageResourceId,
         );
         this.gatewayResourceProfile.storage_preferences.splice(index, 1);
       });

@@ -46,28 +46,28 @@
       new-item-button-text="New Compute Preference"
       @add-new-item="createComputePreference"
     >
-      <template slot="item-list" slot-scope="slotProps">
+      <template v-slot:item-list="slotProps">
         <b-table
           hover
           :fields="computePreferencesFields"
           :items="slotProps.items"
           sort-by="compute_resource_id"
         >
-          <template slot="cell(compute_resource_id)" slot-scope="row">
+          <template #cell(compute_resource_id)="row">
             <compute-resource-name
               :compute-resource-id="row.item.compute_resource_id"
             />
           </template>
-          <template slot="cell(policy)" slot-scope="row">
+          <template #cell(policy)="row">
             <compute-resource-policy-summary
               :compute-resource-id="row.item.compute_resource_id"
               :group-resource-profile="data"
             />
           </template>
-          <template slot="cell(reservations)" slot-scope="row">
+          <template #cell(reservations)="row">
             <compute-resource-reservations-summary :reservations="row.value" />
           </template>
-          <template slot="cell(action)" slot-scope="row">
+          <template #cell(action)="row">
             <router-link
               class="action-link"
               v-if="userHasWriteAccess"
@@ -79,11 +79,12 @@
                   host_id: row.item.compute_resource_id,
                   groupResourceProfile: data,
                   computeResourcePolicy: data.getComputeResourcePolicy(
-                    row.item.compute_resource_id
+                    row.item.compute_resource_id,
                   ),
-                  batchQueueResourcePolicies: data.getBatchQueueResourcePolicies(
-                    row.item.compute_resource_id
-                  ),
+                  batchQueueResourcePolicies:
+                    data.getBatchQueueResourcePolicies(
+                      row.item.compute_resource_id,
+                    ),
                 },
               }"
             >
@@ -102,11 +103,12 @@
                   host_id: row.item.compute_resource_id,
                   groupResourceProfile: data,
                   computeResourcePolicy: data.getComputeResourcePolicy(
-                    row.item.compute_resource_id
+                    row.item.compute_resource_id,
                   ),
-                  batchQueueResourcePolicies: data.getBatchQueueResourcePolicies(
-                    row.item.compute_resource_id
-                  ),
+                  batchQueueResourcePolicies:
+                    data.getBatchQueueResourcePolicies(
+                      row.item.compute_resource_id,
+                    ),
                 },
               }"
             >
@@ -140,7 +142,7 @@
       >
       <delete-button
         v-if="id"
-        class="ml-2"
+        class="ms-2"
         :disabled="!userHasWriteAccess"
         @delete="removeGroupResourceProfile"
       >
@@ -148,7 +150,7 @@
         <strong>{{ data.group_resource_profile_name }}</strong
         >?
       </delete-button>
-      <b-button class="ml-2" variant="secondary" @click="cancel"
+      <b-button class="ms-2" variant="secondary" @click="cancel"
         >Cancel</b-button
       >
     </div>
@@ -188,7 +190,7 @@ export default {
           (grp) => {
             this.data = grp;
             this.userHasWriteAccess = this.data.user_has_write_access;
-          }
+          },
         );
       }
       // Load information about the owner of this GroupResourceProfile
@@ -253,7 +255,7 @@ export default {
     excludedComputeResourceIds() {
       const currentPrefs = this.data.compute_preferences
         ? this.data.compute_preferences.map(
-            (computePreference) => computePreference.compute_resource_id
+            (computePreference) => computePreference.compute_resource_id,
           )
         : [];
       return currentPrefs;
@@ -284,7 +286,7 @@ export default {
   },
   methods: {
     saveGroupResourceProfile: function () {
-      var persist = null;
+      let persist;
       if (this.id) {
         persist = this.service.update({ data: this.data, lookup: this.id });
       } else {
@@ -306,7 +308,8 @@ export default {
       this.$refs.modalSelectComputeResource.show();
     },
     onSelectComputeResource: function (computeResourceId) {
-      const computeResourcePreference = new models.GroupComputeResourcePreference();
+      const computeResourcePreference =
+        new models.GroupComputeResourcePreference();
       computeResourcePreference.compute_resource_id = computeResourceId;
       this.$router.push({
         name: "compute_preference_for_new_group_resource_profile",

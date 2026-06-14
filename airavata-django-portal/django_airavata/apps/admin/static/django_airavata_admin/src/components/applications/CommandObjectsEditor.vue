@@ -12,15 +12,14 @@
         ref="commandObjectInputs"
         :disabled="readonly"
       />
-      <b-input-group-append v-if="!readonly">
-        <b-button
-          variant="secondary"
-          @click="deleteCommandObject(commandObject)"
-        >
-          <i class="fa fa-trash"></i>
-          <span class="sr-only">Delete</span>
-        </b-button>
-      </b-input-group-append>
+      <b-button
+        v-if="!readonly"
+        variant="secondary"
+        @click="deleteCommandObject(commandObject)"
+      >
+        <i class="fa fa-trash"></i>
+        <span class="visually-hidden">Delete</span>
+      </b-button>
     </b-input-group>
     <b-button v-if="!readonly" variant="secondary" @click="addCommandObject">{{
       addButtonLabel
@@ -61,7 +60,7 @@ export default {
       this.$nextTick(() =>
         this.$refs.commandObjectInputs[
           this.$refs.commandObjectInputs.length - 1
-        ].focus()
+        ].focus(),
       );
     },
     deleteCommandObject(commandObject) {

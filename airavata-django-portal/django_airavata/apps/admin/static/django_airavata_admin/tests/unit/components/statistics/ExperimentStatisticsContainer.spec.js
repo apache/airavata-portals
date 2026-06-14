@@ -1,12 +1,17 @@
 import { render, fireEvent, within } from "@testing-library/vue";
 import "@testing-library/jest-dom";
 import ExperimentStatisticsContainer from "@/components/statistics/ExperimentStatisticsContainer.vue";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import VueFlatPickr from "vue-flatpickr-component";
+import { createBootstrap } from "bootstrap-vue-next";
+import FlatPickr from "vue-flatpickr-component";
 
-Vue.use(BootstrapVue);
-Vue.use(VueFlatPickr);
+// Vue 3 has no global Vue; register the shared plugins/components per render via
+// testing-library's `global` option (see renderOptions below).
+const renderOptions = {
+  global: {
+    plugins: [createBootstrap()],
+    components: { "flat-pickr": FlatPickr },
+  },
+};
 
 import { models, services, utils } from "django-airavata-api";
 import ExperimentStatus from "django-airavata-api/static/django_airavata_api/js/models/ExperimentStatus";
@@ -125,7 +130,8 @@ test("load experiment by job id when job id matches unique experiment", async ()
 
   // The render method returns a collection of utilities to query your component.
   const { findByText, findByPlaceholderText } = render(
-    ExperimentStatisticsContainer
+    ExperimentStatisticsContainer,
+    renderOptions
   );
 
   const byJobIDTab = await findByText("By Job ID");
@@ -222,7 +228,7 @@ test("Hostname filter only shows compute resources that are configured in a GRP"
   ]);
 
   // The render method returns a collection of utilities to query your component.
-  const { findByText } = render(ExperimentStatisticsContainer);
+  const { findByText } = render(ExperimentStatisticsContainer, renderOptions);
 
   const addFiltersMenu = await findByText("Add Filters");
 

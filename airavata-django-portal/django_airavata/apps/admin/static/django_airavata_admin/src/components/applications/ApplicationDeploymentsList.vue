@@ -7,7 +7,7 @@
       new-item-button-text="New Deployment"
       :new-button-disabled="readonly"
     >
-      <template slot="item-list" slot-scope="slotProps">
+      <template v-slot:item-list="slotProps">
         <b-table
           striped
           hover
@@ -15,7 +15,7 @@
           :items="slotProps.items"
           sort-by="compute_host_id"
         >
-          <template slot="cell(action)" slot-scope="data">
+          <template #cell(action)="data">
             <router-link
               class="action-link"
               v-if="!data.item.user_has_write_access"
@@ -33,7 +33,9 @@
             </router-link>
             <router-link
               class="action-link"
-              v-if="data.item.user_has_write_access && data.item.app_deployment_id"
+              v-if="
+                data.item.user_has_write_access && data.item.app_deployment_id
+              "
               :to="{
                 name: 'application_deployment',
                 params: {
@@ -48,7 +50,9 @@
             </router-link>
             <router-link
               class="action-link"
-              v-if="data.item.user_has_write_access && !data.item.app_deployment_id"
+              v-if="
+                data.item.user_has_write_access && !data.item.app_deployment_id
+              "
               :to="{
                 name: 'new_application_deployment',
                 params: {
@@ -156,16 +160,15 @@ export default {
           if (
             Object.prototype.hasOwnProperty.call(
               this.computeResourceNames,
-              computeResourceId
+              computeResourceId,
             ) &&
             Object.prototype.hasOwnProperty.call(
               groupResourceProfileCompResources,
-              computeResourceId
+              computeResourceId,
             )
           ) {
-            const computeResourceName = this.computeResourceNames[
-              computeResourceId
-            ];
+            const computeResourceName =
+              this.computeResourceNames[computeResourceId];
             result.push({
               host_id: computeResourceId,
               host: computeResourceName,
@@ -183,11 +186,11 @@ export default {
   },
   mounted() {
     services.ComputeResourceService.names().then(
-      (names) => (this.computeResourceNames = names)
+      (names) => (this.computeResourceNames = names),
     );
     services.GroupResourceProfileService.list().then(
       (groupResourceProfiles) =>
-        (this.groupResourceProfiles = groupResourceProfiles)
+        (this.groupResourceProfiles = groupResourceProfiles),
     );
   },
   methods: {

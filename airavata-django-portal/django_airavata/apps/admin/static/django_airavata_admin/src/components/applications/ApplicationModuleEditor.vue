@@ -68,7 +68,7 @@ export default {
     validationFeedback() {
       return errors.ValidationErrors.createValidationFeedback(
         this.data,
-        this.validationErrors
+        this.validationErrors,
       );
     },
   },

@@ -32,7 +32,8 @@
 
 <script>
 import { models } from "django-airavata-api";
-import { mapActions, mapGetters } from "vuex";
+import { mapActions, mapState } from "pinia";
+import { useExtendedUserProfileStore } from "../../store/modules/extendedUserProfile";
 export default {
   props: {
     iamUserProfile: {
@@ -47,7 +48,7 @@ export default {
     });
   },
   computed: {
-    ...mapGetters("extendedUserProfile", [
+    ...mapState(useExtendedUserProfileStore, [
       "extendedUserProfileFields",
       "extendedUserProfileValues",
     ]),
@@ -73,13 +74,13 @@ export default {
     },
   },
   methods: {
-    ...mapActions("extendedUserProfile", [
+    ...mapActions(useExtendedUserProfileStore, [
       "loadExtendedUserProfileFields",
       "loadExtendedUserProfileValues",
     ]),
     getValue(field) {
       return this.extendedUserProfileValues.find(
-        (v) => v.ext_user_profile_field === field.id
+        (v) => v.ext_user_profile_field === field.id,
       );
     },
   },

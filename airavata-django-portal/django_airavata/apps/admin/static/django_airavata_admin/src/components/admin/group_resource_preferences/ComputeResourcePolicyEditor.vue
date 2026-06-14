@@ -9,7 +9,7 @@
       <b-form-checkbox
         :checked="
           localComputeResourcePolicy.allowed_batch_queues.includes(
-            batchQueue.queue_name
+            batchQueue.queue_name,
           )
         "
         :disabled="readonly"
@@ -20,14 +20,14 @@
       <batch-queue-resource-policy
         v-if="
           localComputeResourcePolicy.allowed_batch_queues.includes(
-            batchQueue.queue_name
+            batchQueue.queue_name,
           )
         "
         :batch-queue="batchQueue"
         :readonly="readonly"
         :value="
           localBatchQueueResourcePolicies.find(
-            (pol) => pol.queuename === batchQueue.queue_name
+            (pol) => pol.queuename === batchQueue.queue_name,
           )
         "
         @input="updatedBatchQueueResourcePolicy(batchQueue, $event)"
@@ -83,7 +83,7 @@ export default {
     validationFeedback() {
       return errors.ValidationErrors.createValidationFeedback(
         this.localComputeResourcePolicy,
-        this.computeResourcePolicyValidation
+        this.computeResourcePolicyValidation,
       );
     },
     valid() {
@@ -94,7 +94,9 @@ export default {
     },
     allowedInvalidBatchQueueResourcePolicies() {
       return this.invalidBatchQueueResourcePolicies.filter((queueName) =>
-        this.localComputeResourcePolicy.allowed_batch_queues.includes(queueName)
+        this.localComputeResourcePolicy.allowed_batch_queues.includes(
+          queueName,
+        ),
       );
     },
   },
@@ -102,62 +104,64 @@ export default {
     batchQueueChecked: function (batchQueue, checked) {
       if (checked) {
         this.localComputeResourcePolicy.allowed_batch_queues.push(
-          batchQueue.queue_name
+          batchQueue.queue_name,
         );
       } else {
-        const queueIndex = this.localComputeResourcePolicy.allowed_batch_queues.indexOf(
-          batchQueue.queue_name
-        );
+        const queueIndex =
+          this.localComputeResourcePolicy.allowed_batch_queues.indexOf(
+            batchQueue.queue_name,
+          );
         this.localComputeResourcePolicy.allowed_batch_queues.splice(
           queueIndex,
-          1
+          1,
         );
         // Remove batchQueueResourcePolicy if it exists
         const policyIndex = this.localBatchQueueResourcePolicies.findIndex(
-          (pol) => pol.queuename === batchQueue.queue_name
+          (pol) => pol.queuename === batchQueue.queue_name,
         );
         if (policyIndex >= 0) {
           this.localBatchQueueResourcePolicies.splice(policyIndex, 1);
         }
         this.$emit(
           "batch-queue-resource-policies-updated",
-          this.localBatchQueueResourcePolicies
+          this.localBatchQueueResourcePolicies,
         );
       }
       this.validate();
       this.$emit(
         "compute-resource-policy-updated",
-        this.localComputeResourcePolicy
+        this.localComputeResourcePolicy,
       );
     },
     updatedBatchQueueResourcePolicy: function (
       batchQueue,
-      batchQueueResourcePolicy
+      batchQueueResourcePolicy,
     ) {
       const queueName = batchQueue.queue_name;
       if (batchQueueResourcePolicy) {
         const existingPolicy = this.localBatchQueueResourcePolicies.find(
-          (pol) => pol.queuename === queueName
+          (pol) => pol.queuename === queueName,
         );
         if (existingPolicy) {
           Object.assign(existingPolicy, batchQueueResourcePolicy);
         } else {
           this.localComputeResourcePolicy.populateParentIdsOnBatchQueueResourcePolicy(
-            batchQueueResourcePolicy
+            batchQueueResourcePolicy,
           );
           this.localBatchQueueResourcePolicies.push(batchQueueResourcePolicy);
         }
       } else {
-        const existingPolicyIndex = this.localBatchQueueResourcePolicies.findIndex(
-          (pol) => pol.queuename === queueName
-        );
+        const existingPolicyIndex =
+          this.localBatchQueueResourcePolicies.findIndex(
+            (pol) => pol.queuename === queueName,
+          );
         if (existingPolicyIndex >= 0) {
           this.localBatchQueueResourcePolicies.splice(existingPolicyIndex, 1);
         }
       }
       this.$emit(
         "batch-queue-resource-policies-updated",
-        this.localBatchQueueResourcePolicies
+        this.localBatchQueueResourcePolicies,
       );
     },
     recordValidBatchQueueResourcePolicy(batchQueue) {
@@ -165,7 +169,7 @@ export default {
         this.invalidBatchQueueResourcePolicies.includes(batchQueue.queue_name)
       ) {
         const index = this.invalidBatchQueueResourcePolicies.indexOf(
-          batchQueue.queue_name
+          batchQueue.queue_name,
         );
         this.invalidBatchQueueResourcePolicies.splice(index, 1);
       }

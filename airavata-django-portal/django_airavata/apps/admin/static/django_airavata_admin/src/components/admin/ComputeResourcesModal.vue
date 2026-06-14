@@ -9,7 +9,7 @@
       v-model="selectedComputeResource"
       :options="computeResourceOptions"
     >
-      <template slot="first">
+      <template v-slot:first>
         <option :value="null">Please select compute resource</option>
       </template>
     </b-form-select>
@@ -33,7 +33,7 @@ export default {
   created() {
     if (!this.computeResourceNames) {
       services.ComputeResourceService.namesList().then(
-        (resourceNames) => (this.localComputeResourceNames = resourceNames)
+        (resourceNames) => (this.localComputeResourceNames = resourceNames),
       );
     }
   },
@@ -50,7 +50,7 @@ export default {
             .filter((comp) =>
               this.excludedResourceIds
                 ? !this.excludedResourceIds.includes(comp.host_id)
-                : true
+                : true,
             )
             .map((comp) => {
               return {
@@ -60,7 +60,7 @@ export default {
             })
         : [];
       options.sort((a, b) =>
-        a.text.toLowerCase().localeCompare(b.text.toLowerCase())
+        a.text.toLowerCase().localeCompare(b.text.toLowerCase()),
       );
       return options;
     },

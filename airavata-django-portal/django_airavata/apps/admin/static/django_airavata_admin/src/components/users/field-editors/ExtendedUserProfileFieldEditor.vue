@@ -1,11 +1,11 @@
 <template>
   <b-card
     :title="title"
-    :border-variant="$v.$anyDirty && $v.$invalid ? 'danger' : null"
+    :border-variant="v$.$anyDirty && v$.$invalid ? 'danger' : null"
   >
     <b-form-group label="Name" label-cols="3" :disabled="disabled">
-      <b-form-input v-model="name" :state="validateState($v.name)" />
-      <b-form-invalid-feedback :state="validateState($v.name)"
+      <b-form-input v-model="name" :state="validateState(v$.name)" />
+      <b-form-invalid-feedback :state="validateState(v$.name)"
         >This field is required.</b-form-invalid-feedback
       >
     </b-form-group>
@@ -17,10 +17,10 @@
     >
       <b-form-input
         v-model="checkbox_label"
-        :state="validateState($v.checkbox_label)"
+        :state="validateState(v$.checkbox_label)"
         placeholder="E.g. I accept the Terms of Service listed above"
       />
-      <b-form-invalid-feedback :state="validateState($v.checkbox_label)"
+      <b-form-invalid-feedback :state="validateState(v$.checkbox_label)"
         >This field is required.</b-form-invalid-feedback
       >
     </b-form-group>
@@ -37,53 +37,46 @@
     <b-card title="Options" v-if="extendedUserProfileField.supportsChoices">
       <transition-group name="fade">
         <template
-          v-for="({ $model: choice, display_text: $v_display_text },
-          index) in $v.choices.$each.$iter"
+          v-for="(choice, index) in extendedUserProfileField.choices"
+          :key="choice.key"
         >
-          <b-form-group :key="choice.key" :disabled="disabled">
+          <b-form-group :disabled="disabled">
             <b-input-group>
               <b-form-input
-                :value="choice.display_text"
-                @input="
-                  handleChoiceDisplayTextChanged(
-                    choice,
-                    $event,
-                    $v_display_text
-                  )
+                :model-value="choice.display_text"
+                @update:model-value="
+                  handleChoiceDisplayTextChanged(choice, $event)
                 "
-                :state="validateState($v_display_text)"
+                :state="choiceDisplayTextState(index)"
               />
-              <b-input-group-append>
-                <b-button
-                  @click="handleChoiceMoveUp(choice)"
-                  :disabled="index === String(0)"
-                  v-b-tooltip.hover.left
-                  title="Move Up"
-                >
-                  <i class="fa fa-arrow-up" aria-hidden="true"></i>
-                </b-button>
-                <b-button
-                  @click="handleChoiceMoveDown(choice)"
-                  :disabled="
-                    index ===
-                    String(extendedUserProfileField.choices.length - 1)
-                  "
-                  v-b-tooltip.hover.left
-                  title="Move Down"
-                >
-                  <i class="fa fa-arrow-down" aria-hidden="true"></i>
-                </b-button>
-                <b-button
-                  @click="handleChoiceDeleted(choice)"
-                  variant="danger"
-                  v-b-tooltip.hover.left
-                  title="Delete Option"
-                >
-                  <i class="fa fa-trash" aria-hidden="true"></i>
-                </b-button>
-              </b-input-group-append>
+              <b-button
+                @click="handleChoiceMoveUp(choice)"
+                :disabled="index === 0"
+                v-b-tooltip.hover.left
+                title="Move Up"
+              >
+                <i class="fa fa-arrow-up" aria-hidden="true"></i>
+              </b-button>
+              <b-button
+                @click="handleChoiceMoveDown(choice)"
+                :disabled="
+                  index === extendedUserProfileField.choices.length - 1
+                "
+                v-b-tooltip.hover.left
+                title="Move Down"
+              >
+                <i class="fa fa-arrow-down" aria-hidden="true"></i>
+              </b-button>
+              <b-button
+                @click="handleChoiceDeleted(choice)"
+                variant="danger"
+                v-b-tooltip.hover.left
+                title="Delete Option"
+              >
+                <i class="fa fa-trash" aria-hidden="true"></i>
+              </b-button>
             </b-input-group>
-            <b-form-invalid-feedback :state="validateState($v_display_text)"
+            <b-form-invalid-feedback :state="choiceDisplayTextState(index)"
               >This field is required.</b-form-invalid-feedback
             >
           </b-form-group>
@@ -98,22 +91,20 @@
               placeholder="User will see: Other (please specify)"
               disabled
             />
-            <b-input-group-append>
-              <b-button disabled>
-                <i class="fa fa-arrow-up" aria-hidden="true"></i>
-              </b-button>
-              <b-button disabled>
-                <i class="fa fa-arrow-down" aria-hidden="true"></i>
-              </b-button>
-              <b-button
-                @click="other = false"
-                variant="danger"
-                v-b-tooltip.hover.left
-                title="Remove Other option"
-              >
-                <i class="fa fa-trash" aria-hidden="true"></i>
-              </b-button>
-            </b-input-group-append>
+            <b-button disabled>
+              <i class="fa fa-arrow-up" aria-hidden="true"></i>
+            </b-button>
+            <b-button disabled>
+              <i class="fa fa-arrow-down" aria-hidden="true"></i>
+            </b-button>
+            <b-button
+              @click="other = false"
+              variant="danger"
+              v-b-tooltip.hover.left
+              title="Remove Other option"
+            >
+              <i class="fa fa-trash" aria-hidden="true"></i>
+            </b-button>
           </b-input-group>
         </b-form-group>
       </transition-group>
@@ -135,27 +126,26 @@
       <transition-group name="fade">
         <b-card
           :title="`Link: ${link.label}`"
-          v-for="{ $model: link, label: $v_label, url: $v_url } in $v.links
-            .$each.$iter"
+          v-for="(link, index) in links"
           :key="link.key"
         >
           <b-form-group label="Label" label-cols="3" :disabled="disabled">
             <b-form-input
-              :value="link.label"
-              @input="handleLinkLabelChanged(link, $event, $v_label)"
-              :state="validateState($v_label)"
+              :model-value="link.label"
+              @update:model-value="handleLinkLabelChanged(link, $event)"
+              :state="linkLabelState(index)"
             />
-            <b-form-invalid-feedback :state="validateState($v_label)"
+            <b-form-invalid-feedback :state="linkLabelState(index)"
               >This field is required.</b-form-invalid-feedback
             >
           </b-form-group>
           <b-form-group label="URL" label-cols="3" :disabled="disabled">
             <b-form-input
-              :value="link.url"
-              @input="handleLinkURLChanged(link, $event, $v_url)"
-              :state="validateState($v_url)"
+              :model-value="link.url"
+              @update:model-value="handleLinkURLChanged(link, $event)"
+              :state="linkUrlState(index)"
             />
-            <b-form-invalid-feedback :state="validateState($v_url)"
+            <b-form-invalid-feedback :state="linkUrlState(index)"
               >This field is required.</b-form-invalid-feedback
             >
           </b-form-group>
@@ -163,8 +153,10 @@
             <b-col>
               <b-form-group :disabled="disabled">
                 <b-form-checkbox
-                  :checked="link.display_link"
-                  @input="handleLinkDisplayLinkChanged(link, $event)"
+                  :model-value="link.display_link"
+                  @update:model-value="
+                    handleLinkDisplayLinkChanged(link, $event)
+                  "
                   switch
                 >
                   Show as link?
@@ -174,8 +166,10 @@
             <b-col>
               <b-form-group :disabled="disabled">
                 <b-form-checkbox
-                  :checked="link.display_inline"
-                  @input="handleLinkDisplayInlineChanged(link, $event)"
+                  :model-value="link.display_inline"
+                  @update:model-value="
+                    handleLinkDisplayInlineChanged(link, $event)
+                  "
                   switch
                 >
                   Show inline?
@@ -230,22 +224,25 @@
 </template>
 
 <script>
-import { mapGetters, mapMutations } from "vuex";
-import { validationMixin } from "vuelidate";
-import { required, requiredIf } from "vuelidate/lib/validators";
+import { mapActions, mapState } from "pinia";
+import { useExtendedUserProfileStore } from "../../../store/modules/extendedUserProfile";
+import { useVuelidate } from "@vuelidate/core";
+import { helpers, required, requiredIf } from "@vuelidate/validators";
 import { errors } from "django-airavata-common-ui";
 export default {
-  mixins: [validationMixin],
+  setup() {
+    return { v$: useVuelidate() };
+  },
   props: ["extendedUserProfileField", "disabled"],
   computed: {
-    ...mapGetters("extendedUserProfile", ["extendedUserProfileFields"]),
+    ...mapState(useExtendedUserProfileStore, ["extendedUserProfileFields"]),
     name: {
       get() {
         return this.extendedUserProfileField.name;
       },
       set(value) {
         this.setName({ value, field: this.extendedUserProfileField });
-        this.$v.name.$touch();
+        this.v$.name.$touch();
       },
     },
     checkbox_label: {
@@ -254,7 +251,7 @@ export default {
       },
       set(value) {
         this.setCheckboxLabel({ value, field: this.extendedUserProfileField });
-        this.$v.checkbox_label.$touch();
+        this.v$.checkbox_label.$touch();
       },
     },
     help_text: {
@@ -299,41 +296,44 @@ export default {
       return this.extendedUserProfileField.links;
     },
     valid() {
-      return !this.$v.$invalid;
+      return !this.v$.$invalid;
     },
     checkboxLabelIsRequired() {
       return this.extendedUserProfileField.field_type === "user_agreement";
     },
   },
   validations() {
+    // @vuelidate/core 2: array element validation uses helpers.forEach instead
+    // of the removed `$each`. Per-element results are read from
+    // v$.choices.$each.$response.$errors[index] in the template.
     return {
       name: {
         required,
       },
       checkbox_label: {
-        required: requiredIf("checkboxLabelIsRequired"),
+        required: requiredIf(this.checkboxLabelIsRequired),
       },
       choices: {
-        $each: {
+        $each: helpers.forEach({
           display_text: {
             required,
           },
-        },
+        }),
       },
       links: {
-        $each: {
+        $each: helpers.forEach({
           label: {
             required,
           },
           url: {
             required,
           },
-        },
+        }),
       },
     };
   },
   methods: {
-    ...mapMutations("extendedUserProfile", [
+    ...mapActions(useExtendedUserProfileStore, [
       "setName",
       "setCheckboxLabel",
       "setHelpText",
@@ -352,9 +352,9 @@ export default {
       "updateFieldIndex",
       "deleteField",
     ]),
-    handleChoiceDisplayTextChanged(choice, display_text, $v) {
+    handleChoiceDisplayTextChanged(choice, display_text) {
       this.updateChoiceDisplayText({ choice, display_text });
-      $v.$touch();
+      this.v$.choices.$touch();
     },
     handleChoiceDeleted(choice) {
       this.deleteChoice({ field: this.extendedUserProfileField, choice });
@@ -377,13 +377,13 @@ export default {
         index,
       });
     },
-    handleLinkLabelChanged(link, label, $v) {
+    handleLinkLabelChanged(link, label) {
       this.updateLinkLabel({ link, label });
-      $v.$touch();
+      this.v$.links.$touch();
     },
-    handleLinkURLChanged(link, url, $v) {
+    handleLinkURLChanged(link, url) {
       this.updateLinkURL({ link, url });
-      $v.$touch();
+      this.v$.links.$touch();
     },
     handleLinkDisplayLinkChanged(link, display_link) {
       this.updateLinkDisplayLink({ link, display_link });
@@ -410,8 +410,29 @@ export default {
       });
     },
     validateState: errors.vuelidateHelpers.validateState,
+    // Per-element validation state for helpers.forEach arrays (replaces the
+    // removed `$each.$iter` per-item validation objects). Mirrors
+    // vuelidateHelpers.validateState: null until the array is dirty, then false
+    // when the element's named property has errors, true otherwise.
+    elementState(arrayValidation, index, property) {
+      if (!arrayValidation.$dirty) {
+        return null;
+      }
+      const elementErrors = arrayValidation.$each.$response.$errors[index];
+      const propertyErrors = elementErrors ? elementErrors[property] : [];
+      return propertyErrors && propertyErrors.length > 0 ? false : true;
+    },
+    choiceDisplayTextState(index) {
+      return this.elementState(this.v$.choices, index, "display_text");
+    },
+    linkLabelState(index) {
+      return this.elementState(this.v$.links, index, "label");
+    },
+    linkUrlState(index) {
+      return this.elementState(this.v$.links, index, "url");
+    },
     touch() {
-      this.$v.$touch();
+      this.v$.$touch();
     },
   },
   watch: {

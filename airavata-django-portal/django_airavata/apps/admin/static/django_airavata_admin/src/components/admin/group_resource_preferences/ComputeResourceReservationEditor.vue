@@ -20,27 +20,13 @@
       :invalid-feedback="getValidationFeedback('start_time')"
       :state="getValidationState('start_time')"
     >
-      <datetime
+      <flat-pickr
         id="start-time"
-        type="datetime"
-        :value="startTimeAsString"
-        input-class="form-control"
-        :format="{
-          year: 'numeric',
-          month: '2-digit',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          timeZoneName: 'short',
-        }"
-        :phrases="{ ok: 'Continue', cancel: 'Exit' }"
-        :hour-step="1"
-        :minute-step="30"
-        :week-start="7"
-        use12-hour
-        auto
-        @input="data.start_time = stringToDate($event)"
-      ></datetime>
+        class="form-control"
+        :model-value="startTimeAsString"
+        :config="startTimeConfig"
+        @update:model-value="data.start_time = stringToDate($event)"
+      />
     </b-form-group>
     <b-form-group
       label="End Time"
@@ -48,31 +34,16 @@
       :invalid-feedback="getValidationFeedback('end_time')"
       :state="getValidationState('end_time')"
     >
-      <datetime
+      <flat-pickr
         id="end-time"
-        type="datetime"
-        :value="endTimeAsString"
-        :input-class="{
+        :class="{
           'form-control': true,
           'is-invalid': getValidationState('end_time'),
         }"
-        :format="{
-          year: 'numeric',
-          month: '2-digit',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          timeZoneName: 'short',
-        }"
-        :phrases="{ ok: 'Continue', cancel: 'Exit' }"
-        :hour-step="1"
-        :minute-step="30"
-        :week-start="7"
-        :min-datetime="startTimeAsString"
-        use12-hour
-        auto
-        @input="data.end_time = stringToDate($event)"
-      ></datetime>
+        :model-value="endTimeAsString"
+        :config="endTimeConfig"
+        @update:model-value="data.end_time = stringToDate($event)"
+      />
     </b-form-group>
     <b-form-group
       label="Queues"
@@ -92,15 +63,12 @@
 
 <script>
 import { mixins, utils } from "django-airavata-common-ui";
-import { Datetime } from "vue-datetime";
-import "vue-datetime/dist/vue-datetime.css";
 
 export default {
   name: "compute-resource-reservation-editor",
+  // <flat-pickr> is registered globally in main.js (vue-flatpickr-component),
+  // replacing the Vue 2-only vue-datetime <datetime> picker.
   mixins: [mixins.VModelMixin],
-  components: {
-    datetime: Datetime,
-  },
   props: {
     queues: {
       type: Array,
@@ -112,10 +80,39 @@ export default {
       nameInputBegins: false,
     };
   },
-  created() {
-    this.$on("input", this.valuesChanged);
+  watch: {
+    // Vue 3 removed component $on; this replaces the previous
+    // `this.$on("input", this.valuesChanged)` self-listener: re-validate
+    // whenever the bound model changes.
+    data: {
+      handler() {
+        this.valuesChanged();
+      },
+      deep: true,
+    },
   },
   computed: {
+    startTimeConfig() {
+      return {
+        enableTime: true,
+        dateFormat: "Z",
+        altInput: true,
+        altFormat: "Y-m-d h:i K",
+        minuteIncrement: 30,
+        time_24hr: false,
+      };
+    },
+    endTimeConfig() {
+      return {
+        enableTime: true,
+        dateFormat: "Z",
+        altInput: true,
+        altFormat: "Y-m-d h:i K",
+        minuteIncrement: 30,
+        time_24hr: false,
+        minDate: this.startTimeAsString,
+      };
+    },
     startTimeAsString() {
       return this.data.start_time.toISOString();
     },

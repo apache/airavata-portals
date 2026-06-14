@@ -16,7 +16,7 @@ import IdentityServiceUserManagementContainer from "./components/users/IdentityS
 import UnverifiedEmailUserManagementContainer from "./components/users/UnverifiedEmailUserManagementContainer.vue";
 import UserManagementContainer from "./components/users/UserManagementContainer.vue";
 import NoticesManagementContainer from "./components/notices/NoticesManagementContainer.vue";
-import VueRouter from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 
 const routes = [
   {
@@ -160,10 +160,9 @@ const routes = [
     path: "/developers",
     component: DevelopersContainer,
     name: "developers",
-  }
+  },
 ];
-export default new VueRouter({
-  mode: "history",
-  base: "/admin/",
+export default createRouter({
+  history: createWebHistory("/admin/"),
   routes: routes,
 });

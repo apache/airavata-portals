@@ -1,7 +1,7 @@
 <template>
   <div class="has-fixed-footer">
     <div class="row mb-2">
-      <div class="col-auto mr-auto">
+      <div class="col-auto me-auto">
         <h1 class="h4">Extended User Profile Editor</h1>
         <p class="text-muted small">
           Add and edit additional user profile fields for gateway users to
@@ -44,11 +44,11 @@
         <b-button
           variant="primary"
           @click="save"
-          class="ml-2"
+          class="ms-2"
           :disabled="!isGatewayAdmin"
           >Save</b-button
         >
-        <b-button variant="secondary" class="ml-auto" href="/admin/users"
+        <b-button variant="secondary" class="ms-auto" href="/admin/users"
           >Return to Manage Users</b-button
         >
       </div>
@@ -57,7 +57,8 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from "vuex";
+import { mapActions, mapState } from "pinia";
+import { useExtendedUserProfileStore } from "../../store/modules/extendedUserProfile";
 import ExtendedUserProfileFieldEditor from "./field-editors/ExtendedUserProfileFieldEditor.vue";
 import { mixins } from "django-airavata-common-ui";
 import { session } from "django-airavata-api";
@@ -71,13 +72,13 @@ export default {
     this.loadExtendedUserProfileFields();
   },
   methods: {
-    ...mapActions("extendedUserProfile", [
+    ...mapActions(useExtendedUserProfileStore, [
       "loadExtendedUserProfileFields",
       "saveExtendedUserProfileFields",
-      "addExtendedUserProfileField",
+      "addExtendedUserProfileFieldOfType",
     ]),
     addField(field_type) {
-      this.addExtendedUserProfileField({ field_type });
+      this.addExtendedUserProfileFieldOfType({ field_type });
       this.$nextTick(() => {
         this.$refs.bottom.scrollIntoView();
       });
@@ -127,7 +128,7 @@ export default {
     },
   },
   computed: {
-    ...mapGetters("extendedUserProfile", ["extendedUserProfileFields"]),
+    ...mapState(useExtendedUserProfileStore, ["extendedUserProfileFields"]),
     valid() {
       return this.childComponentsAreValid;
     },

@@ -7,7 +7,7 @@
       username. Also, after updating the username the user will need to log out
       and log back in.
     </p>
-    <b-alert variant="warning" :show="airavataUserProfileExists">
+    <b-alert variant="warning" :model-value="airavataUserProfileExists">
       This user already has an Airavata User Profile. Giving the user a new
       username will result in the user getting a new Airavata User Profile and
       losing the old one and everything (projects, experiments, etc.) associated
@@ -17,16 +17,14 @@
       <b-input-group>
         <b-form-input
           id="new-username"
-          v-model="$v.newUsername.$model"
-          :state="validateState($v.newUsername)"
+          v-model="v$.newUsername.$model"
+          :state="validateState(v$.newUsername)"
         />
-        <b-input-group-append>
-          <b-button @click="newUsername = email">Copy Email Address</b-button>
-        </b-input-group-append>
+        <b-button @click="newUsername = email">Copy Email Address</b-button>
       </b-input-group>
       <b-form-invalid-feedback
-        :state="validateState($v.newUsername)"
-        v-if="!$v.newUsername.emailOrMatchesRegex"
+        :state="validateState(v$.newUsername)"
+        v-if="v$.newUsername.emailOrMatchesRegex.$invalid"
       >
         Username can only contain lowercase letters, numbers, underscores and
         hyphens OR it can be the same as the email address.
@@ -35,14 +33,14 @@
     <confirmation-button
       variant="primary"
       @confirmed="updateUsername"
-      :disabled="$v.$invalid || username === newUsername"
+      :disabled="v$.$invalid || username === newUsername"
       dialog-title="Please confirm username change"
     >
       Please confirm that you want to change the user's username to
       <strong>{{ newUsername }}</strong
       >. After updating the username the user will need to log out and log back
       in.
-      <b-alert variant="danger" :show="airavataUserProfileExists">
+      <b-alert variant="danger" :model-value="airavataUserProfileExists">
         This user already has an Airavata User Profile. Giving the user a new
         username will result in the user getting a new Airavata User Profile and
         <strong
@@ -56,11 +54,13 @@
 
 <script>
 import { components, errors } from "django-airavata-common-ui";
-import { validationMixin } from "vuelidate";
-import { helpers, or, required, sameAs } from "vuelidate/lib/validators";
+import { useVuelidate } from "@vuelidate/core";
+import { helpers, or, required, sameAs } from "@vuelidate/validators";
 export default {
   name: "change-username-panel",
-  mixins: [validationMixin],
+  setup() {
+    return { v$: useVuelidate() };
+  },
   props: {
     username: {
       type: String,
@@ -84,8 +84,10 @@ export default {
     };
   },
   validations() {
-    const usernameRegex = helpers.regex("newUsername", /^[a-z0-9_-]+$/);
-    const emailOrMatchesRegex = or(usernameRegex, sameAs("email"));
+    // @vuelidate/validators 2: helpers.regex takes just the regexp, and sameAs
+    // compares against a value (was a sibling-field name in vuelidate 0.x).
+    const usernameRegex = helpers.regex(/^[a-z0-9_-]+$/);
+    const emailOrMatchesRegex = or(usernameRegex, sameAs(this.email));
     return {
       newUsername: {
         required,
@@ -95,7 +97,7 @@ export default {
   },
   methods: {
     updateUsername() {
-      if (!this.$v.$invalid) {
+      if (!this.v$.$invalid) {
         this.$emit("update-username", [this.username, this.newUsername]);
       }
     },

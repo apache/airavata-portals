@@ -14,18 +14,16 @@
                 <b-form-input
                   v-model.trim="experimentId"
                   placeholder="Experiment ID"
-                  @keydown.native.enter="
+                  @keydown.enter="
                     experimentId && showExperimentDetails(experimentId)
                   "
                 />
-                <b-input-group-append>
-                  <b-button
-                    :disabled="!experimentId"
-                    @click="showExperimentDetails(experimentId)"
-                    variant="primary"
-                    >Load</b-button
-                  >
-                </b-input-group-append>
+                <b-button
+                  :disabled="!experimentId"
+                  @click="showExperimentDetails(experimentId)"
+                  variant="primary"
+                  >Load</b-button
+                >
               </b-input-group>
             </b-form-group>
           </b-card-text>
@@ -37,18 +35,14 @@
                 <b-form-input
                   v-model.trim="jobId"
                   placeholder="Job ID"
-                  @keydown.native.enter="
-                    jobId && showExperimentDetailsForJobId(jobId)
-                  "
+                  @keydown.enter="jobId && showExperimentDetailsForJobId(jobId)"
                 />
-                <b-input-group-append>
-                  <b-button
-                    :disabled="!jobId"
-                    @click="showExperimentDetailsForJobId(jobId)"
-                    variant="primary"
-                    >Load</b-button
-                  >
-                </b-input-group-append>
+                <b-button
+                  :disabled="!jobId"
+                  @click="showExperimentDetailsForJobId(jobId)"
+                  variant="primary"
+                  >Load</b-button
+                >
               </b-input-group>
             </b-form-group>
           </b-card-text>
@@ -62,25 +56,21 @@
             <div class="col">
               <b-card header="Filter Options">
                 <b-input-group class="w-100 mb-2">
-                  <b-input-group-prepend is-text>
+                  <b-input-group-text>
                     <i class="fa fa-calendar-week" aria-hidden="true"></i>
-                  </b-input-group-prepend>
+                  </b-input-group-text>
                   <flat-pickr
                     :value="dateRange"
                     :config="dateConfig"
                     @on-change="dateRangeChanged"
                     class="form-control"
                   />
-                  <b-input-group-append>
-                    <b-button
-                      @click="getPast24Hours"
-                      variant="outline-secondary"
-                      >Past 24 Hours</b-button
-                    >
-                    <b-button @click="getPastWeek" variant="outline-secondary"
-                      >Past Week</b-button
-                    >
-                  </b-input-group-append>
+                  <b-button @click="getPast24Hours" variant="outline-secondary"
+                    >Past 24 Hours</b-button
+                  >
+                  <b-button @click="getPastWeek" variant="outline-secondary"
+                    >Past Week</b-button
+                  >
                 </b-input-group>
                 <b-dropdown text="Add Filters" class="mb-2">
                   <b-dropdown-item
@@ -103,60 +93,54 @@
                   <b-form-input
                     v-model="usernameFilter"
                     placeholder="Username"
-                    @keydown.native.enter="loadStatistics"
+                    @keydown.enter="loadStatistics"
                   />
-                  <b-input-group-append>
-                    <b-button @click="removeUsernameFilter">
-                      <i class="fa fa-times"></i>
-                      <span class="sr-only">Remove username filter</span>
-                    </b-button>
-                  </b-input-group-append>
+                  <b-button @click="removeUsernameFilter">
+                    <i class="fa fa-times"></i>
+                    <span class="visually-hidden">Remove username filter</span>
+                  </b-button>
                 </b-input-group>
                 <b-input-group v-if="applicationNameFilterEnabled" class="mb-2">
                   <b-form-select
                     v-model="applicationNameFilter"
                     :options="applicationNameOptions"
-                    @input="loadStatistics"
+                    @update:model-value="loadStatistics"
                   >
-                    <template slot="first">
+                    <template v-slot:first>
                       <option :value="null" disabled>
                         Select an application to filter on
                       </option>
                     </template>
                   </b-form-select>
-                  <b-input-group-append>
-                    <b-button @click="removeApplicationNameFilter">
-                      <i class="fa fa-times"></i>
-                      <span class="sr-only"
-                        >Remove application name filter</span
-                      >
-                    </b-button>
-                  </b-input-group-append>
+                  <b-button @click="removeApplicationNameFilter">
+                    <i class="fa fa-times"></i>
+                    <span class="visually-hidden"
+                      >Remove application name filter</span
+                    >
+                  </b-button>
                 </b-input-group>
                 <b-input-group v-if="hostnameFilterEnabled" class="mb-2">
                   <b-form-select
                     v-model="hostnameFilter"
                     :options="hostnameOptions"
-                    @input="loadStatistics"
+                    @update:model-value="loadStatistics"
                   >
-                    <template slot="first">
+                    <template v-slot:first>
                       <option :value="null" disabled>
                         Select compute resource to filter on
                       </option>
                     </template>
                   </b-form-select>
-                  <b-input-group-append>
-                    <b-button @click="removeHostnameFilter">
-                      <i class="fa fa-times"></i>
-                      <span class="sr-only">Remove hostname filter</span>
-                    </b-button>
-                  </b-input-group-append>
+                  <b-button @click="removeHostnameFilter">
+                    <i class="fa fa-times"></i>
+                    <span class="visually-hidden">Remove hostname filter</span>
+                  </b-button>
                 </b-input-group>
-                <template slot="footer">
+                <template v-slot:footer>
                   <div class="d-flex justify-content-end">
                     <b-button
                       @click="loadStatistics"
-                      class="ml-auto"
+                      class="ms-auto"
                       variant="primary"
                       >Get Statistics</b-button
                     >
@@ -182,7 +166,9 @@
                 title="Total Experiments"
                 @click="selectExperiments('all_experiments')"
               >
-                <span slot="link-text">All</span>
+                <template v-slot:link-text>
+                  <span>All</span>
+                </template>
               </experiment-statistics-card>
             </div>
             <div class="col-xl-2 col-md-4">
@@ -247,19 +233,19 @@
             <div class="col">
               <b-card>
                 <b-table :fields="fields" :items="items">
-                  <template slot="cell(execution_id)" slot-scope="data">
+                  <template #cell(execution_id)="data">
                     <application-name :application-interface-id="data.value" />
                   </template>
-                  <template slot="cell(resource_host_id)" slot-scope="data">
+                  <template #cell(resource_host_id)="data">
                     <compute-resource-name :compute-resource-id="data.value" />
                   </template>
-                  <template slot="cell(creation_time)" slot-scope="data">
+                  <template #cell(creation_time)="data">
                     <human-date :date="data.value" />
                   </template>
-                  <template slot="cell(experiment_status)" slot-scope="data">
+                  <template #cell(experiment_status)="data">
                     <experiment-status-badge :status-name="data.value.name" />
                   </template>
-                  <template slot="cell(actions)" slot-scope="data">
+                  <template #cell(actions)="data">
                     <b-link
                       @click="showExperimentDetails(data.item.experiment_id)"
                     >
@@ -282,16 +268,18 @@
           v-for="experimentTab in experimentDetailTabs"
           :key="experimentTab.experiment.experiment_id"
         >
-          <template slot="title">
+          <template v-slot:title>
             {{ experimentTab.tabTitle }}
             <b-link
               @click="
-                removeExperimentDetailTab(experimentTab.experiment.experiment_id)
+                removeExperimentDetailTab(
+                  experimentTab.experiment.experiment_id,
+                )
               "
               class="text-secondary"
             >
               <i class="fas fa-times"></i>
-              <span class="sr-only">Close experiment tab</span>
+              <span class="visually-hidden">Close experiment tab</span>
             </b-link>
           </template>
           <experiment-details-view :experiment="experimentTab.experiment" />
@@ -461,8 +449,8 @@ export default {
         // First create a Set of all compute resource ids in the GRPs
         const groupResourceProfileCompResources = new Set(
           this.groupResourceProfiles.flatMap((grp) =>
-            grp.compute_preferences.map((cp) => cp.compute_resource_id)
-          )
+            grp.compute_preferences.map((cp) => cp.compute_resource_id),
+          ),
         );
         const options = this.computeResourceNames
           .filter((name) => groupResourceProfileCompResources.has(name.host_id))
@@ -480,9 +468,13 @@ export default {
     selectedExperimentsTabTitle() {
       if (this.selectedExperimentSummariesKey === "all_experiments") {
         return "All Experiments";
-      } else if (this.selectedExperimentSummariesKey === "created_experiments") {
+      } else if (
+        this.selectedExperimentSummariesKey === "created_experiments"
+      ) {
         return "Created Experiments";
-      } else if (this.selectedExperimentSummariesKey === "running_experiments") {
+      } else if (
+        this.selectedExperimentSummariesKey === "running_experiments"
+      ) {
         return "Running Experiments";
       } else if (
         this.selectedExperimentSummariesKey === "completed_experiments"
@@ -508,16 +500,17 @@ export default {
     },
     loadApplicationInterfaces() {
       return services.ApplicationInterfaceService.list().then(
-        (appInterfaces) => (this.appInterfaces = appInterfaces)
+        (appInterfaces) => (this.appInterfaces = appInterfaces),
       );
     },
     loadComputeResources() {
       return services.ComputeResourceService.namesList().then(
-        (names) => (this.computeResourceNames = names)
+        (names) => (this.computeResourceNames = names),
       );
     },
     async loadGroupResourceProfiles() {
-      this.groupResourceProfiles = await services.GroupResourceProfileService.list();
+      this.groupResourceProfiles =
+        await services.GroupResourceProfileService.list();
     },
     loadStatistics() {
       const requestData = {
@@ -536,7 +529,7 @@ export default {
       return services.ExperimentStatisticsService.get(requestData).then(
         (stats) => {
           this.experimentStatisticsPaginator = stats;
-        }
+        },
       );
     },
     getPast24Hours() {
@@ -589,7 +582,7 @@ export default {
             {
               lookup: experimentId,
             },
-            { ignoreErrors: true }
+            { ignoreErrors: true },
           );
           this.experimentDetailTabs.push({
             tabTitle: tabTitle || exp.experiment_name,
@@ -604,7 +597,7 @@ export default {
                 type: "WARNING",
                 message: `No experiment exists with experiment id ${experimentId}`,
                 duration: 5,
-              })
+              }),
             );
           } else {
             utils.FetchUtils.reportError(error);
@@ -622,7 +615,7 @@ export default {
             type: "WARNING",
             message: `No experiment exists with job id ${jobId}`,
             duration: 5,
-          })
+          }),
         );
       } else {
         if (searchResults.results.length > 1) {
@@ -631,12 +624,12 @@ export default {
               type: "WARNING",
               message: `More than one experiment matches job id ${jobId}, showing the latest one`,
               duration: 5,
-            })
+            }),
           );
         }
         this.showExperimentDetails(
           searchResults.results[0].experiment_id,
-          `Job ${jobId}`
+          `Job ${jobId}`,
         );
       }
     },
@@ -651,7 +644,7 @@ export default {
     },
     getExperimentDetailTabsIndex(experimentId) {
       return this.experimentDetailTabs.findIndex(
-        (tab) => tab.experiment.experiment_id === experimentId
+        (tab) => tab.experiment.experiment_id === experimentId,
       );
     },
     removeExperimentDetailTab(experimentId) {

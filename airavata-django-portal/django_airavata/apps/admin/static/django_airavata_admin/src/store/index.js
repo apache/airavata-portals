@@ -1,16 +1,8 @@
-import Vuex from "vuex";
-import extendedUserProfile from "./modules/extendedUserProfile";
+import { createPinia } from "pinia";
 
-const debug = process.env.NODE_ENV !== "production";
-
-function createStore(Vue) {
-  Vue.use(Vuex);
-  return new Vuex.Store({
-    modules: {
-      extendedUserProfile,
-    },
-    strict: debug,
-  });
+// Pinia replaces Vuex. Stores are defined with defineStore (see
+// ./modules/extendedUserProfile.js); the entry point installs this Pinia
+// instance on the app.
+export default function createStore() {
+  return createPinia();
 }
-
-export default createStore;

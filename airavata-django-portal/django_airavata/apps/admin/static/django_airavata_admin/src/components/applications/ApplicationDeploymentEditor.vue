@@ -93,7 +93,7 @@
             @change="defaultQueueChanged"
             :disabled="readonly"
           >
-            <template slot="first">
+            <template v-slot:first>
               <option :value="null">Select a Default Queue</option>
             </template>
           </b-form-select>
@@ -173,14 +173,6 @@ export default {
       dirty: false,
     };
   },
-  mounted() {
-    this.$on("input", () => {
-      this.dirty = true;
-    });
-  },
-  destroyed() {
-    this.$off("input");
-  },
   computed: {
     name() {
       if (this.computeResource) {
@@ -211,7 +203,7 @@ export default {
     maxNodes() {
       const queue = this.computeResource
         ? this.computeResource.batch_queues.find(
-            (q) => q.queue_name === this.data.default_queue_name
+            (q) => q.queue_name === this.data.default_queue_name,
           )
         : null;
       return queue ? queue.max_nodes : 0;
@@ -219,7 +211,7 @@ export default {
     maxCPUCount() {
       const queue = this.computeResource
         ? this.computeResource.batch_queues.find(
-            (q) => q.queue_name === this.data.default_queue_name
+            (q) => q.queue_name === this.data.default_queue_name,
           )
         : null;
       return queue ? queue.max_processors : 0;
@@ -227,7 +219,7 @@ export default {
     maxWalltime() {
       const queue = this.computeResource
         ? this.computeResource.batch_queues.find(
-            (q) => q.queue_name === this.data.default_queue_name
+            (q) => q.queue_name === this.data.default_queue_name,
           )
         : null;
       return queue ? queue.max_run_time : 0;
@@ -235,7 +227,7 @@ export default {
     cpuPerNode() {
       const queue = this.computeResource
         ? this.computeResource.batch_queues.find(
-            (q) => q.queue_name === this.data.default_queue_name
+            (q) => q.queue_name === this.data.default_queue_name,
           )
         : null;
       return queue ? queue.cpu_per_node : 0;
@@ -283,7 +275,7 @@ export default {
     defaultQueueChanged(queueName) {
       if (queueName) {
         const queue = this.computeResource.batch_queues.find(
-          (q) => q.queue_name === queueName
+          (q) => q.queue_name === queueName,
         );
         this.data.default_node_count = queue.default_node_count;
         this.data.default_cpu_count = queue.default_cpu_count;
@@ -305,6 +297,15 @@ export default {
   watch: {
     sharedEntity(newValue) {
       this.localSharedEntity = newValue.clone();
+    },
+    // Vue 3 removed component $on/$off; replaces the previous
+    // mounted `$on("input", () => this.dirty = true)` self-listener by marking
+    // the editor dirty whenever the bound model changes.
+    data: {
+      handler() {
+        this.dirty = true;
+      },
+      deep: true,
     },
   },
 };

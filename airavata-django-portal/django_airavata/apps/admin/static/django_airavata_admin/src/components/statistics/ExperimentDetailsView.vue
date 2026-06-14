@@ -14,8 +14,12 @@
                 :link-classes="['text-reset']"
               >
                 copy
-                <span slot="icon"></span>
-                <span slot="tooltip">Copied ID!</span> </clipboard-copy-link
+                <template v-slot:icon>
+                  <span></span>
+                </template>
+                <template v-slot:tooltip>
+                  <span>Copied ID!</span>
+                </template> </clipboard-copy-link
               >)
             </small>
           </td>
@@ -42,7 +46,7 @@
           <td v-if="fullExperiment.applicationName">
             {{ fullExperiment.applicationName }}
           </td>
-          <td v-else class="font-italic text-muted">
+          <td v-else class="fst-italic text-muted">
             Unable to load interface
             {{ fullExperiment.experiment.execution_id }}
           </td>
@@ -52,7 +56,7 @@
           <td v-if="fullExperiment.computeHostName">
             {{ fullExperiment.computeHostName }}
           </td>
-          <td v-else class="font-italic text-muted">
+          <td v-else class="fst-italic text-muted">
             Unable to load compute resource {{ fullExperiment.resourceHostId }}
           </td>
         </tr>
@@ -61,7 +65,7 @@
           <td>
             <template v-if="fullExperiment.experiment.isProgressing">
               <i class="fa fa-sync-alt fa-spin"></i>
-              <span class="sr-only">Progressing...</span>
+              <span class="visually-hidden">Progressing...</span>
             </template>
             {{ fullExperiment.experimentStatusName }}
           </td>
@@ -162,8 +166,8 @@
           <th scope="row">Wall Time Limit</th>
           <td>
             {{
-              experiment.user_configuration_data.computational_resource_scheduling
-                .wall_time_limit
+              experiment.user_configuration_data
+                .computational_resource_scheduling.wall_time_limit
             }}
             minutes
           </td>
@@ -172,8 +176,8 @@
           <th scope="row">CPU Count</th>
           <td>
             {{
-              experiment.user_configuration_data.computational_resource_scheduling
-                .total_cpu_count
+              experiment.user_configuration_data
+                .computational_resource_scheduling.total_cpu_count
             }}
           </td>
         </tr>
@@ -181,8 +185,8 @@
           <th scope="row">Node Count</th>
           <td>
             {{
-              experiment.user_configuration_data.computational_resource_scheduling
-                .node_count
+              experiment.user_configuration_data
+                .computational_resource_scheduling.node_count
             }}
           </td>
         </tr>
@@ -204,8 +208,8 @@
           <th scope="row">Queue</th>
           <td>
             {{
-              experiment.user_configuration_data.computational_resource_scheduling
-                .queue_name
+              experiment.user_configuration_data
+                .computational_resource_scheduling.queue_name
             }}
           </td>
         </tr>
@@ -258,7 +262,12 @@
           <th scope="row">Experiment Data Dir</th>
           <td>
             <div>{{ experimentDataDir }}</div>
-            <b-alert show variant="warning" v-if="archived" class="mt-2">
+            <b-alert
+              :model-value="true"
+              variant="warning"
+              v-if="archived"
+              class="mt-2"
+            >
               This directory was archived in
               <b>{{ experimentArchive.archive_name }}</b> on
               {{ experimentArchive.created_date }}.
@@ -407,7 +416,7 @@ export default {
         this.fullExperiment.experiment.experiment_inputs.forEach((input) => {
           result[input.name] = this.getDataProducts(
             input,
-            this.fullExperiment.input_data_products
+            this.fullExperiment.input_data_products,
           );
         });
       }
@@ -419,7 +428,7 @@ export default {
         this.fullExperiment.experiment.experiment_outputs.forEach((output) => {
           result[output.name] = this.getDataProducts(
             output,
-            this.fullExperiment.output_data_products
+            this.fullExperiment.output_data_products,
           );
         });
       }
@@ -430,12 +439,12 @@ export default {
     },
     lastModifiedTime: function () {
       return moment(
-        this.fullExperiment.experimentStatus.time_of_state_change
+        this.fullExperiment.experimentStatus.time_of_state_change,
       ).fromNow();
     },
     jobCreationTimes: function () {
       return this.fullExperiment.job_details.map((jobDetail) =>
-        moment(jobDetail.creation_time).fromNow()
+        moment(jobDetail.creation_time).fromNow(),
       );
     },
     failedJobs() {
@@ -445,7 +454,7 @@ export default {
             this.experiment.latestStatus.state ===
               models.ExperimentState.FAILED ||
             (job.latestJobStatus &&
-              job.latestJobStatus.job_state === models.JobState.FAILED)
+              job.latestJobStatus.job_state === models.JobState.FAILED),
         );
       } else {
         return [];
@@ -477,16 +486,16 @@ export default {
       if (!io.value || !collection) {
         return [];
       }
-      let dataProducts = null;
+      let dataProducts;
       if (io.type === models.DataType.URI_COLLECTION) {
         const dataProductURIs = io.value.split(",");
         dataProducts = dataProductURIs.map((uri) =>
-          collection.find((dp) => dp.product_uri === uri)
+          collection.find((dp) => dp.product_uri === uri),
         );
       } else {
         const dataProductURI = io.value;
         dataProducts = collection.filter(
-          (dp) => dp.product_uri === dataProductURI
+          (dp) => dp.product_uri === dataProductURI,
         );
       }
       return dataProducts
