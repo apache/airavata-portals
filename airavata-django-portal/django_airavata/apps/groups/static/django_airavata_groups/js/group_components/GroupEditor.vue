@@ -1,48 +1,50 @@
 <template>
-  <div>
+  <div class="space-y-6">
     <Alert
       v-if="showDismissibleAlert.dismissable"
       :variant="
         showDismissibleAlert.variant === 'danger' ? 'destructive' : 'default'
       "
-      class="mb-4"
     >
       <AlertDescription class="flex w-full items-start gap-2">
         <span>{{ showDismissibleAlert.message }}</span>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           class="ml-auto shrink-0"
           @click="showDismissibleAlert.dismissable = false"
         >
           <X class="size-4" />
-        </button>
+        </Button>
       </AlertDescription>
     </Alert>
 
-    <form @submit.prevent="submitForm">
-      <div class="mb-4 grid gap-2">
-        <Label for="group_name">Group Name:</Label>
-        <Input
-          id="group_name"
-          type="text"
-          v-model="localGroup.name"
-          required
-          placeholder="Enter group name"
-        />
-        <p class="text-sm text-muted-foreground">
-          Name should only contain Alpha Characters
-        </p>
-      </div>
+    <form class="space-y-6" @submit.prevent="submitForm">
+      <div class="space-y-4">
+        <div class="space-y-1.5">
+          <Label for="group_name">Group Name</Label>
+          <Input
+            id="group_name"
+            type="text"
+            v-model="localGroup.name"
+            required
+            placeholder="Enter group name"
+          />
+          <p class="text-sm text-muted-foreground">
+            Name should only contain alpha characters.
+          </p>
+        </div>
 
-      <div class="mb-4 grid gap-2">
-        <Label for="description">Description:</Label>
-        <Textarea
-          id="description"
-          :rows="6"
-          v-model="localGroup.description"
-          required
-          placeholder="Enter description of the group"
-        />
+        <div class="space-y-1.5">
+          <Label for="description">Description</Label>
+          <Textarea
+            id="description"
+            :rows="6"
+            v-model="localGroup.description"
+            required
+            placeholder="Enter description of the group"
+          />
+        </div>
       </div>
 
       <Card>
@@ -60,7 +62,8 @@
         </CardContent>
       </Card>
     </form>
-    <div class="mt-4 flex justify-end">
+
+    <div class="flex justify-end">
       <Button @click="submitForm">Submit</Button>
     </div>
   </div>

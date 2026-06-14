@@ -7,13 +7,14 @@
     >
       <AlertDescription class="flex w-full items-start gap-2">
         <span>{{ alertMsg }}</span>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           class="ml-auto shrink-0"
           @click="showDismissibleAlert = false"
         >
           <X class="size-4" />
-        </button>
+        </Button>
       </AlertDescription>
     </Alert>
     <Table>

@@ -1,11 +1,17 @@
 <template>
-  <group-editor :group="newGroup" @saved="handleSaved"></group-editor>
+  <main-layout
+    title="Create Group"
+    subtitle="Create a new group and choose its members."
+  >
+    <group-editor :group="newGroup" @saved="handleSaved"></group-editor>
+  </main-layout>
 </template>
 
 <script>
 import GroupEditor from "../group_components/GroupEditor.vue";
 
 import { models, session } from "django-airavata-api";
+import { components as comps } from "django-airavata-common-ui";
 export default {
   name: "group-create-container",
   props: {
@@ -20,6 +26,7 @@ export default {
     };
   },
   components: {
+    "main-layout": comps.MainLayout,
     GroupEditor,
   },
   methods: {

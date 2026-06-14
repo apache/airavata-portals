@@ -1,12 +1,14 @@
 <template>
-  <div>
-    <div class="mb-4 flex items-center justify-between">
-      <h1 class="text-xl font-semibold">Groups</h1>
+  <main-layout
+    title="Groups"
+    subtitle="Create and manage groups to share resources with other users."
+  >
+    <template #actions>
       <Button as="a" href="create">
         Create New Group
         <Plus class="size-4" aria-hidden="true" />
       </Button>
-    </div>
+    </template>
     <Card>
       <CardContent>
         <group-list :groupsForOwners="groupsOwners"></group-list>
@@ -17,7 +19,7 @@
         ></pager>
       </CardContent>
     </Card>
-  </div>
+  </main-layout>
 </template>
 
 <script>
@@ -35,6 +37,7 @@ export default {
     };
   },
   components: {
+    "main-layout": comps.MainLayout,
     "group-list": GroupList,
     pager: comps.Pager,
     Plus,

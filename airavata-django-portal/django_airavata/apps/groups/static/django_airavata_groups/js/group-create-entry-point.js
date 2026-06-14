@@ -1,5 +1,4 @@
-import { h } from "vue";
-import { components, entry } from "django-airavata-common-ui";
+import { entry } from "django-airavata-common-ui";
 import GroupCreateContainer from "./containers/GroupCreateContainer.vue";
 
 // Tailwind v4 + shadcn-vue design tokens and base styles.
@@ -9,10 +8,6 @@ import "django-airavata-common-ui/css/app.css";
 const mountEl = document.getElementById("group-create");
 const next = mountEl?.dataset.next || "/groups/";
 
-const App = {
-  render() {
-    return h(components.MainLayout, () => [h(GroupCreateContainer, { next })]);
-  },
-};
-
-entry(App).mount("#group-create");
+// The container renders its own <main-layout> (page header + gutter), so it is
+// mounted directly here instead of being wrapped again.
+entry(GroupCreateContainer, { next }).mount("#group-create");

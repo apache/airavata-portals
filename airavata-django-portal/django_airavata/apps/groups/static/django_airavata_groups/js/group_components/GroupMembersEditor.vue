@@ -69,35 +69,39 @@
 
       <div class="flex flex-row justify-center gap-2 md:flex-col md:justify-start">
         <Button
+          size="icon"
           :disabled="selectedUsers.length < 1"
           @click="addSelectedMembers"
           title="Add selected members"
         >
-          <ChevronRight class="size-5" />
+          <ChevronRight class="size-4" />
         </Button>
 
         <Button
+          size="icon"
           :disabled="nonMembers.length < 1"
           @click="showAdd = true"
           title="Add all members"
         >
-          <ChevronsRight class="size-5" />
+          <ChevronsRight class="size-4" />
         </Button>
 
         <Button
+          size="icon"
           :disabled="membersCount < 2"
           @click="showRemove = true"
           title="Remove all members"
         >
-          <ChevronsLeft class="size-5" />
+          <ChevronsLeft class="size-4" />
         </Button>
 
         <Button
+          size="icon"
           :disabled="selectedMembers.length < 1"
           @click="removeSelectedMembers"
           title="Remove selected members"
         >
-          <ChevronLeft class="size-5" />
+          <ChevronLeft class="size-4" />
         </Button>
 
         <Dialog v-model:open="showRemove">

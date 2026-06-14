@@ -14,22 +14,24 @@
     <TableCell>{{ ownerUsername }}</TableCell>
     <TableCell>{{ group.description }}</TableCell>
     <TableCell>
-      <div class="flex items-center gap-3">
-        <a
+      <div class="flex items-center gap-2">
+        <Button
           v-if="group.is_owner || group.is_admin"
-          class="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80"
+          as="a"
+          variant="ghost"
+          size="sm"
           :href="'/groups/edit/' + encodeURIComponent(group.id) + '/'"
         >
           Edit <Pencil class="size-4" />
-        </a>
-        <button
+        </Button>
+        <Button
           v-if="deleteable"
-          type="button"
-          class="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80"
+          variant="ghost"
+          size="sm"
           @click="show = true"
         >
           Delete <Trash2 class="size-4" />
-        </button>
+        </Button>
       </div>
       <Dialog v-model:open="show">
         <DialogContent>

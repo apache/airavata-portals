@@ -1,11 +1,17 @@
 <template>
-  <group-editor v-if="group" :group="group" @saved="handleSaved"></group-editor>
+  <main-layout
+    title="Edit Group"
+    subtitle="Update group details and manage its members."
+  >
+    <group-editor v-if="group" :group="group" @saved="handleSaved"></group-editor>
+  </main-layout>
 </template>
 
 <script>
 import GroupEditor from "../group_components/GroupEditor.vue";
 
 import { services } from "django-airavata-api";
+import { components as comps } from "django-airavata-common-ui";
 
 export default {
   name: "group-edit-container",
@@ -25,6 +31,7 @@ export default {
     };
   },
   components: {
+    "main-layout": comps.MainLayout,
     GroupEditor,
   },
   methods: {
