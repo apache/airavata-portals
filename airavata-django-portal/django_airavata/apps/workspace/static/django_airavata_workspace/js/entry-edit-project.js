@@ -1,5 +1,5 @@
 import { h } from "vue";
-import { components, entry } from "django-airavata-common-ui";
+import { entry } from "django-airavata-common-ui";
 // Tailwind v4 + shadcn-vue design tokens and base styles (shared with common).
 import "django-airavata-common-ui/css/app.css";
 import EditProjectContainer from "./containers/EditProjectContainer.vue";
@@ -13,11 +13,10 @@ import EditProjectContainer from "./containers/EditProjectContainer.vue";
 const el = document.getElementById("edit-project");
 const projectId = el?.dataset.projectId ?? null;
 
+// The container renders its own MainLayout (page header + actions slot).
 const App = {
   render() {
-    return h(components.MainLayout, () => [
-      h(EditProjectContainer, { projectId }),
-    ]);
+    return h(EditProjectContainer, { projectId });
   },
 };
 

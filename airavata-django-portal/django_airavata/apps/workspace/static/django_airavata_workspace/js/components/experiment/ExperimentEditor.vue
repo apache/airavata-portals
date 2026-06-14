@@ -1,30 +1,28 @@
 <template>
-  <div>
+  <main-layout>
+    <template #title>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">
+        <slot name="title">Experiment Editor</slot>
+      </h1>
+      <p
+        v-if="appModule"
+        class="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground uppercase"
+      >
+        <CodeIcon class="size-4" aria-hidden="true" />
+        {{ appModule.app_module_name }}
+      </p>
+    </template>
+    <template #actions>
+      <share-button
+        ref="shareButton"
+        :entity-id="localExperiment.experiment_id"
+        :entity-label="'Experiment'"
+        :parent-entity-id="localExperiment.project_id"
+        :parent-entity-label="'Project'"
+        :auto-add-default-gateway-users-group="false"
+      />
+    </template>
     <unsaved-changes-guard :dirty="dirty" />
-    <div class="flex">
-      <div class="mr-auto">
-        <h1 class="mb-4 text-xl font-semibold">
-          <div
-            v-if="appModule"
-            class="application-name text-muted-foreground uppercase"
-          >
-            <CodeIcon class="inline size-4" aria-hidden="true" />
-            {{ appModule.app_module_name }}
-          </div>
-          <slot name="title">Experiment Editor</slot>
-        </h1>
-      </div>
-      <div>
-        <share-button
-          ref="shareButton"
-          :entity-id="localExperiment.experiment_id"
-          :entity-label="'Experiment'"
-          :parent-entity-id="localExperiment.project_id"
-          :parent-entity-label="'Project'"
-          :auto-add-default-gateway-users-group="false"
-        />
-      </div>
-    </div>
     <form novalidate>
       <div class="mb-4">
         <div class="space-y-1.5">
@@ -54,7 +52,7 @@
             v-model="localExperiment.project_id"
             required
             :aria-invalid="getValidationState('project_id') === false"
-            class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
+            :class="nativeSelectClass"
           >
             <option :value="null" disabled>Select a Project</option>
             <optgroup label="My Projects">
@@ -94,9 +92,9 @@
         />
       </div>
       <div>
-        <h1 class="mt-2 mb-4 text-xl font-semibold">
+        <h2 class="mt-2 mb-4 text-lg font-semibold">
           Application Configuration
-        </h1>
+        </h2>
       </div>
       <div>
         <Card>
@@ -158,24 +156,24 @@
           </Label>
         </div>
       </div>
-      <div id="col-exp-buttons" class="mt-4 flex gap-2">
+      <div class="mt-4 flex justify-end gap-2">
         <Button
-          class="bg-success text-success-foreground hover:bg-success/90"
-          @click="saveAndLaunchExperiment"
-          :disabled="isSaveDisabled"
-        >
-          Save and Launch
-        </Button>
-        <Button
-          variant="default"
+          variant="secondary"
           @click="saveExperiment"
           :disabled="isSaveDisabled"
         >
           Save
         </Button>
+        <Button
+          variant="default"
+          @click="saveAndLaunchExperiment"
+          :disabled="isSaveDisabled"
+        >
+          Save and Launch
+        </Button>
       </div>
     </form>
-  </div>
+  </main-layout>
 </template>
 
 <script>
@@ -187,6 +185,7 @@ import InputEditorContainer from "./input-editors/InputEditorContainer.vue";
 import { models, services } from "django-airavata-api";
 import { components, utils } from "django-airavata-common-ui";
 import WorkspaceNoticesManagementContainer from "../notices/WorkspaceNoticesManagementContainer";
+import { NATIVE_SELECT_CLASS } from "../../lib/utils";
 import _ from "lodash";
 
 export default {
@@ -224,6 +223,7 @@ export default {
     ExperimentDescriptionEditor,
     GroupResourceProfileSelector,
     InputEditorContainer,
+    "main-layout": components.MainLayout,
     "share-button": components.ShareButton,
     "unsaved-changes-guard": components.UnsavedChangesGuard,
   },
@@ -243,6 +243,11 @@ export default {
     });
   },
   computed: {
+    nativeSelectClass() {
+      // Native option-driven select styled to match a shadcn <Input>, plus the
+      // invalid-state ring so it mirrors `:aria-invalid` on shadcn controls.
+      return `${NATIVE_SELECT_CLASS} aria-invalid:border-destructive aria-invalid:ring-destructive/40`;
+    },
     sharedProjectOptions: function () {
       return this.projects
         .filter((p) => !p.is_owner)
@@ -401,13 +406,3 @@ export default {
   },
 };
 </script>
-
-<style>
-.application-name {
-  font-size: 12px;
-}
-
-#col-exp-buttons {
-  text-align: right;
-}
-</style>

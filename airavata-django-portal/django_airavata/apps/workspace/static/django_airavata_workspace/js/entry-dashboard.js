@@ -11,11 +11,16 @@ const el = document.getElementById("dashboard");
 const viewAllExperiments = el?.dataset.viewAllExperiments ?? null;
 const username = el?.dataset.username ?? null;
 
+// The dashboard has a sidebar slot, so its consistent header lives here in the
+// entry's MainLayout rather than in the DashboardContainer root component.
 const App = {
   render() {
     return h(
       components.MainLayout,
-      {},
+      {
+        title: "Dashboard",
+        subtitle: "Launch applications and pick up where you left off.",
+      },
       {
         default: () => [h(DashboardContainer)],
         sidebar: () => [

@@ -3,9 +3,8 @@
     <select
       :id="id"
       v-model="data"
-      style="width: auto"
       :aria-invalid="componentValidState === false"
-      class="border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-50"
+      :class="nativeSelectClass"
       @change="valueChanged"
     >
       <option
@@ -22,6 +21,7 @@
 <script>
 import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
 import { utils as apiUtils } from "django-airavata-api";
+import { cn, NATIVE_SELECT_CLASS } from "../../../lib/utils";
 
 export default {
   name: "user-file-input-editor",
@@ -30,6 +30,16 @@ export default {
     return {
       userfiles: [],
     };
+  },
+  computed: {
+    nativeSelectClass() {
+      // Native option-driven select styled to match a shadcn <Input>, sized to
+      // its content, plus the invalid-state ring mirroring shadcn controls.
+      return cn(
+        NATIVE_SELECT_CLASS,
+        "w-auto aria-invalid:border-destructive aria-invalid:ring-destructive/40",
+      );
+    },
   },
   beforeMount: function () {
     // loads the list of file entries in django UserFiles model

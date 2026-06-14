@@ -1,22 +1,30 @@
 <template>
-  <div v-if="project">
-    <project-editor
-      v-model="project"
-      @save="saveProject"
-      @valid="valid = true"
-      @invalid="valid = false"
-    >
-      <template #buttons>
-        <share-button :entity-id="projectId" />
-      </template>
-    </project-editor>
-    <div class="flex justify-end gap-2">
-      <Button @click="saveProject" variant="default" :disabled="!valid"
-        >Save</Button
-      >
-      <Button @click="cancel" variant="secondary">Cancel</Button>
+  <main-layout
+    title="Edit Project"
+    subtitle="Update your project's name and description."
+  >
+    <template #actions>
+      <share-button v-if="project" :entity-id="projectId" />
+    </template>
+    <div v-if="project" class="space-y-6">
+      <Card>
+        <CardContent>
+          <project-editor
+            v-model="project"
+            @save="saveProject"
+            @valid="valid = true"
+            @invalid="valid = false"
+          />
+        </CardContent>
+      </Card>
+      <div class="flex justify-end gap-2">
+        <Button @click="saveProject" variant="default" :disabled="!valid"
+          >Save</Button
+        >
+        <Button @click="cancel" variant="secondary">Cancel</Button>
+      </div>
     </div>
-  </div>
+  </main-layout>
 </template>
 
 <script>
@@ -41,6 +49,7 @@ export default {
   },
   components: {
     ProjectEditor,
+    "main-layout": components.MainLayout,
     "share-button": components.ShareButton,
   },
   created() {

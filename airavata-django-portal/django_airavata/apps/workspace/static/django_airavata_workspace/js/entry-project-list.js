@@ -1,5 +1,5 @@
 import { h } from "vue";
-import { components, entry } from "django-airavata-common-ui";
+import { entry } from "django-airavata-common-ui";
 // Tailwind v4 + shadcn-vue design tokens and base styles (shared with common).
 import "django-airavata-common-ui/css/app.css";
 import ProjectListContainer from "./containers/ProjectListContainer.vue";
@@ -11,11 +11,10 @@ const initialProjectsData = el?.dataset.projectsData
   ? JSON.parse(el.dataset.projectsData)
   : null;
 
+// The container renders its own MainLayout (page header + actions slot).
 const App = {
   render() {
-    return h(components.MainLayout, () => [
-      h(ProjectListContainer, { initialProjectsData }),
-    ]);
+    return h(ProjectListContainer, { initialProjectsData });
   },
 };
 

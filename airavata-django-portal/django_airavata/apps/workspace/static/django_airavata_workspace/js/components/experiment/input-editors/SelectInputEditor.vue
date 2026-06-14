@@ -4,7 +4,7 @@
     v-model="data"
     :disabled="readOnly"
     :aria-invalid="componentValidState === false"
-    class="border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-50"
+    :class="nativeSelectClass"
     @change="valueChanged"
   >
     <option
@@ -19,6 +19,7 @@
 
 <script>
 import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
+import { NATIVE_SELECT_CLASS } from "../../../lib/utils";
 
 const CONFIG_OPTION_TEXT_KEY = "text";
 const CONFIG_OPTION_VALUE_KEY = "value";
@@ -35,6 +36,11 @@ export default {
     },
   },
   computed: {
+    nativeSelectClass() {
+      // Native option-driven select styled to match a shadcn <Input>, plus the
+      // invalid-state ring so it mirrors `:aria-invalid` on shadcn controls.
+      return `${NATIVE_SELECT_CLASS} aria-invalid:border-destructive aria-invalid:ring-destructive/40`;
+    },
     selectOptions: function () {
       const options = this.options || this.editorConfig.options || [];
       return options.map((option) => {

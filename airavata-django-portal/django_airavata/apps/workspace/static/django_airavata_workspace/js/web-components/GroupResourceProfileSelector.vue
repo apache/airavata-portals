@@ -10,7 +10,7 @@
       :value="groupResourceProfileId"
       required
       :disabled="disabled"
-      class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
+      :class="nativeSelectClass"
       @change="groupResourceProfileChanged($event.target.value)"
     >
       <option :value="null" disabled>
@@ -30,6 +30,7 @@
 <script>
 import { mapState } from "pinia";
 import { useExperimentStore } from "./store";
+import { NATIVE_SELECT_CLASS } from "../lib/utils";
 
 export default {
   name: "group-resource-profile-selector",
@@ -59,6 +60,10 @@ export default {
       groupResourceProfileId: "getGroupResourceProfileId",
       groupResourceProfiles: "groupResourceProfiles",
     }),
+    nativeSelectClass() {
+      // Native option-driven select styled to match a shadcn <Input>.
+      return NATIVE_SELECT_CLASS;
+    },
     groupResourceProfileOptions: function () {
       if (this.groupResourceProfiles && this.groupResourceProfiles.length > 0) {
         const groupResourceProfileOptions = this.groupResourceProfiles.map(

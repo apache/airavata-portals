@@ -18,9 +18,18 @@ const router = createRouter({
   routes,
 });
 
+// Storage is a router-view page, so its consistent header lives here in the
+// entry's MainLayout rather than in a single root component.
 const App = {
   render() {
-    return h(components.MainLayout, () => [h(UserStorageContainer)]);
+    return h(
+      components.MainLayout,
+      {
+        title: "Storage",
+        subtitle: "Browse, upload, and manage your files.",
+      },
+      () => [h(UserStorageContainer)],
+    );
   },
 };
 

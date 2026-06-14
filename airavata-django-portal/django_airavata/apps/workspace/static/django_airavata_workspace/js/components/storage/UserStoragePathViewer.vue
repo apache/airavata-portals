@@ -94,7 +94,8 @@
                 @delete="deleteItem(item)"
               >
                 Are you sure you want to delete
-                <strong>{{ item.name }}</strong>?
+                <strong>{{ item.name }}</strong
+                >?
               </delete-link>
             </div>
           </TableCell>

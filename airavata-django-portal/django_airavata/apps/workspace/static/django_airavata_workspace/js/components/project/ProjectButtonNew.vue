@@ -14,9 +14,7 @@
           @save="onCreateProject"
           @valid="valid = true"
           @invalid="valid = false"
-        >
-          <template #title></template>
-        </project-editor>
+        />
         <DialogFooter>
           <Button variant="outline" @click="onCancelNewProject">Cancel</Button>
           <Button
@@ -58,7 +56,7 @@ export default {
           // Reset state
           this.newProject = new models.Project();
           this.$refs.projectEditor.reset();
-        }
+        },
       );
     },
     onCancelNewProject() {

@@ -2,7 +2,6 @@
   <div>
     <pga-link />
     <div>
-      <h1 class="mb-4 text-xl font-semibold">Dashboard</h1>
       <workspace-notices-management-container />
       <h2 class="mb-2 text-sm font-semibold text-muted-foreground uppercase">
         Applications
@@ -11,17 +10,16 @@
     <div v-if="showNewUserMessage" class="mb-4">
       <Alert>
         <AlertDescription
-          >Welcome {{ userProfile.first_name }}
-          {{ userProfile.last_name }}! You currently don't have access to run
-          any applications but the administrator of this gateway has been
-          notified and will be in contact to grant you the appropriate
-          privileges.</AlertDescription
+          >Welcome {{ userProfile.first_name }} {{ userProfile.last_name }}! You
+          currently don't have access to run any applications but the
+          administrator of this gateway has been notified and will be in contact
+          to grant you the appropriate privileges.</AlertDescription
         >
       </Alert>
     </div>
     <template v-if="favoriteApplicationsData.length > 0">
       <div>
-        <h1 class="mb-2 text-lg font-semibold">Favorites</h1>
+        <h2 class="mb-2 text-lg font-semibold">Favorites</h2>
       </div>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <application-card

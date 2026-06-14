@@ -1,37 +1,29 @@
 <template>
-  <div>
-    <div class="flex">
-      <slot name="title">
-        <h1 class="mr-auto mb-4 text-xl font-semibold">Edit Project</h1>
-      </slot>
-      <slot name="buttons"> </slot>
+  <form @submit="onSubmit" @input="onUserInput" novalidate class="space-y-4">
+    <div class="space-y-1.5">
+      <Label for="project-name">Project Name</Label>
+      <Input
+        id="project-name"
+        type="text"
+        v-model="data.name"
+        required
+        placeholder="Project name"
+        :aria-invalid="nameState === false"
+      />
+      <p v-if="nameFeedback" class="text-sm text-destructive">
+        {{ nameFeedback }}
+      </p>
     </div>
-    <form @submit="onSubmit" @input="onUserInput" novalidate>
-      <div class="mb-4 space-y-1.5">
-        <Label for="project-name">Project Name</Label>
-        <Input
-          id="project-name"
-          type="text"
-          v-model="data.name"
-          required
-          placeholder="Project name"
-          :aria-invalid="nameState === false"
-        />
-        <p v-if="nameFeedback" class="text-sm text-destructive">
-          {{ nameFeedback }}
-        </p>
-      </div>
-      <div class="mb-4 space-y-1.5">
-        <Label for="project-description">Project Description</Label>
-        <Textarea
-          id="project-description"
-          v-model="data.description"
-          placeholder="(Optional) Project description"
-          :rows="3"
-        />
-      </div>
-    </form>
-  </div>
+    <div class="space-y-1.5">
+      <Label for="project-description">Project Description</Label>
+      <Textarea
+        id="project-description"
+        v-model="data.description"
+        placeholder="(Optional) Project description"
+        :rows="3"
+      />
+    </div>
+  </form>
 </template>
 
 <script>

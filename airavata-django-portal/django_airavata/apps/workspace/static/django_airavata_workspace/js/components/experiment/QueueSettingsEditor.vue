@@ -53,7 +53,7 @@
             v-model="data.queue_name"
             required
             :aria-invalid="getValidationState('queueName') === false"
-            class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
+            :class="nativeSelectClass"
             @change="queueChanged"
           >
             <option
@@ -187,7 +187,9 @@
               :max="maxWalltime"
               v-model="data.wall_time_limit"
               required
-              :aria-invalid="getValidationState('wallTimeLimit', true) === false"
+              :aria-invalid="
+                getValidationState('wallTimeLimit', true) === false
+              "
             />
             <span
               class="flex items-center rounded-r-md border border-l-0 border-input px-3 text-sm text-muted-foreground"
@@ -254,6 +256,7 @@
 import { Info, Lock, LockOpen, X } from "@lucide/vue";
 import { models, services } from "django-airavata-api";
 import { mixins, utils } from "django-airavata-common-ui";
+import { NATIVE_SELECT_CLASS } from "../../lib/utils";
 
 export default {
   name: "queue-settings-editor",
@@ -289,6 +292,11 @@ export default {
     };
   },
   computed: {
+    nativeSelectClass() {
+      // Native option-driven select styled to match a shadcn <Input>, plus the
+      // invalid-state ring so it mirrors `:aria-invalid` on shadcn controls.
+      return `${NATIVE_SELECT_CLASS} aria-invalid:border-destructive aria-invalid:ring-destructive/40`;
+    },
     queueOptions: function () {
       const queueOptions = this.queueDefaults.map((queueDefault) => {
         return {

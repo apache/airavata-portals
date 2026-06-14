@@ -1,11 +1,7 @@
 <template>
   <div class="space-y-1.5">
     <label class="text-sm leading-none font-medium select-none">Project</label>
-    <select
-      v-model="projectId"
-      required
-      class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
-    >
+    <select v-model="projectId" required :class="nativeSelectClass">
       <option :value="null" disabled>Select a Project</option>
       <optgroup label="My Projects">
         <option
@@ -32,6 +28,7 @@
 <script>
 import { mapState } from "pinia";
 import { useExperimentStore } from "./store";
+import { NATIVE_SELECT_CLASS } from "../lib/utils";
 
 export default {
   props: {
@@ -50,6 +47,10 @@ export default {
   },
   computed: {
     ...mapState(useExperimentStore, ["projects"]),
+    nativeSelectClass() {
+      // Native option-driven select styled to match a shadcn <Input>.
+      return NATIVE_SELECT_CLASS;
+    },
     sharedProjectOptions: function () {
       return this.projects
         ? this.projects

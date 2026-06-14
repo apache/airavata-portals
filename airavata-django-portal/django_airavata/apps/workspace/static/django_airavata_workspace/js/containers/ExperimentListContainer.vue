@@ -1,9 +1,9 @@
 <template>
-  <div>
-    <div>
-      <h1 class="mb-4 text-xl font-semibold">Browse Experiments</h1>
-    </div>
-    <div class="mb-4">
+  <main-layout
+    title="Experiments"
+    subtitle="Browse and manage your experiments."
+  >
+    <div class="space-y-6">
       <Card>
         <CardContent>
           <div class="mb-2 flex w-full flex-wrap items-center gap-2">
@@ -76,9 +76,7 @@
               <option value="EXPERIMENT_STATE_FAILED">Failed</option>
             </select>
             <Button variant="outline" @click="resetSearch">Reset</Button>
-            <Button variant="default" @click="searchExperiments"
-              >Search</Button
-            >
+            <Button variant="default" @click="searchExperiments">Search</Button>
           </div>
           <div class="mb-2 flex w-full items-stretch">
             <span
@@ -96,8 +94,6 @@
           </div>
         </CardContent>
       </Card>
-    </div>
-    <div>
       <Card>
         <CardContent>
           <Table>
@@ -173,7 +169,7 @@
         </CardContent>
       </Card>
     </div>
-  </div>
+  </main-layout>
 </template>
 
 <script>
@@ -182,6 +178,7 @@ import { errors, models, services, utils } from "django-airavata-api";
 import { components as comps } from "django-airavata-common-ui";
 import FlatPickr from "vue-flatpickr-component";
 import "flatpickr/dist/flatpickr.css";
+import { NATIVE_SELECT_CLASS } from "../lib/utils";
 
 import moment from "moment";
 import urls from "../utils/urls";
@@ -218,6 +215,7 @@ export default {
     CalendarDays,
     Copy,
     Pencil,
+    "main-layout": comps.MainLayout,
     pager: comps.Pager,
     "experiment-status-badge": comps.ExperimentStatusBadge,
     "flat-pickr": FlatPickr,
@@ -362,7 +360,9 @@ export default {
   },
   computed: {
     selectClass() {
-      return "h-9 w-auto flex-1 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30";
+      // Native option-driven selects styled to match a shadcn <Input> (h-9), made
+      // flexible so they share the filter toolbar row.
+      return `${NATIVE_SELECT_CLASS} w-auto flex-1`;
     },
     experiments: function () {
       return this.experimentsPaginator

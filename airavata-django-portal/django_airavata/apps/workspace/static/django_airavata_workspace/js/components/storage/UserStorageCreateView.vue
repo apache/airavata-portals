@@ -1,15 +1,8 @@
 <template>
-  <div>
-    <div class="flex flex-wrap">
-      <div class="flex-1">
-        <h1 class="text-xl font-semibold">Storage</h1>
-        <p>
-          <small class="inline-flex items-center gap-1 text-muted-foreground">
-            <FolderOpen class="size-4" /> {{ username }}</small
-          >
-        </p>
-      </div>
-    </div>
+  <div class="space-y-4">
+    <p class="inline-flex items-center gap-1 text-sm text-muted-foreground">
+      <FolderOpen class="size-4" /> {{ username }}
+    </p>
     <div class="flex flex-wrap gap-4" v-if="userHasWriteAccess">
       <div class="flex-1">
         <uppy

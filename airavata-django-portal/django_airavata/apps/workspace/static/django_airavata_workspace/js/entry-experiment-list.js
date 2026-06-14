@@ -1,5 +1,5 @@
 import { h } from "vue";
-import { components, entry } from "django-airavata-common-ui";
+import { entry } from "django-airavata-common-ui";
 // Tailwind v4 + shadcn-vue design tokens and base styles (shared with common).
 import "django-airavata-common-ui/css/app.css";
 import ExperimentListContainer from "./containers/ExperimentListContainer.vue";
@@ -11,11 +11,10 @@ const initialExperimentsData = el?.dataset.experimentsData
   ? JSON.parse(el.dataset.experimentsData)
   : null;
 
+// The container renders its own MainLayout (page header + actions slot).
 const App = {
   render() {
-    return h(components.MainLayout, () => [
-      h(ExperimentListContainer, { initialExperimentsData }),
-    ]);
+    return h(ExperimentListContainer, { initialExperimentsData });
   },
 };
 

@@ -1,5 +1,5 @@
 import { h } from "vue";
-import { components, entry } from "django-airavata-common-ui";
+import { entry } from "django-airavata-common-ui";
 import EditExperimentContainer from "./containers/EditExperimentContainer.vue";
 // Tailwind v4 + shadcn-vue design tokens and base styles (shared with common).
 import "django-airavata-common-ui/css/app.css";
@@ -13,11 +13,10 @@ import "django-airavata-common-ui/css/app.css";
 const el = document.getElementById("edit-experiment");
 const experimentId = el?.dataset.experimentId ?? null;
 
+// The experiment editor renders its own MainLayout (page header + actions slot).
 const App = {
   render() {
-    return h(components.MainLayout, () => [
-      h(EditExperimentContainer, { experimentId }),
-    ]);
+    return h(EditExperimentContainer, { experimentId });
   },
 };
 

@@ -1,6 +1,6 @@
 import { h } from "vue";
 import { createPinia } from "pinia";
-import { components, entry } from "django-airavata-common-ui";
+import { entry } from "django-airavata-common-ui";
 // Tailwind v4 + shadcn-vue design tokens and base styles (shared with common).
 import "django-airavata-common-ui/css/app.css";
 import ExperimentSummary from "./components/experiment/ExperimentSummary.vue";
@@ -13,9 +13,10 @@ const fullExperimentData = JSON.parse(el.dataset.fullExperimentData);
 const launching =
   "launching" in el.dataset ? JSON.parse(el.dataset.launching) : null;
 
+// ExperimentSummary renders its own MainLayout (page header + actions slot).
 const App = {
   render() {
-    return h(components.MainLayout, () => [h(ExperimentSummary)]);
+    return h(ExperimentSummary);
   },
   beforeMount() {
     const store = useViewExperimentStore();

@@ -212,15 +212,15 @@ export default {
        */
       // <slot name="experiment-buttons">
       //   <div class="flex justify-end gap-2">
+      //     <Button type="submit" variant="secondary" name="save-experiment-button">
+      //       Save
+      //     </Button>
       //     <Button
       //       type="submit"
-      //       class="bg-success text-success-foreground hover:bg-success/90"
+      //       variant="default"
       //       name="save-and-launch-experiment-button"
       //     >
       //       Save and Launch
-      //     </Button>
-      //     <Button type="submit" variant="default" name="save-experiment-button">
-      //       Save
       //     </Button>
       //   </div>
       // </slot>
@@ -243,6 +243,18 @@ export default {
       ];
       const buttonsRowEl = document.createElement("div");
       buttonsRowEl.classList.add("flex", "justify-end", "gap-2");
+      // Save uses the shadcn "secondary" variant; Save and Launch is the single
+      // primary action and uses the "default" variant (no hand-rolled accent).
+      const saveButtonEl = document.createElement("button");
+      saveButtonEl.setAttribute("type", "submit");
+      saveButtonEl.setAttribute("name", "save-experiment-button");
+      saveButtonEl.classList.add(
+        ...buttonBaseClasses,
+        "bg-secondary",
+        "text-secondary-foreground",
+        "hover:bg-secondary/80",
+      );
+      saveButtonEl.textContent = "Save";
       const saveAndLaunchButtonEl = document.createElement("button");
       saveAndLaunchButtonEl.setAttribute("type", "submit");
       saveAndLaunchButtonEl.setAttribute(
@@ -251,22 +263,12 @@ export default {
       );
       saveAndLaunchButtonEl.classList.add(
         ...buttonBaseClasses,
-        "bg-success",
-        "text-success-foreground",
-        "hover:bg-success/90",
-      );
-      saveAndLaunchButtonEl.textContent = "Save and Launch";
-      const saveButtonEl = document.createElement("button");
-      saveButtonEl.setAttribute("type", "submit");
-      saveButtonEl.setAttribute("name", "save-experiment-button");
-      saveButtonEl.classList.add(
-        ...buttonBaseClasses,
         "bg-primary",
         "text-primary-foreground",
         "hover:bg-primary/90",
       );
-      saveButtonEl.textContent = "Save";
-      buttonsRowEl.append(saveAndLaunchButtonEl, saveButtonEl);
+      saveAndLaunchButtonEl.textContent = "Save and Launch";
+      buttonsRowEl.append(saveButtonEl, saveAndLaunchButtonEl);
       this.$refs.experimentButtons.append(
         this.createSlot("experiment-buttons", buttonsRowEl),
       );

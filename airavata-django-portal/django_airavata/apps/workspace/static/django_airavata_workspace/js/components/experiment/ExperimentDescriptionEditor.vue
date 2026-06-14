@@ -8,22 +8,19 @@
       ref="description"
       maxlength="255"
     />
-    <div class="mt-1 flex items-center">
-      <Button
-        size="sm"
-        class="bg-success text-success-foreground hover:bg-success/90"
-        @click="toggleEditing"
+    <div class="mt-1 flex items-center gap-2">
+      <Button size="sm" variant="default" @click="toggleEditing"
         >Save description</Button
       >
-      <a
-        href="#"
-        @click.prevent="cancelEditing"
+      <Button
+        size="sm"
+        variant="ghost"
         title="Cancel editing"
-        class="ml-3 text-muted-foreground"
+        @click="cancelEditing"
       >
         <X class="size-4" />
         <span class="sr-only">Cancel editing</span>
-      </a>
+      </Button>
     </div>
   </div>
   <div v-else class="mb-3">

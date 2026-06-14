@@ -50,7 +50,7 @@
           id="queue"
           :value="selectedQueueName"
           required
-          class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+          :class="nativeSelectClass"
           @change="queueChanged($event.target.value)"
         >
           <option
@@ -78,7 +78,7 @@
               :max="maxAllowedNodes"
               :value="getNodeCount"
               required
-              class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              :class="nativeInputClass"
               @input="updateNodeCount"
             />
             <p class="text-sm text-muted-foreground">
@@ -99,7 +99,7 @@
               :max="maxAllowedCores"
               :value="getTotalCPUCount"
               required
-              class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              :class="nativeInputClass"
               @input="updateTotalCPUCount"
             />
             <p class="text-sm text-muted-foreground">
@@ -162,7 +162,7 @@
             :max="maxAllowedWalltime"
             :value="getWallTimeLimit"
             required
-            class="h-9 w-full rounded-l-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            :class="nativeInputGroupClass"
             @input="updateWallTimeLimit"
           />
           <span
@@ -188,7 +188,7 @@
             min="0"
             :max="maxMemory"
             :value="getTotalPhysicalMemory"
-            class="h-9 w-full rounded-l-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            :class="nativeInputGroupClass"
             @input="updateTotalPhysicalMemory"
           />
           <span
@@ -220,6 +220,7 @@ import { Info, Lock, LockOpen, X } from "@lucide/vue";
 import { utils } from "django-airavata-api";
 import { mapState } from "pinia";
 import { useExperimentStore } from "./store";
+import { cn, NATIVE_INPUT_CLASS, NATIVE_SELECT_CLASS } from "../lib/utils";
 
 export default {
   components: { Info, Lock, LockOpen, X },
@@ -256,6 +257,20 @@ export default {
     };
   },
   computed: {
+    nativeSelectClass() {
+      // Native option-driven select styled to match a shadcn <Input>.
+      return NATIVE_SELECT_CLASS;
+    },
+    nativeInputClass() {
+      // Native number input (shadcn <Input> isn't registered in this standalone
+      // web-component build) styled to match a shadcn <Input>.
+      return NATIVE_INPUT_CLASS;
+    },
+    nativeInputGroupClass() {
+      // Same as nativeInputClass but with a flat right edge so it sits flush
+      // against a trailing unit (minutes / MB) addon.
+      return cn(NATIVE_INPUT_CLASS, "rounded-r-none");
+    },
     ...mapState(useExperimentStore, {
       queue: "queue",
       queues: "queues",
