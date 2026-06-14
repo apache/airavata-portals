@@ -1,5 +1,7 @@
+import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import tailwindcss from "@tailwindcss/vite";
 
 const publicPath = "/static/django_airavata_auth/dist/";
 
@@ -49,11 +51,18 @@ function djangoWebpackStats() {
 
 export default defineConfig({
   base: publicPath,
-  plugins: [vue(), djangoWebpackStats()],
+  plugins: [vue(), tailwindcss(), djangoWebpackStats()],
   // The source uses extensionless `.vue` imports (Vue CLI resolved them
   // automatically); add `.vue` so Vite/Rollup resolves them too.
   resolve: {
     extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json", ".vue"],
+    alias: {
+      "@": resolve(__dirname, "js"),
+    },
+    // reka-ui (shadcn-vue's primitive layer) is provided transitively via the
+    // common package; dedupe it so a reintroduced page bundle and common share
+    // one copy (reka-ui relies on module-level singletons).
+    dedupe: ["vue", "reka-ui"],
   },
   build: {
     outDir: "static/django_airavata_auth/dist",
