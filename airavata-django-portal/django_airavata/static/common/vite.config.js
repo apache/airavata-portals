@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import tailwindcss from "@tailwindcss/vite";
 
 const publicPath = "/static/common/dist/";
 
@@ -34,11 +35,14 @@ function djangoWebpackStats() {
 // are mapped into webpack-stats.json for django-webpack-loader.
 export default defineConfig({
   base: publicPath,
-  plugins: [vue(), djangoWebpackStats()],
+  plugins: [vue(), tailwindcss(), djangoWebpackStats()],
   // The source uses extensionless `.vue` imports throughout (Vue CLI resolved
   // them automatically); add `.vue` so Vite/Rollup resolves them too.
   resolve: {
     extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json", ".vue"],
+    alias: {
+      "@": resolve(__dirname, "js"),
+    },
   },
   build: {
     outDir: "dist",
