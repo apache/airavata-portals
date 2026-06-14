@@ -7,7 +7,12 @@ import requests
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
-from django.http import FileResponse, HttpResponseForbidden, JsonResponse
+from django.http import (
+    FileResponse,
+    HttpResponseBadRequest,
+    HttpResponseForbidden,
+    JsonResponse,
+)
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -236,7 +241,7 @@ def download_settings_local(request):
         raise PermissionDenied()
 
     if settings.DEBUG:
-        raise Exception(
+        return HttpResponseBadRequest(
             "Downloading a settings_local.py file isn't allowed in DEBUG mode."
         )
 
