@@ -7,86 +7,126 @@
     :new-button-disabled="readonly"
   >
     <template v-slot:new-item-editor>
-      <b-card v-if="showNewItemEditor" title="New Storage Preference">
-        <b-form-group label="Storage Resource" label-for="storage-resource">
-          <b-form-select
-            id="storage-resource"
-            v-model="newStoragePreference.storage_resource_id"
-            :options="storageResourceOptions"
-          />
-        </b-form-group>
-        <storage-preference-editor
-          v-model="newStoragePreference"
-          :default-credential-store-token="defaultCredentialStoreToken"
-        />
-        <div class="row">
-          <div class="col">
-            <b-button variant="primary" @click="saveNewStoragePreference">
-              Save
-            </b-button>
-            <b-button variant="secondary" @click="cancelNewStoragePreference">
-              Cancel
-            </b-button>
+      <Card v-if="showNewItemEditor">
+        <CardHeader>
+          <CardTitle>New Storage Preference</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div class="space-y-1.5">
+            <Label for="storage-resource">Storage Resource</Label>
+            <select
+              id="storage-resource"
+              v-model="newStoragePreference.storage_resource_id"
+              class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
+            >
+              <option
+                v-for="opt in storageResourceOptions"
+                :key="opt.value"
+                :value="opt.value"
+              >
+                {{ opt.text }}
+              </option>
+            </select>
           </div>
-        </div>
-      </b-card>
+          <storage-preference-editor
+            v-model="newStoragePreference"
+            :default-credential-store-token="defaultCredentialStoreToken"
+          />
+          <div class="flex gap-2">
+            <Button variant="default" @click="saveNewStoragePreference">
+              Save
+            </Button>
+            <Button variant="secondary" @click="cancelNewStoragePreference">
+              Cancel
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </template>
     <template v-slot:item-list="slotProps">
-      <b-table
-        striped
-        hover
-        :fields="fields"
-        :items="slotProps.items"
-        sort-by="storage_resource_id"
-      >
-        <template #cell(resource_specific_credential_store_token)="data">
-          {{ data.value }}
-          <b-badge
-            v-if="
-              defaultCredentialStoreToken &&
-              !data.item.resource_specific_credential_store_token
-            "
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead v-for="field in fields" :key="field.key">
+              {{ field.label }}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <template
+            v-for="item in sortedItems(slotProps.items)"
+            :key="item.storage_resource_id"
           >
-            Default
-          </b-badge>
-        </template>
-        <template #cell(action)="data">
-          <b-link
-            v-if="!readonly"
-            class="action-link"
-            @click="toggleDetails(data)"
-          >
-            Edit
-            <i class="fa fa-edit" aria-hidden="true"></i>
-          </b-link>
-          <delete-link
-            v-if="!readonly"
-            class="action-link"
-            @delete="deleteStoragePreference(data.item.storage_resource_id)"
-          >
-            Are you sure you want to delete the storage preference for
-            <strong>{{
-              getStorageResourceName(data.item.storage_resource_id)
-            }}</strong
-            >?
-          </delete-link>
-        </template>
-        <template v-slot:row-details="row">
-          <b-card>
-            <storage-preference-editor
-              :value="row.item"
-              @input="updatedStoragePreference"
-              :default-credential-store-token="defaultCredentialStoreToken"
-            />
-            <b-button size="sm" @click="toggleDetails(row)">Close</b-button>
-          </b-card>
-        </template>
-      </b-table>
+            <TableRow>
+              <TableCell>{{
+                getStorageResourceName(item.storage_resource_id)
+              }}</TableCell>
+              <TableCell>{{ item.login_user_name }}</TableCell>
+              <TableCell>
+                {{
+                  getCredentialName(
+                    item.resource_specific_credential_store_token,
+                  )
+                }}
+                <Badge
+                  v-if="
+                    defaultCredentialStoreToken &&
+                    !item.resource_specific_credential_store_token
+                  "
+                >
+                  Default
+                </Badge>
+              </TableCell>
+              <TableCell>{{ item.file_system_root_location }}</TableCell>
+              <TableCell>
+                <a
+                  href="#"
+                  v-if="!readonly"
+                  class="mr-2 inline-flex items-center gap-1 text-primary hover:underline"
+                  @click.prevent="toggleDetails(item)"
+                >
+                  Edit
+                  <Pencil class="size-4" aria-hidden="true" />
+                </a>
+                <delete-link
+                  v-if="!readonly"
+                  @delete="deleteStoragePreference(item.storage_resource_id)"
+                >
+                  Are you sure you want to delete the storage preference for
+                  <strong>{{
+                    getStorageResourceName(item.storage_resource_id)
+                  }}</strong
+                  >?
+                </delete-link>
+              </TableCell>
+            </TableRow>
+            <TableRow v-if="item._showDetails">
+              <TableCell :colspan="fields.length">
+                <Card>
+                  <CardContent>
+                    <storage-preference-editor
+                      :value="item"
+                      @input="updatedStoragePreference"
+                      :default-credential-store-token="
+                        defaultCredentialStoreToken
+                      "
+                    />
+                    <Button class="mt-2" size="sm" @click="toggleDetails(item)"
+                      >Close</Button
+                    >
+                  </CardContent>
+                </Card>
+              </TableCell>
+            </TableRow>
+          </template>
+        </TableBody>
+      </Table>
     </template>
   </list-layout>
 </template>
 
 <script>
+import { Pencil } from "@lucide/vue";
 import { models, services, utils } from "django-airavata-api";
 import { components, layouts } from "django-airavata-common-ui";
 import StoragePreferenceEditor from "./StoragePreferenceEditor.vue";
@@ -94,6 +134,7 @@ import StoragePreferenceEditor from "./StoragePreferenceEditor.vue";
 export default {
   name: "storage-preference-list",
   components: {
+    Pencil,
     "delete-link": components.DeleteLink,
     "list-layout": layouts.ListLayout,
     StoragePreferenceEditor,
@@ -220,10 +261,14 @@ export default {
     updatedStoragePreference(newValue) {
       this.$emit("updated", newValue);
     },
-    toggleDetails(row) {
-      row.toggleDetails();
-      this.showingDetails[row.item.storage_resource_id] =
-        !this.showingDetails[row.item.storage_resource_id];
+    sortedItems(items) {
+      return utils.StringUtils.sortIgnoreCase(items.slice(), (sp) =>
+        this.getStorageResourceName(sp.storage_resource_id),
+      );
+    },
+    toggleDetails(item) {
+      this.showingDetails[item.storage_resource_id] =
+        !this.showingDetails[item.storage_resource_id];
     },
     deleteStoragePreference(storageResourceId) {
       this.$emit("delete", storageResourceId);

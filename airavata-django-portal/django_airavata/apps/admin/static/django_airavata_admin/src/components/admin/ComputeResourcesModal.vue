@@ -1,19 +1,35 @@
 <template>
-  <b-modal
-    title="Select Compute Resource"
-    ref="modal"
-    @ok="onSelectComputeResource"
-    :ok-disabled="modalSelectComputeResourceOkDisabled"
-  >
-    <b-form-select
-      v-model="selectedComputeResource"
-      :options="computeResourceOptions"
-    >
-      <template v-slot:first>
-        <option :value="null">Please select compute resource</option>
-      </template>
-    </b-form-select>
-  </b-modal>
+  <Dialog v-model:open="open">
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Select Compute Resource</DialogTitle>
+      </DialogHeader>
+      <div class="space-y-2">
+        <select
+          v-model="selectedComputeResource"
+          class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
+        >
+          <option :value="null">Please select compute resource</option>
+          <option
+            v-for="opt in computeResourceOptions"
+            :key="opt.value"
+            :value="opt.value"
+          >
+            {{ opt.text }}
+          </option>
+        </select>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" @click="hide">Cancel</Button>
+        <Button
+          variant="default"
+          :disabled="modalSelectComputeResourceOkDisabled"
+          @click="onSelectComputeResource"
+          >OK</Button
+        >
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script>
@@ -26,6 +42,7 @@ export default {
   },
   data() {
     return {
+      open: false,
       selectedComputeResource: null,
       localComputeResourceNames: null,
     };
@@ -68,9 +85,13 @@ export default {
   methods: {
     onSelectComputeResource() {
       this.$emit("selected", this.selectedComputeResource);
+      this.hide();
     },
     show() {
-      this.$refs.modal.show();
+      this.open = true;
+    },
+    hide() {
+      this.open = false;
     },
   },
 };

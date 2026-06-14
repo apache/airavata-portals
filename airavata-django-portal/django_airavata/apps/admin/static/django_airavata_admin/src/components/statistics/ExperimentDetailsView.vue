@@ -8,7 +8,7 @@
             <div :title="experiment.experiment_id">
               {{ experiment.experiment_name }}
             </div>
-            <small class="text-muted">
+            <small class="text-muted-foreground">
               ID: {{ experiment.experiment_id }} (<clipboard-copy-link
                 :text="experiment.experiment_id"
                 :link-classes="['text-reset']"
@@ -46,7 +46,7 @@
           <td v-if="fullExperiment.applicationName">
             {{ fullExperiment.applicationName }}
           </td>
-          <td v-else class="fst-italic text-muted">
+          <td v-else class="text-muted-foreground italic">
             Unable to load interface
             {{ fullExperiment.experiment.execution_id }}
           </td>
@@ -56,7 +56,7 @@
           <td v-if="fullExperiment.computeHostName">
             {{ fullExperiment.computeHostName }}
           </td>
-          <td v-else class="fst-italic text-muted">
+          <td v-else class="text-muted-foreground italic">
             Unable to load compute resource {{ fullExperiment.resourceHostId }}
           </td>
         </tr>
@@ -64,8 +64,8 @@
           <th scope="row">Experiment Status</th>
           <td>
             <template v-if="fullExperiment.experiment.isProgressing">
-              <i class="fa fa-sync-alt fa-spin"></i>
-              <span class="visually-hidden">Progressing...</span>
+              <RefreshCw class="inline size-4 animate-spin" />
+              <span class="sr-only">Progressing...</span>
             </template>
             {{ fullExperiment.experimentStatusName }}
           </td>
@@ -79,10 +79,12 @@
           <td>
             <table class="table">
               <thead>
-                <th>Name</th>
-                <th>ID</th>
-                <th>Status</th>
-                <th>Creation Time</th>
+                <tr>
+                  <th>Name</th>
+                  <th>ID</th>
+                  <th>Status</th>
+                  <th>Creation Time</th>
+                </tr>
               </thead>
               <tbody>
                 <tr
@@ -134,13 +136,17 @@
         >
           <th scope="row">Job Description</th>
           <td>
-            <b-card
+            <Card
               v-for="jobDetail in fullExperiment.job_details"
               :key="jobDetail.job_id"
-              :header="jobDetail.job_name"
             >
-              <pre>{{ jobDetail.job_description }}</pre>
-            </b-card>
+              <CardHeader>
+                <CardTitle>{{ jobDetail.job_name }}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre>{{ jobDetail.job_description }}</pre>
+              </CardContent>
+            </Card>
           </td>
         </tr>
         <tr>
@@ -262,58 +268,75 @@
           <th scope="row">Experiment Data Dir</th>
           <td>
             <div>{{ experimentDataDir }}</div>
-            <b-alert
-              :model-value="true"
-              variant="warning"
+            <Alert
               v-if="archived"
-              class="mt-2"
+              class="mt-2 border-transparent bg-warning text-warning-foreground"
             >
-              This directory was archived in
-              <b>{{ experimentArchive.archive_name }}</b> on
-              {{ experimentArchive.created_date }}.
-            </b-alert>
+              <AlertDescription class="text-warning-foreground">
+                This directory was archived in
+                <b>{{ experimentArchive.archive_name }}</b> on
+                {{ experimentArchive.created_date }}.
+              </AlertDescription>
+            </Alert>
           </td>
         </tr>
         <tr>
           <th scope="row">Errors</th>
           <td>
-            <b-card
-              v-for="error in experiment.errors"
-              :key="error.error_id"
-              header="Error"
-            >
-              <p>{{ error.user_friendly_message }}</p>
-              <pre class="pre-scrollable">{{ error.actual_error_message }}</pre>
-            </b-card>
+            <Card v-for="error in experiment.errors" :key="error.error_id">
+              <CardHeader>
+                <CardTitle>Error</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{{ error.user_friendly_message }}</p>
+                <pre class="max-h-80 overflow-auto">{{
+                  error.actual_error_message
+                }}</pre>
+              </CardContent>
+            </Card>
           </td>
         </tr>
         <template v-if="failedJobs.length > 0">
           <tr v-for="job in failedJobs" :key="job.job_id">
             <th scope="row">Job Submission Response</th>
             <td>
-              <b-card v-if="job.std_out" :header="job.job_name + ' STDOUT'">
-                <pre class="pre-scrollable">{{ job.std_out }}</pre>
-              </b-card>
-              <b-card v-if="job.std_err" :header="job.job_name + ' STDERR'">
-                <pre class="pre-scrollable">{{ job.std_err }}</pre>
-              </b-card>
+              <Card v-if="job.std_out">
+                <CardHeader>
+                  <CardTitle>{{ job.job_name + " STDOUT" }}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <pre class="max-h-80 overflow-auto">{{ job.std_out }}</pre>
+                </CardContent>
+              </Card>
+              <Card v-if="job.std_err">
+                <CardHeader>
+                  <CardTitle>{{ job.job_name + " STDERR" }}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <pre class="max-h-80 overflow-auto">{{ job.std_err }}</pre>
+                </CardContent>
+              </Card>
             </td>
           </tr>
         </template>
       </tbody>
     </table>
-    <h2 class="h5 mb-3">Process Details</h2>
-    <b-card
+    <h2 class="mb-3 text-lg font-semibold">Process Details</h2>
+    <Card
       v-for="process in experiment.processes"
       :key="process.process_id"
-      :header="process.process_id"
+      class="mb-3"
     >
-      <b-card
-        v-for="task in process.sortedTasks"
-        :key="task.task_id"
-        :header="task.task_id"
-      >
-        <table class="table table-sm">
+      <CardHeader>
+        <CardTitle>{{ process.process_id }}</CardTitle>
+      </CardHeader>
+      <CardContent class="space-y-3">
+        <Card v-for="task in process.sortedTasks" :key="task.task_id">
+          <CardHeader>
+            <CardTitle>{{ task.task_id }}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <table class="table table-sm">
           <tbody>
             <tr>
               <th scope="row">Task Id</th>
@@ -341,16 +364,20 @@
               <tr>
                 <th scope="row">Task Errors</th>
                 <td>
-                  <b-card
+                  <Card
                     v-for="error in task.task_errors"
                     :key="error.error_id"
-                    :header="error.error_id"
                   >
-                    <p>{{ error.user_friendly_message }}</p>
-                    <pre class="pre-scrollable">{{
-                      error.actual_error_message
-                    }}</pre>
-                  </b-card>
+                    <CardHeader>
+                      <CardTitle>{{ error.error_id }}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p>{{ error.user_friendly_message }}</p>
+                      <pre class="max-h-80 overflow-auto">{{
+                        error.actual_error_message
+                      }}</pre>
+                    </CardContent>
+                  </Card>
                 </td>
               </tr>
             </template>
@@ -358,33 +385,43 @@
               <tr>
                 <th scope="row">Jobs</th>
                 <td>
-                  <b-card
-                    v-for="job in task.jobs"
-                    :key="job.job_id"
-                    :header="job.job_name"
-                  >
-                    <pre>{{ job.job_description }}</pre>
-                  </b-card>
+                  <Card v-for="job in task.jobs" :key="job.job_id">
+                    <CardHeader>
+                      <CardTitle>{{ job.job_name }}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <pre>{{ job.job_description }}</pre>
+                    </CardContent>
+                  </Card>
                 </td>
               </tr>
             </template>
           </tbody>
-        </table>
-      </b-card>
+            </table>
+          </CardContent>
+        </Card>
 
-      <b-card
-        v-for="error in process.process_errors"
-        :key="error.error_id"
-        :header="'Process Error ' + error.error_id"
-      >
-        <p>{{ error.user_friendly_message }}</p>
-        <pre class="pre-scrollable">{{ error.actual_error_message }}</pre>
-      </b-card>
-    </b-card>
+        <Card
+          v-for="error in process.process_errors"
+          :key="error.error_id"
+        >
+          <CardHeader>
+            <CardTitle>{{ "Process Error " + error.error_id }}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>{{ error.user_friendly_message }}</p>
+            <pre class="max-h-80 overflow-auto">{{
+              error.actual_error_message
+            }}</pre>
+          </CardContent>
+        </Card>
+      </CardContent>
+    </Card>
   </div>
 </template>
 
 <script>
+import { RefreshCw } from "@lucide/vue";
 import { models, services } from "django-airavata-api";
 import { components } from "django-airavata-common-ui";
 
@@ -399,6 +436,7 @@ export default {
     },
   },
   components: {
+    RefreshCw,
     "clipboard-copy-link": components.ClipboardCopyLink,
     "data-product-viewer": components.DataProductViewer,
     "human-date": components.HumanDate,

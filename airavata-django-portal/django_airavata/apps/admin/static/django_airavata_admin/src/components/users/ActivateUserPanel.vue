@@ -1,13 +1,18 @@
 <template>
-  <b-card header="Activate User">
-    <p class="card-text">
-      User {{ username }} has verified their email address, but doesn't yet have
-      an Airavata User Profile. Click <b>Activate</b>
-      to create an Airavata User Profile for this user. This will allow the user
-      to be assigned to groups.
-    </p>
-    <b-button @click="activate">Activate</b-button>
-  </b-card>
+  <Card>
+    <CardHeader>
+      <CardTitle>Activate User</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p class="mb-4">
+        User {{ username }} has verified their email address, but doesn't yet
+        have an Airavata User Profile. Click <b>Activate</b>
+        to create an Airavata User Profile for this user. This will allow the
+        user to be assigned to groups.
+      </p>
+      <Button @click="activate">Activate</Button>
+    </CardContent>
+  </Card>
 </template>
 
 <script>

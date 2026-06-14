@@ -1,45 +1,43 @@
 <template>
   <div>
-    <div class="row">
-      <div class="col">
-        <h1 class="h4 mb-4">Application Details</h1>
-        <b-form-group
-          label="Application Name"
-          label-for="application-name"
-          :invalid-feedback="validationFeedback.app_module_name.invalidFeedback"
-          :state="validationFeedback.app_module_name.state"
-        >
-          <b-form-input
+    <div>
+      <h1 class="mb-4 text-xl font-semibold">Application Details</h1>
+      <div class="space-y-4">
+        <div class="space-y-1.5">
+          <Label for="application-name">Application Name</Label>
+          <Input
             id="application-name"
             type="text"
             v-model="data.app_module_name"
             required
             :disabled="readonly"
-            :state="validationFeedback.app_module_name.state"
-          ></b-form-input>
-        </b-form-group>
-        <b-form-group
-          label="Application Version"
-          label-for="application-version"
-        >
-          <b-form-input
+            :aria-invalid="validationFeedback.app_module_name.state === false"
+          ></Input>
+          <p
+            v-if="validationFeedback.app_module_name.state === false"
+            class="text-sm text-destructive"
+          >
+            {{ validationFeedback.app_module_name.invalidFeedback }}
+          </p>
+        </div>
+        <div class="space-y-1.5">
+          <Label for="application-version">Application Version</Label>
+          <Input
             id="application-version"
             type="text"
             v-model="data.app_module_version"
             :disabled="readonly"
-          ></b-form-input>
-        </b-form-group>
-        <b-form-group
-          label="Application Description"
-          label-for="application-description"
-        >
-          <b-form-textarea
+          ></Input>
+        </div>
+        <div class="space-y-1.5">
+          <Label for="application-description">Application Description</Label>
+          <Textarea
             id="application-description"
             v-model="data.app_module_description"
             :rows="3"
             :disabled="readonly"
-          ></b-form-textarea>
-        </b-form-group>
+          ></Textarea>
+        </div>
       </div>
     </div>
   </div>

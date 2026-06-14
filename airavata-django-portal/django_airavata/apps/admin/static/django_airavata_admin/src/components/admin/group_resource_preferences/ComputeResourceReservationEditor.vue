@@ -1,64 +1,74 @@
 <template>
-  <b-form>
-    <b-form-group
-      label="Reservation name"
-      label-for="reservation-name"
-      :invalid-feedback="nameValidationFeedback"
-      :state="nameValidationState"
-    >
-      <b-form-input
+  <form class="space-y-4">
+    <div class="space-y-1.5">
+      <Label for="reservation-name">Reservation name</Label>
+      <Input
         id="reservation-name"
         v-model="data.reservation_name"
         type="text"
         @input="nameInputBegins = true"
-        :state="nameValidationState"
+        :aria-invalid="nameValidationState === false"
       />
-    </b-form-group>
-    <b-form-group
-      label="Start Time"
-      label-for="start-time"
-      :invalid-feedback="getValidationFeedback('start_time')"
-      :state="getValidationState('start_time')"
-    >
+      <p v-if="nameValidationState === false" class="text-sm text-destructive">
+        {{ nameValidationFeedback }}
+      </p>
+    </div>
+    <div class="space-y-1.5">
+      <Label for="start-time">Start Time</Label>
       <flat-pickr
         id="start-time"
-        class="form-control"
+        class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
         :model-value="startTimeAsString"
         :config="startTimeConfig"
         @update:model-value="data.start_time = stringToDate($event)"
       />
-    </b-form-group>
-    <b-form-group
-      label="End Time"
-      label-for="end-time"
-      :invalid-feedback="getValidationFeedback('end_time')"
-      :state="getValidationState('end_time')"
-    >
+      <p
+        v-if="getValidationState('start_time') === false"
+        class="text-sm text-destructive"
+      >
+        {{ getValidationFeedback("start_time") }}
+      </p>
+    </div>
+    <div class="space-y-1.5">
+      <Label for="end-time">End Time</Label>
       <flat-pickr
         id="end-time"
-        :class="{
-          'form-control': true,
-          'is-invalid': getValidationState('end_time'),
-        }"
+        class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
+        :class="{ 'border-destructive': getValidationState('end_time') }"
         :model-value="endTimeAsString"
         :config="endTimeConfig"
         @update:model-value="data.end_time = stringToDate($event)"
       />
-    </b-form-group>
-    <b-form-group
-      label="Queues"
-      label-for="queues"
-      :invalid-feedback="getValidationFeedback('queue_names')"
-      :state="getValidationState('queue_names')"
-    >
-      <b-form-checkbox-group
-        id="queues"
-        v-model="data.queue_names"
-        :options="queueNameOptions"
-        :state="getValidationState('queue_names')"
-      />
-    </b-form-group>
-  </b-form>
+      <p
+        v-if="getValidationState('end_time') === false"
+        class="text-sm text-destructive"
+      >
+        {{ getValidationFeedback("end_time") }}
+      </p>
+    </div>
+    <div class="space-y-1.5">
+      <Label>Queues</Label>
+      <div class="flex flex-col gap-2">
+        <label
+          v-for="queueName in queueNameOptions"
+          :key="queueName"
+          class="flex items-center gap-2 text-sm"
+        >
+          <Checkbox
+            :model-value="data.queue_names.includes(queueName)"
+            @update:model-value="toggleQueue(queueName, $event)"
+          />
+          {{ queueName }}
+        </label>
+      </div>
+      <p
+        v-if="getValidationState('queue_names') === false"
+        class="text-sm text-destructive"
+      >
+        {{ getValidationFeedback("queue_names") }}
+      </p>
+    </div>
+  </form>
 </template>
 
 <script>
@@ -133,6 +143,18 @@ export default {
     },
   },
   methods: {
+    toggleQueue(queueName, checked) {
+      if (checked) {
+        if (!this.data.queue_names.includes(queueName)) {
+          this.data.queue_names.push(queueName);
+        }
+      } else {
+        const index = this.data.queue_names.indexOf(queueName);
+        if (index >= 0) {
+          this.data.queue_names.splice(index, 1);
+        }
+      }
+    },
     stringToDate(datetimeString) {
       return new Date(datetimeString);
     },

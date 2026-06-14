@@ -1,5 +1,5 @@
 <template>
-  <div class="has-fixed-footer">
+  <div class="pb-20">
     <unsaved-changes-guard :dirty="isDirty" />
     <confirmation-dialog
       ref="unsavedChangesDialog"
@@ -8,94 +8,95 @@
     >
       You have unsaved changes. Are you sure you want to leave this page?
     </confirmation-dialog>
-    <div class="row">
-      <div class="col">
-        <h1 class="h4 mb-4">
-          {{ title }}
-        </h1>
-      </div>
+    <div>
+      <h1 class="mb-4 text-xl font-semibold">
+        {{ title }}
+      </h1>
     </div>
-    <div class="row">
-      <div class="col">
-        <b-nav tabs class="mb-3">
-          <b-nav-item
-            exact-active-class="active"
-            exact
-            :to="{
-              name: id ? 'application_module' : 'new_application_module',
-              params: { id: id },
-            }"
-            >Details</b-nav-item
-          >
-          <b-nav-item
-            exact-active-class="active"
-            exact
-            :to="{ name: 'application_interface', params: { id: id } }"
-            :disabled="!id"
-            >Interface</b-nav-item
-          >
-          <b-nav-item
-            active-class="active"
-            :to="{ name: 'application_deployments', params: { id: id } }"
-            :disabled="!id"
-            >Deployments</b-nav-item
-          >
-        </b-nav>
-        <router-view
-          name="module"
-          v-if="appModule"
-          v-model="appModule"
-          @input="appModuleIsDirty = true"
-          :readonly="!appModule.user_has_write_access"
-          :validation-errors="appModuleValidationErrors"
-        />
-        <router-view
-          name="interface"
-          v-if="appInterface"
-          v-model="appInterface"
-          @input="appInterfaceIsDirty = true"
-          :readonly="!appInterface.user_has_write_access"
-        />
-        <router-view
-          name="deployments"
-          v-if="appModule && appDeployments"
-          :deployments="appDeployments"
-          @new="createNewDeployment"
-          @delete="deleteApplicationDeployment"
-          :readonly="!appModule.user_has_write_access"
-        />
-        <router-view
-          name="deployment"
-          v-if="currentDeployment && currentDeploymentSharedEntity"
-          v-model="currentDeployment"
-          :shared-entity="currentDeploymentSharedEntity"
-          @sharing-changed="deploymentSharingChanged"
-          @input="currentDeploymentChanged"
-        />
-      </div>
+    <div>
+      <nav class="mb-3 flex gap-1 border-b">
+        <router-link
+          class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+          exact-active-class="!border-primary !text-foreground"
+          :to="{
+            name: id ? 'application_module' : 'new_application_module',
+            params: { id: id },
+          }"
+          >Details</router-link
+        >
+        <router-link
+          v-if="id"
+          class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+          exact-active-class="!border-primary !text-foreground"
+          :to="{ name: 'application_interface', params: { id: id } }"
+          >Interface</router-link
+        >
+        <span
+          v-else
+          class="cursor-not-allowed border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground opacity-50"
+          >Interface</span
+        >
+        <router-link
+          v-if="id"
+          class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+          active-class="!border-primary !text-foreground"
+          :to="{ name: 'application_deployments', params: { id: id } }"
+          >Deployments</router-link
+        >
+        <span
+          v-else
+          class="cursor-not-allowed border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground opacity-50"
+          >Deployments</span
+        >
+      </nav>
+      <router-view
+        name="module"
+        v-if="appModule"
+        v-model="appModule"
+        @input="appModuleIsDirty = true"
+        :readonly="!appModule.user_has_write_access"
+        :validation-errors="appModuleValidationErrors"
+      />
+      <router-view
+        name="interface"
+        v-if="appInterface"
+        v-model="appInterface"
+        @input="appInterfaceIsDirty = true"
+        :readonly="!appInterface.user_has_write_access"
+      />
+      <router-view
+        name="deployments"
+        v-if="appModule && appDeployments"
+        :deployments="appDeployments"
+        @new="createNewDeployment"
+        @delete="deleteApplicationDeployment"
+        :readonly="!appModule.user_has_write_access"
+      />
+      <router-view
+        name="deployment"
+        v-if="currentDeployment && currentDeploymentSharedEntity"
+        v-model="currentDeployment"
+        :shared-entity="currentDeploymentSharedEntity"
+        @sharing-changed="deploymentSharingChanged"
+        @input="currentDeploymentChanged"
+      />
     </div>
-    <div class="fixed-footer">
-      <b-button
-        class="editor-button"
-        variant="primary"
+    <div
+      class="bg-background fixed inset-x-0 bottom-0 flex gap-2 border-t p-4 shadow-md"
+    >
+      <Button
+        variant="default"
         @click="saveAll"
         :disabled="readonly || !isDirty"
       >
         Save
-      </b-button>
-      <delete-button
-        class="editor-button"
-        v-if="id"
-        :disabled="readonly"
-        @delete="deleteApplication"
-      >
+      </Button>
+      <delete-button v-if="id" :disabled="readonly" @delete="deleteApplication">
         Are you sure you want to delete the
         <strong>{{ appModule ? appModule.app_module_name : "" }}</strong>
         application?
       </delete-button>
-      <b-button class="editor-button" variant="secondary" @click="cancel">
-        Cancel
-      </b-button>
+      <Button variant="secondary" @click="cancel"> Cancel </Button>
     </div>
   </div>
 </template>
@@ -697,13 +698,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-/* style the containing div, in base.html template */
-/* .main-content {
-    background-color: #ffffff;
-} */
-.editor-button + .editor-button {
-  margin-left: 0.25em;
-}
-</style>

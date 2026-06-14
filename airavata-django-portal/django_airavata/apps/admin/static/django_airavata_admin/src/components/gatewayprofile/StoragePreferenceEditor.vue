@@ -1,27 +1,21 @@
 <template>
-  <div>
-    <b-form-group label="Login username" label-for="login-username">
-      <b-form-input
-        id="login-username"
-        v-model="data.login_user_name"
-        type="text"
-      />
-    </b-form-group>
-    <b-form-group
-      label="File System Root Location"
-      label-for="filesystem-root-location"
-    >
-      <b-form-input
+  <div class="space-y-4">
+    <div class="space-y-1.5">
+      <Label for="login-username">Login username</Label>
+      <Input id="login-username" v-model="data.login_user_name" type="text" />
+    </div>
+    <div class="space-y-1.5">
+      <Label for="filesystem-root-location">File System Root Location</Label>
+      <Input
         id="filesystem-root-location"
         v-model="data.file_system_root_location"
         type="text"
       />
-    </b-form-group>
-    <b-form-group
-      label="Resource Specific SSH Credential"
-      label-for="default-credential-store-token"
-      description="This is the SSH credential that will be used for to move data to/from this storage resource."
-    >
+    </div>
+    <div class="space-y-1.5">
+      <Label for="default-credential-store-token"
+        >Resource Specific SSH Credential</Label
+      >
       <ssh-credential-selector
         id="default-credential-store-token"
         v-model="data.resource_specific_credential_store_token"
@@ -38,7 +32,11 @@
           <span v-else> Select a SSH credential </span>
         </template>
       </ssh-credential-selector>
-    </b-form-group>
+      <p class="text-sm text-muted-foreground">
+        This is the SSH credential that will be used for to move data to/from
+        this storage resource.
+      </p>
+    </div>
   </div>
 </template>
 

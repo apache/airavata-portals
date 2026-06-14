@@ -1,167 +1,213 @@
 <template>
-  <div>
-    <div class="row">
-      <div class="col">
-        <h1 class="h4 mb-4">Experiment Statistics</h1>
-      </div>
+  <div class="space-y-4">
+    <div>
+      <h1 class="mb-4 text-xl font-semibold">Experiment Statistics</h1>
     </div>
-    <b-card header="Load experiment details" no-body>
-      <b-tabs card>
-        <b-tab title="By Experiment ID" active>
-          <b-card-text>
-            <b-form-group>
-              <b-input-group>
-                <b-form-input
-                  v-model.trim="experimentId"
-                  placeholder="Experiment ID"
-                  @keydown.enter="
-                    experimentId && showExperimentDetails(experimentId)
-                  "
-                />
-                <b-button
-                  :disabled="!experimentId"
-                  @click="showExperimentDetails(experimentId)"
-                  variant="primary"
-                  >Load</b-button
-                >
-              </b-input-group>
-            </b-form-group>
-          </b-card-text>
-        </b-tab>
-        <b-tab title="By Job ID">
-          <b-card-text>
-            <b-form-group>
-              <b-input-group>
-                <b-form-input
-                  v-model.trim="jobId"
-                  placeholder="Job ID"
-                  @keydown.enter="jobId && showExperimentDetailsForJobId(jobId)"
-                />
-                <b-button
-                  :disabled="!jobId"
-                  @click="showExperimentDetailsForJobId(jobId)"
-                  variant="primary"
-                  >Load</b-button
-                >
-              </b-input-group>
-            </b-form-group>
-          </b-card-text>
-        </b-tab>
-      </b-tabs>
-    </b-card>
-    <b-card no-body>
-      <b-tabs card v-model="activeTabIndex" ref="tabs">
-        <b-tab :title="selectedExperimentsTabTitle">
-          <div class="row">
-            <div class="col">
-              <b-card header="Filter Options">
-                <b-input-group class="w-100 mb-2">
-                  <b-input-group-text>
-                    <i class="fa fa-calendar-week" aria-hidden="true"></i>
-                  </b-input-group-text>
+    <Card>
+      <CardHeader>
+        <CardTitle>Load experiment details</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs default-value="by-experiment-id">
+          <TabsList>
+            <TabsTrigger value="by-experiment-id">By Experiment ID</TabsTrigger>
+            <TabsTrigger value="by-job-id">By Job ID</TabsTrigger>
+          </TabsList>
+          <TabsContent value="by-experiment-id" class="pt-4">
+            <div class="flex items-stretch gap-2">
+              <Input
+                v-model.trim="experimentId"
+                placeholder="Experiment ID"
+                @keydown.enter="
+                  experimentId && showExperimentDetails(experimentId)
+                "
+              />
+              <Button
+                :disabled="!experimentId"
+                @click="showExperimentDetails(experimentId)"
+                variant="default"
+                >Load</Button
+              >
+            </div>
+          </TabsContent>
+          <TabsContent value="by-job-id" class="pt-4">
+            <div class="flex items-stretch gap-2">
+              <Input
+                v-model.trim="jobId"
+                placeholder="Job ID"
+                @keydown.enter="jobId && showExperimentDetailsForJobId(jobId)"
+              />
+              <Button
+                :disabled="!jobId"
+                @click="showExperimentDetailsForJobId(jobId)"
+                variant="default"
+                >Load</Button
+              >
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+    <Card>
+      <CardContent>
+        <Tabs v-model="activeTab" ref="tabs">
+          <TabsList>
+            <TabsTrigger value="statistics">{{
+              selectedExperimentsTabTitle
+            }}</TabsTrigger>
+            <TabsTrigger
+              v-for="experimentTab in experimentDetailTabs"
+              :key="experimentTab.experiment.experiment_id"
+              :value="experimentTab.experiment.experiment_id"
+            >
+              {{ experimentTab.tabTitle }}
+              <a
+                href="#"
+                @click.prevent="
+                  removeExperimentDetailTab(
+                    experimentTab.experiment.experiment_id,
+                  )
+                "
+                class="text-muted-foreground ml-1"
+              >
+                <X class="size-3.5" />
+                <span class="sr-only">Close experiment tab</span>
+              </a>
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="statistics" class="space-y-4 pt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Filter Options</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div class="mb-2 flex w-full items-stretch gap-2">
+                  <span
+                    class="border-input flex items-center rounded-md border px-3"
+                  >
+                    <CalendarDays class="size-4" aria-hidden="true" />
+                  </span>
                   <flat-pickr
                     :value="dateRange"
                     :config="dateConfig"
                     @on-change="dateRangeChanged"
-                    class="form-control"
+                    class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
                   />
-                  <b-button @click="getPast24Hours" variant="outline-secondary"
-                    >Past 24 Hours</b-button
+                  <Button @click="getPast24Hours" variant="outline"
+                    >Past 24 Hours</Button
                   >
-                  <b-button @click="getPastWeek" variant="outline-secondary"
-                    >Past Week</b-button
+                  <Button @click="getPastWeek" variant="outline"
+                    >Past Week</Button
                   >
-                </b-input-group>
-                <b-dropdown text="Add Filters" class="mb-2">
-                  <b-dropdown-item
-                    v-if="!usernameFilterEnabled"
-                    @click="usernameFilterEnabled = true"
-                    >Username</b-dropdown-item
-                  >
-                  <b-dropdown-item
-                    v-if="!applicationNameFilterEnabled"
-                    @click="applicationNameFilterEnabled = true"
-                    >Application Name</b-dropdown-item
-                  >
-                  <b-dropdown-item
-                    v-if="!hostnameFilterEnabled"
-                    @click="hostnameFilterEnabled = true"
-                    >Hostname</b-dropdown-item
-                  >
-                </b-dropdown>
-                <b-input-group v-if="usernameFilterEnabled" class="mb-2">
-                  <b-form-input
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger as-child>
+                    <Button variant="outline" class="mb-2">Add Filters</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      v-if="!usernameFilterEnabled"
+                      @click="usernameFilterEnabled = true"
+                      >Username</DropdownMenuItem
+                    >
+                    <DropdownMenuItem
+                      v-if="!applicationNameFilterEnabled"
+                      @click="applicationNameFilterEnabled = true"
+                      >Application Name</DropdownMenuItem
+                    >
+                    <DropdownMenuItem
+                      v-if="!hostnameFilterEnabled"
+                      @click="hostnameFilterEnabled = true"
+                      >Hostname</DropdownMenuItem
+                    >
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <div
+                  v-if="usernameFilterEnabled"
+                  class="mb-2 flex items-stretch gap-2"
+                >
+                  <Input
                     v-model="usernameFilter"
                     placeholder="Username"
                     @keydown.enter="loadStatistics"
                   />
-                  <b-button @click="removeUsernameFilter">
-                    <i class="fa fa-times"></i>
-                    <span class="visually-hidden">Remove username filter</span>
-                  </b-button>
-                </b-input-group>
-                <b-input-group v-if="applicationNameFilterEnabled" class="mb-2">
-                  <b-form-select
+                  <Button variant="outline" @click="removeUsernameFilter">
+                    <X class="size-4" />
+                    <span class="sr-only">Remove username filter</span>
+                  </Button>
+                </div>
+                <div
+                  v-if="applicationNameFilterEnabled"
+                  class="mb-2 flex items-stretch gap-2"
+                >
+                  <select
                     v-model="applicationNameFilter"
-                    :options="applicationNameOptions"
-                    @update:model-value="loadStatistics"
+                    @change="loadStatistics"
+                    class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
                   >
-                    <template v-slot:first>
-                      <option :value="null" disabled>
-                        Select an application to filter on
-                      </option>
-                    </template>
-                  </b-form-select>
-                  <b-button @click="removeApplicationNameFilter">
-                    <i class="fa fa-times"></i>
-                    <span class="visually-hidden"
-                      >Remove application name filter</span
+                    <option :value="null" disabled>
+                      Select an application to filter on
+                    </option>
+                    <option
+                      v-for="opt in applicationNameOptions"
+                      :key="opt.value"
+                      :value="opt.value"
                     >
-                  </b-button>
-                </b-input-group>
-                <b-input-group v-if="hostnameFilterEnabled" class="mb-2">
-                  <b-form-select
+                      {{ opt.text }}
+                    </option>
+                  </select>
+                  <Button
+                    variant="outline"
+                    @click="removeApplicationNameFilter"
+                  >
+                    <X class="size-4" />
+                    <span class="sr-only">Remove application name filter</span>
+                  </Button>
+                </div>
+                <div
+                  v-if="hostnameFilterEnabled"
+                  class="mb-2 flex items-stretch gap-2"
+                >
+                  <select
                     v-model="hostnameFilter"
-                    :options="hostnameOptions"
-                    @update:model-value="loadStatistics"
+                    @change="loadStatistics"
+                    class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3"
                   >
-                    <template v-slot:first>
-                      <option :value="null" disabled>
-                        Select compute resource to filter on
-                      </option>
-                    </template>
-                  </b-form-select>
-                  <b-button @click="removeHostnameFilter">
-                    <i class="fa fa-times"></i>
-                    <span class="visually-hidden">Remove hostname filter</span>
-                  </b-button>
-                </b-input-group>
-                <template v-slot:footer>
-                  <div class="d-flex justify-content-end">
-                    <b-button
-                      @click="loadStatistics"
-                      class="ms-auto"
-                      variant="primary"
-                      >Get Statistics</b-button
+                    <option :value="null" disabled>
+                      Select compute resource to filter on
+                    </option>
+                    <option
+                      v-for="opt in hostnameOptions"
+                      :key="opt.value"
+                      :value="opt.value"
                     >
-                  </div>
-                </template>
-              </b-card>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col">
-              <h2 class="h5 mb-4">
+                      {{ opt.text }}
+                    </option>
+                  </select>
+                  <Button variant="outline" @click="removeHostnameFilter">
+                    <X class="size-4" />
+                    <span class="sr-only">Remove hostname filter</span>
+                  </Button>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <div class="flex w-full justify-end">
+                  <Button @click="loadStatistics" class="ml-auto"
+                    >Get Statistics</Button
+                  >
+                </div>
+              </CardFooter>
+            </Card>
+            <div>
+              <h2 class="mb-4 text-lg font-semibold">
                 Experiment Statistics from {{ fromTimeDisplay }} to
                 {{ toTimeDisplay }}
               </h2>
             </div>
-          </div>
-          <div class="row">
-            <div class="col-xl-2 col-md-4">
+            <div
+              class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6"
+            >
               <experiment-statistics-card
-                bg-variant="primary"
-                header-text-variant="white"
                 :count="experimentStatistics.all_experiment_count || 0"
                 title="Total Experiments"
                 @click="selectExperiments('all_experiments')"
@@ -170,57 +216,35 @@
                   <span>All</span>
                 </template>
               </experiment-statistics-card>
-            </div>
-            <div class="col-xl-2 col-md-4">
               <experiment-statistics-card
-                bg-variant="light"
                 :count="experimentStatistics.created_experiment_count || 0"
                 :states="createdStates"
                 title="Created Experiments"
                 @click="selectExperiments('created_experiments')"
               >
               </experiment-statistics-card>
-            </div>
-            <div class="col-xl-2 col-md-4">
               <experiment-statistics-card
-                bg-variant="light"
-                header-text-variant="success"
                 :count="experimentStatistics.running_experiment_count || 0"
                 :states="runningStates"
                 title="Running Experiments"
                 @click="selectExperiments('running_experiments')"
               >
               </experiment-statistics-card>
-            </div>
-            <div class="col-xl-2 col-md-4">
               <experiment-statistics-card
-                bg-variant="success"
-                header-text-variant="white"
-                link-variant="success"
                 :count="experimentStatistics.completed_experiment_count || 0"
                 :states="completedStates"
                 title="Completed Experiments"
                 @click="selectExperiments('completed_experiments')"
               >
               </experiment-statistics-card>
-            </div>
-            <div class="col-xl-2 col-md-4">
               <experiment-statistics-card
-                bg-variant="warning"
-                header-text-variant="white"
-                link-variant="warning"
                 :count="experimentStatistics.cancelled_experiment_count || 0"
                 :states="canceledStates"
                 title="Cancelled Experiments"
                 @click="selectExperiments('cancelled_experiments')"
               >
               </experiment-statistics-card>
-            </div>
-            <div class="col-xl-2 col-md-4">
               <experiment-statistics-card
-                bg-variant="danger"
-                header-text-variant="white"
-                link-variant="danger"
                 :count="experimentStatistics.failed_experiment_count || 0"
                 :states="failedStates"
                 title="Failed Experiments"
@@ -228,33 +252,59 @@
               >
               </experiment-statistics-card>
             </div>
-          </div>
-          <div class="row" v-if="items.length > 0">
-            <div class="col">
-              <b-card>
-                <b-table :fields="fields" :items="items">
-                  <template #cell(execution_id)="data">
-                    <application-name :application-interface-id="data.value" />
-                  </template>
-                  <template #cell(resource_host_id)="data">
-                    <compute-resource-name :compute-resource-id="data.value" />
-                  </template>
-                  <template #cell(creation_time)="data">
-                    <human-date :date="data.value" />
-                  </template>
-                  <template #cell(experiment_status)="data">
-                    <experiment-status-badge :status-name="data.value.name" />
-                  </template>
-                  <template #cell(actions)="data">
-                    <b-link
-                      @click="showExperimentDetails(data.item.experiment_id)"
-                    >
-                      View Details
-                      <i class="far fa-chart-bar" aria-hidden="true"></i>
-                    </b-link>
-                  </template>
-                </b-table>
-              </b-card>
+            <div v-if="items.length > 0">
+              <Card>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead v-for="field in fields" :key="field.key">
+                          {{ field.label }}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow
+                        v-for="item in items"
+                        :key="item.experiment_id"
+                      >
+                        <TableCell>{{ item.name }}</TableCell>
+                        <TableCell>{{ item.user_name }}</TableCell>
+                        <TableCell>
+                          <application-name
+                            :application-interface-id="item.execution_id"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <compute-resource-name
+                            :compute-resource-id="item.resource_host_id"
+                          />
+                        </TableCell>
+                        <TableCell
+                          ><human-date :date="item.creation_time"
+                        /></TableCell>
+                        <TableCell>
+                          <experiment-status-badge
+                            :status-name="item.experiment_status.name"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <a
+                            href="#"
+                            class="inline-flex items-center gap-1 text-primary hover:underline"
+                            @click.prevent="
+                              showExperimentDetails(item.experiment_id)
+                            "
+                          >
+                            View Details
+                            <BarChart3 class="size-4" aria-hidden="true" />
+                          </a>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
               <pager
                 v-if="experimentStatistics.all_experiment_count > 0"
                 :paginator="experimentStatisticsPaginator"
@@ -262,33 +312,22 @@
                 @previous="experimentStatisticsPaginator.previous()"
               ></pager>
             </div>
-          </div>
-        </b-tab>
-        <b-tab
-          v-for="experimentTab in experimentDetailTabs"
-          :key="experimentTab.experiment.experiment_id"
-        >
-          <template v-slot:title>
-            {{ experimentTab.tabTitle }}
-            <b-link
-              @click="
-                removeExperimentDetailTab(
-                  experimentTab.experiment.experiment_id,
-                )
-              "
-              class="text-secondary"
-            >
-              <i class="fas fa-times"></i>
-              <span class="visually-hidden">Close experiment tab</span>
-            </b-link>
-          </template>
-          <experiment-details-view :experiment="experimentTab.experiment" />
-        </b-tab>
-      </b-tabs>
-    </b-card>
+          </TabsContent>
+          <TabsContent
+            v-for="experimentTab in experimentDetailTabs"
+            :key="experimentTab.experiment.experiment_id"
+            :value="experimentTab.experiment.experiment_id"
+            class="pt-4"
+          >
+            <experiment-details-view :experiment="experimentTab.experiment" />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   </div>
 </template>
 <script>
+import { BarChart3, CalendarDays, X } from "@lucide/vue";
 import { errors, models, services, utils } from "django-airavata-api";
 import { components, notifications } from "django-airavata-common-ui";
 import ExperimentStatisticsCard from "./ExperimentStatisticsCard";
@@ -327,7 +366,7 @@ export default {
       experimentDetailTabs: [],
       experimentId: null,
       jobId: null,
-      activeTabIndex: 0,
+      activeTab: "statistics",
     };
   },
   created() {
@@ -337,6 +376,9 @@ export default {
     this.loadGroupResourceProfiles();
   },
   components: {
+    BarChart3,
+    CalendarDays,
+    X,
     ExperimentDetailsView,
     ExperimentStatisticsCard,
     "application-name": components.ApplicationName,
@@ -634,12 +676,11 @@ export default {
       }
     },
     selectExperimentDetailsTab(experimentId) {
-      const expDetailsIndex = this.getExperimentDetailTabsIndex(experimentId);
-      // Note: running this in $nextTick doesn't work, but setTimeout does
-      // (see also https://github.com/bootstrap-vue/bootstrap-vue/issues/1378#issuecomment-345689470)
+      // The shadcn Tabs are keyed by value; the per-experiment tabs use the
+      // experiment id as their value. Defer a tick so the new tab is mounted
+      // before we activate it.
       setTimeout(() => {
-        // Add 1 to the index because the first tab has the overall statistics
-        this.activeTabIndex = expDetailsIndex + 1;
+        this.activeTab = experimentId;
       }, 1);
     },
     getExperimentDetailTabsIndex(experimentId) {
@@ -650,6 +691,9 @@ export default {
     removeExperimentDetailTab(experimentId) {
       const index = this.getExperimentDetailTabsIndex(experimentId);
       this.experimentDetailTabs.splice(index, 1);
+      if (this.activeTab === experimentId) {
+        this.activeTab = "statistics";
+      }
     },
     scrollTabsIntoView() {
       this.$refs.tabs.$el.scrollIntoView({ behavior: "smooth" });

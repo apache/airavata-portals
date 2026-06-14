@@ -1,92 +1,121 @@
 <template>
   <div>
-    <div class="row">
-      <div class="col">
-        <h1 class="h4 mb-4">Manage Notices</h1>
-      </div>
+    <div>
+      <h1 class="mb-4 text-xl font-semibold">Manage Notices</h1>
     </div>
-    <div class="row">
-      <div class="col">
-        <div class="card">
-          <div class="card-body">
-            <list-layout
-              @add-new-item="addNewNotice"
-              title="Notice"
-              new-item-button-text="New Notice"
-              :new-button-disabled="!isGatewayAdmin"
-            >
-              <template v-slot:new-item-editor>
-                <b-card v-if="showNewItemEditor">
-                  <notice-editor
-                    v-model="newNotice"
-                    ref="noticeEditor"
-                    @cancelNewNotice="cancelNewNotice"
-                    @saveNewNotice="saveNewNotice"
-                  >
-                    <template v-slot:title>
-                      <h1 class="h4 mb-4 me-auto">New Notice</h1>
-                    </template>
-                  </notice-editor>
-                </b-card>
-              </template>
-              <template v-slot:item-list>
-                <b-table hover :fields="fields" :items="items">
-                  <template #cell(published_time)="data">
-                    <human-date :date="data.value" /> </template
-                  >row
-                  <template #cell(expiration_time)="data">
-                    <human-date :date="data.value" />
+    <Card>
+      <CardContent>
+        <list-layout
+          @add-new-item="addNewNotice"
+          title="Notice"
+          new-item-button-text="New Notice"
+          :new-button-disabled="!isGatewayAdmin"
+        >
+          <template v-slot:new-item-editor>
+            <Card v-if="showNewItemEditor">
+              <CardContent>
+                <notice-editor
+                  v-model="newNotice"
+                  ref="noticeEditor"
+                  @cancelNewNotice="cancelNewNotice"
+                  @saveNewNotice="saveNewNotice"
+                >
+                  <template v-slot:title>
+                    <h1 class="mr-auto mb-4 text-xl font-semibold">
+                      New Notice
+                    </h1>
                   </template>
-                  <template #cell(action)="data">
-                    <template v-if="data.item.user_has_write_access">
-                      <b-link class="action-link" @click="toggleDetails(data)">
-                        Edit
-                        <i class="fa fa-edit" aria-hidden="true"></i>
-                      </b-link>
-                      <delete-link
-                        @delete="deleteNotice(data.item.notification_id)"
-                      >
-                        Are you sure you want to delete the notice?
-                      </delete-link>
-                    </template>
-                  </template>
-                  <template v-slot:row-details="row">
-                    <b-card>
-                      <notice-editor
-                        :value="row.item"
-                        v-model="updatedNotice"
-                        @userBeginsInput="isUserBeginInput = false"
-                      >
-                        <template v-slot:title>
-                          <h1 class="h4 mb-4 me-auto">Update Notice</h1>
-                        </template>
-                      </notice-editor>
-                      <b-button
-                        variant="success"
-                        size="sm"
-                        @click="updateNotice()"
-                        :disabled="isUserBeginInput"
-                        >Update</b-button
-                      >
-                      <b-button
-                        variant="primary"
-                        size="sm"
-                        @click="toggleDetails(row)"
-                        >Close</b-button
-                      >
-                    </b-card>
-                  </template>
-                </b-table>
-              </template>
-            </list-layout>
-          </div>
-        </div>
-      </div>
-    </div>
+                </notice-editor>
+              </CardContent>
+            </Card>
+          </template>
+          <template v-slot:item-list>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead v-for="field in fields" :key="field.key">
+                    {{ field.label }}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <template v-for="item in items" :key="item.notification_id">
+                  <TableRow>
+                    <TableCell>{{ item.title }}</TableCell>
+                    <TableCell>{{ item.notification_message }}</TableCell>
+                    <TableCell
+                      ><human-date :date="item.published_time"
+                    /></TableCell>
+                    <TableCell
+                      ><human-date :date="item.expiration_time"
+                    /></TableCell>
+                    <TableCell>{{ item.priority.name }}</TableCell>
+                    <TableCell>{{ item.show_in_dashboard }}</TableCell>
+                    <TableCell>
+                      <template v-if="item.user_has_write_access">
+                        <a
+                          href="#"
+                          class="mr-2 inline-flex items-center gap-1 text-primary hover:underline"
+                          @click.prevent="toggleDetails(item)"
+                        >
+                          Edit
+                          <Pencil class="size-4" aria-hidden="true" />
+                        </a>
+                        <delete-link
+                          @delete="deleteNotice(item.notification_id)"
+                        >
+                          Are you sure you want to delete the notice?
+                        </delete-link>
+                      </template>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow v-if="isExpanded(item)">
+                    <TableCell :colspan="fields.length">
+                      <Card>
+                        <CardContent>
+                          <notice-editor
+                            :value="item"
+                            v-model="updatedNotice"
+                            @userBeginsInput="isUserBeginInput = false"
+                          >
+                            <template v-slot:title>
+                              <h1 class="mr-auto mb-4 text-xl font-semibold">
+                                Update Notice
+                              </h1>
+                            </template>
+                          </notice-editor>
+                          <div class="mt-2 flex gap-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              class="bg-success text-success-foreground hover:bg-success/90"
+                              @click="updateNotice()"
+                              :disabled="isUserBeginInput"
+                              >Update</Button
+                            >
+                            <Button
+                              variant="default"
+                              size="sm"
+                              @click="toggleDetails(item)"
+                              >Close</Button
+                            >
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </TableCell>
+                  </TableRow>
+                </template>
+              </TableBody>
+            </Table>
+          </template>
+        </list-layout>
+      </CardContent>
+    </Card>
   </div>
 </template>
 
 <script>
+import { Pencil } from "@lucide/vue";
 import { models, services, session } from "django-airavata-api";
 import { components, layouts } from "django-airavata-common-ui";
 import NoticeEditor from "./NoticeEditor";
@@ -99,9 +128,11 @@ export default {
       isUserBeginInput: true,
       showNewItemEditor: false,
       showingDetails: {},
+      expandedRows: {},
     };
   },
   components: {
+    Pencil,
     "human-date": components.HumanDate,
     "delete-link": components.DeleteLink,
     "list-layout": layouts.ListLayout,
@@ -192,12 +223,16 @@ export default {
         this.notices.splice(index, 1);
       });
     },
-    toggleDetails(row) {
-      ((this.updatedNotice = new models.Notification()),
-        (this.updatedNotice = row.item));
-      row.toggleDetails();
-      this.showingDetails[row.item.notification_id] =
-        !this.showingDetails[row.item.notification_id];
+    isExpanded(item) {
+      return Boolean(this.expandedRows[item.notification_id]);
+    },
+    toggleDetails(item) {
+      this.updatedNotice = new models.Notification();
+      this.updatedNotice = item;
+      this.expandedRows[item.notification_id] =
+        !this.expandedRows[item.notification_id];
+      this.showingDetails[item.notification_id] =
+        !this.showingDetails[item.notification_id];
     },
   },
 };

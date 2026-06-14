@@ -1,56 +1,61 @@
 <template>
-  <div class="has-fixed-footer">
-    <div class="row mb-2">
-      <div class="col-auto me-auto">
-        <h1 class="h4">Extended User Profile Editor</h1>
-        <p class="text-muted small">
-          Add and edit additional user profile fields for gateway users to
-          complete.
-        </p>
-      </div>
+  <div class="pb-20">
+    <div class="mb-2">
+      <h1 class="text-xl font-semibold">Extended User Profile Editor</h1>
+      <p class="text-sm text-muted-foreground">
+        Add and edit additional user profile fields for gateway users to
+        complete.
+      </p>
     </div>
     <transition-group name="fade">
       <div
         v-for="field in extendedUserProfileFields"
-        class="row"
+        class="mb-4"
         :key="field.key"
       >
-        <div class="col">
-          <extended-user-profile-field-editor
-            ref="extendedUserProfileFieldEditors"
-            :extendedUserProfileField="field"
-            :disabled="!field.userHasWriteAccess"
-            @valid="recordValidChildComponent(field)"
-            @invalid="recordInvalidChildComponent(field)"
-          />
-        </div>
+        <extended-user-profile-field-editor
+          ref="extendedUserProfileFieldEditors"
+          :extendedUserProfileField="field"
+          :disabled="!field.userHasWriteAccess"
+          @valid="recordValidChildComponent(field)"
+          @invalid="recordInvalidChildComponent(field)"
+        />
       </div>
     </transition-group>
     <div ref="bottom" />
-    <div class="fixed-footer">
-      <div class="d-flex">
-        <b-dropdown text="Add Field" :disabled="!isGatewayAdmin">
-          <b-dropdown-item @click="addField('text')">Text</b-dropdown-item>
-          <b-dropdown-item @click="addField('single_choice')"
-            >Single Choice</b-dropdown-item
-          >
-          <b-dropdown-item @click="addField('multi_choice')"
-            >Multi Choice</b-dropdown-item
-          >
-          <b-dropdown-item @click="addField('user_agreement')"
-            >User Agreement</b-dropdown-item
-          >
-        </b-dropdown>
-        <b-button
-          variant="primary"
+    <div
+      class="bg-background fixed inset-x-0 bottom-0 border-t p-4 shadow-md"
+    >
+      <div class="flex">
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button variant="outline" :disabled="!isGatewayAdmin"
+              >Add Field</Button
+            >
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem @click="addField('text')">Text</DropdownMenuItem>
+            <DropdownMenuItem @click="addField('single_choice')"
+              >Single Choice</DropdownMenuItem
+            >
+            <DropdownMenuItem @click="addField('multi_choice')"
+              >Multi Choice</DropdownMenuItem
+            >
+            <DropdownMenuItem @click="addField('user_agreement')"
+              >User Agreement</DropdownMenuItem
+            >
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button
+          variant="default"
           @click="save"
-          class="ms-2"
+          class="ml-2"
           :disabled="!isGatewayAdmin"
-          >Save</b-button
+          >Save</Button
         >
-        <b-button variant="secondary" class="ms-auto" href="/admin/users"
-          >Return to Manage Users</b-button
-        >
+        <Button variant="secondary" class="ml-auto" as-child>
+          <a href="/admin/users">Return to Manage Users</a>
+        </Button>
       </div>
     </div>
   </div>

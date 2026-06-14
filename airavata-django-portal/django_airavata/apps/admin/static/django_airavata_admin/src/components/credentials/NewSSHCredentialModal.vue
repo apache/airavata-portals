@@ -1,18 +1,25 @@
 <template>
-  <b-modal
-    title="New SSH Credential"
-    ref="modal"
-    @ok="okClicked"
-    ok-title="Create"
-    :ok-disabled="!valid"
-  >
-    <b-form-input
-      type="text"
-      placeholder="Description"
-      required
-      v-model="description"
-    />
-  </b-modal>
+  <Dialog v-model:open="open">
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>New SSH Credential</DialogTitle>
+      </DialogHeader>
+      <div class="space-y-2">
+        <Input
+          type="text"
+          placeholder="Description"
+          required
+          v-model="description"
+        />
+      </div>
+      <DialogFooter>
+        <Button variant="outline" @click="hide">Cancel</Button>
+        <Button variant="default" :disabled="!valid" @click="okClicked"
+          >Create</Button
+        >
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script>
@@ -20,6 +27,7 @@ export default {
   name: "new-ssh-credential-modal",
   data() {
     return {
+      open: false,
       description: null,
     };
   },
@@ -31,9 +39,13 @@ export default {
   methods: {
     okClicked() {
       this.$emit("new", { description: this.description });
+      this.hide();
     },
     show() {
-      this.$refs.modal.show();
+      this.open = true;
+    },
+    hide() {
+      this.open = false;
     },
   },
 };

@@ -1,22 +1,26 @@
 <template>
-  <b-tabs content-class="mt-3 px-2">
-    <b-tab
-      title="User Profile"
-      :active="iamUserProfile.airavata_user_profile_exists"
-    >
-      <b-alert
-        variant="warning"
-        :model-value="true"
+  <Tabs :default-value="defaultTab">
+    <TabsList>
+      <TabsTrigger value="user-profile">User Profile</TabsTrigger>
+      <TabsTrigger value="troubleshooting">Troubleshooting</TabsTrigger>
+    </TabsList>
+    <TabsContent value="user-profile" class="mt-3 space-y-4 px-2">
+      <Alert
         v-if="!iamUserProfile.userProfileComplete"
+        class="border-transparent bg-warning text-warning-foreground"
       >
-        This user has not completed their user profile. An incomplete user
-        profile is shown below.
-      </b-alert>
-      <b-alert variant="danger" :model-value="true" v-if="isUsernameInvalid">
-        The user has an invalid username. Please use
-        <strong>Change Username</strong> under the
-        <strong>Troubleshooting</strong> tab to fix the user's username.
-      </b-alert>
+        <AlertDescription class="text-warning-foreground">
+          This user has not completed their user profile. An incomplete user
+          profile is shown below.
+        </AlertDescription>
+      </Alert>
+      <Alert variant="destructive" v-if="isUsernameInvalid">
+        <AlertDescription>
+          The user has an invalid username. Please use
+          <strong>Change Username</strong> under the
+          <strong>Troubleshooting</strong> tab to fix the user's username.
+        </AlertDescription>
+      </Alert>
       <edit-groups-panel
         v-if="iamUserProfile.airavata_user_profile_exists"
         :value="localIAMUserProfile.groups"
@@ -30,11 +34,8 @@
         v-if="hasExternalIDPUserInfo"
         :externalIDPUserInfo="localIAMUserProfile.external_idp_user_info"
       />
-    </b-tab>
-    <b-tab
-      title="Troubleshooting"
-      :active="!iamUserProfile.airavata_user_profile_exists"
-    >
+    </TabsContent>
+    <TabsContent value="troubleshooting" class="mt-3 space-y-4 px-2">
       <activate-user-panel
         v-if="
           iamUserProfile.enabled &&
@@ -56,10 +57,12 @@
         :username="iamUserProfile.user_id"
         @delete-user="$emit('delete-user', $event)"
       />
-      <b-alert variant="danger" :model-value="true" v-if="isUsernameInvalid">
-        The user has an invalid username. Please fix the user's username so that
-        they can complete their user profile.
-      </b-alert>
+      <Alert variant="destructive" v-if="isUsernameInvalid">
+        <AlertDescription>
+          The user has an invalid username. Please fix the user's username so
+          that they can complete their user profile.
+        </AlertDescription>
+      </Alert>
       <change-username-panel
         :username="iamUserProfile.user_id"
         :email="iamUserProfile.email"
@@ -68,8 +71,8 @@
         "
         @update-username="$emit('update-username', $event)"
       />
-    </b-tab>
-  </b-tabs>
+    </TabsContent>
+  </Tabs>
 </template>
 <script>
 import { models } from "django-airavata-api";
@@ -121,6 +124,11 @@ export default {
     },
   },
   computed: {
+    defaultTab() {
+      return this.iamUserProfile.airavata_user_profile_exists
+        ? "user-profile"
+        : "troubleshooting";
+    },
     hasExternalIDPUserInfo() {
       return (
         Object.keys(this.localIAMUserProfile.external_idp_user_info).length !==

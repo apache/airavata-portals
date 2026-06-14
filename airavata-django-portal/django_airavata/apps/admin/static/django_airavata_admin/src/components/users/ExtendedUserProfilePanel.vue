@@ -1,40 +1,58 @@
 <template>
-  <b-card header="Extended User Profile">
-    <template v-if="items.length === 0">
-      <b-link href="/admin/extended-user-profile"
-        >Add additional user profile fields for gateway users to
-        complete</b-link
-      >
-    </template>
-    <b-table v-else :items="items" :fields="fields" small borderless>
-      <template #cell(value)="{ value, item }">
-        <!-- only show a valid checkmark when there is a user provided value -->
-        <i v-if="value && item.valid" class="fas fa-check text-success"></i>
-        <i v-if="!item.valid" class="fas fa-times text-danger"></i>
-        <template v-if="Array.isArray(value)">
-          <ul>
-            <li v-for="result in value" :key="result">
-              {{ result }}
-            </li>
-          </ul>
-        </template>
-        <template v-else> {{ value }} </template>
+  <Card>
+    <CardHeader>
+      <CardTitle>Extended User Profile</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <template v-if="items.length === 0">
+        <a href="/admin/extended-user-profile" class="text-primary hover:underline"
+          >Add additional user profile fields for gateway users to
+          complete</a
+        >
       </template>
-    </b-table>
-    <b-link
-      v-if="items.length > 0"
-      href="/admin/extended-user-profile"
-      class="text-muted small"
-      >Add or edit these field definitions</b-link
-    >
-  </b-card>
+      <Table v-else>
+        <TableBody>
+          <TableRow v-for="item in items" :key="item.name">
+            <TableCell class="font-medium">{{ item.name }}</TableCell>
+            <TableCell>
+              <!-- only show a valid checkmark when there is a user provided value -->
+              <Check
+                v-if="item.value && item.valid"
+                class="inline size-4 text-success"
+              />
+              <X
+                v-if="!item.valid"
+                class="inline size-4 text-destructive"
+              />
+              <template v-if="Array.isArray(item.value)">
+                <ul class="inline-block list-disc pl-5">
+                  <li v-for="result in item.value" :key="result">
+                    {{ result }}
+                  </li>
+                </ul>
+              </template>
+              <template v-else> {{ item.value }} </template>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+      <a
+        v-if="items.length > 0"
+        href="/admin/extended-user-profile"
+        class="text-sm text-muted-foreground hover:underline"
+        >Add or edit these field definitions</a
+      >
+    </CardContent>
+  </Card>
 </template>
 
 <script>
+import { Check, X } from "@lucide/vue";
 import { models } from "django-airavata-api";
 import { mapActions, mapState } from "pinia";
 import { useExtendedUserProfileStore } from "../../store/modules/extendedUserProfile";
 export default {
+  components: { Check, X },
   props: {
     iamUserProfile: {
       type: models.IAMUserProfile,

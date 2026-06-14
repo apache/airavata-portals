@@ -1,22 +1,23 @@
 <template>
-  <b-form-group
-    label="Allowed Queues"
-    v-if="localComputeResourcePolicy"
-    :invalid-feedback="validationFeedback.allowed_batch_queues.invalidFeedback"
-    :state="validationFeedback.allowed_batch_queues.state"
-  >
-    <div v-for="batchQueue in batchQueues" :key="batchQueue.queue_name">
-      <b-form-checkbox
-        :checked="
-          localComputeResourcePolicy.allowed_batch_queues.includes(
-            batchQueue.queue_name,
-          )
-        "
-        :disabled="readonly"
-        @input="batchQueueChecked(batchQueue, $event)"
-      >
+  <div class="space-y-1.5" v-if="localComputeResourcePolicy">
+    <Label>Allowed Queues</Label>
+    <div
+      v-for="batchQueue in batchQueues"
+      :key="batchQueue.queue_name"
+      class="space-y-2"
+    >
+      <label class="flex items-center gap-2 text-sm">
+        <Checkbox
+          :model-value="
+            localComputeResourcePolicy.allowed_batch_queues.includes(
+              batchQueue.queue_name,
+            )
+          "
+          :disabled="readonly"
+          @update:model-value="batchQueueChecked(batchQueue, $event)"
+        />
         {{ batchQueue.queue_name }}
-      </b-form-checkbox>
+      </label>
       <batch-queue-resource-policy
         v-if="
           localComputeResourcePolicy.allowed_batch_queues.includes(
@@ -35,7 +36,13 @@
         @invalid="recordInvalidBatchQueueResourcePolicy(batchQueue)"
       />
     </div>
-  </b-form-group>
+    <p
+      v-if="validationFeedback.allowed_batch_queues.state === false"
+      class="text-sm text-destructive"
+    >
+      {{ validationFeedback.allowed_batch_queues.invalidFeedback }}
+    </p>
+  </div>
 </template>
 
 <script>

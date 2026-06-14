@@ -1,41 +1,47 @@
 <template>
   <div>
-    <b-input-group>
-      <b-form-select
+    <div class="flex items-stretch gap-0">
+      <select
         v-model="data"
-        :options="credentialStoreTokenOptions"
         :disabled="readonly"
+        class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full min-w-0 flex-1 rounded-l-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <template v-slot:first>
-          <option
-            v-if="nullOption"
-            :value="null"
-            :disabled="nullOptionDisabled"
+        <option v-if="nullOption" :value="null" :disabled="nullOptionDisabled">
+          <slot
+            name="null-option-label"
+            :defaultCredentialSummary="defaultCredentialSummary"
           >
-            <slot
-              name="null-option-label"
-              :defaultCredentialSummary="defaultCredentialSummary"
-            >
-              <span v-if="defaultCredentialSummary">
-                Use the default SSH credential ({{
-                  createCredentialDescription(defaultCredentialSummary)
-                }})
-              </span>
-              <span v-else> Unset the default SSH credential </span>
-            </slot>
-          </option>
-        </template>
-      </b-form-select>
-      <clipboard-copy-button variant="secondary" :text="copySSHPublicKeyText">
+            <span v-if="defaultCredentialSummary">
+              Use the default SSH credential ({{
+                createCredentialDescription(defaultCredentialSummary)
+              }})
+            </span>
+            <span v-else> Unset the default SSH credential </span>
+          </slot>
+        </option>
+        <option
+          v-for="opt in credentialStoreTokenOptions"
+          :key="opt.value"
+          :value="opt.value"
+        >
+          {{ opt.text }}
+        </option>
+      </select>
+      <clipboard-copy-button
+        variant="secondary"
+        :text="copySSHPublicKeyText"
+        class="rounded-none border-l-0"
+      >
       </clipboard-copy-button>
-      <b-button
+      <Button
         v-if="!readonly"
         variant="secondary"
+        class="rounded-l-none"
         @click="showNewSSHCredentialModal"
       >
-        <i class="fa fa-plus"></i>
-      </b-button>
-    </b-input-group>
+        <Plus class="size-4" />
+      </Button>
+    </div>
     <new-ssh-credential-modal
       ref="newSSHCredentialModal"
       @new="createSSHCredential"
@@ -44,6 +50,7 @@
 </template>
 
 <script>
+import { Plus } from "@lucide/vue";
 import { services } from "django-airavata-api";
 import { components, mixins } from "django-airavata-common-ui";
 import NewSSHCredentialModal from "../credentials/NewSSHCredentialModal.vue";
@@ -73,6 +80,7 @@ export default {
   },
   mixins: [mixins.VModelMixin],
   components: {
+    Plus,
     "clipboard-copy-button": components.ClipboardCopyButton,
     "new-ssh-credential-modal": NewSSHCredentialModal,
   },

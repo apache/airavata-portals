@@ -1,11 +1,11 @@
 <template>
-  <b-form-textarea
+  <Textarea
     :id="id"
     v-model="jsonString"
-    @input="valueChanged"
+    @input="valueChanged($event.target.value)"
     :rows="rows"
     :disabled="disabled"
-    :state="state"
+    :aria-invalid="state === false"
   />
 </template>
 

@@ -1,18 +1,33 @@
 <template>
-  <b-card header="User Profile">
-    <b-table :items="items" :fields="fields" small borderless>
-      <template #cell(value)="{ value, item }">
-        <i v-if="item.valid" class="fas fa-check text-success"></i>
-        <i v-if="!item.valid" class="fas fa-times text-danger"></i>
-        {{ value }}
-      </template>
-    </b-table>
-  </b-card>
+  <Card>
+    <CardHeader>
+      <CardTitle>User Profile</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <Table>
+        <TableBody>
+          <TableRow v-for="item in items" :key="item.name">
+            <TableCell class="font-medium">{{ item.name }}</TableCell>
+            <TableCell>
+              <Check
+                v-if="item.valid"
+                class="inline size-4 text-success"
+              />
+              <X v-if="!item.valid" class="inline size-4 text-destructive" />
+              {{ item.value }}
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </CardContent>
+  </Card>
 </template>
 
 <script>
+import { Check, X } from "@lucide/vue";
 import { models } from "django-airavata-api";
 export default {
+  components: { Check, X },
   props: {
     iamUserProfile: {
       type: models.IAMUserProfile,

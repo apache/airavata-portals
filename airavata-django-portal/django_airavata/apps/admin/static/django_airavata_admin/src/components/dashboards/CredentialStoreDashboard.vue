@@ -8,38 +8,53 @@
     >
       <template v-slot:additional-buttons>
         <span>
-          <b-button v-if="userIsAdmin" @click="showNewSharedSSHCredentialModel">
+          <Button
+            v-if="userIsAdmin"
+            variant="outline"
+            @click="showNewSharedSSHCredentialModel"
+          >
             New Gateway SSH Credential
-            <i class="fa fa-plus" aria-hidden="true"></i>
-          </b-button>
+            <Plus class="size-4" aria-hidden="true" />
+          </Button>
         </span>
       </template>
       <template v-slot:item-list="slotProps">
-        <b-table striped hover :fields="fields" :items="slotProps.items">
-          <template #cell(sharing)="data">
-            <share-button
-              :entity-id="data.item.token"
-              :disallow-editing-admin-groups="false"
-              :auto-add-admin-groups="false"
-            />
-          </template>
-          <template #cell(persisted_time)="data">
-            <human-date :date="data.value" />
-          </template>
-          <template #cell(action)="data">
-            <clipboard-copy-link
-              :text="data.item.public_key.trim()"
-              class="me-1"
-            />
-            <delete-link
-              v-if="data.item.user_has_write_access"
-              @delete="deleteSSHCredential(data.item)"
-            >
-              Are you sure you want to delete the
-              <strong>{{ data.item.description }}</strong> SSH credential?
-            </delete-link>
-          </template>
-        </b-table>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead v-for="field in fields" :key="field.key">
+                {{ field.label }}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="item in slotProps.items" :key="item.token">
+              <TableCell>{{ item.description }}</TableCell>
+              <TableCell>{{ item.username }}</TableCell>
+              <TableCell><human-date :date="item.persisted_time" /></TableCell>
+              <TableCell>
+                <share-button
+                  :entity-id="item.token"
+                  :disallow-editing-admin-groups="false"
+                  :auto-add-admin-groups="false"
+                />
+              </TableCell>
+              <TableCell>
+                <clipboard-copy-link
+                  :text="item.public_key.trim()"
+                  class="mr-1"
+                />
+                <delete-link
+                  v-if="item.user_has_write_access"
+                  @delete="deleteSSHCredential(item)"
+                >
+                  Are you sure you want to delete the
+                  <strong>{{ item.description }}</strong> SSH credential?
+                </delete-link>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </template>
     </list-layout>
     <new-ssh-credential-modal
@@ -74,6 +89,7 @@
 </template>
 
 <script>
+import { Plus } from "@lucide/vue";
 import { models, services, session } from "django-airavata-api";
 import { components, layouts } from "django-airavata-common-ui";
 import NewSSHCredentialModal from "../credentials/NewSSHCredentialModal.vue";
@@ -81,6 +97,7 @@ import NewSSHCredentialModal from "../credentials/NewSSHCredentialModal.vue";
 
 export default {
   components: {
+    Plus,
     "delete-link": components.DeleteLink,
     "human-date": components.HumanDate,
     "list-layout": layouts.ListLayout,

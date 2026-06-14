@@ -1,55 +1,79 @@
 <template>
-  <b-card header="Change Username">
-    <p class="card-text">
-      This will change the user's username in the identity service. Typically,
-      you would only change the user's username when they login through an
-      external identity provider and are automatically assigned an invalid
-      username. Also, after updating the username the user will need to log out
-      and log back in.
-    </p>
-    <b-alert variant="warning" :model-value="airavataUserProfileExists">
-      This user already has an Airavata User Profile. Giving the user a new
-      username will result in the user getting a new Airavata User Profile and
-      losing the old one and everything (projects, experiments, etc.) associated
-      with it.
-    </b-alert>
-    <b-form-group label="New Username" label-for="new-username">
-      <b-input-group>
-        <b-form-input
-          id="new-username"
-          v-model="v$.newUsername.$model"
-          :state="validateState(v$.newUsername)"
-        />
-        <b-button @click="newUsername = email">Copy Email Address</b-button>
-      </b-input-group>
-      <b-form-invalid-feedback
-        :state="validateState(v$.newUsername)"
-        v-if="v$.newUsername.emailOrMatchesRegex.$invalid"
+  <Card>
+    <CardHeader>
+      <CardTitle>Change Username</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p class="mb-4">
+        This will change the user's username in the identity service. Typically,
+        you would only change the user's username when they login through an
+        external identity provider and are automatically assigned an invalid
+        username. Also, after updating the username the user will need to log
+        out and log back in.
+      </p>
+      <Alert
+        v-if="airavataUserProfileExists"
+        class="mb-4 border-transparent bg-warning text-warning-foreground"
       >
-        Username can only contain lowercase letters, numbers, underscores and
-        hyphens OR it can be the same as the email address.
-      </b-form-invalid-feedback>
-    </b-form-group>
-    <confirmation-button
-      variant="primary"
-      @confirmed="updateUsername"
-      :disabled="v$.$invalid || username === newUsername"
-      dialog-title="Please confirm username change"
-    >
-      Please confirm that you want to change the user's username to
-      <strong>{{ newUsername }}</strong
-      >. After updating the username the user will need to log out and log back
-      in.
-      <b-alert variant="danger" :model-value="airavataUserProfileExists">
-        This user already has an Airavata User Profile. Giving the user a new
-        username will result in the user getting a new Airavata User Profile and
-        <strong
-          >losing the old one and everything (projects, experiments, etc.)
-          associated with it</strong
-        >.
-      </b-alert>
-    </confirmation-button>
-  </b-card>
+        <AlertDescription class="text-warning-foreground">
+          This user already has an Airavata User Profile. Giving the user a new
+          username will result in the user getting a new Airavata User Profile
+          and losing the old one and everything (projects, experiments, etc.)
+          associated with it.
+        </AlertDescription>
+      </Alert>
+      <div class="space-y-1.5">
+        <Label for="new-username">New Username</Label>
+        <div class="flex items-stretch gap-2">
+          <Input
+            id="new-username"
+            v-model="v$.newUsername.$model"
+            :aria-invalid="validateState(v$.newUsername) === false"
+          />
+          <Button variant="outline" @click="newUsername = email"
+            >Copy Email Address</Button
+          >
+        </div>
+        <p
+          v-if="
+            validateState(v$.newUsername) === false &&
+            v$.newUsername.emailOrMatchesRegex.$invalid
+          "
+          class="text-sm text-destructive"
+        >
+          Username can only contain lowercase letters, numbers, underscores and
+          hyphens OR it can be the same as the email address.
+        </p>
+      </div>
+      <confirmation-button
+        class="mt-4"
+        variant="primary"
+        @confirmed="updateUsername"
+        :disabled="v$.$invalid || username === newUsername"
+        dialog-title="Please confirm username change"
+      >
+        Please confirm that you want to change the user's username to
+        <strong>{{ newUsername }}</strong
+        >. After updating the username the user will need to log out and log
+        back in.
+        <Alert
+          v-if="airavataUserProfileExists"
+          variant="destructive"
+          class="mt-2"
+        >
+          <AlertDescription>
+            This user already has an Airavata User Profile. Giving the user a new
+            username will result in the user getting a new Airavata User Profile
+            and
+            <strong
+              >losing the old one and everything (projects, experiments, etc.)
+              associated with it</strong
+            >.
+          </AlertDescription>
+        </Alert>
+      </confirmation-button>
+    </CardContent>
+  </Card>
 </template>
 
 <script>

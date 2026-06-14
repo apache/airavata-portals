@@ -6,61 +6,76 @@
     new-item-button-text="New Group Resource Profile"
   >
     <template v-slot:item-list="slotProps">
-      <b-table striped hover :fields="fields" :items="slotProps.items">
-        <template #cell(updated_time)="data">
-          <human-date :date="data.value" />
-        </template>
-        <template #cell(action)="data">
-          <router-link
-            class="action-link"
-            v-if="data.item.user_has_write_access"
-            :to="{
-              name: 'group_resource_preference',
-              params: {
-                value: data.item,
-                id: data.item.group_resource_profile_id,
-              },
-            }"
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead v-for="field in fields" :key="field.key">
+              {{ field.label }}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow
+            v-for="item in slotProps.items"
+            :key="item.group_resource_profile_id"
           >
-            Edit
-            <i class="fa fa-edit" aria-hidden="true"></i>
-          </router-link>
-          <router-link
-            class="action-link"
-            v-if="!data.item.user_has_write_access"
-            :to="{
-              name: 'group_resource_preference',
-              params: {
-                value: data.item,
-                id: data.item.group_resource_profile_id,
-              },
-            }"
-          >
-            View
-            <i class="fa fa-eye" aria-hidden="true"></i>
-          </router-link>
-          <delete-link
-            v-if="data.item.user_has_write_access"
-            class="action-link"
-            @delete="removeGroupResourceProfile(data.item)"
-          >
-            Are you sure you want to delete Group Resource Profile
-            <strong>{{ data.item.group_resource_profile_name }}</strong
-            >?
-          </delete-link>
-        </template>
-      </b-table>
+            <TableCell>{{ item.group_resource_profile_name }}</TableCell>
+            <TableCell><human-date :date="item.updated_time" /></TableCell>
+            <TableCell>
+              <router-link
+                class="mr-2 inline-flex items-center gap-1 text-primary hover:underline"
+                v-if="item.user_has_write_access"
+                :to="{
+                  name: 'group_resource_preference',
+                  params: {
+                    value: item,
+                    id: item.group_resource_profile_id,
+                  },
+                }"
+              >
+                Edit
+                <Pencil class="size-4" aria-hidden="true" />
+              </router-link>
+              <router-link
+                class="mr-2 inline-flex items-center gap-1 text-primary hover:underline"
+                v-if="!item.user_has_write_access"
+                :to="{
+                  name: 'group_resource_preference',
+                  params: {
+                    value: item,
+                    id: item.group_resource_profile_id,
+                  },
+                }"
+              >
+                View
+                <Eye class="size-4" aria-hidden="true" />
+              </router-link>
+              <delete-link
+                v-if="item.user_has_write_access"
+                @delete="removeGroupResourceProfile(item)"
+              >
+                Are you sure you want to delete Group Resource Profile
+                <strong>{{ item.group_resource_profile_name }}</strong
+                >?
+              </delete-link>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </template>
   </list-layout>
 </template>
 
 <script>
+import { Eye, Pencil } from "@lucide/vue";
 import { components, layouts } from "django-airavata-common-ui";
 import { services } from "django-airavata-api";
 
 export default {
   name: "compute-resource-preference",
   components: {
+    Eye,
+    Pencil,
     "delete-link": components.DeleteLink,
     "human-date": components.HumanDate,
     "list-layout": layouts.ListLayout,

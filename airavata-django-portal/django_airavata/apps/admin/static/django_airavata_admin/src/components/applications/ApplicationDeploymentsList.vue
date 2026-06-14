@@ -8,76 +8,83 @@
       :new-button-disabled="readonly"
     >
       <template v-slot:item-list="slotProps">
-        <b-table
-          striped
-          hover
-          :fields="fields"
-          :items="slotProps.items"
-          sort-by="compute_host_id"
-        >
-          <template #cell(action)="data">
-            <router-link
-              class="action-link"
-              v-if="!data.item.user_has_write_access"
-              :to="{
-                name: 'application_deployment',
-                params: {
-                  id: id,
-                  deploymentId: data.item.app_deployment_id,
-                  readonly: true,
-                },
-              }"
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead v-for="field in fields" :key="field.key">
+                {{ field.label }}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow
+              v-for="item in sortedItems(slotProps.items)"
+              :key="item.compute_host_id"
             >
-              View
-              <i class="fa fa-eye" aria-hidden="true"></i>
-            </router-link>
-            <router-link
-              class="action-link"
-              v-if="
-                data.item.user_has_write_access && data.item.app_deployment_id
-              "
-              :to="{
-                name: 'application_deployment',
-                params: {
-                  id: id,
-                  deploymentId: data.item.app_deployment_id,
-                  readonly: false,
-                },
-              }"
-            >
-              Edit
-              <i class="fa fa-edit" aria-hidden="true"></i>
-            </router-link>
-            <router-link
-              class="action-link"
-              v-if="
-                data.item.user_has_write_access && !data.item.app_deployment_id
-              "
-              :to="{
-                name: 'new_application_deployment',
-                params: {
-                  id: id,
-                  hostId: data.item.compute_host_id,
-                  readonly: false,
-                },
-              }"
-            >
-              Edit
-              <i class="fa fa-edit" aria-hidden="true"></i>
-            </router-link>
-            <delete-link
-              v-if="data.item.user_has_write_access"
-              @delete="removeApplicationDeployment(data.item)"
-              class="action-link"
-            >
-              Are you sure you want to remove the
-              <strong>{{
-                getComputeResourceName(data.item.compute_host_id)
-              }}</strong>
-              deployment?
-            </delete-link>
-          </template>
-        </b-table>
+              <TableCell>{{
+                getComputeResourceName(item.compute_host_id)
+              }}</TableCell>
+              <TableCell>{{ item.app_deployment_description }}</TableCell>
+              <TableCell>
+                <router-link
+                  class="mr-2 inline-flex items-center gap-1 text-primary hover:underline"
+                  v-if="!item.user_has_write_access"
+                  :to="{
+                    name: 'application_deployment',
+                    params: {
+                      id: id,
+                      deploymentId: item.app_deployment_id,
+                      readonly: true,
+                    },
+                  }"
+                >
+                  View
+                  <Eye class="size-4" aria-hidden="true" />
+                </router-link>
+                <router-link
+                  class="mr-2 inline-flex items-center gap-1 text-primary hover:underline"
+                  v-if="item.user_has_write_access && item.app_deployment_id"
+                  :to="{
+                    name: 'application_deployment',
+                    params: {
+                      id: id,
+                      deploymentId: item.app_deployment_id,
+                      readonly: false,
+                    },
+                  }"
+                >
+                  Edit
+                  <Pencil class="size-4" aria-hidden="true" />
+                </router-link>
+                <router-link
+                  class="mr-2 inline-flex items-center gap-1 text-primary hover:underline"
+                  v-if="item.user_has_write_access && !item.app_deployment_id"
+                  :to="{
+                    name: 'new_application_deployment',
+                    params: {
+                      id: id,
+                      hostId: item.compute_host_id,
+                      readonly: false,
+                    },
+                  }"
+                >
+                  Edit
+                  <Pencil class="size-4" aria-hidden="true" />
+                </router-link>
+                <delete-link
+                  v-if="item.user_has_write_access"
+                  @delete="removeApplicationDeployment(item)"
+                >
+                  Are you sure you want to remove the
+                  <strong>{{
+                    getComputeResourceName(item.compute_host_id)
+                  }}</strong>
+                  deployment?
+                </delete-link>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </template>
     </list-layout>
     <compute-resources-modal
@@ -90,6 +97,7 @@
 </template>
 
 <script>
+import { Eye, Pencil } from "@lucide/vue";
 import { services } from "django-airavata-api";
 import { components, layouts } from "django-airavata-common-ui";
 import ComputeResourcesModal from "../admin/ComputeResourcesModal.vue";
@@ -97,6 +105,8 @@ import ComputeResourcesModal from "../admin/ComputeResourcesModal.vue";
 export default {
   name: "application-deployments-list",
   components: {
+    Eye,
+    Pencil,
     "list-layout": layouts.ListLayout,
     ComputeResourcesModal,
     "delete-link": components.DeleteLink,
@@ -203,6 +213,17 @@ export default {
       } else {
         return computeResourceId.substring(0, 10) + "...";
       }
+    },
+    sortedItems(items) {
+      return items
+        .slice()
+        .sort((a, b) =>
+          this.getComputeResourceName(a.compute_host_id)
+            .toLowerCase()
+            .localeCompare(
+              this.getComputeResourceName(b.compute_host_id).toLowerCase(),
+            ),
+        );
     },
     onSelectComputeResource(computeResourceId) {
       this.$emit("new", computeResourceId);

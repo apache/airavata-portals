@@ -1,72 +1,67 @@
 <template>
-  <div class="row">
-    <div class="col">
-      <b-form-group
-        label="Maximum Allowed Nodes"
-        label-for="max-allowed-nodes"
-        :invalid-feedback="validationFeedback.max_allowed_nodes.invalidFeedback"
-        :state="validationFeedback.max_allowed_nodes.state"
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <div class="space-y-1.5">
+      <Label for="max-allowed-nodes">Maximum Allowed Nodes</Label>
+      <Input
+        id="max-allowed-nodes"
+        type="number"
+        v-model="data.max_allowed_nodes"
+        :readonly="readonly"
+        @input="policyUpdated"
+        min="1"
+        :max="batchQueue.max_nodes"
+        :placeholder="'Max Nodes: ' + batchQueue.max_nodes"
+        :aria-invalid="validationFeedback.max_allowed_nodes.state === false"
       >
-        <b-form-input
-          id="max-allowed-nodes"
-          type="number"
-          v-model="data.max_allowed_nodes"
-          :readonly="readonly"
-          @input="policyUpdated"
-          min="1"
-          :max="batchQueue.max_nodes"
-          :formatter="numberFormatter"
-          :placeholder="'Max Nodes: ' + batchQueue.max_nodes"
-          :state="validationFeedback.max_allowed_nodes.state"
-        >
-        </b-form-input>
-      </b-form-group>
+      </Input>
+      <p
+        v-if="validationFeedback.max_allowed_nodes.state === false"
+        class="text-sm text-destructive"
+      >
+        {{ validationFeedback.max_allowed_nodes.invalidFeedback }}
+      </p>
     </div>
-    <div class="col">
-      <b-form-group
-        label="Maximum Allowed Cores"
-        label-for="max-allowed-cores"
-        :invalid-feedback="validationFeedback.max_allowed_cores.invalidFeedback"
-        :state="validationFeedback.max_allowed_cores.state"
+    <div class="space-y-1.5">
+      <Label for="max-allowed-cores">Maximum Allowed Cores</Label>
+      <Input
+        id="max-allowed-cores"
+        type="number"
+        v-model="data.max_allowed_cores"
+        :readonly="readonly"
+        @input="policyUpdated"
+        min="1"
+        :max="batchQueue.max_processors"
+        :placeholder="'Max Cores: ' + batchQueue.max_processors"
+        :aria-invalid="validationFeedback.max_allowed_cores.state === false"
       >
-        <b-form-input
-          id="max-allowed-cores"
-          type="number"
-          v-model="data.max_allowed_cores"
-          :readonly="readonly"
-          @input="policyUpdated"
-          min="1"
-          :max="batchQueue.max_processors"
-          :formatter="numberFormatter"
-          :placeholder="'Max Cores: ' + batchQueue.max_processors"
-          :state="validationFeedback.max_allowed_cores.state"
-        >
-        </b-form-input>
-      </b-form-group>
+      </Input>
+      <p
+        v-if="validationFeedback.max_allowed_cores.state === false"
+        class="text-sm text-destructive"
+      >
+        {{ validationFeedback.max_allowed_cores.invalidFeedback }}
+      </p>
     </div>
-    <div class="col">
-      <b-form-group
-        label="Maximum Allowed Wall Time"
-        label-for="max-allowed-walltime"
-        :invalid-feedback="
-          validationFeedback.max_allowed_walltime.invalidFeedback
-        "
-        :state="validationFeedback.max_allowed_walltime.state"
+    <div class="space-y-1.5">
+      <Label for="max-allowed-walltime">Maximum Allowed Wall Time</Label>
+      <Input
+        id="max-allowed-walltime"
+        type="number"
+        v-model="data.max_allowed_walltime"
+        :readonly="readonly"
+        @input="policyUpdated"
+        min="1"
+        :max="batchQueue.max_run_time"
+        :placeholder="'Max Wall Time: ' + batchQueue.max_run_time"
+        :aria-invalid="validationFeedback.max_allowed_walltime.state === false"
       >
-        <b-form-input
-          id="max-allowed-walltime"
-          type="number"
-          v-model="data.max_allowed_walltime"
-          :readonly="readonly"
-          @input="policyUpdated"
-          min="1"
-          :max="batchQueue.max_run_time"
-          :formatter="numberFormatter"
-          :placeholder="'Max Wall Time: ' + batchQueue.max_run_time"
-          :state="validationFeedback.max_allowed_walltime.state"
-        >
-        </b-form-input>
-      </b-form-group>
+      </Input>
+      <p
+        v-if="validationFeedback.max_allowed_walltime.state === false"
+        class="text-sm text-destructive"
+      >
+        {{ validationFeedback.max_allowed_walltime.invalidFeedback }}
+      </p>
     </div>
   </div>
 </template>

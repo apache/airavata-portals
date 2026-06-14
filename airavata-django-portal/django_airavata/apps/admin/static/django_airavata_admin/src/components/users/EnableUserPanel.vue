@@ -1,11 +1,16 @@
 <template>
-  <b-card header="Enable User">
-    <p class="card-text">
-      Enable user {{ username }} to log in. By clicking <b>Enable</b> you are
-      verifying that the user's email address is {{ email }}
-    </p>
-    <b-button @click="enable">Enable</b-button>
-  </b-card>
+  <Card>
+    <CardHeader>
+      <CardTitle>Enable User</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p class="mb-4">
+        Enable user {{ username }} to log in. By clicking <b>Enable</b> you are
+        verifying that the user's email address is {{ email }}
+      </p>
+      <Button @click="enable">Enable</Button>
+    </CardContent>
+  </Card>
 </template>
 
 <script>

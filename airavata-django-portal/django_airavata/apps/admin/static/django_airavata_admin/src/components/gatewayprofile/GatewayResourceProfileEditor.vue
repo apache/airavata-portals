@@ -1,21 +1,22 @@
 <template>
   <div>
-    <div class="row">
-      <div class="col">
-        <h1 class="h4 mb-4">
-          Gateway Resource Profile - {{ data.gateway_id }}
-        </h1>
-        <b-form-group
-          label="Default SSH Credential"
-          label-for="default-credential-store-token"
-          description="This is the default SSH credential that will be used for storage preferences that don't specify their own SSH credential."
+    <div>
+      <h1 class="mb-4 text-xl font-semibold">
+        Gateway Resource Profile - {{ data.gateway_id }}
+      </h1>
+      <div class="space-y-1.5">
+        <Label for="default-credential-store-token"
+          >Default SSH Credential</Label
         >
-          <ssh-credential-selector
-            id="default-credential-store-token"
-            v-model="data.credential_store_token"
-            :readonly="!data.user_has_write_access"
-          />
-        </b-form-group>
+        <ssh-credential-selector
+          id="default-credential-store-token"
+          v-model="data.credential_store_token"
+          :readonly="!data.user_has_write_access"
+        />
+        <p class="text-sm text-muted-foreground">
+          This is the default SSH credential that will be used for storage
+          preferences that don't specify their own SSH credential.
+        </p>
       </div>
     </div>
   </div>

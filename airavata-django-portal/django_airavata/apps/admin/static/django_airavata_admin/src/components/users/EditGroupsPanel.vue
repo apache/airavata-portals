@@ -1,17 +1,23 @@
 <template>
-  <b-card header="Edit Groups">
-    <user-group-membership-editor
-      v-model="data"
-      :editable-groups="editableGroups"
-      :airavata-internal-user-id="airavataInternalUserId"
-    />
-    <b-button
-      @click="$emit('save', data)"
-      variant="primary"
-      :disabled="!areGroupsUpdated"
-      >Save</b-button
-    >
-  </b-card>
+  <Card>
+    <CardHeader>
+      <CardTitle>Edit Groups</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <user-group-membership-editor
+        v-model="data"
+        :editable-groups="editableGroups"
+        :airavata-internal-user-id="airavataInternalUserId"
+      />
+      <Button
+        class="mt-4"
+        @click="$emit('save', data)"
+        variant="default"
+        :disabled="!areGroupsUpdated"
+        >Save</Button
+      >
+    </CardContent>
+  </Card>
 </template>
 
 <script>

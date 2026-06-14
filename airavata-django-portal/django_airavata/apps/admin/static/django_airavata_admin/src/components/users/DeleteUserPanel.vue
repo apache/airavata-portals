@@ -1,13 +1,18 @@
 <template>
-  <b-card header="Delete User">
-    <p class="card-text">
-      This will remove {{ username }} from the identity service.
-    </p>
-    <delete-button @delete="deleteUser">
-      Are you sure you want to delete <strong>{{ username }}</strong
-      >?
-    </delete-button>
-  </b-card>
+  <Card>
+    <CardHeader>
+      <CardTitle>Delete User</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p class="mb-4">
+        This will remove {{ username }} from the identity service.
+      </p>
+      <delete-button @delete="deleteUser">
+        Are you sure you want to delete <strong>{{ username }}</strong
+        >?
+      </delete-button>
+    </CardContent>
+  </Card>
 </template>
 
 <script>

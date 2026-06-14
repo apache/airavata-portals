@@ -1,97 +1,125 @@
 <template>
-  <b-card>
-    <template v-slot:header>
-      <div class="d-flex align-items-center">
-        <div class="me-auto">Output Field: {{ data.name }}</div>
-        <b-link
+  <Card>
+    <CardHeader>
+      <div class="flex items-center">
+        <div class="mr-auto">Output Field: {{ data.name }}</div>
+        <a
+          href="#"
           v-if="!readonly"
-          class="text-secondary"
-          @click="deleteApplicationOutput"
+          class="text-muted-foreground"
+          @click.prevent="deleteApplicationOutput"
         >
-          <i class="fa fa-trash"></i>
-          <span class="visually-hidden">Delete</span>
-        </b-link>
+          <Trash2 class="size-4" />
+          <span class="sr-only">Delete</span>
+        </a>
       </div>
-    </template>
-    <b-form-group label="Name" :label-for="id + '-name'">
-      <b-form-input
-        :id="id + '-name'"
-        type="text"
-        v-model="data.name"
-        ref="nameInput"
-        required
-        :disabled="readonly"
-      ></b-form-input>
-    </b-form-group>
-    <b-form-group label="Value" :label-for="id + '-value'">
-      <b-form-input
-        :id="id + '-value'"
-        type="text"
-        v-model="data.value"
-        :disabled="readonly"
-      ></b-form-input>
-    </b-form-group>
-    <b-form-group label="Type" :label-for="id + '-type'">
-      <b-form-select
-        :id="id + '-type'"
-        v-model="data.type"
-        :options="outputTypeOptions"
-        :disabled="readonly"
-      />
-    </b-form-group>
-    <b-form-group label="Application Argument" :label-for="id + '-argument'">
-      <b-form-input
-        :id="id + '-argument'"
-        type="text"
-        v-model="data.application_argument"
-        :disabled="readonly"
-      ></b-form-input>
-    </b-form-group>
-    <div class="d-flex">
-      <b-form-group
-        class="flex-fill"
-        label="Is Required"
-        :label-for="id + '-required'"
-      >
-        <b-form-radio-group
-          :id="id + '-required'"
-          v-model="data.is_required"
-          :options="trueFalseOptions"
+    </CardHeader>
+    <CardContent class="space-y-4">
+      <div class="space-y-1.5">
+        <Label :for="id + '-name'">Name</Label>
+        <Input
+          :id="id + '-name'"
+          type="text"
+          v-model="data.name"
+          ref="nameInput"
+          required
           :disabled="readonly"
-        >
-        </b-form-radio-group>
-      </b-form-group>
-      <b-form-group
-        class="flex-fill"
-        label="Required on Command Line"
-        :label-for="id + '-required-command-line'"
-      >
-        <b-form-radio-group
-          :id="id + '-required-command-line'"
-          v-model="data.required_to_added_to_command_line"
-          :options="trueFalseOptions"
+        ></Input>
+      </div>
+      <div class="space-y-1.5">
+        <Label :for="id + '-value'">Value</Label>
+        <Input
+          :id="id + '-value'"
+          type="text"
+          v-model="data.value"
           :disabled="readonly"
+        ></Input>
+      </div>
+      <div class="space-y-1.5">
+        <Label :for="id + '-type'">Type</Label>
+        <select
+          :id="id + '-type'"
+          v-model="data.type"
+          :disabled="readonly"
+          class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-50"
         >
-        </b-form-radio-group>
-      </b-form-group>
-    </div>
-    <b-form-group
-      label="Metadata"
-      :label-for="id + '-metadata'"
-      description="Metadata for this output, in the JSON format"
-    >
-      <json-editor
-        :id="id + '-metadata'"
-        v-model="metadata"
-        :rows="5"
-        :disabled="readonly"
-      />
-    </b-form-group>
-    <b-button size="sm" @click="setPlainText">Plain Text</b-button>
-  </b-card>
+          <option
+            v-for="opt in outputTypeOptions"
+            :key="opt.text"
+            :value="opt.value"
+          >
+            {{ opt.text }}
+          </option>
+        </select>
+      </div>
+      <div class="space-y-1.5">
+        <Label :for="id + '-argument'">Application Argument</Label>
+        <Input
+          :id="id + '-argument'"
+          type="text"
+          v-model="data.application_argument"
+          :disabled="readonly"
+        ></Input>
+      </div>
+      <div class="flex gap-4">
+        <div class="flex-1 space-y-1.5">
+          <Label>Is Required</Label>
+          <div class="flex gap-4">
+            <label
+              v-for="opt in trueFalseOptions"
+              :key="String(opt.value)"
+              class="flex items-center gap-2 text-sm"
+            >
+              <input
+                type="radio"
+                :value="opt.value"
+                v-model="data.is_required"
+                :disabled="readonly"
+              />
+              {{ opt.text }}
+            </label>
+          </div>
+        </div>
+        <div class="flex-1 space-y-1.5">
+          <Label>Required on Command Line</Label>
+          <div class="flex gap-4">
+            <label
+              v-for="opt in trueFalseOptions"
+              :key="String(opt.value)"
+              class="flex items-center gap-2 text-sm"
+            >
+              <input
+                type="radio"
+                :value="opt.value"
+                v-model="data.required_to_added_to_command_line"
+                :disabled="readonly"
+              />
+              {{ opt.text }}
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="space-y-1.5">
+        <Label :for="id + '-metadata'">Metadata</Label>
+        <json-editor
+          :id="id + '-metadata'"
+          v-model="metadata"
+          :rows="5"
+          :disabled="readonly"
+        />
+        <p class="text-sm text-muted-foreground">
+          Metadata for this output, in the JSON format
+        </p>
+      </div>
+      <Button variant="outline" size="sm" @click="setPlainText"
+        >Plain Text</Button
+      >
+    </CardContent>
+  </Card>
 </template>
 
 <script>
+import { Trash2 } from "@lucide/vue";
 import { models } from "django-airavata-api";
 import { mixins } from "django-airavata-common-ui";
 import JSONEditor from "./JSONEditor.vue";
@@ -111,6 +139,7 @@ export default {
     },
   },
   components: {
+    Trash2,
     "json-editor": JSONEditor,
   },
   computed: {
@@ -148,7 +177,7 @@ export default {
   },
   methods: {
     doFocus() {
-      this.$refs.nameInput.focus();
+      this.$refs.nameInput.$el.focus();
       this.$el.scrollIntoView({ behavior: "smooth" });
     },
     deleteApplicationOutput() {

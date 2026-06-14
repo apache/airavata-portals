@@ -8,7 +8,7 @@
   >
     <template v-slot:additional-buttons>
       <delete-button
-        class="me-2"
+        class="mr-2"
         @delete="deleteAllExpiredReservations"
         label="Delete All Expired"
         :disabled="expiredReservations.length === 0"
@@ -17,91 +17,127 @@
       </delete-button>
     </template>
     <template v-slot:new-item-editor>
-      <b-card v-if="showNewItemEditor" title="New Reservation">
-        <compute-resource-reservation-editor
-          v-model="newReservation"
-          :queues="queues"
-          @valid="
-            newReservationValid = true;
-            validate();
-          "
-          @invalid="
-            newReservationValid = false;
-            validate();
-          "
-        />
-        <div class="row">
-          <div class="col">
-            <b-button
-              variant="primary"
+      <Card v-if="showNewItemEditor">
+        <CardHeader>
+          <CardTitle>New Reservation</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <compute-resource-reservation-editor
+            v-model="newReservation"
+            :queues="queues"
+            @valid="
+              newReservationValid = true;
+              validate();
+            "
+            @invalid="
+              newReservationValid = false;
+              validate();
+            "
+          />
+          <div class="mt-4 flex gap-2">
+            <Button
+              variant="default"
               @click="saveNewReservation"
               :disabled="isSaveDisabled"
             >
               Add
-            </b-button>
-            <b-button variant="secondary" @click="cancelNewReservation">
+            </Button>
+            <Button variant="secondary" @click="cancelNewReservation">
               Cancel
-            </b-button>
+            </Button>
           </div>
-        </div>
-      </b-card>
+        </CardContent>
+      </Card>
     </template>
     <template v-slot:item-list="slotProps">
-      <b-table hover :fields="fields" :items="slotProps.items">
-        <template #cell(reservation_name)="data">
-          {{ data.value }}
-          <b-badge v-if="data.item.isExpired">Expired</b-badge>
-          <b-badge v-if="data.item.isActive" variant="success">Active</b-badge>
-          <b-badge v-if="data.item.isUpcoming" variant="info">Upcoming</b-badge>
-        </template>
-        <template #cell(queue_names)="data">
-          <ul v-for="queueName in data.item.queue_names" :key="queueName">
-            <li>{{ queueName }}</li>
-          </ul>
-        </template>
-        <template #cell(action)="data">
-          <b-link
-            v-if="!readonly"
-            class="action-link"
-            @click="toggleDetails(data)"
-            :disabled="isReservationInvalid(data.item.key)"
-          >
-            Edit
-            <i class="fa fa-edit" aria-hidden="true"></i>
-          </b-link>
-          <delete-link
-            v-if="!readonly"
-            class="action-link"
-            @delete="deleteReservation(data.item)"
-          >
-            Are you sure you want to delete reservation
-            <strong>{{ data.item.reservation_name }}</strong
-            >?
-          </delete-link>
-        </template>
-        <template v-slot:row-details="row">
-          <b-card>
-            <compute-resource-reservation-editor
-              :value="row.item"
-              @input="updatedReservation"
-              :queues="queues"
-              @valid="removeInvalidReservation(row.item.key)"
-              @invalid="recordInvalidReservation(row.item.key)"
-            />
-            <b-button
-              size="sm"
-              @click="toggleDetails(row)"
-              :disabled="isReservationInvalid(row.item.key)"
-              >Close</b-button
-            >
-          </b-card>
-        </template>
-      </b-table>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead v-for="field in fields" :key="field.key">
+              {{ field.label }}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <template v-for="item in slotProps.items" :key="item.key">
+            <TableRow>
+              <TableCell>
+                {{ item.reservation_name }}
+                <Badge v-if="item.isExpired">Expired</Badge>
+                <Badge
+                  v-if="item.isActive"
+                  class="border-transparent bg-success text-success-foreground"
+                  >Active</Badge
+                >
+                <Badge v-if="item.isUpcoming" variant="secondary"
+                  >Upcoming</Badge
+                >
+              </TableCell>
+              <TableCell>
+                <ul class="list-disc pl-5">
+                  <li v-for="queueName in item.queue_names" :key="queueName">
+                    {{ queueName }}
+                  </li>
+                </ul>
+              </TableCell>
+              <TableCell>{{ formatDate(item.start_time) }}</TableCell>
+              <TableCell>{{ formatDate(item.end_time) }}</TableCell>
+              <TableCell>
+                <a
+                  href="#"
+                  v-if="!readonly"
+                  class="mr-2 inline-flex items-center gap-1 text-primary hover:underline"
+                  :class="{
+                    'pointer-events-none opacity-50': isReservationInvalid(
+                      item.key,
+                    ),
+                  }"
+                  @click.prevent="toggleDetails(item)"
+                >
+                  Edit
+                  <Pencil class="size-4" aria-hidden="true" />
+                </a>
+                <delete-link
+                  v-if="!readonly"
+                  @delete="deleteReservation(item)"
+                >
+                  Are you sure you want to delete reservation
+                  <strong>{{ item.reservation_name }}</strong
+                  >?
+                </delete-link>
+              </TableCell>
+            </TableRow>
+            <TableRow v-if="item._showDetails">
+              <TableCell :colspan="fields.length">
+                <Card>
+                  <CardContent>
+                    <compute-resource-reservation-editor
+                      :value="item"
+                      @input="updatedReservation"
+                      :queues="queues"
+                      @valid="removeInvalidReservation(item.key)"
+                      @invalid="recordInvalidReservation(item.key)"
+                    />
+                    <Button
+                      class="mt-2"
+                      size="sm"
+                      @click="toggleDetails(item)"
+                      :disabled="isReservationInvalid(item.key)"
+                      >Close</Button
+                    >
+                  </CardContent>
+                </Card>
+              </TableCell>
+            </TableRow>
+          </template>
+        </TableBody>
+      </Table>
     </template>
   </list-layout>
 </template>
 
 <script>
+import { Pencil } from "@lucide/vue";
 import { models } from "django-airavata-api";
 import { components, layouts, utils } from "django-airavata-common-ui";
 import ComputeResourceReservationEditor from "./ComputeResourceReservationEditor";
@@ -109,6 +145,7 @@ import ComputeResourceReservationEditor from "./ComputeResourceReservationEditor
 export default {
   name: "compute-resource-reservation-list",
   components: {
+    Pencil,
     "delete-link": components.DeleteLink,
     "list-layout": layouts.ListLayout,
     ComputeResourceReservationEditor,
@@ -192,12 +229,14 @@ export default {
   },
   created() {},
   methods: {
+    formatDate(value) {
+      return utils.dateFormatters.dateTimeInMinutesWithTimeZone.format(value);
+    },
     updatedReservation(newValue) {
       this.$emit("updated", newValue);
     },
-    toggleDetails(row) {
-      row.toggleDetails();
-      this.showingDetails[row.item.key] = !this.showingDetails[row.item.key];
+    toggleDetails(item) {
+      this.showingDetails[item.key] = !this.showingDetails[item.key];
     },
     deleteReservation(reservation) {
       this.removeInvalidReservation(reservation.key);

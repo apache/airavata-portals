@@ -8,7 +8,7 @@
     :new-button-disabled="!isGatewayAdmin"
   >
     <template v-slot:item-list="slotProps">
-      <div class="row">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <application-card
           v-for="item in slotProps.items"
           v-bind:app-module="item"

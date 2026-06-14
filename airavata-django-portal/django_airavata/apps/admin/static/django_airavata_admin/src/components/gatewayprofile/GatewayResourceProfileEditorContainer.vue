@@ -1,46 +1,36 @@
 <template>
-  <div>
-    <div class="row">
-      <div class="col">
-        <div class="card">
-          <div class="card-body">
-            <gateway-resource-profile-editor
-              v-if="gatewayResourceProfile"
-              v-model="gatewayResourceProfile"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col">
-        <div class="card">
-          <div class="card-body">
-            <storage-preference-list
-              v-if="gatewayResourceProfile"
-              :storagePreferences="gatewayResourceProfile.storage_preferences"
-              :default-credential-store-token="
-                gatewayResourceProfile.credential_store_token
-              "
-              @updated="updatedStoragePreference"
-              @added="addedStoragePreference"
-              @delete="deleteStoragePreference"
-              :readonly="!gatewayResourceProfile.user_has_write_access"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="space-y-4">
+    <Card>
+      <CardContent>
+        <gateway-resource-profile-editor
+          v-if="gatewayResourceProfile"
+          v-model="gatewayResourceProfile"
+        />
+      </CardContent>
+    </Card>
+    <Card>
+      <CardContent>
+        <storage-preference-list
+          v-if="gatewayResourceProfile"
+          :storagePreferences="gatewayResourceProfile.storage_preferences"
+          :default-credential-store-token="
+            gatewayResourceProfile.credential_store_token
+          "
+          @updated="updatedStoragePreference"
+          @added="addedStoragePreference"
+          @delete="deleteStoragePreference"
+          :readonly="!gatewayResourceProfile.user_has_write_access"
+        />
+      </CardContent>
+    </Card>
     <div
-      class="row"
+      class="flex gap-2"
       v-if="
         gatewayResourceProfile && gatewayResourceProfile.user_has_write_access
       "
     >
-      <div class="col">
-        <b-button variant="primary" @click="save"> Save </b-button>
-        <b-button variant="secondary" @click="cancel"> Cancel </b-button>
-      </div>
+      <Button variant="default" @click="save"> Save </Button>
+      <Button variant="secondary" @click="cancel"> Cancel </Button>
     </div>
   </div>
 </template>

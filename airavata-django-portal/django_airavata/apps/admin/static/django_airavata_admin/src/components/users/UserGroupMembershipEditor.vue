@@ -1,36 +1,67 @@
 <template>
-  <b-form-group label="Groups">
-    <b-form-checkbox-group
-      :checked="selected"
-      :options="userDefinedGroupOptions"
-      @input="groupsUpdated"
-      stacked
-    >
-      <template v-slot:first>
-        <b-form-checkbox
-          v-if="gatewayUsersGroupOption"
-          :value="gatewayUsersGroupOption.value"
+  <div class="space-y-1.5">
+    <Label>Groups</Label>
+    <div class="flex flex-col gap-2">
+      <label
+        v-if="gatewayUsersGroupOption"
+        class="flex items-center gap-2 text-sm"
+        :class="{
+          'cursor-not-allowed opacity-50': gatewayUsersGroupOption.disabled,
+        }"
+      >
+        <Checkbox
+          :model-value="selected.includes(gatewayUsersGroupOption.value)"
           :disabled="gatewayUsersGroupOption.disabled"
-          >{{ gatewayUsersGroupOption.text }}
-          <gateway-groups-badge :group="gatewayUsersGroup" />
-        </b-form-checkbox>
-        <b-form-checkbox
-          v-if="adminsGroupOption"
-          :value="adminsGroupOption.value"
+          @update:model-value="toggleGroup(gatewayUsersGroupOption.value, $event)"
+        />
+        {{ gatewayUsersGroupOption.text }}
+        <gateway-groups-badge :group="gatewayUsersGroup" />
+      </label>
+      <label
+        v-if="adminsGroupOption"
+        class="flex items-center gap-2 text-sm"
+        :class="{ 'cursor-not-allowed opacity-50': adminsGroupOption.disabled }"
+      >
+        <Checkbox
+          :model-value="selected.includes(adminsGroupOption.value)"
           :disabled="adminsGroupOption.disabled"
-          >{{ adminsGroupOption.text }}
-          <gateway-groups-badge :group="adminsGroup" />
-        </b-form-checkbox>
-        <b-form-checkbox
-          v-if="readOnlyAdminsGroupOption"
-          :value="readOnlyAdminsGroupOption.value"
+          @update:model-value="toggleGroup(adminsGroupOption.value, $event)"
+        />
+        {{ adminsGroupOption.text }}
+        <gateway-groups-badge :group="adminsGroup" />
+      </label>
+      <label
+        v-if="readOnlyAdminsGroupOption"
+        class="flex items-center gap-2 text-sm"
+        :class="{
+          'cursor-not-allowed opacity-50': readOnlyAdminsGroupOption.disabled,
+        }"
+      >
+        <Checkbox
+          :model-value="selected.includes(readOnlyAdminsGroupOption.value)"
           :disabled="readOnlyAdminsGroupOption.disabled"
-          >{{ readOnlyAdminsGroupOption.text }}
-          <gateway-groups-badge :group="readOnlyAdminsGroup" />
-        </b-form-checkbox>
-      </template>
-    </b-form-checkbox-group>
-  </b-form-group>
+          @update:model-value="
+            toggleGroup(readOnlyAdminsGroupOption.value, $event)
+          "
+        />
+        {{ readOnlyAdminsGroupOption.text }}
+        <gateway-groups-badge :group="readOnlyAdminsGroup" />
+      </label>
+      <label
+        v-for="option in userDefinedGroupOptions"
+        :key="option.value"
+        class="flex items-center gap-2 text-sm"
+        :class="{ 'cursor-not-allowed opacity-50': option.disabled }"
+      >
+        <Checkbox
+          :model-value="selected.includes(option.value)"
+          :disabled="option.disabled"
+          @update:model-value="toggleGroup(option.value, $event)"
+        />
+        {{ option.text }}
+      </label>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -110,20 +141,17 @@ export default {
     },
   },
   methods: {
-    groupsUpdated(checkedGroups) {
-      // Check for added groups
-      for (const checkedGroupId of checkedGroups) {
-        if (!this.data.find((g) => g.id === checkedGroupId)) {
-          const addedGroup = this.editableGroups.find(
-            (g) => g.id === checkedGroupId,
-          );
-          this.data.push(addedGroup);
+    toggleGroup(groupId, checked) {
+      if (checked) {
+        if (!this.data.find((g) => g.id === groupId)) {
+          const addedGroup = this.editableGroups.find((g) => g.id === groupId);
+          if (addedGroup) {
+            this.data.push(addedGroup);
+          }
         }
-      }
-      // Check for removed groups
-      for (const group of this.data) {
-        if (!checkedGroups.find((groupId) => groupId === group.id)) {
-          const groupIndex = this.data.findIndex((g) => g.id === group.id);
+      } else {
+        const groupIndex = this.data.findIndex((g) => g.id === groupId);
+        if (groupIndex >= 0) {
           this.data.splice(groupIndex, 1);
         }
       }

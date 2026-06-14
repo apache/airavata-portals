@@ -1,17 +1,39 @@
-import { render, fireEvent, within } from "@testing-library/vue";
+import { render, fireEvent, waitFor, within } from "@testing-library/vue";
 import "@testing-library/jest-dom";
+import { h } from "vue";
 import ExperimentStatisticsContainer from "@/components/statistics/ExperimentStatisticsContainer.vue";
-import { createBootstrap } from "bootstrap-vue-next";
+import { components as UI } from "django-airavata-common-ui";
+import * as shadcnUI from "django-airavata-common-ui/js/components/ui";
 import FlatPickr from "vue-flatpickr-component";
 
-// Vue 3 has no global Vue; register the shared plugins/components per render via
-// testing-library's `global` option (see renderOptions below).
+// Vue 3 has no global Vue; register the shared shadcn-vue UI components and the
+// portal's common components per render via testing-library's `global` option.
+// (The app's entry() registers the shadcn UI globally at runtime; the tests do
+// the equivalent here since they mount the component directly.)
+const globalComponents = { "flat-pickr": FlatPickr };
+for (const [name, component] of Object.entries({ ...shadcnUI, ...UI })) {
+  if (/^[A-Z]/.test(name) && component && typeof component === "object") {
+    globalComponents[name] = component;
+  }
+}
 const renderOptions = {
   global: {
-    plugins: [createBootstrap()],
-    components: { "flat-pickr": FlatPickr },
+    components: globalComponents,
   },
 };
+
+// The app's main.js wraps the whole tree in a <TooltipProvider> so the shadcn-vue
+// <Tooltip> instances used across the admin app (incl. common components like
+// ClipboardCopyLink) have the reka-ui provider context. Mirror that here when
+// rendering a component directly.
+function renderWithProviders(component) {
+  const Wrapper = {
+    render() {
+      return h(shadcnUI.TooltipProvider, () => [h(component)]);
+    },
+  };
+  return render(Wrapper, renderOptions);
+}
 
 import { models, services, utils } from "django-airavata-api";
 import ExperimentStatus from "django-airavata-api/static/django_airavata_api/js/models/ExperimentStatus";
@@ -129,14 +151,18 @@ test("load experiment by job id when job id matches unique experiment", async ()
   });
 
   // The render method returns a collection of utilities to query your component.
-  const { findByText, findByPlaceholderText } = render(
-    ExperimentStatisticsContainer,
-    renderOptions
+  const { findByText, findByPlaceholderText } = renderWithProviders(
+    ExperimentStatisticsContainer
   );
 
   const byJobIDTab = await findByText("By Job ID");
 
-  await fireEvent.click(byJobIDTab);
+  // reka-ui's Tabs (automatic activation) switch on focus; dispatch focus before
+  // the click so the tab panel becomes active in jsdom (which does not emulate
+  // the focus-follows-pointer behavior a real browser provides on click).
+  const byJobIDTrigger = byJobIDTab.closest('[role="tab"]') || byJobIDTab;
+  await fireEvent.focus(byJobIDTrigger);
+  await fireEvent.click(byJobIDTrigger);
 
   const jobIDInputField = await findByPlaceholderText("Job ID");
 
@@ -162,9 +188,14 @@ test("load experiment by job id when job id matches unique experiment", async ()
       ignoreErrors: true,
     }
   );
-  expect(services.FullExperimentService.retrieve).toHaveBeenCalledWith({
-    lookup: experiment.experiment_id,
-  });
+  // The experiment-details tab is activated asynchronously (setTimeout) and its
+  // panel (ExperimentDetailsView) mounts lazily on activation, which is when it
+  // calls FullExperimentService.retrieve. Wait for that to happen.
+  await waitFor(() =>
+    expect(services.FullExperimentService.retrieve).toHaveBeenCalledWith({
+      lookup: experiment.experiment_id,
+    })
+  );
 });
 
 test("Hostname filter only shows compute resources that are configured in a GRP", async () => {
@@ -228,7 +259,7 @@ test("Hostname filter only shows compute resources that are configured in a GRP"
   ]);
 
   // The render method returns a collection of utilities to query your component.
-  const { findByText } = render(ExperimentStatisticsContainer, renderOptions);
+  const { findByText } = renderWithProviders(ExperimentStatisticsContainer);
 
   const addFiltersMenu = await findByText("Add Filters");
 

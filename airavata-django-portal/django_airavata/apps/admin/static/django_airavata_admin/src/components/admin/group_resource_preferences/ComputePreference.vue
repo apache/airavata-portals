@@ -1,236 +1,210 @@
 <template>
-  <div class="has-fixed-footer">
-    <div class="row">
-      <div class="col">
-        <h1 class="h4 mb-4">
-          <div
-            v-if="localGroupResourceProfile"
-            class="group-resource-profile-name text-muted text-uppercase"
+  <div class="space-y-4 pb-20">
+    <div>
+      <h1 class="mb-4 text-xl font-semibold">
+        <div
+          v-if="localGroupResourceProfile"
+          class="text-muted-foreground uppercase"
+        >
+          <Server class="inline size-4" aria-hidden="true" />
+          {{ localGroupResourceProfile.group_resource_profile_name }}
+        </div>
+        {{ computeResource.host_name }}
+      </h1>
+    </div>
+    <Card>
+      <CardContent class="space-y-4">
+        <div class="space-y-1.5">
+          <Label for="login-username">Login Username</Label>
+          <Input
+            id="login-username"
+            type="text"
+            required
+            v-model="data.login_user_name"
+            :aria-invalid="validationFeedback.login_user_name.state === false"
+            :disabled="!userHasWriteAccess"
+            @input="validate"
           >
-            <i class="fa fa-server" aria-hidden="true"></i>
-            {{ localGroupResourceProfile.group_resource_profile_name }}
-          </div>
-          {{ computeResource.host_name }}
-        </h1>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col">
-        <div class="card">
-          <div class="card-body">
-            <b-form-group
-              label="Login Username"
-              label-for="login-username"
-              :invalid-feedback="
-                validationFeedback.login_user_name.invalidFeedback
-              "
-              :state="validationFeedback.login_user_name.state"
-            >
-              <b-form-input
-                id="login-username"
-                type="text"
-                required
-                v-model="data.login_user_name"
-                :state="validationFeedback.login_user_name.state"
-                :disabled="!userHasWriteAccess"
-                @input="validate"
-              >
-              </b-form-input>
-            </b-form-group>
-            <b-form-group
-              label="SSH Credential"
-              label-for="credential-store-token"
-            >
-              <ssh-credential-selector
-                v-model="data.resource_specific_credential_store_token"
-                v-if="localGroupResourceProfile"
-                :readonly="!userHasWriteAccess"
-                :null-option-default-credential-token="
-                  localGroupResourceProfile.default_credential_store_token
-                "
-                :null-option-disabled="
-                  !localGroupResourceProfile.default_credential_store_token
-                "
-              >
-                <template v-slot:null-option-label="nullOptionLabelScope">
-                  <span v-if="nullOptionLabelScope.defaultCredentialSummary">
-                    Use the default SSH credential for
-                    {{
-                      localGroupResourceProfile.group_resource_profile_name
-                    }}
-                    ({{
-                      nullOptionLabelScope.defaultCredentialSummary.username
-                    }}
-                    -
-                    {{
-                      nullOptionLabelScope.defaultCredentialSummary.description
-                    }})
-                  </span>
-                  <span v-else> Select a SSH credential </span>
-                </template>
-              </ssh-credential-selector>
-            </b-form-group>
-            <b-form-group
-              label="Resource Type"
-              label-for="resource-type"
-              :invalid-feedback="
-                validationFeedback.resource_type.invalidFeedback
-              "
-              :state="validationFeedback.resource_type.state"
-            >
-              <b-form-select
-                id="resource-type"
-                v-model="data.resource_type"
-                :options="resourceTypeOptions"
-                :disabled="!userHasWriteAccess"
-                :state="validationFeedback.resource_type.state"
-                @change="onResourceTypeChange"
-              >
-                <template v-slot:first>
-                  <option :value="null">Select a resource type</option>
-                </template>
-              </b-form-select>
-            </b-form-group>
-            <!-- SLURM-specific fields -->
-            <template v-if="isResourceType('SLURM')">
-              <b-form-group
-                label="Allocation Project Number"
-                label-for="allocation-number"
-              >
-                <b-form-input
-                  id="allocation-number"
-                  type="text"
-                  v-model="data.allocation_project_number"
-                  :disabled="!userHasWriteAccess"
-                >
-                </b-form-input>
-              </b-form-group>
+          </Input>
+          <p
+            v-if="validationFeedback.login_user_name.state === false"
+            class="text-sm text-destructive"
+          >
+            {{ validationFeedback.login_user_name.invalidFeedback }}
+          </p>
+        </div>
+        <div class="space-y-1.5">
+          <Label for="credential-store-token">SSH Credential</Label>
+          <ssh-credential-selector
+            v-model="data.resource_specific_credential_store_token"
+            v-if="localGroupResourceProfile"
+            :readonly="!userHasWriteAccess"
+            :null-option-default-credential-token="
+              localGroupResourceProfile.default_credential_store_token
+            "
+            :null-option-disabled="
+              !localGroupResourceProfile.default_credential_store_token
+            "
+          >
+            <template v-slot:null-option-label="nullOptionLabelScope">
+              <span v-if="nullOptionLabelScope.defaultCredentialSummary">
+                Use the default SSH credential for
+                {{ localGroupResourceProfile.group_resource_profile_name }}
+                ({{ nullOptionLabelScope.defaultCredentialSummary.username }}
+                -
+                {{ nullOptionLabelScope.defaultCredentialSummary.description }})
+              </span>
+              <span v-else> Select a SSH credential </span>
             </template>
-            <!-- AWS-specific fields -->
-            <template v-if="isResourceType('AWS')">
-              <b-form-group label="Region" label-for="aws-region">
-                <b-form-input
-                  id="aws-region"
-                  type="text"
-                  v-model="data.specific_preferences.region"
-                  :disabled="!userHasWriteAccess"
-                >
-                </b-form-input>
-              </b-form-group>
-              <b-form-group
-                label="Preferred AMI ID"
-                label-for="preferred-ami-id"
-              >
-                <b-form-input
-                  id="preferred-ami-id"
-                  type="text"
-                  v-model="data.specific_preferences.preferred_ami_id"
-                  :disabled="!userHasWriteAccess"
-                >
-                </b-form-input>
-              </b-form-group>
-              <b-form-group
-                label="Preferred Instance Type"
-                label-for="preferred-instance-type"
-              >
-                <b-form-input
-                  id="preferred-instance-type"
-                  type="text"
-                  v-model="data.specific_preferences.preferred_instance_type"
-                  :disabled="!userHasWriteAccess"
-                >
-                </b-form-input>
-              </b-form-group>
-            </template>
-            <b-form-group
-              label="Scratch Location"
-              label-for="scratch-location"
-              :invalid-feedback="
-                validationFeedback.scratch_location.invalidFeedback
-              "
-              :state="validationFeedback.scratch_location.state"
+          </ssh-credential-selector>
+        </div>
+        <div class="space-y-1.5">
+          <Label for="resource-type">Resource Type</Label>
+          <select
+            id="resource-type"
+            v-model="data.resource_type"
+            :disabled="!userHasWriteAccess"
+            @change="onResourceTypeChange"
+            class="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-50"
+            :class="{
+              'border-destructive': validationFeedback.resource_type.state === false,
+            }"
+          >
+            <option :value="null">Select a resource type</option>
+            <option
+              v-for="opt in resourceTypeOptions"
+              :key="opt.value"
+              :value="opt.value"
             >
-              <b-form-input
-                id="scratch-location"
-                type="text"
-                required
-                v-model="data.scratch_location"
-                :disabled="!userHasWriteAccess"
-                :state="validationFeedback.scratch_location.state"
-                @input="validate"
-              >
-              </b-form-input>
-            </b-form-group>
-          </div>
+              {{ opt.text }}
+            </option>
+          </select>
+          <p
+            v-if="validationFeedback.resource_type.state === false"
+            class="text-sm text-destructive"
+          >
+            {{ validationFeedback.resource_type.invalidFeedback }}
+          </p>
         </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Policy</h5>
-            <compute-resource-policy-editor
-              :batch-queues="computeResource.batch_queues"
-              :compute-resource-policy="localComputeResourcePolicy"
-              :batch-queue-resource-policies="localBatchQueueResourcePolicies"
-              :readonly="!userHasWriteAccess"
-              @compute-resource-policy-updated="
-                localComputeResourcePolicy = $event
-              "
-              @batch-queue-resource-policies-updated="
-                localBatchQueueResourcePolicies = $event
-              "
-              @valid="computeResourcePolicyInvalid = false"
-              @invalid="computeResourcePolicyInvalid = true"
-            />
+        <!-- SLURM-specific fields -->
+        <template v-if="isResourceType('SLURM')">
+          <div class="space-y-1.5">
+            <Label for="allocation-number">Allocation Project Number</Label>
+            <Input
+              id="allocation-number"
+              type="text"
+              v-model="data.allocation_project_number"
+              :disabled="!userHasWriteAccess"
+            >
+            </Input>
           </div>
-        </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col">
-        <div class="card">
-          <div class="card-body">
-            <compute-resource-reservation-list
-              v-if="isResourceType('SLURM')"
-              :reservations="data.reservations"
-              :queues="queueNames"
-              :readonly="!userHasWriteAccess"
-              @added="addReservation"
-              @deleted="deleteReservation"
-              @updated="updateReservation"
-              @valid="reservationsInvalid = false"
-              @invalid="reservationsInvalid = true"
-            />
+        </template>
+        <!-- AWS-specific fields -->
+        <template v-if="isResourceType('AWS')">
+          <div class="space-y-1.5">
+            <Label for="aws-region">Region</Label>
+            <Input
+              id="aws-region"
+              type="text"
+              v-model="data.specific_preferences.region"
+              :disabled="!userHasWriteAccess"
+            >
+            </Input>
           </div>
+          <div class="space-y-1.5">
+            <Label for="preferred-ami-id">Preferred AMI ID</Label>
+            <Input
+              id="preferred-ami-id"
+              type="text"
+              v-model="data.specific_preferences.preferred_ami_id"
+              :disabled="!userHasWriteAccess"
+            >
+            </Input>
+          </div>
+          <div class="space-y-1.5">
+            <Label for="preferred-instance-type">Preferred Instance Type</Label>
+            <Input
+              id="preferred-instance-type"
+              type="text"
+              v-model="data.specific_preferences.preferred_instance_type"
+              :disabled="!userHasWriteAccess"
+            >
+            </Input>
+          </div>
+        </template>
+        <div class="space-y-1.5">
+          <Label for="scratch-location">Scratch Location</Label>
+          <Input
+            id="scratch-location"
+            type="text"
+            required
+            v-model="data.scratch_location"
+            :disabled="!userHasWriteAccess"
+            :aria-invalid="validationFeedback.scratch_location.state === false"
+            @input="validate"
+          >
+          </Input>
+          <p
+            v-if="validationFeedback.scratch_location.state === false"
+            class="text-sm text-destructive"
+          >
+            {{ validationFeedback.scratch_location.invalidFeedback }}
+          </p>
         </div>
-      </div>
-    </div>
-    <div class="fixed-footer">
-      <b-button
-        variant="primary"
+      </CardContent>
+    </Card>
+    <Card>
+      <CardContent>
+        <h5 class="mb-2 text-lg font-semibold">Policy</h5>
+        <compute-resource-policy-editor
+          :batch-queues="computeResource.batch_queues"
+          :compute-resource-policy="localComputeResourcePolicy"
+          :batch-queue-resource-policies="localBatchQueueResourcePolicies"
+          :readonly="!userHasWriteAccess"
+          @compute-resource-policy-updated="localComputeResourcePolicy = $event"
+          @batch-queue-resource-policies-updated="
+            localBatchQueueResourcePolicies = $event
+          "
+          @valid="computeResourcePolicyInvalid = false"
+          @invalid="computeResourcePolicyInvalid = true"
+        />
+      </CardContent>
+    </Card>
+    <Card v-if="isResourceType('SLURM')">
+      <CardContent>
+        <compute-resource-reservation-list
+          :reservations="data.reservations"
+          :queues="queueNames"
+          :readonly="!userHasWriteAccess"
+          @added="addReservation"
+          @deleted="deleteReservation"
+          @updated="updateReservation"
+          @valid="reservationsInvalid = false"
+          @invalid="reservationsInvalid = true"
+        />
+      </CardContent>
+    </Card>
+    <div
+      class="bg-background fixed inset-x-0 bottom-0 flex gap-2 border-t p-4 shadow-md"
+    >
+      <Button
+        variant="default"
         @click="save"
         :disabled="!valid || !userHasWriteAccess"
         >Save
-      </b-button>
-      <delete-button
-        class="ms-2"
-        :disabled="!userHasWriteAccess"
-        @delete="remove"
-      >
+      </Button>
+      <delete-button :disabled="!userHasWriteAccess" @delete="remove">
         Are you sure you want to remove the preferences for compute resource
         <strong>{{ computeResource.host_name }}</strong
         >?
       </delete-button>
-      <b-button class="ms-2" variant="secondary" @click="cancel"
-        >Cancel
-      </b-button>
+      <Button variant="secondary" @click="cancel">Cancel </Button>
     </div>
   </div>
 </template>
 
 <script>
+import { Server } from "@lucide/vue";
 import DjangoAiravataAPI, {
   errors,
   models,
@@ -249,6 +223,7 @@ import {
 export default {
   name: "compute-preference",
   components: {
+    Server,
     "delete-button": components.DeleteButton,
     "ssh-credential-selector": SSHCredentialSelector,
     ComputeResourceReservationList,
