@@ -1,5 +1,5 @@
 <template>
-  <span :class="{ 'font-italic': notAvailable }">{{ applicationName }}</span>
+  <span :class="{ 'fst-italic': notAvailable }">{{ applicationName }}</span>
 </template>
 <script>
 import { errors, services, utils } from "django-airavata-api";

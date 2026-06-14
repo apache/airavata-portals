@@ -1,5 +1,5 @@
 <template>
-  <div class="btn-group ml-3">
+  <div class="btn-group ms-3">
     <div class="dropdown">
       <a
         href="#"

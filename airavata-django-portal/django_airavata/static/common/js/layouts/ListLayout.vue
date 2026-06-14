@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="row">
-      <div class="col-auto mr-auto">
+      <div class="col-auto me-auto">
         <slot name="title">
           <h1 class="h4 mb-4">{{ title }}</h1>
         </slot>

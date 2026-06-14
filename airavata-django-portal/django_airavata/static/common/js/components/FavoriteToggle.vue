@@ -6,7 +6,7 @@
     :title="titleText"
   >
     <i class="fa fa-star favorite-toggle" :class="classes"
-      ><span class="sr-only">Toggle favorite</span></i
+      ><span class="visually-hidden">Toggle favorite</span></i
     >
   </b-link>
 </template>

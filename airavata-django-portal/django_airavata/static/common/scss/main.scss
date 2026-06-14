@@ -112,6 +112,16 @@ $header_height_with_border: $header_height + 1px;
   }
 }
 
+// Each page mounts its Vue app into a container <div> that is a direct child of
+// .stage (e.g. <div id="dashboard">). Vue 3 preserves that mount container as a
+// wrapper (Vue 2 replaced it with the app's root element), which inserts an extra
+// non-flex box that collapses .main-content to its content width. `display:
+// contents` removes the wrapper's own box so .main-content-wrapper participates in
+// .stage's flex layout directly, as it did under Vue 2. (.loading is the spinner.)
+.stage > div:not(.loading) {
+  display: contents;
+}
+
 /*
  * Wrapper around .main-content and .sidebar
  */

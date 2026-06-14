@@ -9,13 +9,13 @@
         <div class="card-body">
           <h2 class="card-title h5">{{ appModule.app_module_name }}</h2>
           <span
-            class="badge badge-primary mr-1"
+            class="badge text-bg-primary me-1"
             v-for="tag in appModule.tags"
             :key="tag"
             >{{ tag }}</span
           >
           <span
-            class="badge badge-primary mr-1"
+            class="badge text-bg-primary me-1"
             v-if="appModule.app_module_version"
             >{{ appModule.app_module_version }}</span
           >

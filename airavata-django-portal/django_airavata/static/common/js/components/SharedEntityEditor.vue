@@ -41,7 +41,7 @@
           v-if="!isPermissionReadOnly(data.item.permission_type)"
           >{{ data.item.user.first_name }} {{ data.item.user.last_name }}</span
         >
-        <span v-else class="text-muted font-italic"
+        <span v-else class="text-muted fst-italic"
           >{{ data.item.user.first_name }} {{ data.item.user.last_name }}</span
         >
       </template>
@@ -51,7 +51,7 @@
           v-if="!isPermissionReadOnly(data.item.permission_type)"
           >{{ data.item.user.email }}</span
         >
-        <span v-else class="text-muted font-italic">{{
+        <span v-else class="text-muted fst-italic">{{
           data.item.user.email
         }}</span>
       </template>
@@ -63,7 +63,7 @@
         />
         <span
           v-else
-          class="text-uppercase text-muted font-italic"
+          class="text-uppercase text-muted fst-italic"
           :class="userDataClasses"
           >{{ data.item.permission_type.name }}</span
         >
@@ -89,7 +89,7 @@
           v-if="editingAllowed(data.item.group, data.item.permission_type)"
           >{{ data.item.group.name }}</span
         >
-        <span v-else class="text-muted font-italic">{{
+        <span v-else class="text-muted fst-italic">{{
           data.item.group.name
         }}</span>
       </template>
@@ -99,7 +99,7 @@
           v-model="data.item.permission_type"
           :options="permissionOptions"
         />
-        <span v-else class="text-muted font-italic">{{
+        <span v-else class="text-muted fst-italic">{{
           data.item.permission_type.name
         }}</span>
       </template>
@@ -191,7 +191,7 @@ export default {
     userDataClasses() {
       return {
         "text-muted": this.readonly,
-        "font-italic": this.readonly,
+        "fst-italic": this.readonly,
       };
     },
     filteredGroupPermissions: function () {
