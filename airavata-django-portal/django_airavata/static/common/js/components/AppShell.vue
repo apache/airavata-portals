@@ -6,10 +6,10 @@
       <!-- Brand / logo -->
       <a
         href="/"
-        class="flex items-center gap-3 px-4 py-4 text-sidebar-foreground"
+        class="flex items-center gap-2.5 px-4 py-3.5 text-sidebar-foreground"
       >
         <span
-          class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-sidebar-accent"
+          class="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-sidebar-accent"
           :style="logoBackgroundStyle"
         >
           <img
@@ -18,7 +18,7 @@
             alt=""
             class="size-full object-contain"
           />
-          <FlaskConical v-else class="size-5 text-sidebar-primary" />
+          <FlaskConical v-else class="size-4 text-sidebar-primary" />
         </span>
         <span class="truncate text-base font-semibold leading-tight">{{
           title
@@ -27,77 +27,31 @@
 
       <Separator class="bg-sidebar-border" />
 
-      <!-- Primary navigation -->
-      <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        <p
-          v-if="navItems.length"
-          class="px-2 pb-1 text-xs font-medium uppercase tracking-wide text-sidebar-foreground/50"
-        >
-          Navigation
-        </p>
-        <a
-          v-for="item in navItems"
-          :key="item.label + item.url"
-          :href="item.url"
-          :class="navItemClasses(item.active)"
-        >
-          <component :is="iconFor(item)" class="size-4 shrink-0" />
-          <span class="truncate">{{ item.label }}</span>
-        </a>
+      <!-- Grouped navigation: every app section with all of its nav items -->
+      <nav class="flex-1 space-y-5 overflow-y-auto px-3 py-4">
+        <div v-for="group in navGroups" :key="group.label" class="space-y-1">
+          <p
+            class="flex items-center gap-2 px-2 pb-0.5 text-xs font-semibold uppercase tracking-wide text-sidebar-foreground/50"
+          >
+            <component :is="iconFor(group)" class="size-3.5 shrink-0" />
+            <span class="truncate">{{ group.label }}</span>
+          </p>
+          <a
+            v-for="item in group.items"
+            :key="item.label + item.url"
+            :href="item.url"
+            :class="navItemClasses(item.active)"
+          >
+            <component :is="iconFor(item)" class="size-4 shrink-0" />
+            <span class="truncate">{{ item.label }}</span>
+          </a>
+        </div>
       </nav>
 
       <Separator class="bg-sidebar-border" />
 
-      <!-- Bottom utilities: app switcher, notifications, user menu -->
+      <!-- Bottom utilities: notifications + user menu -->
       <div class="space-y-1 px-3 py-3">
-        <!-- App switcher -->
-        <DropdownMenu v-if="apps.length">
-          <DropdownMenuTrigger as-child>
-            <button :class="utilityButtonClasses">
-              <component :is="currentAppIcon" class="size-4 shrink-0" />
-              <span class="flex-1 truncate text-left">{{
-                currentAppLabel
-              }}</span>
-              <ChevronsUpDown class="size-4 shrink-0 opacity-60" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="start"
-            side="top"
-            class="w-56"
-          >
-            <DropdownMenuLabel>Switch app</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              v-for="app in apps"
-              :key="app.label + app.url"
-              as-child
-            >
-              <a :href="app.url" class="cursor-pointer">
-                <component :is="iconFor(app)" class="size-4" />
-                <span class="truncate">{{ app.label }}</span>
-                <Check
-                  v-if="app.current"
-                  class="ml-auto size-4 text-primary"
-                />
-              </a>
-            </DropdownMenuItem>
-            <template v-if="menuLinks.length">
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                v-for="link in menuLinks"
-                :key="link.link"
-                as-child
-              >
-                <a :href="link.link" class="cursor-pointer">
-                  <Link2 class="size-4" />
-                  <span class="truncate">{{ link.link_text }}</span>
-                </a>
-              </DropdownMenuItem>
-            </template>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
         <!-- Notifications -->
         <gateway-notices-container
           v-if="notices !== null"
@@ -130,6 +84,19 @@
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <template v-if="menuLinks.length">
+              <DropdownMenuItem
+                v-for="link in menuLinks"
+                :key="link.link"
+                as-child
+              >
+                <a :href="link.link" class="cursor-pointer">
+                  <Link2 class="size-4" />
+                  <span class="truncate">{{ link.link_text }}</span>
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </template>
             <DropdownMenuItem v-if="accountUrl" as-child>
               <a
                 :href="accountUrl"
@@ -156,8 +123,10 @@
 
 <script>
 import {
-  Check,
+  Box,
   ChevronsUpDown,
+  Copy,
+  Database,
   Folder,
   FolderOpen,
   FlaskConical,
@@ -165,30 +134,39 @@ import {
   LayoutDashboard,
   Link2,
   LogOut,
+  Server,
   Settings,
   Settings2,
+  Sliders,
   Users,
 } from "@lucide/vue";
 import GatewayNoticesContainer from "./GatewayNoticesContainer.vue";
 
-// Map the legacy Font Awesome icon class names (still emitted by the Django
-// context processors) onto @lucide/vue components for the sidebar nav.
+// Map the Font Awesome icon class names (still emitted by the Django context
+// processors) onto @lucide/vue components for the sidebar nav.
 const FA_ICON_MAP = {
   "fa-flask": FlaskConical,
-  "fa-cog": Settings2,
-  "fa-cogs": Settings2,
+  "fa-cog": Settings,
+  "fa-cogs": Settings,
+  "fa-sliders-h": Sliders,
   "fa-users": Users,
-  "fa-copy": Layers,
+  "fa-user-friends": Users,
+  "fa-copy": Copy,
+  "fa-box": Box,
+  "fa-boxes": Box,
   "fa-folder": Folder,
   "fa-folder-open": FolderOpen,
+  "fa-database": Database,
+  "fa-server": Server,
+  "fa-layer-group": Layers,
   "fa-tachometer-alt": LayoutDashboard,
   "fa-th": LayoutDashboard,
+  "fa-th-large": LayoutDashboard,
 };
 
 export default {
   name: "app-shell",
   components: {
-    Check,
     ChevronsUpDown,
     FlaskConical,
     GatewayNoticesContainer,
@@ -200,11 +178,7 @@ export default {
     title: { type: String, default: "Airavata" },
     logoUrl: { type: String, default: null },
     logoBackgroundColor: { type: String, default: null },
-    navItems: {
-      type: Array,
-      default: () => [],
-    },
-    apps: {
+    navGroups: {
       type: Array,
       default: () => [],
     },
@@ -232,15 +206,6 @@ export default {
       return this.logoBackgroundColor
         ? { backgroundColor: this.logoBackgroundColor }
         : {};
-    },
-    currentApp() {
-      return this.apps.find((app) => app.current) || null;
-    },
-    currentAppLabel() {
-      return this.currentApp ? this.currentApp.label : "Menu";
-    },
-    currentAppIcon() {
-      return this.currentApp ? this.iconFor(this.currentApp) : Layers;
     },
     userName() {
       if (!this.user) {

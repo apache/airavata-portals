@@ -231,49 +231,60 @@ def shell_data(request):
     reuses the registries the other context processors already build.
     """
     chrome = getattr(settings, "PORTAL_CHROME", {}) or {}
-    title = chrome.get("title") or getattr(settings, "PORTAL_TITLE", "Airavata")
+    # The sidebar brand shows the platform name; gateways may override it via
+    # PORTAL_CHROME["title"]. (PORTAL_TITLE remains the full HTML <title>.)
+    title = chrome.get("title") or "Airavata"
 
     app_registry = airavata_app_registry(request)
     custom_registry = custom_app_registry(request)
-
-    # Primary nav: the current app's nav items (already resolved + active-flagged
-    # by the registries), each with an icon string and a reversed URL.
-    nav_items = []
-    for nav in (app_registry.get("airavata_app_nav") or []) + (
-        custom_registry.get("custom_app_nav") or []
-    ):
-        nav_items.append(
-            {
-                "label": nav.get("label"),
-                "icon": nav.get("icon"),
-                "url": _safe_reverse(nav.get("url")),
-                "active": bool(nav.get("active")),
-            }
-        )
-
-    # App switcher: every airavata + custom app, flagged with the current one.
     current_airavata_app = app_registry.get("current_airavata_app")
     current_custom_app = custom_registry.get("current_custom_app")
-    apps_list = []
+
+    def _items_for_app(app, is_current):
+        items = []
+        for nav in _get_app_nav(request, app) or []:
+            items.append(
+                {
+                    "label": nav.get("label"),
+                    "icon": nav.get("icon"),
+                    "url": _safe_reverse(nav.get("url")),
+                    # _get_app_nav defaults items without `active_prefixes` to
+                    # active, so only trust the flag for the current app.
+                    "active": is_current and bool(nav.get("active")),
+                }
+            )
+        return items
+
+    # Grouped navigation: every app is a section header with all of its nav items
+    # shown beneath it (replacing the collapsed app-switcher). Only the current
+    # app's matching item is flagged active.
+    nav_groups = []
     for app in app_registry.get("airavata_apps") or []:
-        apps_list.append(
-            {
-                "label": app.verbose_name,
-                "icon": "fa " + app.fa_icon_class,
-                "url": _safe_reverse(app.url_home),
-                "current": app is current_airavata_app,
-            }
-        )
+        is_current = app is current_airavata_app
+        items = _items_for_app(app, is_current)
+        if items:
+            nav_groups.append(
+                {
+                    "label": app.verbose_name,
+                    "icon": "fa " + app.fa_icon_class,
+                    "current": is_current,
+                    "items": items,
+                }
+            )
     for app in custom_registry.get("custom_apps") or []:
-        apps_list.append(
-            {
-                "label": app.verbose_name,
-                "icon": "fa " + app.fa_icon_class,
-                "url": _safe_reverse(app.url_home),
-                "current": current_custom_app is not None
-                and app.label == current_custom_app.label,
-            }
+        is_current = (
+            current_custom_app is not None and app.label == current_custom_app.label
         )
+        items = _items_for_app(app, is_current)
+        if items:
+            nav_groups.append(
+                {
+                    "label": app.verbose_name,
+                    "icon": "fa " + app.fa_icon_class,
+                    "current": is_current,
+                    "items": items,
+                }
+            )
 
     data = {
         "title": title,
@@ -281,8 +292,7 @@ def shell_data(request):
             or static_logo_url(),
         "logoBackgroundColor": chrome.get("logo_background_color"),
         "menuLinks": chrome.get("user_menu_links") or [],
-        "navItems": nav_items,
-        "apps": apps_list,
+        "navGroups": nav_groups,
     }
 
     if request.user.is_authenticated:
