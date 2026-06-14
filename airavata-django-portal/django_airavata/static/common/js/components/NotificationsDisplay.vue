@@ -23,25 +23,27 @@
                 <ExternalLink class="size-3.5" aria-hidden="true" /></a>
               and then return to this tab and try again.
             </span>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               class="ml-auto shrink-0"
               @click="dismissUnhandledError(unhandledError)"
             >
               <X class="size-4" />
-            </button>
+            </Button>
           </AlertDescription>
         </Alert>
         <Alert v-else variant="destructive" :key="unhandledError.id">
           <AlertDescription class="flex w-full items-start gap-2">
             <span>{{ unhandledError.message }}</span>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               class="ml-auto shrink-0"
               @click="dismissUnhandledError(unhandledError)"
             >
               <X class="size-4" />
-            </button>
+            </Button>
           </AlertDescription>
         </Alert>
       </template>
@@ -56,13 +58,14 @@
           :class="alertTextClass(notification)"
         >
           <span>{{ notification.message }}</span>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             class="ml-auto shrink-0"
             @click="dismissNotification(notification)"
           >
             <X class="size-4" />
-          </button>
+          </Button>
         </AlertDescription>
       </Alert>
     </transition-group>

@@ -1,12 +1,18 @@
 <template>
-  <div>
-    <div class="flex items-start justify-between gap-2">
-      <div class="mr-auto">
+  <div class="space-y-4">
+    <!-- Section header: title + optional subtitle on the left, actions on the
+         right. Matches MainLayout's title/subtitle conventions but at section
+         (h2) level, since multiple list-layouts can appear on one page. -->
+    <header class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+      <div class="min-w-0">
         <slot name="title">
-          <h1 class="mb-4 text-xl font-semibold">{{ title }}</h1>
+          <h2 class="text-lg font-semibold">{{ title }}</h2>
         </slot>
+        <p v-if="subtitle" class="mt-1 text-sm text-muted-foreground">
+          {{ subtitle }}
+        </p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex shrink-0 flex-wrap items-center gap-2">
         <slot name="additional-buttons"> </slot>
         <slot name="new-item-button">
           <Button @click="addNewItem" :disabled="newButtonDisabled">
@@ -15,13 +21,8 @@
           </Button>
         </slot>
       </div>
-    </div>
-    <div v-if="subtitle">
-      <h2 class="text-sm uppercase text-muted-foreground">{{ subtitle }}</h2>
-    </div>
-    <div>
-      <slot name="new-item-editor"></slot>
-    </div>
+    </header>
+    <slot name="new-item-editor"></slot>
     <div>
       <slot name="item-list" :items="itemsList">Item List goes here</slot>
       <pager

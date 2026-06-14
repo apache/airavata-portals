@@ -36,15 +36,16 @@
             <span class="text-sm font-semibold" :class="textColor(notice)">{{
               notice.title
             }}</span>
-            <button
+            <Button
               v-if="!notice.is_read"
-              type="button"
+              variant="ghost"
+              size="icon-sm"
               title="Mark as read"
-              class="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+              class="shrink-0 text-muted-foreground"
               @click="ackNotification(notice)"
             >
               <CheckCircle2 class="size-4" />
-            </button>
+            </Button>
           </div>
           <p class="mt-0.5 text-sm text-muted-foreground">
             <strong>{{ notice.notificationMessage }}</strong>

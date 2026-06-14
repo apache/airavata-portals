@@ -136,7 +136,6 @@ import {
   LogOut,
   Server,
   Settings,
-  Settings2,
   Sliders,
   Users,
 } from "@lucide/vue";
