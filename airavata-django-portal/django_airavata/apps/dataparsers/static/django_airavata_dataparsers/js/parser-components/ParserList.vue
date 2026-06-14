@@ -3,7 +3,7 @@
     <b-alert
       dismissible
       :variant="alertVariant"
-      :show="showDismissibleAlert"
+      :model-value="showDismissibleAlert"
       @dismissed="showDismissibleAlert = false"
       >{{ alertMsg }}</b-alert
     >

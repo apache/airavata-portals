@@ -1,27 +1,22 @@
-import { components, entry } from "django-airavata-common-ui";
+import { h } from "vue";
+// Deep imports (not the `index.js` barrel) so this page-level bundle pulls in
+// only the layout it renders. Importing the `components` barrel would also bundle
+// the shared `Uppy` component, whose `@uppy/status-bar/dist/style.min.css` import
+// is not resolvable under the package's `exports` field (these pages never use
+// the uploader). See TODO(vue3-migration) note in the migration report.
+import entry from "django-airavata-common-ui/js/entry";
+import MainLayout from "django-airavata-common-ui/js/components/MainLayout.vue";
 import ParserDetailsContainer from "./containers/ParserDetailsContainer.vue";
 
-entry((Vue) => {
-  new Vue({
-    render(h) {
-      return h(components.MainLayout, [
-        h(ParserDetailsContainer, {
-          props: {
-            parserId: this.parserId,
-          },
-        }),
-      ]);
-    },
-    data() {
-      return {
-        parserId: null,
-        launching: false,
-      };
-    },
-    beforeMount() {
-      if (this.$el.dataset.parserId) {
-        this.parserId = this.$el.dataset.parserId;
-      }
-    },
-  }).$mount("#parser-details");
-});
+// Read the mount element's data-* attributes before mounting; Vue 3 replaces the
+// element's contents on mount.
+const el = document.getElementById("parser-details");
+const parserId = el?.dataset.parserId ?? null;
+
+const App = {
+  render() {
+    return h(MainLayout, () => [h(ParserDetailsContainer, { parserId })]);
+  },
+};
+
+entry(App).mount("#parser-details");

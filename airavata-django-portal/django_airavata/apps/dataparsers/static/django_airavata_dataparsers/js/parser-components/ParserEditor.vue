@@ -12,7 +12,7 @@
             <b-alert
               :variant="showDismissibleAlert.variant"
               dismissible
-              :show="showDismissibleAlert.dismissable"
+              :model-value="showDismissibleAlert.dismissable"
               @dismissed="showDismissibleAlert.dismissable = false"
             >
               {{ showDismissibleAlert.message }}
@@ -95,7 +95,7 @@
               new-item-button-text="New Input"
               @add-new-item="createInput"
             >
-              <template slot="item-list" slot-scope="slotProps">
+              <template #item-list="slotProps">
                 <b-table
                   hover
                   :fields="parserInputFields"
@@ -119,7 +119,7 @@
               new-item-button-text="New Output"
               @add-new-item="createOutput"
             >
-              <template slot="item-list" slot-scope="slotProps">
+              <template #item-list="slotProps">
                 <b-table
                   hover
                   :fields="parserOutputFields"
@@ -137,12 +137,12 @@
         <b-button variant="primary" @click="saveParser">Save</b-button>
         <b-button
           v-if="parser"
-          class="ml-2"
+          class="ms-2"
           variant="danger"
           @click="removeParser"
           >Delete</b-button
         >
-        <b-button class="ml-2" variant="secondary" @click="cancel"
+        <b-button class="ms-2" variant="secondary" @click="cancel"
           >Cancel</b-button
         >
       </div>
@@ -152,7 +152,11 @@
 
 <script>
 import { models, services } from "django-airavata-api";
-import { layouts } from "django-airavata-common-ui";
+// Deep import (not the `index.js` barrel) so this bundle does not also pull in
+// the shared `Uppy` component, whose `@uppy/status-bar/dist/style.min.css` import
+// is not resolvable under that package's `exports` field. See the
+// TODO(vue3-migration) note in the migration report.
+import ListLayout from "django-airavata-common-ui/js/layouts/ListLayout.vue";
 
 export default {
   props: {
@@ -208,7 +212,7 @@ export default {
     },
   },
   components: {
-    "list-layout": layouts.ListLayout,
+    "list-layout": ListLayout,
   },
   methods: {
     submitForm() {},

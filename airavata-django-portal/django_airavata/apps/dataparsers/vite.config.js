@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue2";
+import vue from "@vitejs/plugin-vue";
 
 const publicPath = "/static/django_airavata_dataparsers/dist/";
 
@@ -60,6 +60,10 @@ export default defineConfig({
   // automatically); add `.vue` so Vite/Rollup resolves them too.
   resolve: {
     extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json", ".vue"],
+    // This package yarn-links django-airavata-common-ui (already Vue 3); dedupe
+    // so the linked package and this one share a single Vue/bootstrap-vue-next
+    // copy (otherwise: "Vue is not defined" / invalid-hook errors).
+    dedupe: ["vue", "bootstrap-vue-next"],
   },
   build: {
     outDir: "static/django_airavata_dataparsers/dist",
