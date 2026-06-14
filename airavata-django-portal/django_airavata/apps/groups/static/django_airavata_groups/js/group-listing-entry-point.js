@@ -1,8 +1,11 @@
+import { h } from "vue";
 import { components, entry } from "django-airavata-common-ui";
 import GroupsManageContainer from "./containers/GroupsManageContainer.vue";
 
-entry((Vue) => {
-  new Vue({
-    render: (h) => h(components.MainLayout, [h(GroupsManageContainer)]),
-  }).$mount("#group-list");
-});
+const App = {
+  render() {
+    return h(components.MainLayout, () => [h(GroupsManageContainer)]);
+  },
+};
+
+entry(App).mount("#group-list");

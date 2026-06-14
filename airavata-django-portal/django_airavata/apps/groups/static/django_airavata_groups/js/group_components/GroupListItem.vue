@@ -44,22 +44,24 @@
           }}</strong
           >'?
         </p>
-        <div slot="modal-footer" class="w-100">
-          <b-button
-            class="float-right ml-1"
-            :variant="yesButtonVariant"
-            :disabled="deleting"
-            @click="deleteGroup(group.id)"
-            >Yes</b-button
-          >
-          <b-button
-            class="float-right ml-1"
-            :variant="noButtonVariant"
-            :disabled="deleting"
-            @click="show = false"
-            >No</b-button
-          >
-        </div>
+        <template #footer>
+          <div class="w-100">
+            <b-button
+              class="float-end ms-1"
+              :variant="yesButtonVariant"
+              :disabled="deleting"
+              @click="deleteGroup(group.id)"
+              >Yes</b-button
+            >
+            <b-button
+              class="float-end ms-1"
+              :variant="noButtonVariant"
+              :disabled="deleting"
+              @click="show = false"
+              >No</b-button
+            >
+          </div>
+        </template>
       </b-modal>
     </td>
   </tr>

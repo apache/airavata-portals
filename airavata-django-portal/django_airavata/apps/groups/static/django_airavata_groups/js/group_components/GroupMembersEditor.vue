@@ -6,9 +6,11 @@
 
           <b-form-group>
             <b-input-group>
-              <b-input-group-text slot="prepend">
-                <i class="fa fa-filter"></i>
-              </b-input-group-text>
+              <template #prepend>
+                <b-input-group-text>
+                  <i class="fa fa-filter"></i>
+                </b-input-group-text>
+              </template>
               <b-form-input
                 v-model="userFilter"
                 placeholder="Filter list of users"
@@ -24,27 +26,27 @@
             :items="nonMembers"
             :fields="userFields"
             :filter="userFilter"
-            :select-mode="multi"
+            select-mode="multi"
             :sort-compare="sortCompare"
             responsive="sm"
             ref="usersTable"
             head-variant="light"
-            sort-by="name"
-            @row-selected="onUsersRowSelected"
+            :sort-by="initialSortBy"
+            v-model:selected-items="selectedUsers"
           >
-           <template slot="cell(selected)" slot-scope="data">
+           <template #cell(selected)="data">
               <span v-if="isUserSelected(data.item)">
                 <i class="far fa-check-circle"></i>
               </span>
            </template>
 
-            <template slot="cell(action)" slot-scope="data">
-              <b-button @click="toggleDetails(data)">
-                {{data.detailsShowing ? 'Hide' : 'Show'}} Details
+            <template #cell(action)="data">
+              <b-button @click="data.toggleExpansion()">
+                {{data.expansionShowing ? 'Hide' : 'Show'}} Details
               </b-button>
             </template>
 
-            <template slot="row-details" slot-scope="data">
+            <template #row-expansion="data">
               <group-members-details-container
                 :userProfile="data.item"
                 :name="data.item.name"
@@ -104,18 +106,20 @@
               Do you really want to remove all members from
               '<strong>{{group.name}}</strong>'?
             </p>
-            <div slot="modal-footer" class="w-100">
-              <b-button
-                class="float-right ml-1"
-                @click="removeAllMembers">
-                Yes
-              </b-button>
-              <b-button
-                class="float-right ml-1"
-                @click="showRemove = false">
-                No
-              </b-button>
-            </div>
+            <template #footer>
+              <div class="w-100">
+                <b-button
+                  class="float-end ms-1"
+                  @click="removeAllMembers">
+                  Yes
+                </b-button>
+                <b-button
+                  class="float-end ms-1"
+                  @click="showRemove = false">
+                  No
+                </b-button>
+              </div>
+            </template>
           </b-modal>
 
           <b-modal
@@ -125,18 +129,20 @@
               Do you really want to add all users to
               '<strong>{{group.name}}</strong>'?
             </p>
-            <div slot="modal-footer" class="w-100">
-              <b-button
-                class="float-right ml-1"
-                @click="addAllMembers">
-                Yes
-              </b-button>
-              <b-button
-                class="float-right ml-1"
-                @click="showAdd = false">
-                No
-              </b-button>
-            </div>
+            <template #footer>
+              <div class="w-100">
+                <b-button
+                  class="float-end ms-1"
+                  @click="addAllMembers">
+                  Yes
+                </b-button>
+                <b-button
+                  class="float-end ms-1"
+                  @click="showAdd = false">
+                  No
+                </b-button>
+              </div>
+            </template>
           </b-modal>
 
         </b-button-group>
@@ -147,9 +153,11 @@
 
           <b-form-group>
             <b-input-group>
-              <b-input-group-text slot="prepend">
-                <i class="fa fa-filter"></i>
-              </b-input-group-text>
+              <template #prepend>
+                <b-input-group-text>
+                  <i class="fa fa-filter"></i>
+                </b-input-group-text>
+              </template>
               <b-form-input
                 v-model="memberFilter"
                 placeholder="Filter list of members"
@@ -171,33 +179,32 @@
             head-variant="light"
             responsive="sm"
             ref="membersTable"
-            sort-by="name"
-            @row-selected="onMembersRowSelected"
-            @row-clicked="handleOwnerSelected"
+            :sort-by="initialSortBy"
+            v-model:selected-items="selectedMembers"
           >
 
-           <template slot="cell(selected)" slot-scope="data">
+           <template #cell(selected)="data">
               <span v-if="isMemberSelected(data.item)">
                 <i class="far fa-check-circle"></i>
               </span>
            </template>
 
-            <template slot="cell(username)" slot-scope="data" >
+            <template #cell(username)="data" >
               {{data.value}}
               <span
                 v-if= "data.item.role == 'OWNER'"
-                class="badge badge-primary">
+                class="badge text-bg-primary">
                   Owner
               </span>
             </template>
 
-            <template slot="cell(action)" slot-scope="data" >
-              <b-button @click="toggleDetails(data)">
-                {{data.detailsShowing ? 'Hide' : 'Show'}} Details
+            <template #cell(action)="data" >
+              <b-button @click="data.toggleExpansion()">
+                {{data.expansionShowing ? 'Hide' : 'Show'}} Details
               </b-button>
             </template>
 
-            <template slot="row-details" slot-scope="data">
+            <template #row-expansion="data">
               <group-members-details-container
                 :userProfile="data.item"
                 :name="data.item.name"
@@ -235,11 +242,14 @@ export default {
     return {
       userProfiles: null,
       newMembers: [],
-      userFilter:null,
-      memberFilter:null,
+      userFilter: null,
+      memberFilter: null,
       selectedMembers: [],
       selectedUsers: [],
-      showingDetails: {},
+      selectMode: "multi",
+      // bootstrap-vue-next's b-table sort-by expects an array of
+      // { key, order }; previously this was the string "name".
+      initialSortBy: [{ key: "name", order: "asc" }],
       showRemove: false,
       showAdd: false,
     };
@@ -300,9 +310,8 @@ export default {
               email: userProfile.email,
               role: isOwner ? "OWNER" : isAdmin ? "ADMIN" : "MEMBER",
               editable: editable,
-              _showDetails: this.showingDetails[m] || false,
+              isOwner: isOwner,
               _rowVariant: this.newMembers.indexOf(m) >= 0 ? "success" : null,
-              _selectable: isOwner ? false : true,
             };
           })
       );
@@ -324,7 +333,6 @@ export default {
               name: userProfile.first_name + " " + userProfile.last_name,
               username: userProfile.user_id,
               email: userProfile.email,
-              _showDetails: this.showingDetails[userProfile.airavata_internal_user_id] || false,
             };
           })
       );
@@ -341,12 +349,29 @@ export default {
     });
   },
 
-  methods: {
-    toggleDetails(row) {
-      row.toggleDetails();
-      this.showingDetails[row.item.airavataInternalUserId] = !this
-        .showingDetails[row.item.airavataInternalUserId];
+  watch: {
+    // Selecting rows in one table clears the other table's selection (the two
+    // tables are mutually exclusive). With bootstrap-vue-next the selection is
+    // a controlled v-model:selected-items array rather than ref methods.
+    selectedUsers(items) {
+      if (items.length > 0 && this.selectedMembers.length > 0) {
+        this.selectedMembers = [];
+      }
     },
+    selectedMembers(items) {
+      // The owner row is not removable, so never keep it selected.
+      const withoutOwner = items.filter((m) => m.role !== "OWNER");
+      if (withoutOwner.length !== items.length) {
+        this.selectedMembers = withoutOwner;
+        return;
+      }
+      if (items.length > 0 && this.selectedUsers.length > 0) {
+        this.selectedUsers = [];
+      }
+    },
+  },
+
+  methods: {
     isUserSelected(user){
       if (this.selectedUsers.length>0){
         for (let i = 0; i<this.selectedUsers.length;i++){
@@ -373,8 +398,6 @@ export default {
         this.$emit("add-member", user.id);
         }
       );
-      this.$refs.usersTable.clearSelected();
-      this.$refs.membersTable.clearSelected();
       this.selectedUsers=[];
       this.selectedMembers=[];
     },
@@ -393,7 +416,6 @@ export default {
          if (member.role == "MEMBER"|| member.role =="ADMIN"){
           this.$emit("remove-member", member.id);
         }});
-      this.$refs.membersTable.clearSelected();
       this.selectedMembers = [];
       this.selectedUsers=[];
     },
@@ -405,21 +427,6 @@ export default {
           ).map((x)=>(x));
       this.removeSelectedMembers();
       this.memberFilter=null;
-      this.userFields=null;
-    },
-    onMembersRowSelected(items){
-      this.selectedMembers = items;
-      if (this.selectedUsers){
-        this.$refs.usersTable.clearSelected();
-        this.selectedUsers = [];
-      }
-    },
-    onUsersRowSelected(items){
-      this.selectedUsers = items;
-      if (this.selectedMembers){
-        this.$refs.membersTable.clearSelected();
-        this.selectedMembers = [];
-      }
     },
     onUserFilterChange(){
       this.selectedUsers = [];
@@ -446,11 +453,6 @@ export default {
       }else{return false;}
       }else{
         return true;
-      }
-    },
-    handleOwnerSelected(item, index){
-      if(!item._selectable){
-        this.$refs.membersTable.selectRow(index);
       }
     },
     sortCompare(aRow, bRow, key) {

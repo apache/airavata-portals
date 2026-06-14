@@ -1,26 +1,15 @@
+import { h } from "vue";
 import { components, entry } from "django-airavata-common-ui";
 import GroupCreateContainer from "./containers/GroupCreateContainer.vue";
 
-entry((Vue) => {
-  new Vue({
-    render(h) {
-      return h(components.MainLayout, [
-        h(GroupCreateContainer, {
-          props: {
-            next: this.next,
-          },
-        }),
-      ]);
-    },
-    data() {
-      return {
-        next: "/groups/",
-      };
-    },
-    beforeMount() {
-      if (this.$el.dataset.next) {
-        this.next = this.$el.dataset.next;
-      }
-    },
-  }).$mount("#group-create");
-});
+// Read data-* attributes before mounting: Vue 3 replaces the element's contents.
+const mountEl = document.getElementById("group-create");
+const next = mountEl?.dataset.next || "/groups/";
+
+const App = {
+  render() {
+    return h(components.MainLayout, () => [h(GroupCreateContainer, { next })]);
+  },
+};
+
+entry(App).mount("#group-create");

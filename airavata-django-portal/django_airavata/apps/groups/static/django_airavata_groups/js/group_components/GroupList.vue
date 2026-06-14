@@ -1,10 +1,6 @@
 <template>
   <div>
-    <b-alert
-      dismissible
-      :variant="alertVariant"
-      :show="showDismissibleAlert"
-      @dismissed="showDismissibleAlert = false"
+    <b-alert dismissible :variant="alertVariant" v-model="showDismissibleAlert"
       >{{ alertMsg }}</b-alert
     >
     <table class="table table-hover">

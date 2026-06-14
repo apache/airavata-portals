@@ -7,8 +7,8 @@
       <span v-if="role"><b>Role: </b></span>
       <b-form-select
           v-if="isOwner && role !== 'OWNER'"
-          :value="role"
-          @input="changeRole($event)"
+          :model-value="role"
+          @update:model-value="changeRole($event)"
           :options="groupRoleOptions"
         >
       </b-form-select>
