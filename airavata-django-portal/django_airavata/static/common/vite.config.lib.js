@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue2";
+import vue from "@vitejs/plugin-vue";
 
 // CommonUI UMD library for external custom apps. django-airavata-api is provided
 // as the global AiravataAPI (matching the old webpack LIBRARY_MODE externals).

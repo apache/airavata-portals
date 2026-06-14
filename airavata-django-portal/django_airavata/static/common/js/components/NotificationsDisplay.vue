@@ -42,11 +42,11 @@
         {{ notification.message }}
       </b-alert>
     </transition-group>
-    <b-alert variant="danger" :show="apiServerBackUp === false">
+    <b-alert variant="danger" :model-value="apiServerBackUp === false">
       <p>API Server is down.</p>
       <i class="fa fa-sync-alt fa-spin"></i> Checking status ...
     </b-alert>
-    <b-alert variant="success" :show="apiServerBackUp" dismissible>
+    <b-alert variant="success" :model-value="apiServerBackUp" dismissible>
       API Server is back up. Please try again.
     </b-alert>
   </div>

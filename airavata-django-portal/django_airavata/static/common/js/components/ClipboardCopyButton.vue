@@ -43,7 +43,7 @@ export default {
         await navigator.clipboard.writeText(this.text);
         this.show = true;
         setTimeout(() => (this.show = false), 2000);
-      } catch (e) {
+      } catch {
         // Clipboard write can fail (permissions / insecure context); ignore.
       }
     },

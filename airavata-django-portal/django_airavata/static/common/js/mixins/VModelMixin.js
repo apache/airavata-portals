@@ -4,21 +4,21 @@ export default {
   watch: {
     data: {
       handler: function (newValue, oldValue) {
-        // Only emit 'input' for objects when one of their deep properties has
-        // changed to prevent infinite loop since 'data' is recloned whenever
-        // 'value' changes
-        if (typeof this.value === "object" && newValue === oldValue) {
-          this.$emit("input", newValue);
+        // Only emit for objects when one of their deep properties has changed to
+        // prevent an infinite loop, since 'data' is recloned whenever the model
+        // value changes.
+        if (typeof this.modelValue === "object" && newValue === oldValue) {
+          this.$emit("update:modelValue", newValue);
         } else if (
-          (this.value === null || typeof this.value !== "object") &&
+          (this.modelValue === null || typeof this.modelValue !== "object") &&
           newValue !== oldValue
         ) {
-          this.$emit("input", newValue);
+          this.$emit("update:modelValue", newValue);
         }
       },
       deep: true,
     },
-    value: {
+    modelValue: {
       handler: function (newValue) {
         this.data = this.copyValue(newValue);
       },
@@ -45,11 +45,11 @@ export default {
   },
   data: function () {
     return {
-      data: this.copyValue(this.value),
+      data: this.copyValue(this.modelValue),
     };
   },
   props: {
-    value: {
+    modelValue: {
       required: true,
     },
   },

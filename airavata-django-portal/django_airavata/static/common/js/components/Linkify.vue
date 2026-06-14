@@ -1,26 +1,28 @@
 <script>
 /* eslint-disable vue/multi-word-component-names */
+import { h, Text } from "vue";
 import * as linkify from "linkifyjs";
 
 export default {
   name: "linkify",
 
-  render: function (createElement) {
-    // Find top level text nodes and run linkify on the text, converting them
-    // into an array of links and text nodes
-    const children = this.$slots.default
+  render() {
+    // Find top-level plain-text vnodes and run linkify on their text, converting
+    // them into an array of links and text nodes. In Vue 3 the default slot is a
+    // function and text vnodes carry their content as `children` (a string).
+    const slot = this.$slots.default ? this.$slots.default() : [];
+    const children = slot
       .map((node) => {
-        if (node.text) {
-          const tokens = linkify.tokenize(node.text);
+        if (node.type === Text && typeof node.children === "string") {
+          const tokens = linkify.tokenize(node.children);
           return tokens.map((t) => {
             if (t.isLink) {
-              return createElement(
+              return h(
                 "a",
                 {
-                  attrs: { href: t.toHref("https"), target: "_blank" },
-                  on: {
-                    click: this.clickHandler,
-                  },
+                  href: t.toHref("https"),
+                  target: "_blank",
+                  onClick: this.clickHandler,
                 },
                 t.toString()
               );
@@ -34,7 +36,7 @@ export default {
       })
       // Flatten array since text nodes are mapped to arrays
       .flat();
-    return createElement("span", null, children);
+    return h("span", null, children);
   },
   methods: {
     clickHandler(e) {

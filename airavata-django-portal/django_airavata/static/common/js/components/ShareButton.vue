@@ -38,10 +38,12 @@
           :readonly="true"
           class="mt-4"
         >
-          <span slot="permissions-header"
+          <template v-slot:permissions-header>
+<span 
             >Inherited {{ parentEntityLabel }} Permissions
             <!-- <small class="text-muted" v-if="parentEntityOwner">Owned by {{parentEntityOwner.first_name}} {{parentEntityOwner.last_name}} ({{parentEntityOwner.email}})</small> -->
           </span>
+</template>
         </shared-entity-editor>
       </template>
     </b-modal>
@@ -367,12 +369,12 @@ button {
 .share-button {
   display: inline-block;
 }
-.share-button >>> .modal-share-settings .modal-body {
+.share-button :deep(.modal-share-settings .modal-body) {
   max-height: 50vh;
   min-height: 300px;
   overflow: auto;
 }
-.share-button >>> .modal-dialog {
+.share-button :deep(.modal-dialog) {
   max-width: 800px;
   width: 60vw;
 }

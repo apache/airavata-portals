@@ -2,7 +2,7 @@
   <div class="custom-Uppy">
     <div ref="dragDrop" />
     <div ref="statusBar" />
-    <b-alert class="mt-1" :show="restrictionFailed" variant="danger">{{
+    <b-alert class="mt-1" :model-value="restrictionFailed" variant="danger">{{
       restrictionFailedMessage
     }}</b-alert>
   </div>
@@ -18,9 +18,9 @@ import StatusBar from "@uppy/status-bar";
 import Tus from "@uppy/tus";
 import XHRUpload from "@uppy/xhr-upload";
 
-import "@uppy/core/dist/style.min.css";
-import "@uppy/status-bar/dist/style.min.css";
-import "@uppy/drag-drop/dist/style.min.css";
+import "@uppy/core/css/style.min.css";
+import "@uppy/status-bar/css/style.min.css";
+import "@uppy/drag-drop/css/style.min.css";
 
 export default {
   name: "uppy",
@@ -46,9 +46,9 @@ export default {
       this.initUppy();
     });
   },
-  destroyed() {
+  unmounted() {
     if (this.uppy) {
-      this.uppy.close();
+      this.uppy.destroy();
     }
   },
   data() {
@@ -82,7 +82,7 @@ export default {
   },
   methods: {
     initUppy() {
-      this.uppy = Uppy({
+      this.uppy = new Uppy({
         autoProceed: true,
         debug: true,
         restrictions: {
@@ -125,15 +125,16 @@ export default {
           this.fileFinishedUploading();
         });
       }
-      this.uppy.on("upload", (data) => {
+      // Uppy's `upload` event signature changed to (uploadID, files).
+      this.uppy.on("upload", (uploadID, files) => {
         this.$emit("upload-started");
-        this.uploadFilesCount = data.fileIDs.length;
+        this.uploadFilesCount = files.length;
       });
       this.uppy.on("complete", () => {
         this.restrictionFailedMessage = null;
       });
       this.uppy.on("restriction-failed", (file, error) => {
-        this.restrictionFailedMessage = `${file.name}: ${error.message}`;
+        this.restrictionFailedMessage = `${file?.name}: ${error.message}`;
       });
       this.uppy.on("upload-error", () => {
         this.fileFinishedUploading();
@@ -146,7 +147,7 @@ export default {
       }
     },
     reset() {
-      this.uppy.reset();
+      this.uppy.clear();
     },
   },
   watch: {
@@ -163,16 +164,16 @@ export default {
 </script>
 
 <style scoped>
-.custom-Uppy >>> .uppy-DragDrop-inner {
+.custom-Uppy :deep(.uppy-DragDrop-inner) {
   padding: 5px 0px;
 }
-.custom-Uppy >>> .UppyIcon {
+.custom-Uppy :deep(.UppyIcon) {
   display: none;
 }
-.custom-Uppy >>> .uppy-DragDrop-label {
+.custom-Uppy :deep(.uppy-DragDrop-label) {
   margin-bottom: 0px;
 }
-.custom-Uppy >>> .uppy-StatusBar {
+.custom-Uppy :deep(.uppy-StatusBar) {
   background-color: inherit;
 }
 </style>

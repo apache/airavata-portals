@@ -1,11 +1,9 @@
-import Vue from "vue";
 import { errors } from "django-airavata-api";
 
 class GlobalErrorHandler {
   init() {
-    console.log("Initializing GlobalErrorHandler..."); // eslint-disable-line no-console
+    console.log("Initializing GlobalErrorHandler...");  
     window.onerror = this.handleGlobalError;
-    Vue.config.errorHandler = this.vueGlobalErrorHandler;
   }
 
   handleGlobalError(msg, url, lineNo, columnNo, error) {
@@ -22,8 +20,10 @@ class GlobalErrorHandler {
     return false;
   }
 
-  vueGlobalErrorHandler(err, vm, info) {
-    console.log("Vue Global Error Handler", err, vm, info); // eslint-disable-line no-console
+  // Vue 3 app-level error handler. There is no global Vue config in Vue 3, so this
+  // is wired up per app via `app.config.errorHandler` in the common entry() helper.
+  vueGlobalErrorHandler(err, instance, info) {
+    console.log("Vue Global Error Handler", err, instance, info);  
     errors.UnhandledErrorDispatcher.reportError({
       message: err.message,
       error: err,

@@ -1,17 +1,19 @@
 <template>
   <div class="autocomplete-text-input">
     <b-input-group>
-      <b-input-group-text slot="prepend">
+      <template v-slot:prepend>
+<b-input-group-text >
         <i class="fa fa-search"></i>
       </b-input-group-text>
+</template>
       <b-form-input
         type="text"
-        :value="searchValue"
+        :model-value="searchValue"
         :placeholder="placeholder"
-        @input="updateSearchValue"
-        @keydown.native.enter="enter"
-        @keydown.native.down="down"
-        @keydown.native.up="up"
+        @update:model-value="updateSearchValue"
+        @keydown.enter="enter"
+        @keydown.down="down"
+        @keydown.up="up"
       ></b-form-input>
     </b-input-group>
     <b-list-group class="autocomplete-suggestion-list" v-if="open">

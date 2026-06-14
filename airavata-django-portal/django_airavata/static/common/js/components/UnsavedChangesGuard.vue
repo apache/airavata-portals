@@ -14,7 +14,7 @@ export default {
   mounted() {
     window.addEventListener("beforeunload", this.onBeforeUnload);
   },
-  destroyed() {
+  unmounted() {
     window.removeEventListener("beforeunload", this.onBeforeUnload);
   },
   methods: {

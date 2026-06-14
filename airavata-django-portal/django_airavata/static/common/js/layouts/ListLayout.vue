@@ -9,14 +9,14 @@
       <div class="col-auto">
         <slot name="additional-buttons"> </slot>
         <slot name="new-item-button">
-          <b-btn
+          <b-button
             variant="primary"
             @click="addNewItem"
             :disabled="newButtonDisabled"
           >
             {{ newItemButtonText }}
             <i class="fa fa-plus" aria-hidden="true"></i>
-          </b-btn>
+          </b-button>
         </slot>
       </div>
     </div>

@@ -26,9 +26,9 @@
         <div class="notifications-list">
           <div class="text-center text-primary">Notifications</div>
 
-          <template v-for="notice in unreadNotices">
-            <div class="dropdown-divider" :key="notice.notificationId"></div>
-            <div class="dropdown-item" :key="notice.notificationId">
+          <template v-for="notice in unreadNotices" :key="notice.notificationId">
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item">
               <div>
                 <span
                   class="notification-title text-wrap"
@@ -38,8 +38,7 @@
                 <a
                   v-if="!notice.is_read"
                   class="fas fa-dot-circle"
-                  data-toggle="tooltip"
-                  data-placement="left"
+                  v-b-tooltip.left
                   title="Mark as read"
                   :id="notice.notificationId"
                   @click="ackNotification(notice)"

@@ -1,23 +1,10 @@
-import Vue from "vue";
 import GatewayNoticesContainer from "./components/GatewayNoticesContainer";
+import entry from "./entry";
 
-new Vue({
-  render(h) {
-    return h(GatewayNoticesContainer, {
-      props: {
-        unreadCount: this.unreadCount,
-        notices: this.notices,
-      },
-    });
-  },
-  data() {
-    return {
-      unreadCount: null,
-      notices: null,
-    };
-  },
-  beforeMount() {
-    this.unreadCount = parseInt(this.$el.dataset.unreadCount);
-    this.notices = JSON.parse(this.$el.dataset.notices);
-  },
-}).$mount("#gateway-notices");
+// Read the server-rendered data attributes off the mount element before Vue 3
+// replaces its contents, then start the app with them as root props.
+const el = document.querySelector("#gateway-notices");
+const unreadCount = el ? parseInt(el.dataset.unreadCount) : null;
+const notices = el ? JSON.parse(el.dataset.notices) : null;
+
+entry(GatewayNoticesContainer, { unreadCount, notices }).mount("#gateway-notices");
