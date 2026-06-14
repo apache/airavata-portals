@@ -1,13 +1,12 @@
 <template>
-  <b-form-group
-    :label="label"
-    :label-for="labelFor"
-    :state="state"
-    :description="description"
-  >
+  <div class="space-y-1.5">
+    <Label :for="labelFor">{{ label }}</Label>
     <slot></slot>
-    <template #invalid-feedback>
-      <ul v-if="feedbackMessages && feedbackMessages.length > 1">
+    <div v-if="state === false" class="text-sm text-destructive">
+      <ul
+        v-if="feedbackMessages && feedbackMessages.length > 1"
+        class="list-disc pl-5"
+      >
         <li v-for="feedback in feedbackMessages" :key="feedback">
           {{ feedback }}
         </li>
@@ -15,11 +14,11 @@
       <div v-else-if="feedbackMessages && feedbackMessages.length === 1">
         {{ feedbackMessages[0] }}
       </div>
-    </template>
-    <template #description
-      ><linkify>{{ description }}</linkify></template
-    >
-  </b-form-group>
+    </div>
+    <p v-if="description" class="text-sm text-muted-foreground">
+      <linkify>{{ description }}</linkify>
+    </p>
+  </div>
 </template>
 
 <script>

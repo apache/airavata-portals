@@ -1,26 +1,24 @@
 <template>
   <div>
-    <div class="row">
-      <div class="col">
-        <h1 class="h4 mb-4">Browse Projects</h1>
+    <div class="flex items-center">
+      <div class="mr-auto">
+        <h1 class="mb-4 text-xl font-semibold">Browse Projects</h1>
       </div>
-      <div id="col-new-project" class="col">
+      <div id="col-new-project">
         <project-button-new @new-project="onNewProject" />
       </div>
     </div>
-    <div class="row">
-      <div class="col">
-        <div class="card">
-          <div class="card-body">
-            <project-list v-bind:projects="projects"></project-list>
-            <pager
-              v-bind:paginator="projectsPaginator"
-              v-on:next="nextProjects"
-              v-on:previous="previousProjects"
-            ></pager>
-          </div>
-        </div>
-      </div>
+    <div>
+      <Card>
+        <CardContent>
+          <project-list v-bind:projects="projects"></project-list>
+          <pager
+            v-bind:paginator="projectsPaginator"
+            v-on:next="nextProjects"
+            v-on:previous="previousProjects"
+          ></pager>
+        </CardContent>
+      </Card>
     </div>
   </div>
 </template>

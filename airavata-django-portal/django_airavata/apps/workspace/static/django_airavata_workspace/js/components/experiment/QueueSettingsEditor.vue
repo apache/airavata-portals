@@ -1,225 +1,249 @@
 <template>
   <div v-if="showQueueSettings">
-    <div class="row">
-      <div class="col">
-        <div
-          class="card border-default"
-          :class="{ 'border-danger': !valid, 'is-disabled': disabled }"
+    <div>
+      <Card :class="{ 'border-destructive': !valid, 'opacity-50': disabled }">
+        <a
+          href="#"
+          class="block text-foreground"
+          :class="{ 'pointer-events-none': disabled }"
+          @click.prevent="disabled || (showConfiguration = !showConfiguration)"
         >
-          <b-link
-            @click="showConfiguration = !showConfiguration"
-            class="card-link text-dark"
-            :disabled="disabled"
-          >
-            <div class="card-body">
-              <h5 class="card-title mb-4">
-                Settings for queue {{ data.queue_name }}
-              </h5>
-              <div class="row">
-                <div class="col">
-                  <h3 class="h5 mb-0">
-                    {{ data.node_count }}
-                  </h3>
-                  <span class="text-muted text-uppercase">NODE COUNT</span>
-                </div>
-                <div class="col">
-                  <h3 class="h5 mb-0">
-                    {{ data.total_cpu_count }}
-                  </h3>
-                  <span class="text-muted text-uppercase">CORE COUNT</span>
-                </div>
-                <div class="col">
-                  <h3 class="h5 mb-0">{{ data.wall_time_limit }} minutes</h3>
-                  <span class="text-muted text-uppercase">TIME LIMIT</span>
-                </div>
-                <div class="col" v-if="maxPhysicalMemory > 0">
-                  <h3 class="h5 mb-0">{{ data.total_physical_memory }} MB</h3>
-                  <span class="text-muted text-uppercase">PHYSICAL MEMORY</span>
-                </div>
+          <CardContent>
+            <h5 class="mb-4 text-lg font-semibold">
+              Settings for queue {{ data.queue_name }}
+            </h5>
+            <div class="flex flex-wrap gap-4">
+              <div class="flex-1">
+                <h3 class="mb-0 text-lg font-semibold">
+                  {{ data.node_count }}
+                </h3>
+                <span class="text-muted-foreground uppercase">NODE COUNT</span>
+              </div>
+              <div class="flex-1">
+                <h3 class="mb-0 text-lg font-semibold">
+                  {{ data.total_cpu_count }}
+                </h3>
+                <span class="text-muted-foreground uppercase">CORE COUNT</span>
+              </div>
+              <div class="flex-1">
+                <h3 class="mb-0 text-lg font-semibold">
+                  {{ data.wall_time_limit }} minutes
+                </h3>
+                <span class="text-muted-foreground uppercase">TIME LIMIT</span>
+              </div>
+              <div class="flex-1" v-if="maxPhysicalMemory > 0">
+                <h3 class="mb-0 text-lg font-semibold">
+                  {{ data.total_physical_memory }} MB
+                </h3>
+                <span class="text-muted-foreground uppercase"
+                  >PHYSICAL MEMORY</span
+                >
               </div>
             </div>
-          </b-link>
-        </div>
-      </div>
+          </CardContent>
+        </a>
+      </Card>
     </div>
-    <div v-if="showConfiguration">
-      <div class="row">
-        <div class="col">
-          <b-form-group
-            label="Select a Queue"
-            label-for="queue"
-            :invalid-feedback="getValidationFeedback('queueName')"
-            :state="getValidationState('queueName')"
+    <div v-if="showConfiguration" class="mt-4">
+      <div>
+        <div class="space-y-1.5">
+          <Label for="queue">Select a Queue</Label>
+          <select
+            id="queue"
+            v-model="data.queue_name"
+            required
+            :aria-invalid="getValidationState('queueName') === false"
+            class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
+            @change="queueChanged"
           >
-            <b-form-select
-              id="queue"
-              v-model="data.queue_name"
-              :options="queueOptions"
-              required
-              @change="queueChanged"
-              :state="getValidationState('queueName')"
+            <option
+              v-for="option in queueOptions"
+              :key="option.value"
+              :value="option.value"
             >
-            </b-form-select>
-            <template #description>
-              {{ queueDescription }}
-            </template>
-          </b-form-group>
-          <div class="d-flex flex-row">
-            <div class="flex-fill">
-              <b-form-group
-                label="Node Count"
-                label-for="node-count"
-                :invalid-feedback="getValidationFeedback('nodeCount')"
-                :state="getValidationState('nodeCount', true)"
-              >
-                <b-form-input
-                  id="node-count"
-                  type="number"
-                  min="1"
-                  :max="maxNodes"
-                  v-model="data.node_count"
-                  required
-                  @update:model-value="nodeCountChanged"
-                  :state="getValidationState('nodeCount', true)"
-                >
-                </b-form-input>
-                <template #description>
-                  <i class="fa fa-info-circle" aria-hidden="true"></i>
-                  Max Allowed Nodes = {{ maxNodes }}
-                </template>
-              </b-form-group>
-              <b-form-group
-                label="Total Core Count"
-                label-for="core-count"
-                :invalid-feedback="getValidationFeedback('totalCPUCount')"
-                :state="getValidationState('totalCPUCount', true)"
-              >
-                <b-form-input
-                  id="core-count"
-                  type="number"
-                  min="1"
-                  :max="maxCPUCount"
-                  v-model="data.total_cpu_count"
-                  required
-                  @update:model-value="cpuCountChanged"
-                  :state="getValidationState('totalCPUCount', true)"
-                >
-                </b-form-input>
-                <template #description>
-                  <i class="fa fa-info-circle" aria-hidden="true"></i>
-                  Max Allowed Cores = {{ maxCPUCount
-                  }}<template
-                    v-if="
-                      selectedQueueDefault &&
-                      selectedQueueDefault.cpu_per_node > 0
-                    "
-                    >. There are {{ selectedQueueDefault.cpu_per_node }} cores
-                    per node.
-                  </template>
-                </template>
-              </b-form-group>
-            </div>
-            <div
-              class="d-flex flex-column"
-              v-if="
-                selectedQueueDefault && selectedQueueDefault.cpu_per_node > 0
-              "
-            >
-              <div
-                class="flex-fill"
-                style="
-                  border: 1px solid #6c757d;
-                  border-top-right-radius: 10px;
-                  margin-top: 51px;
-                  border-left-width: 0px;
-                  border-bottom-width: 0px;
-                  margin-right: 15px;
-                "
-              ></div>
-              <b-button
-                size="sm"
-                pill
-                variant="outline-secondary"
-                v-on:click="
-                  enableNodeCountToCpuCheck = !enableNodeCountToCpuCheck
-                "
-              >
-                <i
-                  v-if="enableNodeCountToCpuCheck"
-                  class="fa fa-lock"
-                  aria-hidden="true"
-                ></i>
-                <i v-else class="fa fa-unlock" aria-hidden="true"></i>
-              </b-button>
-              <div
-                class="flex-fill"
-                style="
-                  border: 1px solid #6c757d;
-                  border-bottom-right-radius: 10px;
-                  margin-bottom: 57px;
-                  border-left-width: 0px;
-                  border-top-width: 0px;
-                  margin-right: 15px;
-                "
-              ></div>
-            </div>
-          </div>
-          <b-form-group
-            label="Wall Time Limit"
-            label-for="walltime-limit"
-            :invalid-feedback="getValidationFeedback('wallTimeLimit')"
-            :state="getValidationState('wallTimeLimit', true)"
+              {{ option.text }}
+            </option>
+          </select>
+          <p
+            v-if="getValidationState('queueName') === false"
+            class="text-sm text-destructive"
           >
-            <b-input-group append="minutes">
-              <b-form-input
-                id="walltime-limit"
+            {{ getValidationFeedback("queueName") }}
+          </p>
+          <p class="text-sm text-muted-foreground">
+            {{ queueDescription }}
+          </p>
+        </div>
+        <div class="mt-4 flex flex-row">
+          <div class="flex-1">
+            <div class="space-y-1.5">
+              <Label for="node-count">Node Count</Label>
+              <Input
+                id="node-count"
                 type="number"
                 min="1"
-                :max="maxWalltime"
-                v-model="data.wall_time_limit"
+                :max="maxNodes"
+                v-model="data.node_count"
                 required
-                :state="getValidationState('wallTimeLimit', true)"
+                :aria-invalid="getValidationState('nodeCount', true) === false"
+                @update:model-value="nodeCountChanged"
+              />
+              <p
+                v-if="getValidationState('nodeCount', true) === false"
+                class="text-sm text-destructive"
               >
-              </b-form-input>
-            </b-input-group>
-            <template #description>
-              <i class="fa fa-info-circle" aria-hidden="true"></i>
-              Max Allowed Wall Time = {{ maxWalltime }} minutes
-            </template>
-          </b-form-group>
-          <b-form-group
-            v-if="maxPhysicalMemory > 0"
-            label="Total Physical Memory"
-            label-for="total-physical-memory"
-            :invalid-feedback="getValidationFeedback('totalPhysicalMemory')"
-            :state="getValidationState('totalPhysicalMemory', true)"
-          >
-            <b-input-group append="MB">
-              <b-form-input
-                id="total-physical-memory"
+                {{ getValidationFeedback("nodeCount") }}
+              </p>
+              <p class="text-sm text-muted-foreground">
+                <Info class="inline size-4" aria-hidden="true" />
+                Max Allowed Nodes = {{ maxNodes }}
+              </p>
+            </div>
+            <div class="mt-4 space-y-1.5">
+              <Label for="core-count">Total Core Count</Label>
+              <Input
+                id="core-count"
                 type="number"
-                min="0"
-                :max="maxPhysicalMemory"
-                v-model="data.total_physical_memory"
-                :state="getValidationState('totalPhysicalMemory', true)"
+                min="1"
+                :max="maxCPUCount"
+                v-model="data.total_cpu_count"
+                required
+                :aria-invalid="
+                  getValidationState('totalCPUCount', true) === false
+                "
+                @update:model-value="cpuCountChanged"
+              />
+              <p
+                v-if="getValidationState('totalCPUCount', true) === false"
+                class="text-sm text-destructive"
               >
-              </b-form-input>
-            </b-input-group>
-            <template #description>
-              <i class="fa fa-info-circle" aria-hidden="true"></i>
-              Max Physical Memory = {{ maxPhysicalMemory }} MB
-            </template>
-          </b-form-group>
-          <div>
-            <a
-              class="text-secondary action-link"
-              href="#"
-              @click.prevent="showConfiguration = false"
+                {{ getValidationFeedback("totalCPUCount") }}
+              </p>
+              <p class="text-sm text-muted-foreground">
+                <Info class="inline size-4" aria-hidden="true" />
+                Max Allowed Cores = {{ maxCPUCount
+                }}<template
+                  v-if="
+                    selectedQueueDefault &&
+                    selectedQueueDefault.cpu_per_node > 0
+                  "
+                  >. There are {{ selectedQueueDefault.cpu_per_node }} cores per
+                  node.
+                </template>
+              </p>
+            </div>
+          </div>
+          <div
+            class="flex flex-col"
+            v-if="selectedQueueDefault && selectedQueueDefault.cpu_per_node > 0"
+          >
+            <div
+              class="flex-1"
+              style="
+                border: 1px solid #6c757d;
+                border-top-right-radius: 10px;
+                margin-top: 51px;
+                border-left-width: 0px;
+                border-bottom-width: 0px;
+                margin-right: 15px;
+              "
+            ></div>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              class="rounded-full"
+              v-on:click="
+                enableNodeCountToCpuCheck = !enableNodeCountToCpuCheck
+              "
             >
-              <i class="fa fa-times text-secondary" aria-hidden="true"></i>
-              Hide Settings</a
+              <Lock
+                v-if="enableNodeCountToCpuCheck"
+                class="size-4"
+                aria-hidden="true"
+              />
+              <LockOpen v-else class="size-4" aria-hidden="true" />
+            </Button>
+            <div
+              class="flex-1"
+              style="
+                border: 1px solid #6c757d;
+                border-bottom-right-radius: 10px;
+                margin-bottom: 57px;
+                border-left-width: 0px;
+                border-top-width: 0px;
+                margin-right: 15px;
+              "
+            ></div>
+          </div>
+        </div>
+        <div class="mt-4 space-y-1.5">
+          <Label for="walltime-limit">Wall Time Limit</Label>
+          <div class="flex">
+            <Input
+              id="walltime-limit"
+              class="rounded-r-none"
+              type="number"
+              min="1"
+              :max="maxWalltime"
+              v-model="data.wall_time_limit"
+              required
+              :aria-invalid="getValidationState('wallTimeLimit', true) === false"
+            />
+            <span
+              class="flex items-center rounded-r-md border border-l-0 border-input px-3 text-sm text-muted-foreground"
+              >minutes</span
             >
           </div>
+          <p
+            v-if="getValidationState('wallTimeLimit', true) === false"
+            class="text-sm text-destructive"
+          >
+            {{ getValidationFeedback("wallTimeLimit") }}
+          </p>
+          <p class="text-sm text-muted-foreground">
+            <Info class="inline size-4" aria-hidden="true" />
+            Max Allowed Wall Time = {{ maxWalltime }} minutes
+          </p>
+        </div>
+        <div class="mt-4 space-y-1.5" v-if="maxPhysicalMemory > 0">
+          <Label for="total-physical-memory">Total Physical Memory</Label>
+          <div class="flex">
+            <Input
+              id="total-physical-memory"
+              class="rounded-r-none"
+              type="number"
+              min="0"
+              :max="maxPhysicalMemory"
+              v-model="data.total_physical_memory"
+              :aria-invalid="
+                getValidationState('totalPhysicalMemory', true) === false
+              "
+            />
+            <span
+              class="flex items-center rounded-r-md border border-l-0 border-input px-3 text-sm text-muted-foreground"
+              >MB</span
+            >
+          </div>
+          <p
+            v-if="getValidationState('totalPhysicalMemory', true) === false"
+            class="text-sm text-destructive"
+          >
+            {{ getValidationFeedback("totalPhysicalMemory") }}
+          </p>
+          <p class="text-sm text-muted-foreground">
+            <Info class="inline size-4" aria-hidden="true" />
+            Max Physical Memory = {{ maxPhysicalMemory }} MB
+          </p>
+        </div>
+        <div class="mt-4">
+          <a
+            class="inline-flex items-center gap-1 text-muted-foreground"
+            href="#"
+            @click.prevent="showConfiguration = false"
+          >
+            <X class="size-4" aria-hidden="true" />
+            Hide Settings</a
+          >
         </div>
       </div>
     </div>
@@ -227,11 +251,13 @@
 </template>
 
 <script>
+import { Info, Lock, LockOpen, X } from "@lucide/vue";
 import { models, services } from "django-airavata-api";
 import { mixins, utils } from "django-airavata-common-ui";
 
 export default {
   name: "queue-settings-editor",
+  components: { Info, Lock, LockOpen, X },
   mixins: [mixins.VModelMixin],
   props: {
     value: {

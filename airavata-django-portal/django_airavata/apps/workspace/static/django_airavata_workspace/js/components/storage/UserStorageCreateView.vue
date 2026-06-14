@@ -1,17 +1,17 @@
 <template>
   <div>
-    <div class="row">
-      <div class="col">
-        <h1 class="h4">Storage</h1>
+    <div class="flex flex-wrap">
+      <div class="flex-1">
+        <h1 class="text-xl font-semibold">Storage</h1>
         <p>
-          <small class="text-muted"
-            ><i class="fa fa-folder-open"></i> {{ username }}</small
+          <small class="inline-flex items-center gap-1 text-muted-foreground">
+            <FolderOpen class="size-4" /> {{ username }}</small
           >
         </p>
       </div>
     </div>
-    <div class="row" v-if="userHasWriteAccess">
-      <div class="col">
+    <div class="flex flex-wrap gap-4" v-if="userHasWriteAccess">
+      <div class="flex-1">
         <uppy
           class="mb-1"
           ref="file-upload"
@@ -21,29 +21,36 @@
           multiple
         />
       </div>
-      <div class="col">
-        <b-input-group>
-          <b-form-input
+      <div class="flex-1">
+        <div class="flex">
+          <Input
+            class="rounded-r-none"
             v-model="dirName"
             placeholder="New directory name"
             @keydown.enter="addDirectory"
-          ></b-form-input>
-          <b-button @click="addDirectory" :disabled="!dirName"
+          />
+          <Button
+            variant="outline"
+            class="rounded-l-none"
+            @click="addDirectory"
+            :disabled="!dirName"
             >Add directory
-          </b-button>
-        </b-input-group>
+          </Button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { FolderOpen } from "@lucide/vue";
 import { components } from "django-airavata-common-ui";
 import { session } from "django-airavata-api";
 
 export default {
   name: "user-storage-create-view",
   components: {
+    FolderOpen,
     uppy: components.Uppy,
   },
   computed: {

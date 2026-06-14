@@ -1,22 +1,28 @@
 <template>
-  <div class="w-100">
+  <div class="w-full">
     <ul style="list-style: none; margin: 0px; padding: 0px">
-      <li v-for="(notice, noticeIndex) in notices" :key="noticeIndex">
-        <b-alert show>
-          <div class="d-flex flex-row">
-            <strong class="flex-fill" style="white-space: pre">{{
-              notice.title
-            }}</strong>
-            <human-date
-              v-if="notice.published_time"
-              :date="notice.published_time"
-              style="font-size: 10px"
-            />
-          </div>
-          <div style="white-space: pre; font-size: 12px">
-            <linkify>{{ notice.notification_message }}</linkify>
-          </div>
-        </b-alert>
+      <li
+        v-for="(notice, noticeIndex) in notices"
+        :key="noticeIndex"
+        class="mb-2"
+      >
+        <Alert>
+          <AlertDescription>
+            <div class="flex w-full flex-row">
+              <strong class="flex-1" style="white-space: pre">{{
+                notice.title
+              }}</strong>
+              <human-date
+                v-if="notice.published_time"
+                :date="notice.published_time"
+                style="font-size: 10px"
+              />
+            </div>
+            <div style="white-space: pre; font-size: 12px">
+              <linkify>{{ notice.notification_message }}</linkify>
+            </div>
+          </AlertDescription>
+        </Alert>
       </li>
     </ul>
   </div>

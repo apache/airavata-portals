@@ -7,16 +7,17 @@
     <sidebar-feed :feed-items="feedItems">
       <template #description="slotProps">
         <experiment-status-badge :status-name="slotProps.feedItem.statusName" />
-        <i
+        <RefreshCw
           v-if="slotProps.feedItem.isProgressing"
-          class="fa fa-sync-alt fa-spin ms-1"
-        ></i>
+          class="ml-1 inline size-4 animate-spin"
+        />
       </template>
     </sidebar-feed>
   </sidebar>
 </template>
 
 <script>
+import { RefreshCw } from "@lucide/vue";
 import urls from "../utils/urls";
 import { errors, models, services, utils } from "django-airavata-api";
 import { components } from "django-airavata-common-ui";
@@ -27,6 +28,7 @@ export default {
     username: String,
   },
   components: {
+    RefreshCw,
     sidebar: components.Sidebar,
     "sidebar-header": components.SidebarHeader,
     "sidebar-feed": components.SidebarFeed,

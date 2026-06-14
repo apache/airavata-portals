@@ -1,29 +1,30 @@
 <template>
   <div class="file-input-editor">
-    <div class="d-flex" v-if="isDataProductURI && dataProduct">
+    <div class="flex items-center" v-if="isDataProductURI && dataProduct">
       <user-storage-link
-        class="me-auto"
+        class="mr-auto"
         :data-product-uri="dataProduct.product_uri"
         :mime-type="dataProduct.mimeType"
         :file-name="dataProduct.product_name"
       />
       <delete-link
         v-if="!readOnly && dataProduct.isInputFileUpload"
-        class="ms-2"
+        class="ml-2"
         @delete="deleteDataProduct"
       >
         Are you sure you want to delete input file
         <strong>{{ dataProduct.product_name }}</strong
         >?
       </delete-link>
-      <b-link
+      <a
         v-else-if="!readOnly"
-        @click="unselect"
-        class="ms-2 text-secondary"
+        href="#"
+        @click.prevent="unselect"
+        class="ml-2 inline-flex items-center gap-1 text-muted-foreground"
       >
         Unselect
-        <i class="fa fa-times" aria-hidden="true"></i>
-      </b-link>
+        <X class="size-4" aria-hidden="true" />
+      </a>
     </div>
     <input-file-selector
       v-if="!readOnly && (!isDataProductURI || uploading)"
@@ -36,6 +37,7 @@
 </template>
 
 <script>
+import { X } from "@lucide/vue";
 import { models, services, utils } from "django-airavata-api";
 import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
 import { components } from "django-airavata-common-ui";
@@ -46,6 +48,7 @@ export default {
   name: "file-input-editor",
   mixins: [InputEditorMixin],
   components: {
+    X,
     UserStorageLink,
     "delete-link": components.DeleteLink,
     InputFileSelector,

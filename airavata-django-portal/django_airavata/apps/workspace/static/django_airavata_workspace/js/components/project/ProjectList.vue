@@ -1,22 +1,22 @@
 <template>
-  <table class="table table-hover">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Owner</th>
-        <th>Creation Time</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead>Name</TableHead>
+        <TableHead>Owner</TableHead>
+        <TableHead>Creation Time</TableHead>
+        <TableHead>Actions</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
       <project-list-item
         v-bind:project="project"
         v-for="project in projects"
         v-bind:key="project.project_id"
       >
       </project-list-item>
-    </tbody>
-  </table>
+    </TableBody>
+  </Table>
 </template>
 
 <script>

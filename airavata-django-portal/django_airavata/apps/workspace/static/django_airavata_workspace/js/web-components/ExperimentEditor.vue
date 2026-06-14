@@ -108,23 +108,44 @@ export default {
        * Experiment Name native slot
        */
       // <slot name="experiment-name">
-      //   <b-form-group label="Experiment Name" label-for="experiment-name">
-      //     <b-form-input
+      //   <div class="space-y-1.5">
+      //     <Label for="experiment-name">Experiment Name</Label>
+      //     <Input
       //       type="text"
       //       name="experiment-name"
       //       :value="experiment.experimentName"
       //       required
-      //     >
-      //     </b-form-input>
-      //   </b-form-group>
+      //     />
+      //   </div>
       // </slot>
       const experimentNameGroupEl = document.createElement("div");
-      experimentNameGroupEl.classList.add("form-group");
+      experimentNameGroupEl.classList.add("space-y-1.5");
       const experimentNameLabelEl = document.createElement("label");
       experimentNameLabelEl.setAttribute("for", "experiment-name-input");
+      experimentNameLabelEl.classList.add(
+        "text-sm",
+        "leading-none",
+        "font-medium",
+        "select-none",
+      );
       experimentNameLabelEl.textContent = "Experiment Name";
       const experimentNameInputEl = document.createElement("input");
-      experimentNameInputEl.classList.add("form-control");
+      experimentNameInputEl.classList.add(
+        "h-9",
+        "w-full",
+        "rounded-md",
+        "border",
+        "border-input",
+        "bg-transparent",
+        "px-3",
+        "py-1",
+        "text-sm",
+        "shadow-xs",
+        "outline-none",
+        "focus-visible:border-ring",
+        "focus-visible:ring-3",
+        "focus-visible:ring-ring/50",
+      );
       experimentNameInputEl.setAttribute("id", "experiment-name-input");
       experimentNameInputEl.setAttribute("type", "text");
       experimentNameInputEl.setAttribute("name", "experiment-name");
@@ -190,34 +211,60 @@ export default {
        * Experiment (save/launch) Buttons native slot
        */
       // <slot name="experiment-buttons">
-      //   <div class="d-flex justify-content-end">
-      //     <b-button
+      //   <div class="flex justify-end gap-2">
+      //     <Button
       //       type="submit"
-      //       variant="success"
+      //       class="bg-success text-success-foreground hover:bg-success/90"
       //       name="save-and-launch-experiment-button"
-      //       class="me-2"
       //     >
       //       Save and Launch
-      //     </b-button>
-      //     <b-button type="submit" variant="primary" name="save-experiment-button">
+      //     </Button>
+      //     <Button type="submit" variant="default" name="save-experiment-button">
       //       Save
-      //     </b-button>
+      //     </Button>
       //   </div>
       // </slot>
+      // shadcn-vue components are not globally registered in the standalone
+      // web-component build, so the save/launch buttons are built with the same
+      // Tailwind utility classes the Button component would emit.
+      const buttonBaseClasses = [
+        "inline-flex",
+        "items-center",
+        "justify-center",
+        "gap-2",
+        "whitespace-nowrap",
+        "rounded-md",
+        "text-sm",
+        "font-medium",
+        "h-9",
+        "px-4",
+        "py-2",
+        "transition-all",
+      ];
       const buttonsRowEl = document.createElement("div");
-      buttonsRowEl.classList.add("d-flex", "justify-content-end");
+      buttonsRowEl.classList.add("flex", "justify-end", "gap-2");
       const saveAndLaunchButtonEl = document.createElement("button");
       saveAndLaunchButtonEl.setAttribute("type", "submit");
       saveAndLaunchButtonEl.setAttribute(
         "name",
         "save-and-launch-experiment-button",
       );
-      saveAndLaunchButtonEl.classList.add("btn", "btn-success", "me-2");
+      saveAndLaunchButtonEl.classList.add(
+        ...buttonBaseClasses,
+        "bg-success",
+        "text-success-foreground",
+        "hover:bg-success/90",
+      );
       saveAndLaunchButtonEl.textContent = "Save and Launch";
       const saveButtonEl = document.createElement("button");
       saveButtonEl.setAttribute("type", "submit");
       saveButtonEl.setAttribute("name", "save-experiment-button");
-      saveButtonEl.classList.add("btn", "btn-primary");
+      saveButtonEl.classList.add(
+        ...buttonBaseClasses,
+        "bg-primary",
+        "text-primary-foreground",
+        "hover:bg-primary/90",
+      );
       saveButtonEl.textContent = "Save";
       buttonsRowEl.append(saveAndLaunchButtonEl, saveButtonEl);
       this.$refs.experimentButtons.append(

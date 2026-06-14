@@ -1,37 +1,36 @@
 <template>
   <div>
-    <div class="d-flex">
+    <div class="flex">
       <slot name="title">
-        <h1 class="h4 mb-4 me-auto">Edit Project</h1>
+        <h1 class="mr-auto mb-4 text-xl font-semibold">Edit Project</h1>
       </slot>
       <slot name="buttons"> </slot>
     </div>
-    <b-form @submit="onSubmit" @input="onUserInput" novalidate>
-      <b-form-group
-        label="Project Name"
-        label-for="project-name"
-        :feedback="nameFeedback"
-        :state="nameState"
-      >
-        <b-form-input
+    <form @submit="onSubmit" @input="onUserInput" novalidate>
+      <div class="mb-4 space-y-1.5">
+        <Label for="project-name">Project Name</Label>
+        <Input
           id="project-name"
           type="text"
           v-model="data.name"
           required
           placeholder="Project name"
-          :state="nameState"
-        ></b-form-input>
-      </b-form-group>
-      <b-form-group label="Project Description" label-for="project-description">
-        <b-form-textarea
+          :aria-invalid="nameState === false"
+        />
+        <p v-if="nameFeedback" class="text-sm text-destructive">
+          {{ nameFeedback }}
+        </p>
+      </div>
+      <div class="mb-4 space-y-1.5">
+        <Label for="project-description">Project Description</Label>
+        <Textarea
           id="project-description"
-          type="text"
           v-model="data.description"
           placeholder="(Optional) Project description"
           :rows="3"
-        ></b-form-textarea>
-      </b-form-group>
-    </b-form>
+        />
+      </div>
+    </form>
   </div>
 </template>
 

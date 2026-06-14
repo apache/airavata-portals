@@ -1,5 +1,7 @@
 import { h } from "vue";
 import { components, entry } from "django-airavata-common-ui";
+// Tailwind v4 + shadcn-vue design tokens and base styles (shared with common).
+import "django-airavata-common-ui/css/app.css";
 import ExperimentListContainer from "./containers/ExperimentListContainer.vue";
 
 // Read the mount element's data-* attributes before mounting; Vue 3 replaces the

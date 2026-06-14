@@ -1,16 +1,21 @@
 <template>
-  <b-card title="Parameters">
-    <validated-form ref="validatedForm" :items="formItems">
-      <template #default="form">
-        <interactive-parameter-widget-container
-          :parameter="form.item"
-          @valid="form.valid"
-          @invalid="form.invalid"
-          @input="updated(form.item, $event)"
-        />
-      </template>
-    </validated-form>
-  </b-card>
+  <Card>
+    <CardHeader>
+      <CardTitle>Parameters</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <validated-form ref="validatedForm" :items="formItems">
+        <template #default="form">
+          <interactive-parameter-widget-container
+            :parameter="form.item"
+            @valid="form.valid"
+            @invalid="form.invalid"
+            @input="updated(form.item, $event)"
+          />
+        </template>
+      </validated-form>
+    </CardContent>
+  </Card>
 </template>
 
 <script>

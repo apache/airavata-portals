@@ -2,7 +2,6 @@
   <vue-slider
     v-model="sliderValue"
     @change="onChange"
-    :state="componentValidState"
     :disabled="readOnly"
     :min="sliderMin"
     :max="sliderMax"

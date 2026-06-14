@@ -1,46 +1,49 @@
 <template>
   <div>
-    <div class="row">
-      <div class="col">
-        <b-form-group
-          label="Compute Resource"
-          label-for="compute-resource"
-          :feedback="getValidationFeedback('resource_host_id')"
-          :state="getValidationState('resource_host_id')"
+    <div>
+      <div class="space-y-1.5">
+        <Label for="compute-resource">Compute Resource</Label>
+        <select
+          id="compute-resource"
+          v-model="resourceHostId"
+          required
+          :aria-invalid="getValidationState('resource_host_id') === false"
+          :disabled="
+            !computeResourceOptions || computeResourceOptions.length === 0
+          "
+          class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
+          @change="computeResourceChanged($event.target.value)"
         >
-          <b-form-select
-            id="compute-resource"
-            v-model="resourceHostId"
-            :options="computeResourceOptions"
-            required
-            @change="computeResourceChanged"
-            :state="getValidationState('resource_host_id')"
-            :disabled="
-              !computeResourceOptions || computeResourceOptions.length === 0
-            "
+          <option :value="null" disabled>Select a Compute Resource</option>
+          <option
+            v-for="option in computeResourceOptions"
+            :key="option.value"
+            :value="option.value"
           >
-            <template #first>
-              <option :value="null" disabled>Select a Compute Resource</option>
-            </template>
-          </b-form-select>
-        </b-form-group>
+            {{ option.text }}
+          </option>
+        </select>
+        <p
+          v-if="getValidationState('resource_host_id') === false"
+          class="text-sm text-destructive"
+        >
+          {{ getValidationFeedback("resource_host_id") }}
+        </p>
       </div>
     </div>
-    <div class="row">
-      <div class="col">
-        <queue-settings-editor
-          v-model="data"
-          v-if="appDeploymentId"
-          :app-module-id="appModuleId"
-          :app-deployment-id="appDeploymentId"
-          :compute-resource-policy="selectedComputeResourcePolicy"
-          :batch-queue-resource-policies="batchQueueResourcePolicies"
-          @update:model-value="queueSettingsChanged"
-          @valid="queueSettingsValidityChanged(true)"
-          @invalid="queueSettingsValidityChanged(false)"
-        >
-        </queue-settings-editor>
-      </div>
+    <div class="mt-4">
+      <queue-settings-editor
+        v-model="data"
+        v-if="appDeploymentId"
+        :app-module-id="appModuleId"
+        :app-deployment-id="appDeploymentId"
+        :compute-resource-policy="selectedComputeResourcePolicy"
+        :batch-queue-resource-policies="batchQueueResourcePolicies"
+        @update:model-value="queueSettingsChanged"
+        @valid="queueSettingsValidityChanged(true)"
+        @invalid="queueSettingsValidityChanged(false)"
+      >
+      </queue-settings-editor>
     </div>
   </div>
 </template>

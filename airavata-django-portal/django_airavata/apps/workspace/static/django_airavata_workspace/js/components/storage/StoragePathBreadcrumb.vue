@@ -1,18 +1,31 @@
 <template>
-  <b-breadcrumb>
-    <b-breadcrumb-item
-      v-for="item in items"
-      :key="item.path"
-      :text="item.text"
-      :active="item.active"
-      @click="directorySelected(item.path)"
-    />
-  </b-breadcrumb>
+  <nav class="flex flex-wrap items-center gap-1 text-sm">
+    <template v-for="(item, index) in items" :key="item.path">
+      <ChevronRight
+        v-if="index > 0"
+        class="size-3.5 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <span v-if="item.active" class="text-muted-foreground">{{
+        item.text
+      }}</span>
+      <a
+        v-else
+        href="#"
+        class="text-primary"
+        @click.prevent="directorySelected(item.path)"
+        >{{ item.text }}</a
+      >
+    </template>
+  </nav>
 </template>
 
 <script>
+import { ChevronRight } from "@lucide/vue";
+
 export default {
   name: "storage-path-breadcrumb",
+  components: { ChevronRight },
   props: {
     parts: {
       type: Array,

@@ -8,15 +8,13 @@
 {% endblock css %}
 
 {% block content %}
-<div class="main-content-wrapper">
-    <main class="main-content">
-        <div class="container-fluid">
-          {% block custom-content %}
+<main class="flex-1 overflow-y-auto p-4">
+  <div class="w-full">
+    {% block custom-content %}
 
-          {% endblock custom-content %}
-        </div>
-    </main>
-</div>
+    {% endblock custom-content %}
+  </div>
+</main>
 {% endblock content %}
 
 {% block scripts %}

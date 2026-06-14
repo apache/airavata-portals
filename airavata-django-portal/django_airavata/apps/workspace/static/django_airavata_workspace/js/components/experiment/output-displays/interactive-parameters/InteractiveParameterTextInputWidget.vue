@@ -1,15 +1,20 @@
 <template>
-  <b-input-group>
-    <b-form-input
+  <div class="flex">
+    <input
       ref="textInput"
-      :model-value="value"
-      @update:model-value="currentValue = $event"
+      :value="value"
+      class="border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full min-w-0 rounded-l-md border bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-3"
+      @input="currentValue = $event.target.value"
       @keydown.enter="enterKeyPressed"
     />
-    <b-button variant="primary" :disabled="disabled" @click="submit"
-      >Submit</b-button
+    <Button
+      variant="default"
+      class="rounded-l-none"
+      :disabled="disabled"
+      @click="submit"
+      >Submit</Button
     >
-  </b-input-group>
+  </div>
 </template>
 
 <script>

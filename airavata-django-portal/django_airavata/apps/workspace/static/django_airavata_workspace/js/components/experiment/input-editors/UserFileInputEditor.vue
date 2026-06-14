@@ -1,11 +1,12 @@
 <template>
   <div>
-    <b-form-select
+    <select
       :id="id"
       v-model="data"
       style="width: auto"
-      :state="componentValidState"
-      @update:model-value="valueChanged"
+      :aria-invalid="componentValidState === false"
+      class="border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-50"
+      @change="valueChanged"
     >
       <option
         v-for="userfile in userfiles"
@@ -14,7 +15,7 @@
       >
         {{ userfile.file_name }}
       </option>
-    </b-form-select>
+    </select>
   </div>
 </template>
 

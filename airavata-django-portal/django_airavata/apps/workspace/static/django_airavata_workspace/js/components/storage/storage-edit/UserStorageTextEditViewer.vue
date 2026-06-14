@@ -14,11 +14,12 @@
           :data-product-uri="dataProductUri"
           :file-name="fileName"
         />
-        <b-button
+        <Button
+          variant="outline"
           v-if="editAvailable && !readOnly"
           :disabled="saved"
           @click="fileContentChanged"
-          >Save</b-button
+          >Save</Button
         >
       </div>
     </div>

@@ -1,20 +1,20 @@
 <template>
   <div>
     <unsaved-changes-guard :dirty="dirty" />
-    <div class="row">
-      <div class="col-auto me-auto">
-        <h1 class="h4 mb-4">
+    <div class="flex">
+      <div class="mr-auto">
+        <h1 class="mb-4 text-xl font-semibold">
           <div
             v-if="appModule"
-            class="application-name text-muted text-uppercase"
+            class="application-name text-muted-foreground uppercase"
           >
-            <i class="fa fa-code" aria-hidden="true"></i>
+            <CodeIcon class="inline size-4" aria-hidden="true" />
             {{ appModule.app_module_name }}
           </div>
           <slot name="title">Experiment Editor</slot>
         </h1>
       </div>
-      <div class="col-auto">
+      <div>
         <share-button
           ref="shareButton"
           :entity-id="localExperiment.experiment_id"
@@ -25,171 +25,161 @@
         />
       </div>
     </div>
-    <b-form novalidate>
-      <div class="row">
-        <div class="col">
-          <b-form-group
-            label="Experiment Name"
-            label-for="experiment-name"
-            :feedback="getValidationFeedback('experiment_name')"
-            :state="getValidationState('experiment_name')"
-          >
-            <b-form-input
-              id="experiment-name"
-              type="text"
-              v-model="localExperiment.experiment_name"
-              required
-              placeholder="Experiment name"
-              :state="getValidationState('experiment_name')"
-            ></b-form-input>
-          </b-form-group>
-          <experiment-description-editor
-            v-model="localExperiment.description"
+    <form novalidate>
+      <div class="mb-4">
+        <div class="space-y-1.5">
+          <Label for="experiment-name">Experiment Name</Label>
+          <Input
+            id="experiment-name"
+            type="text"
+            v-model="localExperiment.experiment_name"
+            required
+            placeholder="Experiment name"
+            :aria-invalid="getValidationState('experiment_name') === false"
           />
-        </div>
-      </div>
-      <div class="row">
-        <div class="col">
-          <b-form-group
-            label="Project"
-            label-for="project"
-            :feedback="getValidationFeedback('project_id')"
-            :state="getValidationState('project_id')"
+          <p
+            v-if="getValidationState('experiment_name') === false"
+            class="text-sm text-destructive"
           >
-            <b-form-select
-              id="project"
-              v-model="localExperiment.project_id"
-              required
-              :state="getValidationState('project_id')"
-            >
-              <template #first>
-                <option :value="null" disabled>Select a Project</option>
-              </template>
-              <optgroup label="My Projects">
-                <option
-                  v-for="project in myProjectOptions"
-                  :value="project.value"
-                  :key="project.value"
-                >
-                  {{ project.text }}
-                </option>
-              </optgroup>
-              <optgroup label="Projects Shared With Me">
-                <option
-                  v-for="project in sharedProjectOptions"
-                  :value="project.value"
-                  :key="project.value"
-                >
-                  {{ project.text }}
-                </option>
-              </optgroup>
-            </b-form-select>
-          </b-form-group>
+            {{ getValidationFeedback("experiment_name") }}
+          </p>
+        </div>
+        <experiment-description-editor v-model="localExperiment.description" />
+      </div>
+      <div class="mb-4">
+        <div class="space-y-1.5">
+          <Label for="project">Project</Label>
+          <select
+            id="project"
+            v-model="localExperiment.project_id"
+            required
+            :aria-invalid="getValidationState('project_id') === false"
+            class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
+          >
+            <option :value="null" disabled>Select a Project</option>
+            <optgroup label="My Projects">
+              <option
+                v-for="project in myProjectOptions"
+                :value="project.value"
+                :key="project.value"
+              >
+                {{ project.text }}
+              </option>
+            </optgroup>
+            <optgroup label="Projects Shared With Me">
+              <option
+                v-for="project in sharedProjectOptions"
+                :value="project.value"
+                :key="project.value"
+              >
+                {{ project.text }}
+              </option>
+            </optgroup>
+          </select>
+          <p
+            v-if="getValidationState('project_id') === false"
+            class="text-sm text-destructive"
+          >
+            {{ getValidationFeedback("project_id") }}
+          </p>
         </div>
       </div>
-      <div class="row">
-        <div class="col">
-          <workspace-notices-management-container
-            class="mt-2"
-            v-if="appInterface && appInterface.application_description"
-            :data="[
-              { notification_message: appInterface.application_description },
-            ]"
-          />
-        </div>
+      <div>
+        <workspace-notices-management-container
+          class="mt-2"
+          v-if="appInterface && appInterface.application_description"
+          :data="[
+            { notification_message: appInterface.application_description },
+          ]"
+        />
       </div>
-      <div class="row">
-        <div class="col">
-          <h1 class="h4 mt-2 mb-4">Application Configuration</h1>
-        </div>
+      <div>
+        <h1 class="mt-2 mb-4 text-xl font-semibold">
+          Application Configuration
+        </h1>
       </div>
-      <div class="row">
-        <div class="col">
-          <div class="card border-default">
-            <div class="card-body">
-              <h2 class="h6 mb-3">Application Inputs</h2>
+      <div>
+        <Card>
+          <CardContent>
+            <h2 class="mb-3 text-base font-semibold">Application Inputs</h2>
 
-              <transition-group name="fade">
-                <input-editor-container
-                  v-for="experimentInput in localExperiment.experiment_inputs"
-                  :experiment-input="experimentInput"
-                  :experiment="localExperiment"
-                  v-model="experimentInput.value"
-                  v-show="experimentInput.show"
-                  :key="experimentInput.name"
-                  @invalid="recordInvalidInputEditorValue(experimentInput.name)"
-                  @valid="recordValidInputEditorValue(experimentInput.name)"
-                  @input="inputValueChanged"
-                  @uploadstart="uploadStart(experimentInput.name)"
-                  @uploadend="uploadEnd(experimentInput.name)"
-                />
-              </transition-group>
-            </div>
-          </div>
+            <transition-group name="fade">
+              <input-editor-container
+                v-for="experimentInput in localExperiment.experiment_inputs"
+                :experiment-input="experimentInput"
+                :experiment="localExperiment"
+                v-model="experimentInput.value"
+                v-show="experimentInput.show"
+                :key="experimentInput.name"
+                @invalid="recordInvalidInputEditorValue(experimentInput.name)"
+                @valid="recordValidInputEditorValue(experimentInput.name)"
+                @input="inputValueChanged"
+                @uploadstart="uploadStart(experimentInput.name)"
+                @uploadend="uploadEnd(experimentInput.name)"
+              />
+            </transition-group>
+          </CardContent>
+        </Card>
+      </div>
+      <div class="mt-4">
+        <group-resource-profile-selector
+          v-model="
+            localExperiment.user_configuration_data.group_resource_profile_id
+          "
+          @invalid="invalidGroupResourceProfileSelector = true"
+          @valid="invalidGroupResourceProfileSelector = false"
+        >
+        </group-resource-profile-selector>
+      </div>
+      <div class="mt-4">
+        <computational-resource-scheduling-editor
+          v-model="
+            localExperiment.user_configuration_data
+              .computational_resource_scheduling
+          "
+          v-if="
+            localExperiment.user_configuration_data.group_resource_profile_id
+          "
+          :app-module-id="appModule.app_module_id"
+          :group-resource-profile-id="
+            localExperiment.user_configuration_data.group_resource_profile_id
+          "
+          @invalid="invalidComputationalResourceSchedulingEditor = true"
+          @valid="invalidComputationalResourceSchedulingEditor = false"
+        >
+        </computational-resource-scheduling-editor>
+      </div>
+      <div class="mt-4">
+        <div class="space-y-1.5">
+          <Label>Email Settings</Label>
+          <Label class="font-normal">
+            <Checkbox v-model="localExperiment.enable_email_notification" />
+            Receive email notification of experiment status
+          </Label>
         </div>
       </div>
-      <group-resource-profile-selector
-        v-model="
-          localExperiment.user_configuration_data.group_resource_profile_id
-        "
-        @invalid="invalidGroupResourceProfileSelector = true"
-        @valid="invalidGroupResourceProfileSelector = false"
-      >
-      </group-resource-profile-selector>
-      <div class="row">
-        <div class="col">
-          <computational-resource-scheduling-editor
-            v-model="
-              localExperiment.user_configuration_data
-                .computational_resource_scheduling
-            "
-            v-if="
-              localExperiment.user_configuration_data.group_resource_profile_id
-            "
-            :app-module-id="appModule.app_module_id"
-            :group-resource-profile-id="
-              localExperiment.user_configuration_data.group_resource_profile_id
-            "
-            @invalid="invalidComputationalResourceSchedulingEditor = true"
-            @valid="invalidComputationalResourceSchedulingEditor = false"
-          >
-          </computational-resource-scheduling-editor>
-        </div>
+      <div id="col-exp-buttons" class="mt-4 flex gap-2">
+        <Button
+          class="bg-success text-success-foreground hover:bg-success/90"
+          @click="saveAndLaunchExperiment"
+          :disabled="isSaveDisabled"
+        >
+          Save and Launch
+        </Button>
+        <Button
+          variant="default"
+          @click="saveExperiment"
+          :disabled="isSaveDisabled"
+        >
+          Save
+        </Button>
       </div>
-      <div class="row">
-        <div class="col">
-          <b-form-group label="Email Settings">
-            <b-form-checkbox
-              v-model="localExperiment.enable_email_notification"
-            >
-              Receive email notification of experiment status
-            </b-form-checkbox>
-          </b-form-group>
-        </div>
-      </div>
-      <div class="row">
-        <div id="col-exp-buttons" class="col">
-          <b-button
-            variant="success"
-            @click="saveAndLaunchExperiment"
-            :disabled="isSaveDisabled"
-          >
-            Save and Launch
-          </b-button>
-          <b-button
-            variant="primary"
-            @click="saveExperiment"
-            :disabled="isSaveDisabled"
-          >
-            Save
-          </b-button>
-        </div>
-      </div>
-    </b-form>
+    </form>
   </div>
 </template>
 
 <script>
+import { Code as CodeIcon } from "@lucide/vue";
 import ComputationalResourceSchedulingEditor from "./ComputationalResourceSchedulingEditor.vue";
 import ExperimentDescriptionEditor from "./ExperimentDescriptionEditor.vue";
 import GroupResourceProfileSelector from "./GroupResourceProfileSelector.vue";
@@ -228,6 +218,7 @@ export default {
     };
   },
   components: {
+    CodeIcon,
     WorkspaceNoticesManagementContainer,
     ComputationalResourceSchedulingEditor,
     ExperimentDescriptionEditor,

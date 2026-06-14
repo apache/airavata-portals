@@ -1,23 +1,35 @@
 <template>
   <div>
-    <b-link :href="storageFileViewRouteUrl()" @click="showFilePreview($event)">
+    <a
+      class="text-primary"
+      :href="storageFileViewRouteUrl()"
+      @click="showFilePreview($event)"
+    >
       {{ fileName }}
-    </b-link>
-    <b-modal :title="fileName" ref="modal" scrollable size="lg" static lazy>
-      <user-storage-file-edit-viewer
-        :file-name="fileName"
-        :data-product-uri="dataProductUri"
-        :mime-type="mimeType"
-        @file-content-changed="
-          (fileContent) => $emit('file-content-changed', fileContent)
-        "
-      />
-      <template #modal-footer>
-        <a :href="storageFileViewRouteUrl()" target="_blank"
-          >Open in a new window</a
-        >
-      </template>
-    </b-modal>
+    </a>
+    <Dialog v-model:open="open">
+      <DialogScrollContent class="w-[60vw] max-w-[800px]">
+        <DialogHeader>
+          <DialogTitle>{{ fileName }}</DialogTitle>
+        </DialogHeader>
+        <user-storage-file-edit-viewer
+          :file-name="fileName"
+          :data-product-uri="dataProductUri"
+          :mime-type="mimeType"
+          @file-content-changed="
+            (fileContent) => $emit('file-content-changed', fileContent)
+          "
+        />
+        <DialogFooter>
+          <a
+            class="text-primary"
+            :href="storageFileViewRouteUrl()"
+            target="_blank"
+            >Open in a new window</a
+          >
+        </DialogFooter>
+      </DialogScrollContent>
+    </Dialog>
   </div>
 </template>
 
@@ -27,6 +39,11 @@ import UserStorageFileEditViewer from "./UserStorageEditViewer";
 export default {
   name: "user-storage-link",
   components: { UserStorageFileEditViewer },
+  data() {
+    return {
+      open: false,
+    };
+  },
   props: {
     fileName: {
       required: true,
@@ -45,7 +62,7 @@ export default {
   methods: {
     showFilePreview(event) {
       if (this.allowPreview) {
-        this.$refs.modal.show();
+        this.open = true;
         event.preventDefault();
       }
     },

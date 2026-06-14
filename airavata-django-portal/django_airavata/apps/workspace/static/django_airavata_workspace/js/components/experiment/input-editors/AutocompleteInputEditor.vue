@@ -1,10 +1,13 @@
 <template>
-  <div v-if="value" class="d-flex ps-3">
+  <div v-if="value" class="flex items-center pl-3">
     {{ text }}
-    <b-link @click="cancel" class="ms-auto text-danger"
+    <a
+      href="#"
+      @click.prevent="cancel"
+      class="ml-auto inline-flex items-center gap-1 text-destructive"
       >Cancel
-      <i class="fa fa-times" aria-hidden="true"></i>
-    </b-link>
+      <X class="size-4" aria-hidden="true" />
+    </a>
   </div>
   <div v-else>
     <autocomplete-text-input
@@ -17,6 +20,7 @@
 </template>
 
 <script>
+import { X } from "@lucide/vue";
 import { utils } from "django-airavata-api";
 import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
 import { components } from "django-airavata-common-ui";
@@ -26,6 +30,7 @@ export default {
   name: "autocomplete-input-editor",
   mixins: [InputEditorMixin],
   components: {
+    X,
     "autocomplete-text-input": components.AutocompleteTextInput,
   },
   props: {

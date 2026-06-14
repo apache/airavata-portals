@@ -1,61 +1,56 @@
 <template>
   <div v-if="localFullExperiment">
-    <div class="row">
-      <div class="col-auto me-auto">
-        <h1 class="h4 mb-4">
+    <div class="flex items-start">
+      <div class="mr-auto">
+        <h1 class="mb-4 text-xl font-semibold">
           <slot name="title">Experiment Summary</slot>
         </h1>
       </div>
-      <div class="col-auto">
+      <div class="flex flex-wrap items-center gap-2">
         <share-button :entity-id="experiment.experiment_id" />
-        <b-link v-if="isEditable" class="btn btn-primary" :href="editLink">
+        <Button v-if="isEditable" as="a" variant="default" :href="editLink">
           Edit
-          <i class="fa fa-edit" aria-hidden="true"></i>
-        </b-link>
-        <b-link v-if="isLaunchable" class="btn btn-primary" @click="onLaunch">
+          <Pencil class="size-4" aria-hidden="true" />
+        </Button>
+        <Button v-if="isLaunchable" variant="default" @click="onLaunch">
           Launch
-          <i class="fa fa-running" aria-hidden="true"></i>
-        </b-link>
-        <b-button v-if="isClonable" variant="primary" @click="onClone">
+          <Play class="size-4" aria-hidden="true" />
+        </Button>
+        <Button v-if="isClonable" variant="default" @click="onClone">
           Clone
-          <i class="fa fa-copy" aria-hidden="true"></i>
-        </b-button>
-        <b-button v-if="isCancelable" variant="primary" @click="onCancel">
+          <Copy class="size-4" aria-hidden="true" />
+        </Button>
+        <Button v-if="isCancelable" variant="default" @click="onCancel">
           Cancel
-          <i class="fa fa-window-btn-close" aria-hidden="true"></i>
-        </b-button>
+          <XSquare class="size-4" aria-hidden="true" />
+        </Button>
       </div>
     </div>
     <template v-for="output in experiment.experiment_outputs">
-      <div class="row" v-if="finishedOrExecuting" :key="output.name">
-        <div class="col">
-          <output-display-container :experiment-output="output" />
-        </div>
+      <div class="mt-4" v-if="finishedOrExecuting" :key="output.name">
+        <output-display-container :experiment-output="output" />
       </div>
     </template>
-    <div class="row" v-if="finishedOrExecuting">
-      <div class="col">
-        <experiment-storage-view-container
-          :experimentId="experiment.experiment_id"
-        />
-      </div>
+    <div class="mt-4" v-if="finishedOrExecuting">
+      <experiment-storage-view-container
+        :experimentId="experiment.experiment_id"
+      />
     </div>
-    <div class="row">
-      <div class="col">
-        <div class="card border-default">
-          <div class="card-body">
-            <table class="table">
-              <tbody>
+    <div class="mt-4">
+      <Card>
+        <CardContent>
+          <table class="w-full text-sm">
+            <tbody>
                 <tr>
                   <th scope="row">Name</th>
                   <td>
                     <div :title="experiment.experiment_id">
                       {{ experiment.experiment_name }}
                     </div>
-                    <small class="text-muted">
+                    <small class="text-muted-foreground">
                       ID: {{ experiment.experiment_id }} (<clipboard-copy-link
                         :text="experiment.experiment_id"
-                        :link-classes="['text-reset']"
+                        :link-classes="['text-inherit']"
                       >
                         copy
                         <template #icon><span></span></template>
@@ -88,7 +83,7 @@
                   <td v-if="localFullExperiment.applicationName">
                     {{ localFullExperiment.applicationName }}
                   </td>
-                  <td v-else class="fst-italic text-muted">
+                  <td v-else class="text-muted-foreground italic">
                     Unable to load interface
                     {{ localFullExperiment.experiment.executionId }}
                   </td>
@@ -98,7 +93,7 @@
                   <td v-if="localFullExperiment.computeHostName">
                     {{ localFullExperiment.computeHostName }}
                   </td>
-                  <td v-else class="fst-italic text-muted">
+                  <td v-else class="text-muted-foreground italic">
                     Unable to load compute resource
                     {{ localFullExperiment.resourceHostId }}
                   </td>
@@ -109,8 +104,8 @@
                     <template
                       v-if="localFullExperiment.experiment.isProgressing"
                     >
-                      <i class="fa fa-sync-alt fa-spin"></i>
-                      <span class="visually-hidden">Progressing...</span>
+                      <RefreshCw class="inline size-4 animate-spin" />
+                      <span class="sr-only">Progressing...</span>
                     </template>
                     {{ localFullExperiment.experimentStatusName }}
                   </td>
@@ -130,7 +125,7 @@
                             class="timeline-node timeline-node--running"
                             :title="stage.taskId"
                           >
-                            <i class="fa fa-circle-notch fa-spin"></i>
+                            <LoaderCircle class="size-4 animate-spin" />
                           </span>
                           <span
                             v-else
@@ -138,28 +133,31 @@
                             :class="'timeline-dot--' + stage.kind"
                             :title="stage.taskId"
                           ></span>
-                          <span class="visually-hidden">{{
-                            stage.stateLabel
-                          }}</span>
+                          <span class="sr-only">{{ stage.stateLabel }}</span>
                         </div>
                         <div class="timeline-content">
                           <strong>{{ stage.typeLabel }}</strong>
-                          <span v-if="stage.reason" class="text-muted">
+                          <span v-if="stage.reason" class="text-muted-foreground">
                             — {{ stage.reason }}</span
                           >
-                          <small v-if="stage.time" class="text-muted d-block">{{
-                            stage.time
-                          }}</small>
-                          <div v-if="stage.job" class="mt-1 small">
+                          <small
+                            v-if="stage.time"
+                            class="block text-muted-foreground"
+                            >{{ stage.time }}</small
+                          >
+                          <div v-if="stage.job" class="mt-1 text-sm">
                             <span
                               class="timeline-dot timeline-dot--inline"
                               :class="'timeline-dot--' + stage.job.kind"
                             ></span>
-                            <span class="text-muted"
+                            <span class="text-muted-foreground"
                               >Job {{ stage.job.name }} (ID
                               {{ stage.job.id }})</span
                             >
-                            <span v-if="stage.job.reason" class="text-muted">
+                            <span
+                              v-if="stage.job.reason"
+                              class="text-muted-foreground"
+                            >
                               — {{ stage.job.reason }}</span
                             >
                           </div>
@@ -197,9 +195,9 @@
                 <tr v-if="groupResourceProfile">
                   <th scope="row">Allocation</th>
                   <td>
-                    <b-link :href="viewGroupResourceProfileLink">
+                    <a class="text-primary" :href="viewGroupResourceProfileLink">
                       {{ groupResourceProfile.group_resource_profile_name }}
-                    </b-link>
+                    </a>
                   </td>
                 </tr>
                 <tr v-if="showQueueSettings">
@@ -264,7 +262,7 @@
                       >
                         {{ input.name }}:
                         <template v-if="input.type.isSimpleValueType">
-                          <span class="text-break">{{ input.value }}</span>
+                          <span class="break-words">{{ input.value }}</span>
                         </template>
                         <data-product-viewer
                           v-for="dp in inputDataProducts[input.name]"
@@ -280,44 +278,68 @@
                 <tr>
                   <th scope="row">Errors</th>
                   <td>
-                    <b-card
+                    <Card
                       v-for="error in experiment.errors"
                       :key="error.error_id"
-                      header="Error"
+                      class="mb-2"
                     >
-                      <p>{{ error.user_friendly_message }}</p>
-                    </b-card>
+                      <CardHeader class="border-b">
+                        <CardTitle class="text-base">Error</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p>{{ error.user_friendly_message }}</p>
+                      </CardContent>
+                    </Card>
                   </td>
                 </tr>
                 <template v-if="failedJobs.length > 0">
                   <tr v-for="job in failedJobs" :key="job.job_id">
                     <th scope="row">Job Submission Response</th>
                     <td>
-                      <b-card
-                        v-if="job.std_out"
-                        :header="job.job_name + ' STDOUT'"
-                      >
-                        <pre class="pre-scrollable">{{ job.std_out }}</pre>
-                      </b-card>
-                      <b-card
-                        v-if="job.std_err"
-                        :header="job.job_name + ' STDERR'"
-                      >
-                        <pre class="pre-scrollable">{{ job.std_err }}</pre>
-                      </b-card>
+                      <Card v-if="job.std_out" class="mb-2">
+                        <CardHeader class="border-b">
+                          <CardTitle class="text-base"
+                            >{{ job.job_name }} STDOUT</CardTitle
+                          >
+                        </CardHeader>
+                        <CardContent>
+                          <pre class="max-h-[340px] overflow-auto">{{
+                            job.std_out
+                          }}</pre>
+                        </CardContent>
+                      </Card>
+                      <Card v-if="job.std_err" class="mb-2">
+                        <CardHeader class="border-b">
+                          <CardTitle class="text-base"
+                            >{{ job.job_name }} STDERR</CardTitle
+                          >
+                        </CardHeader>
+                        <CardContent>
+                          <pre class="max-h-[340px] overflow-auto">{{
+                            job.std_err
+                          }}</pre>
+                        </CardContent>
+                      </Card>
                     </td>
                   </tr>
                 </template>
               </tbody>
             </table>
-          </div>
-        </div>
-      </div>
+          </CardContent>
+        </Card>
     </div>
   </div>
 </template>
 
 <script>
+import {
+  Copy,
+  LoaderCircle,
+  Pencil,
+  Play,
+  RefreshCw,
+  XSquare,
+} from "@lucide/vue";
 import { models } from "django-airavata-api";
 import { components, notifications } from "django-airavata-common-ui";
 import OutputDisplayContainer from "./output-displays/OutputDisplayContainer";
@@ -332,6 +354,12 @@ import { useViewExperimentStore } from "../../store";
 export default {
   name: "experiment-summary",
   components: {
+    Copy,
+    LoaderCircle,
+    Pencil,
+    Play,
+    RefreshCw,
+    XSquare,
     "clipboard-copy-link": components.ClipboardCopyLink,
     "share-button": components.ShareButton,
     OutputDisplayContainer,
@@ -596,6 +624,26 @@ export default {
 </script>
 
 <style scoped>
+/* Replaces Bootstrap's `.table` styling for the summary key/value table after the
+   Tailwind migration: bordered rows with a bold, top-aligned header column. */
+table tbody tr {
+  border-bottom: 1px solid var(--border);
+}
+table tbody tr:last-child {
+  border-bottom: 0;
+}
+table th[scope="row"] {
+  text-align: left;
+  font-weight: 600;
+  vertical-align: top;
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  white-space: nowrap;
+}
+table td {
+  vertical-align: top;
+  padding: 0.5rem 0;
+}
+
 /* Vertical timeline for the experiment Progress (PROCESS -> TASK pipeline). Each task is a
    node (colored dot, or a spinner while running) connected by a vertical line. */
 .timeline {

@@ -1,47 +1,63 @@
 <template>
-  <b-card>
-    <template #header>
-      <div class="d-flex justify-content-between">
-        <h6 class="mb-0">Experiment Data Directory</h6>
-        <b-link
+  <Card>
+    <CardHeader class="border-b">
+      <div class="flex justify-between">
+        <h6 class="mb-0 font-semibold">Experiment Data Directory</h6>
+        <a
           v-if="canDownloadDataDirectory"
+          class="inline-flex items-center gap-1 text-primary"
           :href="`/sdk/download-experiment-dir/${encodeURIComponent(
             experimentId,
           )}/`"
         >
           Download Zip
-          <i class="fa fa-file-archive" aria-hidden="true"></i>
-        </b-link>
+          <FileArchive class="size-4" aria-hidden="true" />
+        </a>
       </div>
-    </template>
-    <experiment-storage-path-viewer
-      v-if="experimentStoragePath"
-      :experiment-storage-path="experimentStoragePath"
-      :experiment-id="experimentId"
-      @directory-selected="directorySelected"
-      :download-in-new-window="true"
-    ></experiment-storage-path-viewer>
+    </CardHeader>
+    <CardContent>
+      <experiment-storage-path-viewer
+        v-if="experimentStoragePath"
+        :experiment-storage-path="experimentStoragePath"
+        :experiment-id="experimentId"
+        @directory-selected="directorySelected"
+        :download-in-new-window="true"
+      ></experiment-storage-path-viewer>
 
-    <b-alert v-else-if="archived" show variant="warning">
-      This experiment was archived on {{ experimentArchive.created_date }}.
-    </b-alert>
-    <b-alert v-else-if="experimentDataDirNotFound" show variant="warning">
-      Experiment Data Directory does not exist in storage.
-    </b-alert>
+      <Alert
+        v-else-if="archived"
+        class="border-transparent bg-warning text-warning-foreground"
+      >
+        <AlertDescription class="text-warning-foreground">
+          This experiment was archived on
+          {{ experimentArchive.created_date }}.
+        </AlertDescription>
+      </Alert>
+      <Alert
+        v-else-if="experimentDataDirNotFound"
+        class="border-transparent bg-warning text-warning-foreground"
+      >
+        <AlertDescription class="text-warning-foreground">
+          Experiment Data Directory does not exist in storage.
+        </AlertDescription>
+      </Alert>
 
-    <!-- <small class="text-muted" v-if="archiveMaxAge > 0">
-      Data is retained for {{ archiveMaxAge }} days before it is removed and
-      archived.
-    </small> -->
-  </b-card>
+      <!-- <small class="text-muted-foreground" v-if="archiveMaxAge > 0">
+        Data is retained for {{ archiveMaxAge }} days before it is removed and
+        archived.
+      </small> -->
+    </CardContent>
+  </Card>
 </template>
 
 <script>
+import { FileArchive } from "@lucide/vue";
 import { errors, services, utils } from "django-airavata-api";
 import ExperimentStoragePathViewer from "./ExperimentStoragePathViewer.vue";
 
 export default {
   name: "experiment-storage-view-container",
+  components: { FileArchive, ExperimentStoragePathViewer },
   props: {
     experimentId: {
       type: String,
@@ -54,9 +70,6 @@ export default {
       experimentDataDirNotFound: false,
       experimentArchive: null,
     };
-  },
-  components: {
-    ExperimentStoragePathViewer,
   },
   created() {
     this.loadExperimentArchive();

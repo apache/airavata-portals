@@ -7,50 +7,66 @@
       @directory-selected="$emit('directory-selected', $event)"
     />
 
-    <b-table
-      v-if="experimentStoragePath"
-      :fields="fields"
-      :items="items"
-      sort-by="name"
-    >
-      <template #cell(name)="data">
-        <b-link
-          v-if="data.item.type === 'dir'"
-          @click="directorySelected(data.item)"
-        >
-          <i class="fa fa-folder-open"></i> {{ data.item.name }}</b-link
-        >
-        <b-link v-else :href="data.item.downloadURL" :target="downloadTarget">
-          {{ data.item.name }}</b-link
-        >
-      </template>
-      <template #cell(modifiedTimestamp)="data">
-        <human-date :date="data.item.modified_time" />
-      </template>
-      <template #cell(actions)="data">
-        <b-link
-          v-if="data.item.type === 'file'"
-          class="action-link"
-          :href="`${data.item.downloadURL}&download`"
-        >
-          Download File
-          <i class="fa fa-download" aria-hidden="true"></i>
-        </b-link>
-        <b-link
-          v-if="data.item.type === 'dir'"
-          class="action-link"
-          :href="`/sdk/download-experiment-dir/${encodeURIComponent(
-            experimentId,
-          )}/?path=${data.item.path}`"
-        >
-          Download Zip
-          <i class="fa fa-file-archive" aria-hidden="true"></i>
-        </b-link>
-      </template>
-    </b-table>
+    <Table v-if="experimentStoragePath">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Size</TableHead>
+          <TableHead>Last Modified</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow v-for="item in sortedItems" :key="item.path || item.name">
+          <TableCell>
+            <a
+              v-if="item.type === 'dir'"
+              href="#"
+              class="inline-flex items-center gap-1 text-primary"
+              @click.prevent="directorySelected(item)"
+            >
+              <FolderOpen class="size-4" /> {{ item.name }}</a
+            >
+            <a
+              v-else
+              class="text-primary"
+              :href="item.downloadURL"
+              :target="downloadTarget"
+            >
+              {{ item.name }}</a
+            >
+          </TableCell>
+          <TableCell>{{ getFormattedSize(item.size) }}</TableCell>
+          <TableCell>
+            <human-date :date="item.modified_time" />
+          </TableCell>
+          <TableCell>
+            <a
+              v-if="item.type === 'file'"
+              class="inline-flex items-center gap-1 text-primary"
+              :href="`${item.downloadURL}&download`"
+            >
+              Download File
+              <Download class="size-4" aria-hidden="true" />
+            </a>
+            <a
+              v-if="item.type === 'dir'"
+              class="inline-flex items-center gap-1 text-primary"
+              :href="`/sdk/download-experiment-dir/${encodeURIComponent(
+                experimentId,
+              )}/?path=${item.path}`"
+            >
+              Download Zip
+              <FileArchive class="size-4" aria-hidden="true" />
+            </a>
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
   </div>
 </template>
 <script>
+import { Download, FileArchive, FolderOpen } from "@lucide/vue";
 import StoragePathBreadcrumb from "./StoragePathBreadcrumb.vue";
 import { components } from "django-airavata-common-ui";
 
@@ -69,34 +85,13 @@ export default {
     },
   },
   components: {
+    Download,
+    FileArchive,
+    FolderOpen,
     "human-date": components.HumanDate,
     StoragePathBreadcrumb,
   },
   computed: {
-    fields() {
-      return [
-        {
-          label: "Name",
-          key: "name",
-          sortable: true,
-        },
-        {
-          label: "Size",
-          key: "size",
-          sortable: true,
-          formatter: (value) => this.getFormattedSize(value),
-        },
-        {
-          label: "Last Modified",
-          key: "modifiedTimestamp",
-          sortable: true,
-        },
-        {
-          label: "Actions",
-          key: "actions",
-        },
-      ];
-    },
     items() {
       if (this.experimentStoragePath) {
         const dirs = this.experimentStoragePath.directories.map((d) => {
@@ -128,6 +123,14 @@ export default {
       } else {
         return [];
       }
+    },
+    sortedItems() {
+      // Preserve the b-table default of sorting by name.
+      return this.items
+        .slice()
+        .sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+        );
     },
     downloadTarget() {
       return this.downloadInNewWindow ? "_blank" : "_self";

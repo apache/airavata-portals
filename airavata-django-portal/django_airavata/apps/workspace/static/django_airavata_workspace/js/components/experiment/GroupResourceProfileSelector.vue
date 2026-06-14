@@ -1,19 +1,23 @@
 <template>
-  <div class="row">
-    <div class="col">
-      <b-form-group label="Allocation" label-for="group-resource-profile">
-        <b-form-select
-          id="group-resource-profile"
-          v-model="groupResourceProfileId"
-          :options="groupResourceProfileOptions"
-          required
-          @change="groupResourceProfileChanged"
+  <div>
+    <div class="space-y-1.5">
+      <Label for="group-resource-profile">Allocation</Label>
+      <select
+        id="group-resource-profile"
+        v-model="groupResourceProfileId"
+        required
+        class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
+        @change="groupResourceProfileChanged($event.target.value)"
+      >
+        <option :value="null" disabled>Select an allocation</option>
+        <option
+          v-for="option in groupResourceProfileOptions"
+          :key="option.value"
+          :value="option.value"
         >
-          <template #first>
-            <option :value="null" disabled>Select an allocation</option>
-          </template>
-        </b-form-select>
-      </b-form-group>
+          {{ option.text }}
+        </option>
+      </select>
     </div>
   </div>
 </template>

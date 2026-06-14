@@ -1,6 +1,8 @@
 import { h } from "vue";
 import { createRouter, createWebHistory } from "vue-router";
 import { components, entry } from "django-airavata-common-ui";
+// Tailwind v4 + shadcn-vue design tokens and base styles (shared with common).
+import "django-airavata-common-ui/css/app.css";
 import UserStorageContainer from "./containers/UserStorageContainer.vue";
 import UserStoragePathViewer from "./components/storage/UserStoragePathViewer.vue";
 

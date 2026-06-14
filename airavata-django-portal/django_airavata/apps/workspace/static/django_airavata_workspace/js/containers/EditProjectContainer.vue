@@ -10,11 +10,11 @@
         <share-button :entity-id="projectId" />
       </template>
     </project-editor>
-    <div class="d-flex justify-content-end">
-      <b-button @click="saveProject" variant="primary" :disabled="!valid"
-        >Save</b-button
+    <div class="flex justify-end gap-2">
+      <Button @click="saveProject" variant="default" :disabled="!valid"
+        >Save</Button
       >
-      <b-button @click="cancel" variant="secondary">Cancel</b-button>
+      <Button @click="cancel" variant="secondary">Cancel</Button>
     </div>
   </div>
 </template>

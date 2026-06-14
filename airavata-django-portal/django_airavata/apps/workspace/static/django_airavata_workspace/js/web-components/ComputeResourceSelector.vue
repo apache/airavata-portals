@@ -1,18 +1,28 @@
 <template>
-  <b-form-group label="Compute Resource" label-for="compute-resource">
-    <b-form-select
+  <div class="space-y-1.5">
+    <label
+      for="compute-resource"
+      class="text-sm leading-none font-medium select-none"
+      >Compute Resource</label
+    >
+    <select
       id="compute-resource"
       v-model="resourceHostId"
-      :options="computeResourceOptions"
       required
-      @update:model-value="computeResourceChanged"
       :disabled="disabled || computeResourceOptions.length === 0"
+      class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
+      @change="computeResourceChanged"
     >
-      <template #first>
-        <option :value="null" disabled>Select a Compute Resource</option>
-      </template>
-    </b-form-select>
-  </b-form-group>
+      <option :value="null" disabled>Select a Compute Resource</option>
+      <option
+        v-for="option in computeResourceOptions"
+        :key="option.value"
+        :value="option.value"
+      >
+        {{ option.text }}
+      </option>
+    </select>
+  </div>
 </template>
 
 <script>

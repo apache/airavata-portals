@@ -1,22 +1,29 @@
 <template>
-  <tr>
-    <td>{{ project.name }}</td>
-    <td>{{ project.owner }}</td>
-    <td v-bind:title="project.creation_time">{{ creationTime }}</td>
-    <td>
-      <a :href="editLink" v-if="project.user_has_write_access"
-        >Edit <i class="fa fa-edit" aria-hidden="true"></i
-      ></a>
-    </td>
-  </tr>
+  <TableRow>
+    <TableCell>{{ project.name }}</TableCell>
+    <TableCell>{{ project.owner }}</TableCell>
+    <TableCell v-bind:title="project.creation_time">{{
+      creationTime
+    }}</TableCell>
+    <TableCell>
+      <a
+        :href="editLink"
+        v-if="project.user_has_write_access"
+        class="inline-flex items-center gap-1 text-primary"
+        >Edit <Pencil class="size-4" aria-hidden="true" /></a
+      >
+    </TableCell>
+  </TableRow>
 </template>
 
 <script>
+import { Pencil } from "@lucide/vue";
 import urls from "../../utils/urls";
 import moment from "moment";
 
 export default {
   name: "project-list-item",
+  components: { Pencil },
   props: ["project"],
   computed: {
     creationTime: function () {

@@ -1,30 +1,29 @@
 <template>
   <div>
     <pga-link />
-    <div class="row">
-      <div class="col">
-        <h1 class="h4 mb-4">Dashboard</h1>
-        <workspace-notices-management-container />
-        <h2 class="h6 mb-2 text-uppercase text-muted">Applications</h2>
-      </div>
+    <div>
+      <h1 class="mb-4 text-xl font-semibold">Dashboard</h1>
+      <workspace-notices-management-container />
+      <h2 class="mb-2 text-sm font-semibold text-muted-foreground uppercase">
+        Applications
+      </h2>
     </div>
-    <div class="row" v-if="showNewUserMessage">
-      <div class="col">
-        <b-alert variant="info" show
-          >Welcome {{ userProfile.first_name }} {{ userProfile.last_name }}! You
-          currently don't have access to run any applications but the
-          administrator of this gateway has been notified and will be in contact
-          to grant you the appropriate privileges.</b-alert
+    <div v-if="showNewUserMessage" class="mb-4">
+      <Alert>
+        <AlertDescription
+          >Welcome {{ userProfile.first_name }}
+          {{ userProfile.last_name }}! You currently don't have access to run
+          any applications but the administrator of this gateway has been
+          notified and will be in contact to grant you the appropriate
+          privileges.</AlertDescription
         >
-      </div>
+      </Alert>
     </div>
     <template v-if="favoriteApplicationsData.length > 0">
-      <div class="row">
-        <div class="col">
-          <h1 class="h5 mb-2">Favorites</h1>
-        </div>
+      <div>
+        <h1 class="mb-2 text-lg font-semibold">Favorites</h1>
       </div>
-      <div class="row">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <application-card
           v-for="item in favoriteApplicationsData"
           v-bind:appModule="item.appModule"
@@ -38,16 +37,15 @@
           <template #card-actions>
             <favorite-toggle
               :favorite="true"
-              class="card-link"
               @favorite="markFavorite(item.appModule)"
               @unfavorite="markNotFavorite(item.appModule)"
             />
           </template>
         </application-card>
       </div>
-      <hr />
+      <Separator class="my-4" />
     </template>
-    <div class="row">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <application-card
         v-for="item in nonFavoriteApplicationsData"
         v-bind:appModule="item.appModule"
@@ -60,7 +58,6 @@
         <template #card-actions>
           <favorite-toggle
             :favorite="false"
-            class="card-link"
             @favorite="markFavorite(item.appModule)"
             @unfavorite="markNotFavorite(item.appModule)"
           />

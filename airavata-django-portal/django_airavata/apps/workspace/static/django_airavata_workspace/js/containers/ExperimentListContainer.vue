@@ -1,175 +1,183 @@
 <template>
   <div>
-    <div class="row">
-      <div class="col">
-        <h1 class="h4 mb-4">Browse Experiments</h1>
-      </div>
+    <div>
+      <h1 class="mb-4 text-xl font-semibold">Browse Experiments</h1>
     </div>
-    <div class="row">
-      <div class="col">
-        <div class="card">
-          <div class="card-body">
-            <b-input-group class="w-100 mb-2">
-              <b-form-input
-                v-if="defaultOptionSelected"
-                v-model="search"
-                placeholder="Search Experiments"
-                @keydown.enter="searchExperiments"
-              />
-              <b-form-select
-                v-if="applicationSelected"
-                v-model="applicationSelect"
-                :options="applicationNameOptions"
+    <div class="mb-4">
+      <Card>
+        <CardContent>
+          <div class="mb-2 flex w-full flex-wrap items-center gap-2">
+            <Input
+              v-if="defaultOptionSelected"
+              class="w-auto flex-1"
+              v-model="search"
+              placeholder="Search Experiments"
+              @keydown.enter="searchExperiments"
+            />
+            <select
+              v-if="applicationSelected"
+              v-model="applicationSelect"
+              :class="selectClass"
+            >
+              <option :value="null" disabled>
+                Select an application to search by
+              </option>
+              <option
+                v-for="option in applicationNameOptions"
+                :key="option.value"
+                :value="option.value"
               >
-                <template #first>
-                  <option :value="null" disabled>
-                    Select an application to search by
-                  </option>
-                </template>
-              </b-form-select>
-              <b-form-select
-                v-if="projectSelected"
-                v-model="projectSelect"
-                :options="projectNameOptions"
+                {{ option.text }}
+              </option>
+            </select>
+            <select
+              v-if="projectSelected"
+              v-model="projectSelect"
+              :class="selectClass"
+            >
+              <option :value="null" disabled>
+                Select a project to search by
+              </option>
+              <option
+                v-for="option in projectNameOptions"
+                :key="option.value"
+                :value="option.value"
               >
-                <template #first>
-                  <option :value="null" disabled>
-                    Select a project to search by
-                  </option>
-                </template>
-              </b-form-select>
-              <b-form-select
-                v-model="experimentAttributeSelect"
-                @update:model-value="checkSearchOptions"
-              >
-                <template #first>
-                  <option :value="null" disabled>
-                    Select an attribute to search by
-                  </option>
-                </template>
-                <option value="USER_NAME">User Name</option>
-                <option value="EXPERIMENT_NAME">Experiment Name</option>
-                <option value="EXPERIMENT_DESC">Experiment Description</option>
-                <option value="APPLICATION_ID">Application</option>
-                <option value="PROJECT_ID">Project</option>
-                <option value="JOB_ID">Job Id</option>
-              </b-form-select>
-              <b-form-select v-model="experimentStatusSelect">
-                <template #first>
-                  <option :value="null" disabled>
-                    Select an experiment status to filter by
-                  </option>
-                </template>
-                <option value="ALL">ALL</option>
-                <option value="EXPERIMENT_STATE_CREATED">Created</option>
-                <option value="EXPERIMENT_STATE_VALIDATED">Validated</option>
-                <option value="EXPERIMENT_STATE_SCHEDULED">Scheduled</option>
-                <option value="EXPERIMENT_STATE_LAUNCHED">Launched</option>
-                <option value="EXPERIMENT_STATE_EXECUTING">Executing</option>
-                <option value="EXPERIMENT_STATE_CANCELED">Canceled</option>
-                <option value="EXPERIMENT_STATE_COMPLETED">Completed</option>
-                <option value="EXPERIMENT_STATE_FAILED">Failed</option>
-              </b-form-select>
-              <b-button @click="resetSearch">Reset</b-button>
-              <b-button variant="primary" @click="searchExperiments"
-                >Search</b-button
-              >
-            </b-input-group>
-            <b-input-group class="w-100 mb-2">
-              <b-input-group-text>
-                <i class="fa fa-calendar-week" aria-hidden="true"></i>
-              </b-input-group-text>
-              <flat-pickr
-                v-model="dateSelect"
-                :config="dateConfig"
-                placeholder="Select a date range to filter by"
-                @on-change="dateRangeChanged"
-                class="form-control"
-              />
-            </b-input-group>
+                {{ option.text }}
+              </option>
+            </select>
+            <select
+              v-model="experimentAttributeSelect"
+              :class="selectClass"
+              @change="checkSearchOptions"
+            >
+              <option :value="null" disabled>
+                Select an attribute to search by
+              </option>
+              <option value="USER_NAME">User Name</option>
+              <option value="EXPERIMENT_NAME">Experiment Name</option>
+              <option value="EXPERIMENT_DESC">Experiment Description</option>
+              <option value="APPLICATION_ID">Application</option>
+              <option value="PROJECT_ID">Project</option>
+              <option value="JOB_ID">Job Id</option>
+            </select>
+            <select v-model="experimentStatusSelect" :class="selectClass">
+              <option :value="null" disabled>
+                Select an experiment status to filter by
+              </option>
+              <option value="ALL">ALL</option>
+              <option value="EXPERIMENT_STATE_CREATED">Created</option>
+              <option value="EXPERIMENT_STATE_VALIDATED">Validated</option>
+              <option value="EXPERIMENT_STATE_SCHEDULED">Scheduled</option>
+              <option value="EXPERIMENT_STATE_LAUNCHED">Launched</option>
+              <option value="EXPERIMENT_STATE_EXECUTING">Executing</option>
+              <option value="EXPERIMENT_STATE_CANCELED">Canceled</option>
+              <option value="EXPERIMENT_STATE_COMPLETED">Completed</option>
+              <option value="EXPERIMENT_STATE_FAILED">Failed</option>
+            </select>
+            <Button variant="outline" @click="resetSearch">Reset</Button>
+            <Button variant="default" @click="searchExperiments"
+              >Search</Button
+            >
           </div>
-        </div>
-      </div>
+          <div class="mb-2 flex w-full items-stretch">
+            <span
+              class="flex items-center rounded-l-md border border-r-0 border-input px-3 text-muted-foreground"
+            >
+              <CalendarDays class="size-4" aria-hidden="true" />
+            </span>
+            <flat-pickr
+              v-model="dateSelect"
+              :config="dateConfig"
+              placeholder="Select a date range to filter by"
+              @on-change="dateRangeChanged"
+              class="h-9 w-full min-w-0 rounded-r-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
-    <div class="row">
-      <div class="col">
-        <div class="card">
-          <div class="card-body">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Application</th>
-                  <th>User</th>
-                  <th>Creation Time</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="experiment in experiments"
-                  :key="experiment.experiment_id"
+    <div>
+      <Card>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Application</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Creation Time</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow
+                v-for="experiment in experiments"
+                :key="experiment.experiment_id"
+              >
+                <TableCell>
+                  <a class="text-primary" :href="viewLink(experiment)">{{
+                    experiment.name
+                  }}</a>
+                </TableCell>
+                <TableCell v-if="applicationName(experiment)">
+                  {{ applicationName(experiment) }}
+                </TableCell>
+                <TableCell v-else class="text-muted-foreground italic"
+                  >N/A</TableCell
                 >
-                  <td>
-                    <b-link :href="viewLink(experiment)">{{
-                      experiment.name
-                    }}</b-link>
-                  </td>
-                  <td v-if="applicationName(experiment)">
-                    {{ applicationName(experiment) }}
-                  </td>
-                  <td v-else class="fst-italic text-muted">N/A</td>
-                  <td>{{ experiment.user_name }}</td>
-                  <td>
-                    <span :title="experiment.creation_time">{{
-                      fromNow(experiment.creation_time)
-                    }}</span>
-                  </td>
-                  <td>
-                    <experiment-status-badge
-                      :statusName="experiment.experiment_status.name"
-                    />
-                  </td>
-                  <td>
-                    <!-- if we can't load the application for the experiment
-                    (for example, if it was deleted), then user can't edit or
-                    clone experiment -->
-                    <span v-if="applicationName(experiment)">
-                      <b-link
-                        v-if="
-                          experiment.isEditable && applicationName(experiment)
-                        "
-                        :href="editLink(experiment)"
-                        class="action-link"
-                        >Edit
-                        <i class="fa fa-edit" aria-hidden="true"></i>
-                      </b-link>
-                      <b-link
-                        v-else
-                        @click="clone(experiment)"
-                        class="action-link"
-                        >Clone
-                        <i class="fa fa-copy" aria-hidden="true"></i>
-                      </b-link>
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <pager
-              v-bind:paginator="experimentsPaginator"
-              v-on:next="nextExperiments"
-              v-on:previous="previousExperiments"
-            ></pager>
-          </div>
-        </div>
-      </div>
+                <TableCell>{{ experiment.user_name }}</TableCell>
+                <TableCell>
+                  <span :title="experiment.creation_time">{{
+                    fromNow(experiment.creation_time)
+                  }}</span>
+                </TableCell>
+                <TableCell>
+                  <experiment-status-badge
+                    :statusName="experiment.experiment_status.name"
+                  />
+                </TableCell>
+                <TableCell>
+                  <!-- if we can't load the application for the experiment
+                  (for example, if it was deleted), then user can't edit or
+                  clone experiment -->
+                  <span v-if="applicationName(experiment)">
+                    <a
+                      v-if="
+                        experiment.isEditable && applicationName(experiment)
+                      "
+                      :href="editLink(experiment)"
+                      class="inline-flex items-center gap-1 text-primary"
+                      >Edit
+                      <Pencil class="size-4" aria-hidden="true" />
+                    </a>
+                    <a
+                      v-else
+                      href="#"
+                      @click.prevent="clone(experiment)"
+                      class="inline-flex items-center gap-1 text-primary"
+                      >Clone
+                      <Copy class="size-4" aria-hidden="true" />
+                    </a>
+                  </span>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <pager
+            v-bind:paginator="experimentsPaginator"
+            v-on:next="nextExperiments"
+            v-on:previous="previousExperiments"
+          ></pager>
+        </CardContent>
+      </Card>
     </div>
   </div>
 </template>
 
 <script>
+import { CalendarDays, Copy, Pencil } from "@lucide/vue";
 import { errors, models, services, utils } from "django-airavata-api";
 import { components as comps } from "django-airavata-common-ui";
 import FlatPickr from "vue-flatpickr-component";
@@ -207,6 +215,9 @@ export default {
     };
   },
   components: {
+    CalendarDays,
+    Copy,
+    Pencil,
     pager: comps.Pager,
     "experiment-status-badge": comps.ExperimentStatusBadge,
     "flat-pickr": FlatPickr,
@@ -350,6 +361,9 @@ export default {
     },
   },
   computed: {
+    selectClass() {
+      return "h-9 w-auto flex-1 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30";
+    },
     experiments: function () {
       return this.experimentsPaginator
         ? this.experimentsPaginator.results

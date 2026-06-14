@@ -1,6 +1,8 @@
 import { h } from "vue";
 import { createPinia } from "pinia";
 import { components, entry } from "django-airavata-common-ui";
+// Tailwind v4 + shadcn-vue design tokens and base styles (shared with common).
+import "django-airavata-common-ui/css/app.css";
 import ExperimentSummary from "./components/experiment/ExperimentSummary.vue";
 import { useViewExperimentStore } from "./store";
 

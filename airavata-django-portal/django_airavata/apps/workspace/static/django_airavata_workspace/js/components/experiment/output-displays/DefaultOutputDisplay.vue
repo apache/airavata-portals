@@ -34,7 +34,7 @@
       </div>
     </template>
     <template v-else-if="!isExecuting && dataProducts.length === 0">
-      <div class="d-flex justify-content-center text-secondary">
+      <div class="flex justify-center text-muted-foreground">
         There are no files for this application output.
       </div>
     </template>

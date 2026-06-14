@@ -1,5 +1,7 @@
 <template>
-  <b-button :href="downloadUrl" :download="fileName">Download</b-button>
+  <Button as="a" variant="outline" :href="downloadUrl" :download="fileName"
+    >Download</Button
+  >
 </template>
 
 <script>

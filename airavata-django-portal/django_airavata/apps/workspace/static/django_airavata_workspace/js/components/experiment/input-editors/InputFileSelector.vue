@@ -6,11 +6,14 @@
       :selected-data-product-uris="selectedDataProductURIs"
     />
   </div>
-  <div class="d-flex align-items-center" v-else>
-    <b-button @click="isSelectingFile = true" class="input-file-option"
-      >Select file from storage</b-button
+  <div class="flex items-center" v-else>
+    <Button
+      variant="outline"
+      @click="isSelectingFile = true"
+      class="input-file-option"
+      >Select file from storage</Button
     >
-    <span class="text-muted mx-3">OR</span>
+    <span class="mx-3 text-muted-foreground">OR</span>
     <uppy
       class="input-file-option"
       ref="uppy"

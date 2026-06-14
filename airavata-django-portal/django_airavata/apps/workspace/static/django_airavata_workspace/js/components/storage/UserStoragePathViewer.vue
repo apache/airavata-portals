@@ -23,76 +23,88 @@
       "
     />
 
-    <b-table
-      v-if="userStoragePath && isDir"
-      :fields="fields"
-      :items="items"
-      sort-by="name"
-      :sort-compare="sortCompare"
-    >
-      <template #cell(name)="data">
-        <b-link
-          v-if="data.item.type === 'dir'"
-          @click="directorySelected(data.item)"
-        >
-          <i class="fa fa-folder-open"></i> {{ data.item.name }}
-          <template v-if="data.item.is_shared_dir">
-            <b-badge class="ms-1">shared</b-badge>
-          </template>
-        </b-link>
-        <user-storage-link
-          v-else
-          :data-product-uri="data.item.data_product_uri"
-          :mime-type="data.item.content_type"
-          :file-name="data.item.name"
-          :allow-preview="allowPreview"
-        />
-      </template>
-      <template #cell(modifiedTimestamp)="data">
-        <human-date :date="data.item.modified_time" />
-      </template>
-      <template #cell(actions)="data">
-        <b-button
-          v-if="includeSelectFileAction && data.item.type === 'file'"
-          @click="$emit('file-selected', data.item)"
-          :disabled="isAlreadySelected(data.item)"
-          variant="primary"
-        >
-          Select
-        </b-button>
+    <Table v-if="userStoragePath && isDir">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Size</TableHead>
+          <TableHead>Last Modified</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow v-for="item in sortedItems" :key="item.path || item.name">
+          <TableCell>
+            <a
+              v-if="item.type === 'dir'"
+              href="#"
+              class="inline-flex items-center gap-1 text-primary"
+              @click.prevent="directorySelected(item)"
+            >
+              <FolderOpen class="size-4" /> {{ item.name }}
+              <template v-if="item.is_shared_dir">
+                <Badge variant="secondary" class="ml-1">shared</Badge>
+              </template>
+            </a>
+            <user-storage-link
+              v-else
+              :data-product-uri="item.data_product_uri"
+              :mime-type="item.content_type"
+              :file-name="item.name"
+              :allow-preview="allowPreview"
+            />
+          </TableCell>
+          <TableCell>{{ getFormattedSize(item.size) }}</TableCell>
+          <TableCell>
+            <human-date :date="item.modified_time" />
+          </TableCell>
+          <TableCell>
+            <div class="flex flex-wrap items-center gap-2">
+              <Button
+                v-if="includeSelectFileAction && item.type === 'file'"
+                @click="$emit('file-selected', item)"
+                :disabled="isAlreadySelected(item)"
+                variant="default"
+              >
+                Select
+              </Button>
 
-        <b-link
-          v-if="includeDownloadAction && data.item.type === 'file'"
-          class="action-link"
-          :href="`${data.item.downloadURL}&download`"
-        >
-          Download File
-          <i class="fa fa-download" aria-hidden="true"></i>
-        </b-link>
-        <b-link
-          v-if="includeDownloadAction && data.item.type === 'dir'"
-          class="action-link"
-          :href="`/sdk/download-dir/?path=${data.item.path}`"
-        >
-          Download Zip
-          <i class="fa fa-file-archive" aria-hidden="true"></i>
-        </b-link>
-        <delete-link
-          v-if="
-            includeDeleteAction &&
-            data.item.user_has_write_access &&
-            !data.item.is_shared_dir
-          "
-          @delete="deleteItem(data.item)"
-        >
-          Are you sure you want to delete <strong>{{ data.item.name }}</strong
-          >?
-        </delete-link>
-      </template>
-    </b-table>
+              <a
+                v-if="includeDownloadAction && item.type === 'file'"
+                class="inline-flex items-center gap-1 text-primary"
+                :href="`${item.downloadURL}&download`"
+              >
+                Download File
+                <Download class="size-4" aria-hidden="true" />
+              </a>
+              <a
+                v-if="includeDownloadAction && item.type === 'dir'"
+                class="inline-flex items-center gap-1 text-primary"
+                :href="`/sdk/download-dir/?path=${item.path}`"
+              >
+                Download Zip
+                <FileArchive class="size-4" aria-hidden="true" />
+              </a>
+              <delete-link
+                v-if="
+                  includeDeleteAction &&
+                  item.user_has_write_access &&
+                  !item.is_shared_dir
+                "
+                @delete="deleteItem(item)"
+              >
+                Are you sure you want to delete
+                <strong>{{ item.name }}</strong>?
+              </delete-link>
+            </div>
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
   </div>
 </template>
 <script>
+import { Download, FileArchive, FolderOpen } from "@lucide/vue";
 import UserStoragePathBreadcrumb from "./StoragePathBreadcrumb.vue";
 import { components } from "django-airavata-common-ui";
 import UserStorageCreateView from "./UserStorageCreateView";
@@ -138,6 +150,9 @@ export default {
     },
   },
   components: {
+    Download,
+    FileArchive,
+    FolderOpen,
     UserStorageLink,
     "delete-link": components.DeleteLink,
     "human-date": components.HumanDate,
@@ -158,30 +173,6 @@ export default {
       return this.userStoragePath.files[0];
     },
 
-    fields() {
-      return [
-        {
-          label: "Name",
-          key: "name",
-          sortable: true,
-        },
-        {
-          label: "Size",
-          key: "size",
-          sortable: true,
-          formatter: (value) => this.getFormattedSize(value),
-        },
-        {
-          label: "Last Modified",
-          key: "modifiedTimestamp",
-          sortable: true,
-        },
-        {
-          label: "Actions",
-          key: "actions",
-        },
-      ];
-    },
     items() {
       if (this.userStoragePath) {
         const dirs = this.userStoragePath.directories.map((d) => {
@@ -216,6 +207,18 @@ export default {
       } else {
         return [];
       }
+    },
+    sortedItems() {
+      // Mirror the b-table sort: shared directories first, then by name.
+      return this.items.slice().sort((a, b) => {
+        if (a.is_shared_dir && !b.is_shared_dir) {
+          return -1;
+        }
+        if (b.is_shared_dir && !a.is_shared_dir) {
+          return 1;
+        }
+        return a.name.localeCompare(b.name);
+      });
     },
     downloadTarget() {
       return this.downloadInNewWindow ? "_blank" : "_self";
@@ -252,23 +255,6 @@ export default {
           (uri) => item.type === "file" && uri === item.data_product_uri,
         ) !== undefined
       );
-    },
-    sortCompare(aRow, bRow, key) {
-      if (key === "name") {
-        // Sort the shared directory first
-        if (aRow.is_shared_dir) {
-          return -1;
-        }
-        if (bRow.is_shared_dir) {
-          return 1;
-        }
-        const a = aRow[key];
-        const b = bRow[key];
-        return a.localeCompare(b);
-      } else {
-        // Use default logic for all other fields
-        return null;
-      }
     },
   },
 };

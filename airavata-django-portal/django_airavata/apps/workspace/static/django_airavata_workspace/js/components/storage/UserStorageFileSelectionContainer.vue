@@ -1,25 +1,35 @@
 <template>
-  <b-card header="Select a file">
-    <user-storage-path-viewer
-      v-if="userStoragePath"
-      :user-storage-path="userStoragePath"
-      :storage-path="storagePath"
-      @directory-selected="directorySelected"
-      @file-selected="fileSelected"
-      :include-delete-action="false"
-      :include-select-file-action="true"
-      :include-create-file-action="false"
-      :include-download-action="false"
-      :download-in-new-window="true"
-      :selected-data-product-uris="selectedDataProductUris"
-    >
-    </user-storage-path-viewer>
-    <template #footer>
-      <div class="d-flex justify-content-end">
-        <b-link class="text-secondary" @click="$emit('cancel')">Cancel</b-link>
+  <Card>
+    <CardHeader class="border-b">
+      <CardTitle class="text-base">Select a file</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <user-storage-path-viewer
+        v-if="userStoragePath"
+        :user-storage-path="userStoragePath"
+        :storage-path="storagePath"
+        @directory-selected="directorySelected"
+        @file-selected="fileSelected"
+        :include-delete-action="false"
+        :include-select-file-action="true"
+        :include-create-file-action="false"
+        :include-download-action="false"
+        :download-in-new-window="true"
+        :selected-data-product-uris="selectedDataProductUris"
+      >
+      </user-storage-path-viewer>
+    </CardContent>
+    <CardFooter class="border-t">
+      <div class="flex w-full justify-end">
+        <a
+          href="#"
+          class="text-muted-foreground"
+          @click.prevent="$emit('cancel')"
+          >Cancel</a
+        >
       </div>
-    </template>
-  </b-card>
+    </CardFooter>
+  </Card>
 </template>
 
 <script>

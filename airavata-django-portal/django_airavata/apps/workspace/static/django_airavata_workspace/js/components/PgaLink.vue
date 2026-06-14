@@ -1,12 +1,14 @@
 <template>
-  <div class="row" v-if="showPGAUrl">
-    <div class="col">
-      <b-alert variant="info" show
-        >You're using the new portal interface. To switch back to the old
+  <div v-if="showPGAUrl">
+    <Alert>
+      <AlertDescription>
+        You're using the new portal interface. To switch back to the old
         interface, go to
-        <b-link :href="settings.pgaUrl">{{ settings.pgaUrl }}</b-link>
-      </b-alert>
-    </div>
+        <a class="font-medium text-primary" :href="settings.pgaUrl">{{
+          settings.pgaUrl
+        }}</a>
+      </AlertDescription>
+    </Alert>
   </div>
 </template>
 
