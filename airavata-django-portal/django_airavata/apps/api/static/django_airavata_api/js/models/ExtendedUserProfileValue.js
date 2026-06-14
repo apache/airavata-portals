@@ -37,7 +37,6 @@ export default class ExtendedUserProfileValue extends BaseModel {
         delete copy["choices"];
         break;
       default:
-        // eslint-disable-next-line no-console
         console.error("Unrecognized value type", this.value_type);
         break;
     }

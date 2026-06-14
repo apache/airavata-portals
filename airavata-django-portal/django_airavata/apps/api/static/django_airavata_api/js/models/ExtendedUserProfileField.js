@@ -62,7 +62,6 @@ export default class ExtendedUserProfileField extends BaseModel {
         delete copy["choices"];
         break;
       default:
-        // eslint-disable-next-line no-console
         console.error("Unrecognized field type", this.field_type);
         break;
     }

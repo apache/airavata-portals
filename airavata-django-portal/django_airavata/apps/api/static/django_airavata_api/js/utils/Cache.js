@@ -38,7 +38,7 @@ export default class Cache {
   }
 
   has(key) {
-    if (this._cache.hasOwnProperty(key)) {
+    if (Object.hasOwn(this._cache, key)) {
       const cacheEntry = this._cache[key];
       if (cacheEntry.isExpired) {
         delete this._cache[key];

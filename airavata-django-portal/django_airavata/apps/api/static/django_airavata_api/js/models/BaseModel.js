@@ -86,7 +86,7 @@ export default class BaseModel {
         if (fieldValue instanceof BaseEnum) {
           return fieldValue;
         }
-        let enumValue = null;
+        let enumValue;
         if (typeof fieldValue === "string") {
           // convert by name if type is string
           enumValue = modelClass.byName(fieldValue);

@@ -204,7 +204,7 @@ export default class InputDataObjectType extends BaseModel {
       try {
         const parsed = JSON.parse(this.meta_data);
         return typeof parsed === "object" ? parsed : null;
-      } catch (e) {
+      } catch {
         return null;
       }
     }

@@ -5,7 +5,7 @@ import StackTrace from "stacktrace-js";
 
 class ErrorReporter {
   reportUnhandledError(unhandledError) {
-    console.log(JSON.stringify(unhandledError, null, 4)); // eslint-disable-line no-console
+    console.log(JSON.stringify(unhandledError, null, 4));
 
     StackTrace.fromError(unhandledError.error)
       .then((stackframes) => {
@@ -19,13 +19,13 @@ class ErrorReporter {
               stacktrace: stacktrace,
             }),
           },
-          { ignoreErrors: true }
+          { ignoreErrors: true },
         ).catch((err) => {
-          console.log("Failed to log error", err); // eslint-disable-line no-console
+          console.log("Failed to log error", err);
         });
       })
       .catch((err) => {
-        console.log("Failed to produce stacktrace", err); // eslint-disable-line no-console
+        console.log("Failed to produce stacktrace", err);
       });
   }
 }

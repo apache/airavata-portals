@@ -8,7 +8,7 @@ const createExperiment = async function ({
   experimentName,
   experimentInputs,
 } = {}) {
-  let applicationInterface = null;
+  let applicationInterface;
   if (applicationInterfaceId) {
     applicationInterface = await loadApplicationInterfaceById(
       applicationInterfaceId
@@ -113,7 +113,7 @@ const loadComputeResourceIdByName = async function (computeResourceName) {
   const computeResourceNames = await services.ComputeResourceService.names();
   for (const computeResourceId in computeResourceNames) {
     if (
-      computeResourceNames.hasOwnProperty(computeResourceId) &&
+      Object.hasOwn(computeResourceNames, computeResourceId) &&
       computeResourceNames[computeResourceId] === computeResourceName
     ) {
       return computeResourceId;
