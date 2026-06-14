@@ -1,7 +1,7 @@
 <template>
   <div>
     <div>
-      <h1 class="mb-4 text-xl font-semibold">Application Interface</h1>
+      <h2 class="mb-4 text-lg font-semibold">Application Interface</h2>
     </div>
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
@@ -93,7 +93,7 @@
       </div>
     </div>
     <div class="mt-4">
-      <h1 class="mb-4 text-lg font-semibold">Input Fields</h1>
+      <h2 class="mb-4 text-lg font-semibold">Input Fields</h2>
       <draggable
         v-model="data.application_inputs"
         item-key="key"
@@ -123,7 +123,7 @@
       </Button>
     </div>
     <div>
-      <h1 class="mb-4 text-lg font-semibold">Output Fields</h1>
+      <h2 class="mb-4 text-lg font-semibold">Output Fields</h2>
       <application-output-field-editor
         v-for="output in data.application_outputs"
         :value="output"

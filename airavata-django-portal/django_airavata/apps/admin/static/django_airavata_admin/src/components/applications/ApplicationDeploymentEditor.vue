@@ -1,9 +1,9 @@
 <template>
   <div>
     <div>
-      <h1 class="mb-1 text-xl font-semibold">
+      <h2 class="mb-1 text-lg font-semibold">
         {{ name }}
-      </h1>
+      </h2>
       <p v-if="owner" class="mb-2 text-muted-foreground">
         Created by <span :title="ownerTitle">{{ ownerUserId }}</span>
       </p>

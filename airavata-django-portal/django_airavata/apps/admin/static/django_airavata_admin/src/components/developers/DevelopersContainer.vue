@@ -1,8 +1,8 @@
 <template>
-  <div>
-    <div>
-      <h1 class="mb-4 text-xl font-semibold">Developer Console</h1>
-    </div>
+  <main-layout
+    title="Developer Console"
+    subtitle="Resources and tools for local gateway development."
+  >
     <Card>
       <CardHeader>
         <CardTitle
@@ -19,11 +19,12 @@
         </a>
       </CardContent>
     </Card>
-  </div>
+  </main-layout>
 </template>
 <script>
 import { Download } from "@lucide/vue";
+import { components } from "django-airavata-common-ui";
 export default {
-  components: { Download },
+  components: { Download, "main-layout": components.MainLayout },
 };
 </script>

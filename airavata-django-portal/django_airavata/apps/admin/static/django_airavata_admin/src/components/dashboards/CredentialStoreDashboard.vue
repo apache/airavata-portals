@@ -1,24 +1,24 @@
 <template>
-  <div>
-    <list-layout
-      @add-new-item="showNewSSHCredentialModal"
-      :items="sshKeys"
-      title="SSH Credentials"
-      new-item-button-text="New SSH Credential"
-    >
-      <template v-slot:additional-buttons>
-        <span>
-          <Button
-            v-if="userIsAdmin"
-            variant="outline"
-            @click="showNewSharedSSHCredentialModel"
-          >
-            New Gateway SSH Credential
-            <Plus class="size-4" aria-hidden="true" />
-          </Button>
-        </span>
-      </template>
-      <template v-slot:item-list="slotProps">
+  <main-layout
+    title="Credential Store"
+    subtitle="Manage the SSH and gateway credentials used to access compute resources."
+  >
+    <template v-slot:actions>
+      <Button
+        v-if="userIsAdmin"
+        variant="outline"
+        @click="showNewSharedSSHCredentialModel"
+      >
+        New Gateway SSH Credential
+        <Plus class="size-4" aria-hidden="true" />
+      </Button>
+      <Button @click="showNewSSHCredentialModal">
+        New SSH Credential
+        <Plus class="size-4" aria-hidden="true" />
+      </Button>
+    </template>
+    <Card>
+      <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
@@ -28,7 +28,7 @@
             </TableRow>
           </TableHeader>
           <TableBody>
-            <TableRow v-for="item in slotProps.items" :key="item.token">
+            <TableRow v-for="item in sshKeys" :key="item.token">
               <TableCell>{{ item.description }}</TableCell>
               <TableCell>{{ item.username }}</TableCell>
               <TableCell><human-date :date="item.persisted_time" /></TableCell>
@@ -55,8 +55,8 @@
             </TableRow>
           </TableBody>
         </Table>
-      </template>
-    </list-layout>
+      </CardContent>
+    </Card>
     <new-ssh-credential-modal
       ref="newSSHCredentialModal"
       @new="createNewSSHCredential"
@@ -65,44 +65,22 @@
       ref="newSharedSSHCredentialModal"
       @new="createNewSharedSSHCredential"
     />
-    <!--
-    <list-layout class="mt-4" @add-new-item="showNewPasswordCredentialModal" :items="passwordCredentials" title="Password Credentials"
-      new-item-button-text="New Password Credential">
-      <template #item-list="slotProps">
-
-        <b-table striped hover :fields="fields" :items="slotProps.items">
-          <template #cell(sharing)="data">
-            <share-button :entity-id="data.item.token" :disallow-editing-admin-groups="false" :auto-add-admin-groups="false"/>
-          </template>
-          <template #cell(action)="data">
-            <delete-link v-if="data.item.user_has_write_access" @delete="deletePasswordCredential(data.item)">
-              Are you sure you want to delete the
-              <strong>{{ data.item.description }}</strong> password credential?
-            </delete-link>
-          </template>
-        </b-table>
-      </template>
-    </list-layout>
-    <new-password-credential-modal ref="newPasswordCredentialModal" @new="createNewPasswordCredential" />
-    -->
-  </div>
+  </main-layout>
 </template>
 
 <script>
 import { Plus } from "@lucide/vue";
 import { models, services, session } from "django-airavata-api";
-import { components, layouts } from "django-airavata-common-ui";
+import { components } from "django-airavata-common-ui";
 import NewSSHCredentialModal from "../credentials/NewSSHCredentialModal.vue";
-// import NewPasswordCredentialModal from "../credentials/NewPasswordCredentialModal.vue";
 
 export default {
   components: {
     Plus,
     "delete-link": components.DeleteLink,
     "human-date": components.HumanDate,
-    "list-layout": layouts.ListLayout,
+    "main-layout": components.MainLayout,
     "clipboard-copy-link": components.ClipboardCopyLink,
-    // "new-password-credential-modal": NewPasswordCredentialModal,
     "new-ssh-credential-modal": NewSSHCredentialModal,
     "new-shared-ssh-credential-modal": NewSSHCredentialModal,
     "share-button": components.ShareButton,

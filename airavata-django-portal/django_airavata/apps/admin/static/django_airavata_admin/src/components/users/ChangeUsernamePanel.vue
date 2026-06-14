@@ -47,7 +47,7 @@
       </div>
       <confirmation-button
         class="mt-4"
-        variant="primary"
+        variant="default"
         @confirmed="updateUsername"
         :disabled="v$.$invalid || username === newUsername"
         dialog-title="Please confirm username change"
@@ -62,9 +62,9 @@
           class="mt-2"
         >
           <AlertDescription>
-            This user already has an Airavata User Profile. Giving the user a new
-            username will result in the user getting a new Airavata User Profile
-            and
+            This user already has an Airavata User Profile. Giving the user a
+            new username will result in the user getting a new Airavata User
+            Profile and
             <strong
               >losing the old one and everything (projects, experiments, etc.)
               associated with it</strong

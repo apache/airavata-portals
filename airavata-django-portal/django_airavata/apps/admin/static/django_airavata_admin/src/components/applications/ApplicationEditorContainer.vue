@@ -1,5 +1,8 @@
 <template>
-  <div class="pb-20">
+  <main-layout
+    :title="title"
+    subtitle="Configure this application's details, interface, and deployments."
+  >
     <unsaved-changes-guard :dirty="isDirty" />
     <confirmation-dialog
       ref="unsavedChangesDialog"
@@ -8,12 +11,7 @@
     >
       You have unsaved changes. Are you sure you want to leave this page?
     </confirmation-dialog>
-    <div>
-      <h1 class="mb-4 text-xl font-semibold">
-        {{ title }}
-      </h1>
-    </div>
-    <div>
+    <div class="pb-20">
       <nav class="mb-3 flex gap-1 border-b">
         <router-link
           class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
@@ -98,7 +96,7 @@
       </delete-button>
       <Button variant="secondary" @click="cancel"> Cancel </Button>
     </div>
-  </div>
+  </main-layout>
 </template>
 
 <script>
@@ -118,6 +116,7 @@ export default {
     hostId: String,
   },
   components: {
+    "main-layout": components.MainLayout,
     "unsaved-changes-guard": components.UnsavedChangesGuard,
     "confirmation-dialog": components.ConfirmationDialog,
     "delete-button": components.DeleteButton,
@@ -146,7 +145,7 @@ export default {
       if (this.id) {
         return this.appModule && this.appModule.app_module_name
           ? this.appModule.app_module_name
-          : "";
+          : "Application";
       } else {
         return "Create a New Application";
       }

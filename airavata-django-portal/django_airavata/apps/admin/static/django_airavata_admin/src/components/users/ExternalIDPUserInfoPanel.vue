@@ -18,7 +18,7 @@
           </TableRow>
         </TableBody>
       </Table>
-      <small class="text-muted-foreground"
+      <small class="text-sm text-muted-foreground"
         >This is the user information provided by the user's authentication
         provider. The IDP alias used is
         {{ externalIDPUserInfo.idp_alias || "N/A" }}.
@@ -46,9 +46,7 @@ export default {
       });
     },
     sortedItems() {
-      return this.items
-        .slice()
-        .sort((a, b) => a.claim.localeCompare(b.claim));
+      return this.items.slice().sort((a, b) => a.claim.localeCompare(b.claim));
     },
   },
 };

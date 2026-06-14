@@ -1,7 +1,7 @@
 <template>
   <div>
     <div>
-      <h1 class="mb-4 text-xl font-semibold">Application Details</h1>
+      <h2 class="mb-4 text-lg font-semibold">Application Details</h2>
       <div class="space-y-4">
         <div class="space-y-1.5">
           <Label for="application-name">Application Name</Label>

@@ -92,15 +92,10 @@
 
       <template v-if="!editNotification">
         <div class="flex gap-2">
-          <Button
-            variant="default"
-            class="bg-success text-success-foreground hover:bg-success/90"
-            @click="saveNewNotice"
-            :disabled="isSaveDisabled"
-          >
+          <Button @click="saveNewNotice" :disabled="isSaveDisabled">
             Save
           </Button>
-          <Button variant="default" @click="cancelNewNotice"> Cancel </Button>
+          <Button variant="secondary" @click="cancelNewNotice"> Cancel </Button>
         </div>
       </template>
     </form>

@@ -1,7 +1,9 @@
 <template>
-  <div>
-    <div class="mb-4 flex items-center gap-2">
-      <h1 class="mr-auto text-xl font-semibold">Manage Users</h1>
+  <main-layout
+    title="Manage Users"
+    subtitle="Search and manage gateway user accounts and group memberships."
+  >
+    <template v-slot:actions>
       <Button variant="outline" as-child>
         <router-link :to="{ name: 'extended-user-profile' }"
           >Extended User Profile</router-link
@@ -24,14 +26,16 @@
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    </div>
+    </template>
     <router-view></router-view>
-  </div>
+  </main-layout>
 </template>
 
 <script>
+import { components } from "django-airavata-common-ui";
 export default {
   name: "user-management-container",
+  components: { "main-layout": components.MainLayout },
   computed: {
     menuText() {
       if (this.$route.name === "identity-service-users") {

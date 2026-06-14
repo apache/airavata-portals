@@ -1,31 +1,27 @@
 <template>
-  <div class="pb-20">
-    <div class="mb-2">
-      <h1 class="text-xl font-semibold">Extended User Profile Editor</h1>
-      <p class="text-sm text-muted-foreground">
-        Add and edit additional user profile fields for gateway users to
-        complete.
-      </p>
+  <main-layout
+    title="Extended User Profile"
+    subtitle="Add and edit additional user profile fields for gateway users to complete."
+  >
+    <div class="pb-20">
+      <transition-group name="fade">
+        <div
+          v-for="field in extendedUserProfileFields"
+          class="mb-4"
+          :key="field.key"
+        >
+          <extended-user-profile-field-editor
+            ref="extendedUserProfileFieldEditors"
+            :extendedUserProfileField="field"
+            :disabled="!field.userHasWriteAccess"
+            @valid="recordValidChildComponent(field)"
+            @invalid="recordInvalidChildComponent(field)"
+          />
+        </div>
+      </transition-group>
+      <div ref="bottom" />
     </div>
-    <transition-group name="fade">
-      <div
-        v-for="field in extendedUserProfileFields"
-        class="mb-4"
-        :key="field.key"
-      >
-        <extended-user-profile-field-editor
-          ref="extendedUserProfileFieldEditors"
-          :extendedUserProfileField="field"
-          :disabled="!field.userHasWriteAccess"
-          @valid="recordValidChildComponent(field)"
-          @invalid="recordInvalidChildComponent(field)"
-        />
-      </div>
-    </transition-group>
-    <div ref="bottom" />
-    <div
-      class="bg-background fixed inset-x-0 bottom-0 border-t p-4 shadow-md"
-    >
+    <div class="bg-background fixed inset-x-0 bottom-0 border-t p-4 shadow-md">
       <div class="flex">
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
@@ -58,18 +54,21 @@
         </Button>
       </div>
     </div>
-  </div>
+  </main-layout>
 </template>
 
 <script>
 import { mapActions, mapState } from "pinia";
 import { useExtendedUserProfileStore } from "../../store/modules/extendedUserProfile";
 import ExtendedUserProfileFieldEditor from "./field-editors/ExtendedUserProfileFieldEditor.vue";
-import { mixins } from "django-airavata-common-ui";
+import { components, mixins } from "django-airavata-common-ui";
 import { session } from "django-airavata-api";
 export default {
   mixins: [mixins.ValidationParent],
-  components: { ExtendedUserProfileFieldEditor },
+  components: {
+    ExtendedUserProfileFieldEditor,
+    "main-layout": components.MainLayout,
+  },
   data() {
     return {};
   },

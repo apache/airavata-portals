@@ -1,6 +1,6 @@
 <template>
   <div>
-    <table class="table" v-if="fullExperiment">
+    <table class="details-table" v-if="fullExperiment">
       <tbody>
         <tr>
           <th scope="row">Name</th>
@@ -8,10 +8,10 @@
             <div :title="experiment.experiment_id">
               {{ experiment.experiment_name }}
             </div>
-            <small class="text-muted-foreground">
+            <small class="text-sm text-muted-foreground">
               ID: {{ experiment.experiment_id }} (<clipboard-copy-link
                 :text="experiment.experiment_id"
-                :link-classes="['text-reset']"
+                :link-classes="['text-muted-foreground']"
               >
                 copy
                 <template v-slot:icon>
@@ -77,31 +77,31 @@
         >
           <th scope="row">Job</th>
           <td>
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>ID</th>
-                  <th>Status</th>
-                  <th>Creation Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Creation Time</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow
                   v-for="(jobDetail, index) in fullExperiment.job_details"
                   :key="jobDetail.job_id"
                 >
-                  <td>{{ jobDetail.job_name }}</td>
-                  <td>{{ jobDetail.job_id }}</td>
-                  <td>{{ jobDetail.jobStatusStateName }}</td>
-                  <td>
+                  <TableCell>{{ jobDetail.job_name }}</TableCell>
+                  <TableCell>{{ jobDetail.job_id }}</TableCell>
+                  <TableCell>{{ jobDetail.jobStatusStateName }}</TableCell>
+                  <TableCell>
                     <span :title="jobDetail.creation_time.toString()">{{
                       jobCreationTimes[index]
                     }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </td>
         </tr>
         <tr>
@@ -336,75 +336,76 @@
             <CardTitle>{{ task.task_id }}</CardTitle>
           </CardHeader>
           <CardContent>
-            <table class="table table-sm">
-          <tbody>
-            <tr>
-              <th scope="row">Task Id</th>
-              <td>{{ task.task_id }}</td>
-            </tr>
-            <tr>
-              <th scope="row">Task Type</th>
-              <td>{{ task.task_type.name }}</td>
-            </tr>
-            <tr>
-              <th scope="row">Task Status</th>
-              <td>{{ task.latestStatus.state.name }}</td>
-            </tr>
-            <tr>
-              <th scope="row">Task Status Time</th>
-              <td>
-                <human-date :date="task.latestStatus.time_of_state_change" />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row">Task Status Reason</th>
-              <td>{{ task.latestStatus.reason }}</td>
-            </tr>
-            <template v-if="task.task_errors && task.task_errors.length > 0">
-              <tr>
-                <th scope="row">Task Errors</th>
-                <td>
-                  <Card
-                    v-for="error in task.task_errors"
-                    :key="error.error_id"
-                  >
-                    <CardHeader>
-                      <CardTitle>{{ error.error_id }}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p>{{ error.user_friendly_message }}</p>
-                      <pre class="max-h-80 overflow-auto">{{
-                        error.actual_error_message
-                      }}</pre>
-                    </CardContent>
-                  </Card>
-                </td>
-              </tr>
-            </template>
-            <template v-if="task.jobs && task.jobs.length > 0">
-              <tr>
-                <th scope="row">Jobs</th>
-                <td>
-                  <Card v-for="job in task.jobs" :key="job.job_id">
-                    <CardHeader>
-                      <CardTitle>{{ job.job_name }}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <pre>{{ job.job_description }}</pre>
-                    </CardContent>
-                  </Card>
-                </td>
-              </tr>
-            </template>
-          </tbody>
+            <table class="details-table">
+              <tbody>
+                <tr>
+                  <th scope="row">Task Id</th>
+                  <td>{{ task.task_id }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Task Type</th>
+                  <td>{{ task.task_type.name }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Task Status</th>
+                  <td>{{ task.latestStatus.state.name }}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Task Status Time</th>
+                  <td>
+                    <human-date
+                      :date="task.latestStatus.time_of_state_change"
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Task Status Reason</th>
+                  <td>{{ task.latestStatus.reason }}</td>
+                </tr>
+                <template
+                  v-if="task.task_errors && task.task_errors.length > 0"
+                >
+                  <tr>
+                    <th scope="row">Task Errors</th>
+                    <td>
+                      <Card
+                        v-for="error in task.task_errors"
+                        :key="error.error_id"
+                      >
+                        <CardHeader>
+                          <CardTitle>{{ error.error_id }}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p>{{ error.user_friendly_message }}</p>
+                          <pre class="max-h-80 overflow-auto">{{
+                            error.actual_error_message
+                          }}</pre>
+                        </CardContent>
+                      </Card>
+                    </td>
+                  </tr>
+                </template>
+                <template v-if="task.jobs && task.jobs.length > 0">
+                  <tr>
+                    <th scope="row">Jobs</th>
+                    <td>
+                      <Card v-for="job in task.jobs" :key="job.job_id">
+                        <CardHeader>
+                          <CardTitle>{{ job.job_name }}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <pre>{{ job.job_description }}</pre>
+                        </CardContent>
+                      </Card>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
             </table>
           </CardContent>
         </Card>
 
-        <Card
-          v-for="error in process.process_errors"
-          :key="error.error_id"
-        >
+        <Card v-for="error in process.process_errors" :key="error.error_id">
           <CardHeader>
             <CardTitle>{{ "Process Error " + error.error_id }}</CardTitle>
           </CardHeader>
@@ -545,10 +546,21 @@ export default {
 </script>
 
 <style scoped>
-.table {
+/* Key/value details layout: a fixed-width row label and a value column. Styled
+   locally (not via Bootstrap) so it matches the design system's muted labels. */
+.details-table {
+  width: 100%;
   table-layout: fixed;
 }
-.table th[scope="row"] {
+.details-table th[scope="row"] {
   width: 20%;
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  text-align: left;
+  font-weight: 600;
+  vertical-align: top;
+}
+.details-table td {
+  padding: 0.5rem 0;
+  vertical-align: top;
 }
 </style>

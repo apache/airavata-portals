@@ -1,9 +1,9 @@
 <template>
   <div>
     <div>
-      <h1 class="mb-4 text-xl font-semibold">
+      <h2 class="mb-4 text-lg font-semibold">
         Gateway Resource Profile - {{ data.gateway_id }}
-      </h1>
+      </h2>
       <div class="space-y-1.5">
         <Label for="default-credential-store-token"
           >Default SSH Credential</Label

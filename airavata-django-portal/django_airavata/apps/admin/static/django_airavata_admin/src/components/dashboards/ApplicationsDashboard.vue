@@ -1,34 +1,36 @@
 <template>
-  <list-layout
-    @add-new-item="newApplicationHandler"
-    :items="sortedModules"
+  <main-layout
     title="Application Catalog"
-    subtitle="Applications"
-    new-item-button-text="New Application"
-    :new-button-disabled="!isGatewayAdmin"
+    subtitle="Browse and manage the applications available on this gateway."
   >
-    <template v-slot:item-list="slotProps">
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <application-card
-          v-for="item in slotProps.items"
-          v-bind:app-module="item"
-          v-bind:key="item.app_module_id"
-          v-on:app-selected="clickHandler(item)"
-        >
-        </application-card>
-      </div>
+    <template v-slot:actions>
+      <Button :disabled="!isGatewayAdmin" @click="newApplicationHandler">
+        New Application
+        <Plus class="size-4" aria-hidden="true" />
+      </Button>
     </template>
-  </list-layout>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <application-card
+        v-for="item in sortedModules"
+        v-bind:app-module="item"
+        v-bind:key="item.app_module_id"
+        v-on:app-selected="clickHandler(item)"
+      >
+      </application-card>
+    </div>
+  </main-layout>
 </template>
 <script>
-import { layouts, components as comps } from "django-airavata-common-ui";
+import { Plus } from "@lucide/vue";
+import { components, components as comps } from "django-airavata-common-ui";
 
 import { services, session, utils } from "django-airavata-api";
 
 export default {
   components: {
+    Plus,
     "application-card": comps.ApplicationCard,
-    "list-layout": layouts.ListLayout,
+    "main-layout": components.MainLayout,
   },
   data() {
     return {
