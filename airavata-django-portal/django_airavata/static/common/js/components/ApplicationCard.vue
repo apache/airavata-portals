@@ -1,35 +1,40 @@
 <template>
-  <div class="col-md-6 col-xl-4">
-    <div class="card application-card" :class="cardClasses">
-      <b-link
-        :disabled="disabled"
-        class="card-link text-dark"
+  <div class="application-card">
+    <Card
+      class="h-full transition-colors"
+      :class="
+        disabled
+          ? 'cursor-not-allowed bg-muted'
+          : 'cursor-pointer hover:bg-accent/40'
+      "
+    >
+      <a
+        href="#"
+        class="block h-full text-foreground"
+        :class="{ 'pointer-events-none': disabled }"
         @click.prevent="handleAppClick"
       >
-        <div class="card-body">
-          <h2 class="card-title h5">{{ appModule.app_module_name }}</h2>
-          <span
-            class="badge text-bg-primary me-1"
-            v-for="tag in appModule.tags"
-            :key="tag"
-            >{{ tag }}</span
-          >
-          <span
-            class="badge text-bg-primary me-1"
-            v-if="appModule.app_module_version"
-            >{{ appModule.app_module_version }}</span
-          >
-          <p class="card-text card-text--small mt-3 text-secondary">
+        <CardContent class="space-y-2">
+          <h2 class="text-lg font-semibold leading-tight">
+            {{ appModule.app_module_name }}
+          </h2>
+          <div class="flex flex-wrap gap-1">
+            <Badge v-for="tag in appModule.tags" :key="tag">{{ tag }}</Badge>
+            <Badge v-if="appModule.app_module_version">{{
+              appModule.app_module_version
+            }}</Badge>
+          </div>
+          <p class="text-sm leading-snug text-muted-foreground">
             <linkify>
               {{ appModule.app_module_description }}
             </linkify>
           </p>
-          <p class="card-text">
+          <div>
             <slot name="card-actions"> </slot>
-          </p>
-        </div>
-      </b-link>
-    </div>
+          </div>
+        </CardContent>
+      </a>
+    </Card>
   </div>
 </template>
 
@@ -44,23 +49,11 @@ export default {
   },
   methods: {
     handleAppClick: function () {
+      if (this.disabled) {
+        return;
+      }
       this.$emit("app-selected", this.appModule);
-    },
-  },
-  computed: {
-    cardClasses() {
-      return this.disabled ? ["is-disabled"] : [];
     },
   },
 };
 </script>
-
-<style>
-.application-card {
-  height: calc(100% - 30px); /* 30px margin at the botton */
-}
-.application-card .card-link,
-.application-card .card-body {
-  height: 100%;
-}
-</style>

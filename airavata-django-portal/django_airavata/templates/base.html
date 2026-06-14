@@ -144,113 +144,40 @@
 
 </style>
 
-<body>
+<body class="h-full overflow-hidden">
   {# Sets the csrftoken cookie on every page so the SPA's FetchUtils can send X-CSRFToken on POST/PUT/DELETE. #}
   {% csrf_token %}
-  <header class=c-header>
-    {% block header %}
-    {% portal_logo %}
-    {% endblock %}
-    <div class=c-header__title><a href="/">{% block title %}{% portal_title %}{% endblock %}</a>
-    </div>
-    {% if user.is_authenticated %}
-    <div class=c-header__controls>
-      <div id="gateway-notices" data-unread-count="{{ unread_notifications }}" data-notices="{{ notifications }}"></div>
-      <div class="btn-group ml-3">
-        <div class=dropdown>
-          <a href=# class="dropdown-toggle text-dark" id=appDropdownMenuButton data-toggle=dropdown aria-haspopup=true
-            aria-expanded=false>
-            {% if current_airavata_app %}
-            <i class="fa {{ current_airavata_app.fa_icon_class }} mr-2"></i>
-            {{ current_airavata_app.verbose_name }}
-            {% elif current_custom_app %}
-            <i class="fa {{ current_custom_app.fa_icon_class }} mr-2"></i>
-            {{ current_custom_app.verbose_name }}
-            {% else %}
-            Menu
-            {% endif %}
-          </a>
-          <div class=dropdown-menu aria-labelledby=appDropdownMenuButton>
-            {% for app in airavata_apps %}
-            {% if app == current_airavata_app %}
-            <a class="dropdown-item active" href="{% url app.url_home %}">
-              <i class="fa {{ app.fa_icon_class }} mr-2"></i>{{ app.verbose_name }}
-            </a>
-            {% else %}
-            <a class="dropdown-item" href="{% url app.url_home %}">
-              <i class="fa {{ app.fa_icon_class }} mr-2"></i>{{ app.verbose_name }}
-            </a>
-            {% endif %}
-            {% endfor %}
-            {% if custom_apps|length > 0 %}
-              <div class="dropdown-divider"></div>
-              {% for app in custom_apps %}
-                {% if current_custom_app and app.label == current_custom_app.label %}
-                <a class="dropdown-item active" href="{% url app.url_home %}">
-                  <i class="fa {{ app.fa_icon_class }} mr-2"></i>{{ app.verbose_name }}
-                </a>
-                {% else %}
-                <a class="dropdown-item" href="{% url app.url_home %}">
-                  <i class="fa {{ app.fa_icon_class }} mr-2"></i>{{ app.verbose_name }}
-                </a>
-                {% endif %}
-              {% endfor %}
-            {% endif %}
-            {% portal_main_menu %}
-          </div>
-        </div>
-      </div>
-      <div class="btn-group ml-3">
-        <div class=dropdown>
-          <a href=# class="dropdown-toggle text-dark" id=dropdownMenuButton data-toggle=dropdown aria-haspopup=true
-            aria-expanded=false>
-            <i class="fa fa-user mr-2"></i>
-            {{ request.user.first_name }} {{ request.user.last_name }}
-          </a>
-          <div class=dropdown-menu aria-labelledby=dropdownMenuButton>
-            <a class=dropdown-item href="{{ KEYCLOAK_ACCOUNT_CONSOLE_URL }}" target="_blank" rel="noopener">
-              User Settings
-              <i class="fa fa-user-cog"></i>
-            </a>
-            <a class=dropdown-item href="{% url 'django_airavata_auth:logout' %}">
-              Logout <i class="fa fa-sign-out-alt"></i>
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-  </header>
 
-  <div class=stage>
+  {% comment %}
+  Page-shell data for the Vue app shell (common/js/shell.js -> AppShell.vue):
+  brand/logo, primary nav items, the app-switcher entries, the user menu, and
+  the unread notifications. The shell reads this JSON and renders the modern
+  Tailwind sidebar; base.html stays free of chrome markup.
+  {% endcomment %}
+  {{ shell_data|json_script:"app-shell-data" }}
+
+  <div class="flex h-full w-full overflow-hidden">
     <div id="airavata-spinner" class="loading">
-      <div class="sk-folding-cube" :style="{ color: color }">
+      <div class="sk-folding-cube">
         <div class="sk-cube1 sk-cube"></div>
         <div class="sk-cube2 sk-cube"></div>
         <div class="sk-cube4 sk-cube"></div>
         <div class="sk-cube3 sk-cube"></div>
       </div>
     </div>
-    <nav class=c-nav>
-      {% block nav-items %}
-        {% for nav_item in airavata_app_nav %}
-          <a href="{% url nav_item.url %}" class="c-nav__item {% if nav_item.active %}is-active{% endif %}" data-toggle=tooltip data-placement=right title="{{ nav_item.label }}">
-              <i class="{{ nav_item.icon }}"></i> <span class=sr-only>{{ nav_item.label }}</span>
-          </a>
-        {% endfor %}
-        {% for nav_item in custom_app_nav %}
-          <a href="{% url nav_item.url %}" class="c-nav__item {% if nav_item.active %}is-active{% endif %}" data-toggle=tooltip data-placement=right title="{{ nav_item.label }}">
-              <i class="{{ nav_item.icon }}"></i> <span class=sr-only>{{ nav_item.label }}</span>
-          </a>
-        {% endfor %}
-      {% endblock %}
-    </nav>
+
+    {% comment %} The Vue app shell mounts here and renders the sidebar navbar. {% endcomment %}
+    <div id="app-shell" class="contents"></div>
+
     {% comment %}
-    See MainLayout.vue which should always be the root component rendered in
-    the 'content' block
+    Main content area. Each page mounts its own Vue app into a container that is
+    a direct child here (e.g. <div id="dashboard">). The block stays as the
+    flex/scroll region so page content fills the rest of the viewport.
     {% endcomment %}
-    {% block content %}
-    {% endblock %}
+    <div class="flex min-w-0 flex-1 flex-col overflow-y-auto">
+      {% block content %}
+      {% endblock %}
+    </div>
   </div>
 
   <script>
@@ -263,11 +190,9 @@
   {% get_files 'app' 'js' 'COMMON' as common_app_js %}
   {% for f in common_app_js %}<script type="module" src="{{ f.url }}"></script>
   {% endfor %}
-  {% if user.is_authenticated %}
-    {% get_files 'notices' 'js' 'COMMON' as common_notices_js %}
-    {% for f in common_notices_js %}<script type="module" src="{{ f.url }}"></script>
-    {% endfor %}
-  {% endif %}
+  {% get_files 'shell' 'js' 'COMMON' as common_shell_js %}
+  {% for f in common_shell_js %}<script type="module" src="{{ f.url }}"></script>
+  {% endfor %}
   {% block scripts %}
   {% endblock %}
 </body>

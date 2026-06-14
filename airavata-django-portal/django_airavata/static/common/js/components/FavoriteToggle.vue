@@ -1,19 +1,29 @@
 <template>
-  <b-link
-    class="text-primary"
-    @click.stop="toggleFavorite"
-    v-b-tooltip
-    :title="titleText"
-  >
-    <i class="fa fa-star favorite-toggle" :class="classes"
-      ><span class="visually-hidden">Toggle favorite</span></i
-    >
-  </b-link>
+  <Tooltip>
+    <TooltipTrigger as-child>
+      <a
+        href="#"
+        class="inline-flex cursor-pointer items-center text-primary"
+        @click.stop.prevent="toggleFavorite"
+      >
+        <Star
+          class="favorite-toggle size-4"
+          :class="iconClasses"
+          :fill="favorite ? 'currentColor' : 'none'"
+        />
+        <span class="sr-only">Toggle favorite</span>
+      </a>
+    </TooltipTrigger>
+    <TooltipContent>{{ titleText }}</TooltipContent>
+  </Tooltip>
 </template>
 
 <script>
+import { Star } from "@lucide/vue";
+
 export default {
   name: "favorite-toggle",
+  components: { Star },
   props: {
     favorite: {
       type: Boolean,
@@ -30,12 +40,8 @@ export default {
     },
   },
   computed: {
-    classes() {
-      if (!this.favorite) {
-        return ["not-favorite"];
-      } else {
-        return [];
-      }
+    iconClasses() {
+      return this.favorite ? "text-primary" : "text-muted-foreground";
     },
     titleText() {
       if (this.favorite) {
@@ -47,12 +53,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.not-favorite {
-  color: #999999;
-}
-.not-favorite:hover {
-  color: inherit;
-}
-</style>

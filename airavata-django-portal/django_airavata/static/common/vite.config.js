@@ -6,8 +6,8 @@ import tailwindcss from "@tailwindcss/vite";
 const publicPath = "/static/common/dist/";
 
 // Emit a webpack-stats.json compatible with django-webpack-loader so the Django
-// templates' {% render_bundle 'app'/'notices' ... 'COMMON' %} tags keep working
-// unchanged after the webpack -> Vite migration.
+// templates' {% render_bundle/get_files 'app'/'shell' ... 'COMMON' %} tags keep
+// working unchanged after the webpack -> Vite migration.
 function djangoWebpackStats() {
   return {
     name: "django-webpack-stats",
@@ -51,7 +51,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         app: resolve(__dirname, "js/main.js"),
-        notices: resolve(__dirname, "js/notices.js"),
+        shell: resolve(__dirname, "js/shell.js"),
       },
       output: {
         entryFileNames: "js/[name].js",

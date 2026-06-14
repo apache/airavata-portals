@@ -1,8 +1,8 @@
 <template>
-  <div class="delete-button">
-    <b-button variant="danger" @click="$refs.modal.show()" :disabled="disabled">
+  <div class="inline-block">
+    <Button variant="destructive" @click="$refs.modal.show()" :disabled="disabled">
       {{ label }}
-    </b-button>
+    </Button>
     <confirmation-dialog ref="modal" :title="dialogTitle" @ok="$emit('delete')">
       <slot></slot>
     </confirmation-dialog>
@@ -32,9 +32,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.delete-button {
-  display: inline-block;
-}
-</style>

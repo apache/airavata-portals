@@ -1,52 +1,56 @@
 <template>
-  <div class="share-button btn-container">
-    <b-button
-      :variant="'outline-primary'"
+  <div class="inline-block">
+    <Button
+      variant="outline"
       :title="title"
       :disabled="!shareButtonEnabled"
       @click="openSharingSettingsModal"
     >
       Share
-      <b-badge>{{ totalCount }}</b-badge>
-    </b-button>
-    <b-modal
-      class="modal-share-settings"
-      title="Sharing Settings"
-      ref="sharingSettingsModal"
-      ok-title="Save"
-      @ok="saveSharedEntity"
-      @cancel="cancelEditSharedEntity"
-      no-close-on-esc
-      no-close-on-backdrop
-      hide-header-close
-      @show="showSharingSettingsModal"
-    >
-      <shared-entity-editor
-        v-if="localSharedEntity && users && groups"
-        v-model="localSharedEntity"
-        :users="users"
-        :groups="groups"
-        :disallow-editing-admin-groups="disallowEditingAdminGroups"
-      />
-      <!-- Only show parent entity permissions for new entities -->
-      <template v-if="hasParentSharedEntityPermissions">
-        <shared-entity-editor
-          v-if="parentSharedEntity && users && groups"
-          v-model="parentSharedEntity"
-          :users="users"
-          :groups="groups"
-          :readonly="true"
-          class="mt-4"
-        >
-          <template v-slot:permissions-header>
-<span 
-            >Inherited {{ parentEntityLabel }} Permissions
-            <!-- <small class="text-muted" v-if="parentEntityOwner">Owned by {{parentEntityOwner.first_name}} {{parentEntityOwner.last_name}} ({{parentEntityOwner.email}})</small> -->
-          </span>
-</template>
-        </shared-entity-editor>
-      </template>
-    </b-modal>
+      <Badge variant="secondary">{{ totalCount }}</Badge>
+    </Button>
+    <Dialog v-model:open="modalOpen" @update:open="onOpenChange">
+      <DialogContent
+        class="max-h-[90vh] w-[60vw] max-w-[800px] overflow-hidden"
+        :show-close-button="false"
+        @interact-outside.prevent
+        @escape-key-down.prevent
+      >
+        <DialogHeader>
+          <DialogTitle>Sharing Settings</DialogTitle>
+        </DialogHeader>
+        <div class="max-h-[50vh] min-h-[300px] overflow-auto">
+          <shared-entity-editor
+            v-if="localSharedEntity && users && groups"
+            v-model="localSharedEntity"
+            :users="users"
+            :groups="groups"
+            :disallow-editing-admin-groups="disallowEditingAdminGroups"
+          />
+          <!-- Only show parent entity permissions for new entities -->
+          <template v-if="hasParentSharedEntityPermissions">
+            <shared-entity-editor
+              v-if="parentSharedEntity && users && groups"
+              v-model="parentSharedEntity"
+              :users="users"
+              :groups="groups"
+              :readonly="true"
+              class="mt-4"
+            >
+              <template v-slot:permissions-header>
+                <span
+                  >Inherited {{ parentEntityLabel }} Permissions
+                </span>
+              </template>
+            </shared-entity-editor>
+          </template>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" @click="onCancel">Cancel</Button>
+          <Button variant="default" @click="onSave">Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -82,6 +86,7 @@ export default {
   },
   data: function () {
     return {
+      modalOpen: false,
       localSharedEntity: null,
       parentSharedEntity: null,
       sharedEntityCopy: null,
@@ -318,7 +323,8 @@ export default {
       this.localSharedEntity = this.sharedEntityCopy;
     },
     openSharingSettingsModal: function () {
-      this.$refs.sharingSettingsModal.show();
+      this.showSharingSettingsModal();
+      this.modalOpen = true;
     },
     showSharingSettingsModal: function () {
       this.sharedEntityCopy = this.localSharedEntity.clone();
@@ -331,6 +337,21 @@ export default {
         services.GroupService.list({ limit: -1 }).then((groups) => {
           this.groups = groups;
         });
+      }
+    },
+    onSave: function () {
+      this.saveSharedEntity();
+      this.modalOpen = false;
+    },
+    onCancel: function () {
+      this.cancelEditSharedEntity();
+      this.modalOpen = false;
+    },
+    onOpenChange: function (open) {
+      // Reka closes the dialog (e.g. via the close affordance) by emitting
+      // false; treat that as a cancel so local edits are reverted.
+      if (!open) {
+        this.cancelEditSharedEntity();
       }
     },
   },
@@ -360,22 +381,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-button {
-  background-color: white;
-  white-space: nowrap;
-}
-.share-button {
-  display: inline-block;
-}
-.share-button :deep(.modal-share-settings .modal-body) {
-  max-height: 50vh;
-  min-height: 300px;
-  overflow: auto;
-}
-.share-button :deep(.modal-dialog) {
-  max-width: 800px;
-  width: 60vw;
-}
-</style>

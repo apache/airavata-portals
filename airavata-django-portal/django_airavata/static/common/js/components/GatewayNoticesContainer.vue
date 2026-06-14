@@ -1,73 +1,74 @@
 <template>
-  <div class="btn-group ms-3">
-    <div class="dropdown">
-      <a
-        href="#"
-        class="dropdown-toggle text-dark"
-        id="dropdownNoticeButton"
-        data-toggle="dropdown"
+  <DropdownMenu>
+    <DropdownMenuTrigger as-child>
+      <button
+        :class="triggerClasses"
+        type="button"
         title="Notifications"
-        aria-haspopup="true"
-        aria-expanded="false"
       >
-        <span
-          class="fa-stack fa-1x has-badge"
-          :data-count="localUnreadCount"
-          id="unread_notification_count"
-        >
-          <i class="fa fa-circle fa-stack-2x fa-inverse"></i>
-          <i class="fa fa-bell fa-stack-1x"></i>
+        <span class="relative flex size-5 items-center justify-center">
+          <Bell class="size-4 shrink-0" />
+          <span
+            v-if="localUnreadCount > 0"
+            class="absolute -right-1.5 -top-1.5 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-4 text-primary-foreground"
+            >{{ localUnreadCount }}</span
+          >
         </span>
-      </a>
-      <div
-        class="dropdown-menu widget-notifications no-padding"
-        style="width: 300px;"
-      >
-        <div class="notifications-list">
-          <div class="text-center text-primary">Notifications</div>
-
-          <template v-for="notice in unreadNotices" :key="notice.notificationId">
-            <div class="dropdown-divider"></div>
-            <div class="dropdown-item">
-              <div>
-                <span
-                  class="notification-title text-wrap"
-                  :class="textColor(notice)"
-                  >{{ notice.title }}</span
-                >
-                <a
-                  v-if="!notice.is_read"
-                  class="fas fa-dot-circle"
-                  v-b-tooltip.left
-                  title="Mark as read"
-                  :id="notice.notificationId"
-                  @click="ackNotification(notice)"
-                >
-                </a>
-              </div>
-              <div
-                class="notification-description text-wrap"
-                id="notification_description"
-              >
-                <strong>{{ notice.notificationMessage }}</strong>
-              </div>
-              <div class="notification-ago time">
-                {{ fromNow(notice.publishedTime) }}
-              </div>
-            </div>
-          </template>
+        <span class="flex-1 truncate text-left">Notifications</span>
+      </button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="start" side="top" class="w-80 p-0">
+      <DropdownMenuLabel class="px-3 py-2">Notifications</DropdownMenuLabel>
+      <DropdownMenuSeparator class="my-0" />
+      <div class="max-h-80 overflow-y-auto">
+        <p
+          v-if="!unreadNotices || unreadNotices.length === 0"
+          class="px-3 py-4 text-center text-sm text-muted-foreground"
+        >
+          No notifications
+        </p>
+        <div
+          v-for="notice in unreadNotices"
+          :key="notice.notificationId"
+          class="border-b border-border px-3 py-2 last:border-b-0"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <span class="text-sm font-semibold" :class="textColor(notice)">{{
+              notice.title
+            }}</span>
+            <button
+              v-if="!notice.is_read"
+              type="button"
+              title="Mark as read"
+              class="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+              @click="ackNotification(notice)"
+            >
+              <CheckCircle2 class="size-4" />
+            </button>
+          </div>
+          <p class="mt-0.5 text-sm text-muted-foreground">
+            <strong>{{ notice.notificationMessage }}</strong>
+          </p>
+          <p class="mt-0.5 text-xs italic text-muted-foreground/70">
+            {{ fromNow(notice.publishedTime) }}
+          </p>
         </div>
       </div>
-    </div>
-  </div>
+    </DropdownMenuContent>
+  </DropdownMenu>
 </template>
 
 <script>
 import moment from "moment";
+import { Bell, CheckCircle2 } from "@lucide/vue";
 import { utils } from "django-airavata-api";
 
 export default {
   name: "gateway-notices-container",
+  components: {
+    Bell,
+    CheckCircle2,
+  },
   props: ["notices", "unreadCount"],
   data() {
     return {
@@ -90,11 +91,15 @@ export default {
       } else if (notice.priority === 1) {
         return "text-warning";
       } else if (notice.priority === 2) {
-        return "text-danger";
+        return "text-destructive";
       }
+      return "";
     },
   },
   computed: {
+    triggerClasses() {
+      return "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring";
+    },
     unreadNotices() {
       return this.notices;
     },

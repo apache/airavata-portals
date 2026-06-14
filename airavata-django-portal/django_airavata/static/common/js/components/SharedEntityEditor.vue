@@ -1,21 +1,24 @@
 <template>
   <div>
-    <b-form-group
-      v-if="!readonly"
-      label="Search for users/groups"
-      labelFor="user-groups-autocomplete"
-    >
+    <div v-if="!readonly" class="space-y-1.5">
+      <Label for="user-groups-autocomplete">Search for users/groups</Label>
       <autocomplete-text-input
         id="user-groups-autocomplete"
         :suggestions="usersAndGroupsSuggestions"
         @selected="suggestionSelected"
       >
-        <template v-slot:suggestion="slotProps" >
-          <span v-if="slotProps.suggestion.type == 'group'">
-            <i class="fa fa-users"></i> {{ slotProps.suggestion.name }}
+        <template v-slot:suggestion="slotProps">
+          <span
+            v-if="slotProps.suggestion.type == 'group'"
+            class="flex items-center gap-2"
+          >
+            <Users class="size-4" /> {{ slotProps.suggestion.name }}
           </span>
-          <span v-if="slotProps.suggestion.type == 'user'">
-            <i class="fa fa-user"></i>
+          <span
+            v-if="slotProps.suggestion.type == 'user'"
+            class="flex items-center gap-2"
+          >
+            <User class="size-4" />
             {{ slotProps.suggestion.user.first_name }}
             {{ slotProps.suggestion.user.last_name }} ({{
               slotProps.suggestion.user.user_id
@@ -23,99 +26,143 @@
           </span>
         </template>
       </autocomplete-text-input>
-    </b-form-group>
-    <h5 v-if="totalCount > 0">
+    </div>
+    <h5 v-if="totalCount > 0" class="mt-4 text-base font-semibold">
       <slot name="permissions-header">Currently Shared With</slot>
     </h5>
-    <b-table
-      v-if="usersCount > 0"
-      id="modal-user-table"
-      hover
-      :items="sortedUserPermissions"
-      :fields="userFields"
-    >
-      <template #cell(name)="data">
-        <span
-          :title="data.item.user.user_id"
-          :class="userDataClasses"
-          v-if="!isPermissionReadOnly(data.item.permission_type)"
-          >{{ data.item.user.first_name }} {{ data.item.user.last_name }}</span
+    <Table v-if="usersCount > 0" id="modal-user-table" class="table-fixed">
+      <TableHeader>
+        <TableRow>
+          <TableHead>User Name</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Permission</TableHead>
+          <TableHead>Remove</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow
+          v-for="item in sortedUserPermissions"
+          :key="item.user.user_id"
         >
-        <span v-else class="text-muted fst-italic"
-          >{{ data.item.user.first_name }} {{ data.item.user.last_name }}</span
+          <TableCell class="truncate">
+            <span
+              :title="item.user.user_id"
+              :class="userDataClasses"
+              v-if="!isPermissionReadOnly(item.permission_type)"
+              >{{ item.user.first_name }} {{ item.user.last_name }}</span
+            >
+            <span v-else class="italic text-muted-foreground"
+              >{{ item.user.first_name }} {{ item.user.last_name }}</span
+            >
+          </TableCell>
+          <TableCell class="truncate">
+            <span
+              :class="userDataClasses"
+              v-if="!isPermissionReadOnly(item.permission_type)"
+              >{{ item.user.email }}</span
+            >
+            <span v-else class="italic text-muted-foreground">{{
+              item.user.email
+            }}</span>
+          </TableCell>
+          <TableCell>
+            <select
+              v-if="!isPermissionReadOnly(item.permission_type)"
+              class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              :value="permissionIndex(item.permission_type)"
+              @change="
+                item.permission_type = permissionOptions[$event.target.value].value
+              "
+            >
+              <option
+                v-for="(option, index) in permissionOptions"
+                :key="option.text"
+                :value="index"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+            <span
+              v-else
+              class="uppercase italic text-muted-foreground"
+              :class="userDataClasses"
+              >{{ item.permission_type.name }}</span
+            >
+          </TableCell>
+          <TableCell>
+            <a
+              href="#"
+              v-if="!isPermissionReadOnly(item.permission_type)"
+              class="inline-flex cursor-pointer text-destructive hover:underline"
+              @click.prevent="removeUser(item.user)"
+            >
+              <Trash2 class="size-4" />
+            </a>
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
+    <Table v-if="groupsCount > 0" id="modal-group-table">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Group Name</TableHead>
+          <TableHead>Permission</TableHead>
+          <TableHead>Remove</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow
+          v-for="item in sortedGroupPermissions"
+          :key="item.group.id"
         >
-      </template>
-      <template #cell(email)="data">
-        <span
-          :class="userDataClasses"
-          v-if="!isPermissionReadOnly(data.item.permission_type)"
-          >{{ data.item.user.email }}</span
-        >
-        <span v-else class="text-muted fst-italic">{{
-          data.item.user.email
-        }}</span>
-      </template>
-      <template #cell(permission)="data">
-        <b-form-select
-          v-if="!isPermissionReadOnly(data.item.permission_type)"
-          v-model="data.item.permission_type"
-          :options="permissionOptions"
-        />
-        <span
-          v-else
-          class="text-uppercase text-muted fst-italic"
-          :class="userDataClasses"
-          >{{ data.item.permission_type.name }}</span
-        >
-      </template>
-      <template #cell(remove)="data">
-        <b-link
-          v-if="!isPermissionReadOnly(data.item.permission_type)"
-          @click="removeUser(data.item.user)"
-        >
-          <span class="fa fa-trash"></span>
-        </b-link>
-      </template>
-    </b-table>
-    <b-table
-      v-if="groupsCount > 0"
-      id="modal-group-table"
-      hover
-      :items="sortedGroupPermissions"
-      :fields="groupFields"
-    >
-      <template #cell(name)="data">
-        <span
-          v-if="editingAllowed(data.item.group, data.item.permission_type)"
-          >{{ data.item.group.name }}</span
-        >
-        <span v-else class="text-muted fst-italic">{{
-          data.item.group.name
-        }}</span>
-      </template>
-      <template #cell(permission)="data">
-        <b-form-select
-          v-if="editingAllowed(data.item.group, data.item.permission_type)"
-          v-model="data.item.permission_type"
-          :options="permissionOptions"
-        />
-        <span v-else class="text-muted fst-italic">{{
-          data.item.permission_type.name
-        }}</span>
-      </template>
-      <template #cell(remove)="data">
-        <b-link
-          v-if="editingAllowed(data.item.group, data.item.permission_type)"
-          @click="removeGroup(data.item.group)"
-        >
-          <span class="fa fa-trash"></span>
-        </b-link>
-      </template>
-    </b-table>
+          <TableCell>
+            <span
+              v-if="editingAllowed(item.group, item.permission_type)"
+              >{{ item.group.name }}</span
+            >
+            <span v-else class="italic text-muted-foreground">{{
+              item.group.name
+            }}</span>
+          </TableCell>
+          <TableCell>
+            <select
+              v-if="editingAllowed(item.group, item.permission_type)"
+              class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              :value="permissionIndex(item.permission_type)"
+              @change="
+                item.permission_type = permissionOptions[$event.target.value].value
+              "
+            >
+              <option
+                v-for="(option, index) in permissionOptions"
+                :key="option.text"
+                :value="index"
+              >
+                {{ option.text }}
+              </option>
+            </select>
+            <span v-else class="italic text-muted-foreground">{{
+              item.permission_type.name
+            }}</span>
+          </TableCell>
+          <TableCell>
+            <a
+              href="#"
+              v-if="editingAllowed(item.group, item.permission_type)"
+              class="inline-flex cursor-pointer text-destructive hover:underline"
+              @click.prevent="removeGroup(item.group)"
+            >
+              <Trash2 class="size-4" />
+            </a>
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
   </div>
 </template>
 
 <script>
+import { Trash2, User, Users } from "@lucide/vue";
 import { models, utils, session } from "django-airavata-api";
 import AutocompleteTextInput from "./AutocompleteTextInput.vue";
 import VModelMixin from "../mixins/VModelMixin";
@@ -146,23 +193,11 @@ export default {
   },
   components: {
     AutocompleteTextInput,
+    Trash2,
+    User,
+    Users,
   },
   computed: {
-    userFields: function () {
-      return [
-        { key: "name", label: "User Name", class: "text-truncate" },
-        { key: "email", label: "Email", class: "text-truncate" },
-        { key: "permission", label: "Permission" },
-        { key: "remove", label: "Remove" },
-      ];
-    },
-    groupFields: function () {
-      return [
-        { key: "name", label: "Group Name" },
-        { key: "permission", label: "Permission" },
-        { key: "remove", label: "Remove" },
-      ];
-    },
     usersCount: function () {
       return this.data && this.data.user_permissions
         ? this.data.user_permissions.length
@@ -190,8 +225,8 @@ export default {
     },
     userDataClasses() {
       return {
-        "text-muted": this.readonly,
-        "fst-italic": this.readonly,
+        "text-muted-foreground": this.readonly,
+        italic: this.readonly,
       };
     },
     filteredGroupPermissions: function () {
@@ -295,6 +330,14 @@ export default {
     },
   },
   methods: {
+    // Native <select> binds by option index; map the current permission_type
+    // (a ResourcePermissionType model instance) to its index in permissionOptions.
+    permissionIndex: function (permissionType) {
+      const index = this.permissionOptions.findIndex(
+        (option) => option.value === permissionType
+      );
+      return index >= 0 ? index : 0;
+    },
     removeUser: function (user) {
       this.data.removeUser(user);
     },
@@ -342,9 +385,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-#modal-user-table {
-  table-layout: fixed;
-}
-</style>

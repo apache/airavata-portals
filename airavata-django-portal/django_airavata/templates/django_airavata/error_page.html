@@ -1,18 +1,14 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="main-content-wrapper">
-<main class="main-content">
-<div class="container-fluid">
-  <div class="card text-white bg-danger mb-3">
-    <div class="card-body">
-      <h5 class="card-title">{{ title }}</h5>
-      <p class="card-text">
+<main class="flex-1 overflow-y-auto p-6">
+  <div class="mx-auto w-full max-w-3xl">
+    <div class="rounded-xl border border-destructive/30 bg-destructive p-6 text-destructive-foreground shadow-sm">
+      <h5 class="text-lg font-semibold">{{ title }}</h5>
+      <p class="mt-2 text-sm">
         {{ text }}
       </p>
     </div>
   </div>
-</div>
 </main>
-</div>
 {% endblock content %}

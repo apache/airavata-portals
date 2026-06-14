@@ -1,23 +1,25 @@
 <template>
-  <b-button
-    ref="copyButton"
-    :variant="variant"
-    :disabled="disabled"
-    @click="onCopy"
-  >
-    <slot></slot>
-    <slot name="icon">
-      <i class="far fa-clipboard"></i>
-    </slot>
-    <b-tooltip :show="show" :disabled="!show" :target="() => $refs.copyButton">
+  <Tooltip :open="show">
+    <TooltipTrigger as-child>
+      <Button :variant="variant" :disabled="disabled" @click="onCopy">
+        <slot></slot>
+        <slot name="icon">
+          <Clipboard class="size-4" />
+        </slot>
+      </Button>
+    </TooltipTrigger>
+    <TooltipContent>
       <slot name="tooltip">Copied!</slot>
-    </b-tooltip>
-  </b-button>
+    </TooltipContent>
+  </Tooltip>
 </template>
 
 <script>
+import { Clipboard } from "@lucide/vue";
+
 export default {
   name: "clipboard-copy-button",
+  components: { Clipboard },
   props: {
     text: {
       type: String,

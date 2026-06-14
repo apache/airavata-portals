@@ -1,9 +1,13 @@
 <template>
-  <div class="delete-link">
-    <b-link class="text-danger action-link" @click="$refs.modal.show()">
+  <div class="inline-block">
+    <a
+      href="#"
+      class="inline-flex cursor-pointer items-center gap-1 whitespace-nowrap text-destructive hover:underline"
+      @click.prevent="$refs.modal.show()"
+    >
       Delete
-      <i class="fa fa-trash" aria-hidden="true"></i>
-    </b-link>
+      <Trash2 class="size-4" aria-hidden="true" />
+    </a>
     <confirmation-dialog ref="modal" :title="dialogTitle" @ok="$emit('delete')">
       <slot></slot>
     </confirmation-dialog>
@@ -11,10 +15,15 @@
 </template>
 
 <script>
+import { Trash2 } from "@lucide/vue";
 import ConfirmationDialog from "./ConfirmationDialog.vue";
 
 export default {
   name: "delete-link",
+  components: {
+    Trash2,
+    ConfirmationDialog,
+  },
   props: {
     dialogTitle: {
       type: String,
@@ -25,14 +34,5 @@ export default {
       default: false,
     },
   },
-  components: {
-    ConfirmationDialog,
-  },
 };
 </script>
-
-<style scoped>
-.delete-link {
-  display: inline-block;
-}
-</style>

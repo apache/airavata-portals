@@ -1,17 +1,27 @@
 <template>
-  <b-form-group :label="label" :state="state" :description="description">
+  <div class="space-y-1.5">
+    <Label>{{ label }}</Label>
     <slot></slot>
-    <template v-slot:invalid-feedback>
-      <ul v-if="feedbackMessages && feedbackMessages.length > 1">
+    <template v-if="!valid">
+      <ul
+        v-if="feedbackMessages && feedbackMessages.length > 1"
+        class="list-inside list-disc text-sm text-destructive"
+      >
         <li v-for="feedback in feedbackMessages" :key="feedback">
           {{ feedback }}
         </li>
       </ul>
-      <div v-else-if="feedbackMessages && feedbackMessages.length === 1">
+      <p
+        v-else-if="feedbackMessages && feedbackMessages.length === 1"
+        class="text-sm text-destructive"
+      >
         {{ feedbackMessages[0] }}
-      </div>
+      </p>
     </template>
-  </b-form-group>
+    <p v-if="description" class="text-sm text-muted-foreground">
+      {{ description }}
+    </p>
+  </div>
 </template>
 
 <script>
@@ -32,11 +42,6 @@ export default {
     feedbackMessages: {
       type: Array,
       required: true,
-    },
-  },
-  computed: {
-    state() {
-      return this.valid ? null : false;
     },
   },
 };

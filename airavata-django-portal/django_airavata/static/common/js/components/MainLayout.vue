@@ -1,11 +1,8 @@
 <template>
-  <div class="main-content-wrapper">
-    <main
-      class="main-content"
-      :class="{ 'main-content--with-sidebar': hasSidebar }"
-    >
+  <div class="flex flex-1 flex-row overflow-y-auto">
+    <main class="flex-1" :class="hasSidebar ? 'overflow-y-auto p-4' : 'p-4'">
       <notifications-display />
-      <div class="container-fluid">
+      <div class="w-full">
         <slot />
       </div>
     </main>
@@ -20,7 +17,7 @@ export default {
   name: "main-layout",
   computed: {
     hasSidebar() {
-      return this.$slots.sidebar;
+      return Boolean(this.$slots.sidebar);
     },
   },
   components: {

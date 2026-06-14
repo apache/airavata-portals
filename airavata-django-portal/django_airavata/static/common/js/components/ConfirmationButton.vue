@@ -1,12 +1,8 @@
 <template>
-  <div class="confirmation-button">
-    <b-button
-      :variant="variant"
-      @click="$refs.modal.show()"
-      :disabled="disabled"
-    >
+  <div class="inline-block">
+    <Button :variant="buttonVariant" @click="$refs.modal.show()" :disabled="disabled">
       {{ label }}
-    </b-button>
+    </Button>
     <confirmation-dialog
       ref="modal"
       :title="dialogTitle"
@@ -18,6 +14,17 @@
 </template>
 <script>
 import ConfirmationDialog from "./ConfirmationDialog.vue";
+
+// Map the legacy bootstrap-vue variant names this component still accepts onto
+// the shadcn-vue Button variants.
+const VARIANT_MAP = {
+  danger: "destructive",
+  primary: "default",
+  secondary: "secondary",
+  "outline-primary": "outline",
+  "outline-secondary": "outline",
+  link: "link",
+};
 
 export default {
   name: "confirmation-button",
@@ -42,11 +49,10 @@ export default {
   components: {
     ConfirmationDialog,
   },
+  computed: {
+    buttonVariant() {
+      return VARIANT_MAP[this.variant] || this.variant;
+    },
+  },
 };
 </script>
-
-<style scoped>
-.confirmation-button {
-  display: inline-block;
-}
-</style>

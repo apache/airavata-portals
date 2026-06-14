@@ -1,7 +1,11 @@
 <template>
-  <header class="sidebar-header">
-    <h1 class="sidebar-header__title">{{ title }}</h1>
-    <a :href="viewAllUrl" class="sidebar-header__action">View all</a>
+  <header class="flex items-center border-b border-border p-6">
+    <h1 class="m-0 text-sm font-medium uppercase tracking-wide">{{ title }}</h1>
+    <a
+      :href="viewAllUrl"
+      class="ml-auto text-sm text-primary hover:underline"
+      >View all</a
+    >
   </header>
 </template>
 

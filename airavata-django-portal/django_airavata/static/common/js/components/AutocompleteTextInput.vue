@@ -1,40 +1,49 @@
 <template>
   <div class="autocomplete-text-input">
-    <b-input-group>
-      <template v-slot:prepend>
-<b-input-group-text >
-        <i class="fa fa-search"></i>
-      </b-input-group-text>
-</template>
-      <b-form-input
+    <div class="relative">
+      <SearchIcon
+        class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+      />
+      <Input
         type="text"
+        class="pl-9"
         :model-value="searchValue"
         :placeholder="placeholder"
         @update:model-value="updateSearchValue"
         @keydown.enter="enter"
         @keydown.down="down"
         @keydown.up="up"
-      ></b-form-input>
-    </b-input-group>
-    <b-list-group class="autocomplete-suggestion-list" v-if="open">
-      <b-list-group-item
+      />
+    </div>
+    <ul
+      v-if="open"
+      class="autocomplete-suggestion-list overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
+    >
+      <li
         v-for="(suggestion, index) in filtered"
-        v-bind:class="{ active: isActive(index) }"
-        href="#"
+        :key="suggestion.id"
+        class="cursor-pointer px-3 py-2 text-sm"
+        :class="
+          isActive(index)
+            ? 'bg-accent text-accent-foreground'
+            : 'hover:bg-accent/60'
+        "
         @click="suggestionClick(index)"
-        v-bind:key="suggestion.id"
       >
         <slot name="suggestion" :suggestion="suggestion">
           {{ suggestion.name }}
         </slot>
-      </b-list-group-item>
-    </b-list-group>
+      </li>
+    </ul>
   </div>
 </template>
 
 <script>
+import { Search as SearchIcon } from "@lucide/vue";
+
 export default {
   name: "autocomplete-text-input",
+  components: { SearchIcon },
   props: {
     suggestions: {
       type: Array,

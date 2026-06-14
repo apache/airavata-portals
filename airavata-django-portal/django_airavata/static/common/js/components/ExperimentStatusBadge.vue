@@ -1,5 +1,5 @@
 <template>
-  <b-badge :variant="badgeVariant">{{ label }}</b-badge>
+  <Badge :variant="badgeVariant" :class="badgeClass">{{ label }}</Badge>
 </template>
 
 <script>
@@ -25,21 +25,27 @@ export default {
         ? this.experimentState.constructor.shortAlias(this.experimentState.name)
         : this.statusName;
     },
+    // Badge has default/secondary/destructive/outline variants; success and
+    // warning use the design-token colors via badgeClass.
     badgeVariant: function () {
       if (this.experimentState.isProgressing) {
         return "secondary";
-      } else if (this.experimentState === models.ExperimentState.COMPLETED) {
-        return "success";
+      } else if (this.experimentState === models.ExperimentState.FAILED) {
+        return "destructive";
+      } else {
+        return "secondary";
+      }
+    },
+    badgeClass: function () {
+      if (this.experimentState === models.ExperimentState.COMPLETED) {
+        return "border-transparent bg-success text-success-foreground";
       } else if (
         this.experimentState === models.ExperimentState.CANCELING ||
         this.experimentState === models.ExperimentState.CANCELED
       ) {
-        return "warning";
-      } else if (this.experimentState === models.ExperimentState.FAILED) {
-        return "danger";
-      } else {
-        return "info";
+        return "border-transparent bg-warning text-warning-foreground";
       }
+      return "";
     },
   },
 };

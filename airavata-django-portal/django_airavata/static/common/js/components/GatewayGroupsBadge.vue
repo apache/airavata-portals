@@ -1,5 +1,5 @@
 <template>
-  <b-badge :variant="variant">{{ name }}</b-badge>
+  <Badge :variant="variant" :class="badgeClass">{{ name }}</Badge>
 </template>
 
 <script>
@@ -16,14 +16,18 @@ export default {
   computed: {
     variant() {
       if (this.group.is_gateway_admins_group) {
-        return "danger";
-      } else if (this.group.is_read_only_gateway_admins_group) {
-        return "warning";
+        return "destructive";
       } else if (this.group.is_default_gateway_users_group) {
-        return "primary";
+        return "default";
       } else {
         return "secondary";
       }
+    },
+    badgeClass() {
+      // warning has no dedicated Badge variant; apply the design-token color.
+      return this.group.is_read_only_gateway_admins_group
+        ? "border-transparent bg-warning text-warning-foreground"
+        : "";
     },
     name() {
       if (this.group.is_gateway_admins_group) {

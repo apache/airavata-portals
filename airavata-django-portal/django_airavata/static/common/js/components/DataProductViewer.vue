@@ -1,6 +1,10 @@
 <template>
   <span v-if="downloadURL">
-    <a :href="downloadURL" class="action-link" :target="linkTarget">
+    <a
+      :href="downloadURL"
+      class="whitespace-nowrap text-primary hover:underline"
+      :target="linkTarget"
+    >
       {{ filename }}
     </a>
   </span>

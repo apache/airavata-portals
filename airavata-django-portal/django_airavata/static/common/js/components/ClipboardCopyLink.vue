@@ -1,28 +1,30 @@
 <template>
-  <div style="display: inline-block;">
-    <a
-      href="#"
-      ref="copyLink"
-      class="action-link"
-      :class="linkClasses"
-      @click.prevent="onCopy"
-    >
-      <slot>
-        Copy Key
-      </slot>
-      <slot name="icon">
-        <i class="far fa-clipboard"></i>
-      </slot>
-    </a>
-    <b-tooltip :show="show" :disabled="!show" :target="() => $refs.copyLink">
+  <Tooltip :open="show">
+    <TooltipTrigger as-child>
+      <a
+        href="#"
+        class="inline-flex cursor-pointer items-center gap-1 whitespace-nowrap text-primary hover:underline"
+        :class="linkClasses"
+        @click.prevent="onCopy"
+      >
+        <slot> Copy Key </slot>
+        <slot name="icon">
+          <Clipboard class="size-4" />
+        </slot>
+      </a>
+    </TooltipTrigger>
+    <TooltipContent>
       <slot name="tooltip">Copied!</slot>
-    </b-tooltip>
-  </div>
+    </TooltipContent>
+  </Tooltip>
 </template>
 
 <script>
+import { Clipboard } from "@lucide/vue";
+
 export default {
   name: "clipboard-copy-link",
+  components: { Clipboard },
   props: {
     text: {
       type: String,

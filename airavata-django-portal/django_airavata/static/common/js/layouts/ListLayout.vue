@@ -1,54 +1,46 @@
 <template>
   <div>
-    <div class="row">
-      <div class="col-auto me-auto">
+    <div class="flex items-start justify-between gap-2">
+      <div class="mr-auto">
         <slot name="title">
-          <h1 class="h4 mb-4">{{ title }}</h1>
+          <h1 class="mb-4 text-xl font-semibold">{{ title }}</h1>
         </slot>
       </div>
-      <div class="col-auto">
+      <div class="flex items-center gap-2">
         <slot name="additional-buttons"> </slot>
         <slot name="new-item-button">
-          <b-button
-            variant="primary"
-            @click="addNewItem"
-            :disabled="newButtonDisabled"
-          >
+          <Button @click="addNewItem" :disabled="newButtonDisabled">
             {{ newItemButtonText }}
-            <i class="fa fa-plus" aria-hidden="true"></i>
-          </b-button>
+            <Plus class="size-4" aria-hidden="true" />
+          </Button>
         </slot>
       </div>
     </div>
-    <div v-if="subtitle" class="row">
-      <div class="col">
-        <h2 class="subtitle text-uppercase text-muted">{{ subtitle }}</h2>
-      </div>
+    <div v-if="subtitle">
+      <h2 class="text-sm uppercase text-muted-foreground">{{ subtitle }}</h2>
     </div>
-    <div class="row">
-      <div class="col">
-        <slot name="new-item-editor"></slot>
-      </div>
+    <div>
+      <slot name="new-item-editor"></slot>
     </div>
-    <div class="row">
-      <div class="col">
-        <slot name="item-list" :items="itemsList">Item List goes here</slot>
-        <pager
-          v-if="itemsPaginator"
-          :paginator="itemsPaginator"
-          next="nextItems"
-          v-on:previous="previousItems"
-        ></pager>
-      </div>
+    <div>
+      <slot name="item-list" :items="itemsList">Item List goes here</slot>
+      <pager
+        v-if="itemsPaginator"
+        :paginator="itemsPaginator"
+        next="nextItems"
+        v-on:previous="previousItems"
+      ></pager>
     </div>
   </div>
 </template>
 
 <script>
+import { Plus } from "@lucide/vue";
 import { utils } from "django-airavata-api";
 import Pager from "../components/Pager.vue";
 
 export default {
+  components: { Plus, pager: Pager },
   props: {
     items: Array,
     itemsPaginator: utils.PaginationIterator,
@@ -72,9 +64,6 @@ export default {
   data() {
     return {};
   },
-  components: {
-    pager: Pager,
-  },
   methods: {
     nextItems: function () {
       this.itemsPaginator.next();
@@ -93,9 +82,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.subtitle {
-  font-size: 14px;
-}
-</style>

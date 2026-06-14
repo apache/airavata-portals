@@ -2,9 +2,9 @@
   <div class="custom-Uppy">
     <div ref="dragDrop" />
     <div ref="statusBar" />
-    <b-alert class="mt-1" :model-value="restrictionFailed" variant="danger">{{
-      restrictionFailedMessage
-    }}</b-alert>
+    <Alert v-if="restrictionFailed" class="mt-1" variant="destructive">
+      <AlertDescription>{{ restrictionFailedMessage }}</AlertDescription>
+    </Alert>
   </div>
 </template>
 

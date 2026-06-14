@@ -10,6 +10,9 @@ from django.core.cache import cache
 from django.urls import reverse
 
 from django_airavata.app_config import AiravataAppConfig
+from django_airavata.commons.dynamic_apps.context_processors import (
+    custom_app_registry,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -209,3 +212,100 @@ def _get_app_nav(request, current_app):
 def google_analytics_tracking_id(request):
     """Put the Google Analytics tracking id into context."""
     return {"ga_tracking_id": getattr(settings, "GOOGLE_ANALYTICS_TRACKING_ID", None)}
+
+
+def _safe_reverse(name):
+    """Reverse a named URL, returning ``#`` if it can't be resolved."""
+    try:
+        return reverse(name)
+    except Exception:
+        return "#"
+
+
+def shell_data(request):
+    """Assemble the page-shell data the Vue app shell (AppShell.vue) renders.
+
+    The shell is a lightweight client: this composes the brand, primary nav,
+    app switcher, user menu, and unread notifications into one JSON-serializable
+    dict (rendered into base.html via ``json_script``). No business logic — it
+    reuses the registries the other context processors already build.
+    """
+    chrome = getattr(settings, "PORTAL_CHROME", {}) or {}
+    title = chrome.get("title") or getattr(settings, "PORTAL_TITLE", "Airavata")
+
+    app_registry = airavata_app_registry(request)
+    custom_registry = custom_app_registry(request)
+
+    # Primary nav: the current app's nav items (already resolved + active-flagged
+    # by the registries), each with an icon string and a reversed URL.
+    nav_items = []
+    for nav in (app_registry.get("airavata_app_nav") or []) + (
+        custom_registry.get("custom_app_nav") or []
+    ):
+        nav_items.append(
+            {
+                "label": nav.get("label"),
+                "icon": nav.get("icon"),
+                "url": _safe_reverse(nav.get("url")),
+                "active": bool(nav.get("active")),
+            }
+        )
+
+    # App switcher: every airavata + custom app, flagged with the current one.
+    current_airavata_app = app_registry.get("current_airavata_app")
+    current_custom_app = custom_registry.get("current_custom_app")
+    apps_list = []
+    for app in app_registry.get("airavata_apps") or []:
+        apps_list.append(
+            {
+                "label": app.verbose_name,
+                "icon": "fa " + app.fa_icon_class,
+                "url": _safe_reverse(app.url_home),
+                "current": app is current_airavata_app,
+            }
+        )
+    for app in custom_registry.get("custom_apps") or []:
+        apps_list.append(
+            {
+                "label": app.verbose_name,
+                "icon": "fa " + app.fa_icon_class,
+                "url": _safe_reverse(app.url_home),
+                "current": current_custom_app is not None
+                and app.label == current_custom_app.label,
+            }
+        )
+
+    data = {
+        "title": title,
+        "logoUrl": chrome.get("logo_url")
+            or static_logo_url(),
+        "logoBackgroundColor": chrome.get("logo_background_color"),
+        "menuLinks": chrome.get("user_menu_links") or [],
+        "navItems": nav_items,
+        "apps": apps_list,
+    }
+
+    if request.user.is_authenticated:
+        data["user"] = {
+            "first_name": getattr(request.user, "first_name", ""),
+            "last_name": getattr(request.user, "last_name", ""),
+            "username": getattr(request.user, "username", ""),
+            "email": getattr(request.user, "email", ""),
+        }
+        data["accountUrl"] = getattr(settings, "KEYCLOAK_ACCOUNT_CONSOLE_URL", "")
+        data["logoutUrl"] = _safe_reverse("django_airavata_auth:logout")
+        notifications = get_notifications(request)
+        data["notices"] = json.loads(notifications.get("notifications") or "[]")
+        data["unreadCount"] = notifications.get("unread_notifications", 0)
+
+    return {"shell_data": data}
+
+
+def static_logo_url():
+    """Default portal logo served from static files."""
+    from django.templatetags.static import static
+
+    try:
+        return static("images/airavata-logo.png")
+    except Exception:
+        return None

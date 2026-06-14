@@ -18,4 +18,14 @@ export default [
       },
     },
   },
+  {
+    // The generated shadcn-vue component library (js/components/ui) keeps the
+    // upstream single-word file/component names (Button, Input, Card, ...).
+    // That is the shadcn-vue convention, so the multi-word-name rule does not
+    // apply to it.
+    files: ["js/components/ui/**/*.vue"],
+    rules: {
+      "vue/multi-word-component-names": "off",
+    },
+  },
 ];

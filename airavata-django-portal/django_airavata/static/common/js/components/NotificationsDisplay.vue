@@ -1,63 +1,108 @@
 <template>
   <div id="notifications-display">
-    <transition-group name="fade" tag="div">
+    <transition-group name="fade" tag="div" class="space-y-2">
       <template v-for="unhandledError in unhandledErrors">
-        <b-alert
+        <Alert
           v-if="isUnauthenticatedError(unhandledError.error)"
-          variant="warning"
+          class="border-transparent bg-warning text-warning-foreground"
           :key="unhandledError.id"
-          show
-          dismissible
-          @dismissed="dismissUnhandledError(unhandledError)"
         >
-          Your login session has expired. Please
-          <b-link class="alert-link" :href="loginLinkWithNext"
-            >log in again</b-link
-          >. You can also
-          <b-link class="alert-link" :href="loginLink" target="_blank"
-            >login in a separate tab
-            <i class="fa fa-external-link-alt" aria-hidden="true"></i
-          ></b-link>
-          and then return to this tab and try again.
-        </b-alert>
-        <b-alert
-          v-else
-          variant="danger"
-          :key="unhandledError.id"
-          show
-          dismissible
-          @dismissed="dismissUnhandledError(unhandledError)"
-        >
-          {{ unhandledError.message }}
-        </b-alert>
+          <AlertDescription
+            class="flex w-full items-start gap-2 text-warning-foreground"
+          >
+            <span>
+              Your login session has expired. Please
+              <a class="font-medium underline" :href="loginLinkWithNext"
+                >log in again</a
+              >. You can also
+              <a
+                class="inline-flex items-center gap-1 font-medium underline"
+                :href="loginLink"
+                target="_blank"
+                >login in a separate tab
+                <ExternalLink class="size-3.5" aria-hidden="true" /></a>
+              and then return to this tab and try again.
+            </span>
+            <button
+              type="button"
+              class="ml-auto shrink-0"
+              @click="dismissUnhandledError(unhandledError)"
+            >
+              <X class="size-4" />
+            </button>
+          </AlertDescription>
+        </Alert>
+        <Alert v-else variant="destructive" :key="unhandledError.id">
+          <AlertDescription class="flex w-full items-start gap-2">
+            <span>{{ unhandledError.message }}</span>
+            <button
+              type="button"
+              class="ml-auto shrink-0"
+              @click="dismissUnhandledError(unhandledError)"
+            >
+              <X class="size-4" />
+            </button>
+          </AlertDescription>
+        </Alert>
       </template>
-      <b-alert
+      <Alert
         v-for="notification in notifications"
-        :variant="variant(notification)"
+        :variant="variant(notification) === 'destructive' ? 'destructive' : 'default'"
+        :class="alertClass(notification)"
         :key="notification.id"
-        :show="notification.duration > 0 ? notification.duration : true"
-        dismissible
-        @dismissed="dismissNotification(notification)"
       >
-        {{ notification.message }}
-      </b-alert>
+        <AlertDescription
+          class="flex w-full items-start gap-2"
+          :class="alertTextClass(notification)"
+        >
+          <span>{{ notification.message }}</span>
+          <button
+            type="button"
+            class="ml-auto shrink-0"
+            @click="dismissNotification(notification)"
+          >
+            <X class="size-4" />
+          </button>
+        </AlertDescription>
+      </Alert>
     </transition-group>
-    <b-alert variant="danger" :model-value="apiServerBackUp === false">
-      <p>API Server is down.</p>
-      <i class="fa fa-sync-alt fa-spin"></i> Checking status ...
-    </b-alert>
-    <b-alert variant="success" :model-value="apiServerBackUp" dismissible>
-      API Server is back up. Please try again.
-    </b-alert>
+    <Alert
+      v-if="apiServerBackUp === false"
+      variant="destructive"
+      class="mt-2"
+    >
+      <AlertDescription>
+        <div>
+          <p>API Server is down.</p>
+          <p class="flex items-center gap-2">
+            <RefreshCw class="size-4 animate-spin" /> Checking status ...
+          </p>
+        </div>
+      </AlertDescription>
+    </Alert>
+    <Alert
+      v-if="apiServerBackUp"
+      class="mt-2 border-transparent bg-success text-success-foreground"
+    >
+      <AlertDescription class="text-success-foreground">
+        API Server is back up. Please try again.
+      </AlertDescription>
+    </Alert>
   </div>
 </template>
 
 <script>
+import { ExternalLink, RefreshCw, X } from "@lucide/vue";
 import { errors, services } from "django-airavata-api";
 import NotificationList from "../notifications/NotificationList";
 
 export default {
   name: "notifications-display",
+  components: {
+    ExternalLink,
+    RefreshCw,
+    X,
+  },
   data() {
     return {
       notifications: NotificationList.list,
@@ -75,15 +120,27 @@ export default {
       errors.UnhandledErrorDisplayList.remove(unhandledError);
     },
     variant: function (notification) {
-      if (notification.type === "SUCCESS") {
-        return "success";
-      } else if (notification.type === "ERROR") {
-        return "danger";
-      } else if (notification.type === "WARNING") {
-        return "warning";
+      if (notification.type === "ERROR") {
+        return "destructive";
       } else {
-        return "secondary";
+        return "default";
       }
+    },
+    alertClass: function (notification) {
+      if (notification.type === "SUCCESS") {
+        return "border-transparent bg-success text-success-foreground";
+      } else if (notification.type === "WARNING") {
+        return "border-transparent bg-warning text-warning-foreground";
+      }
+      return "";
+    },
+    alertTextClass: function (notification) {
+      if (notification.type === "SUCCESS") {
+        return "text-success-foreground";
+      } else if (notification.type === "WARNING") {
+        return "text-warning-foreground";
+      }
+      return "";
     },
     loadAPIServerStatus() {
       return services.APIServerStatusCheckService.get(
@@ -179,7 +236,7 @@ export default {
 <style>
 #notifications-display {
   position: fixed;
-  top: 75px;
+  top: 20px;
   left: 20vw;
   width: 60vw;
   z-index: 10000;

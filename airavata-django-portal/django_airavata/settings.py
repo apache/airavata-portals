@@ -114,6 +114,7 @@ TEMPLATES = [
                 "django_airavata.commons.dynamic_apps.context_processors.custom_app_registry",
                 "django_airavata.context_processors.get_notifications",
                 "django_airavata.context_processors.user_session_data",
+                "django_airavata.context_processors.shell_data",
                 "django_airavata.context_processors.google_analytics_tracking_id",
             ],
         },

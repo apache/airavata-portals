@@ -1,17 +1,18 @@
 <template>
-  <b-modal
-    :title="title"
-    ref="modal"
-    @ok="$emit('ok')"
-    @cancel="$emit('cancel')"
-    no-close-on-backdrop
-    no-close-on-esc
-    hide-header-close
-    ok-title="Confirm"
-    ok-variant="danger"
-  >
-    <slot></slot>
-  </b-modal>
+  <Dialog v-model:open="open">
+    <DialogContent :show-close-button="false">
+      <DialogHeader>
+        <DialogTitle>{{ title }}</DialogTitle>
+      </DialogHeader>
+      <div class="text-sm">
+        <slot></slot>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" @click="cancel">Cancel</Button>
+        <Button variant="destructive" @click="confirm">Confirm</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script>
@@ -23,12 +24,25 @@ export default {
       default: "Please confirm",
     },
   },
+  data() {
+    return {
+      open: false,
+    };
+  },
   methods: {
     show() {
-      this.$refs.modal.show();
+      this.open = true;
     },
     hide() {
-      this.$refs.modal.hide();
+      this.open = false;
+    },
+    confirm() {
+      this.open = false;
+      this.$emit("ok");
+    },
+    cancel() {
+      this.open = false;
+      this.$emit("cancel");
     },
   },
 };
