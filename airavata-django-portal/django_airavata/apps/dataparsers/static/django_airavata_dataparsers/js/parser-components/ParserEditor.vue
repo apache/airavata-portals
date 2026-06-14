@@ -1,9 +1,6 @@
 <template>
-  <div>
-    <div class="mb-4">
-      <h1 class="text-xl font-semibold">{{ title }}</h1>
-    </div>
-    <Card class="mb-4">
+  <div class="space-y-6">
+    <Card>
       <CardContent>
         <Alert
           v-if="showDismissibleAlert.dismissable"
@@ -16,19 +13,20 @@
         >
           <AlertDescription class="flex w-full items-start gap-2">
             <span>{{ showDismissibleAlert.message }}</span>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon"
               class="ml-auto shrink-0"
               @click="showDismissibleAlert.dismissable = false"
             >
               <X class="size-4" />
-            </button>
+            </Button>
           </AlertDescription>
         </Alert>
 
         <form class="space-y-4">
-          <div class="grid gap-2">
-            <Label for="parser_name">Parser Name:</Label>
+          <div class="space-y-1.5">
+            <Label for="parser_name">Parser Name</Label>
             <Input
               id="parser_name"
               type="text"
@@ -37,23 +35,23 @@
               placeholder="Enter parser name"
             />
             <p class="text-sm text-muted-foreground">
-              Name should only contain Alpha Characters
+              Name should only contain alpha characters.
             </p>
           </div>
 
-          <div class="grid gap-2">
-            <Label for="docker-image">Docker Image:</Label>
+          <div class="space-y-1.5">
+            <Label for="docker-image">Docker Image</Label>
             <Input
               id="docker-image"
               type="text"
               v-model="localParser.image_name"
               required
-              placeholder="Enter the Docker Image name"
+              placeholder="Enter the Docker image name"
             />
           </div>
 
-          <div class="grid gap-2">
-            <Label for="input-path">Input Data Directory:</Label>
+          <div class="space-y-1.5">
+            <Label for="input-path">Input Data Directory</Label>
             <Input
               id="input-path"
               type="text"
@@ -63,8 +61,8 @@
             />
           </div>
 
-          <div class="grid gap-2">
-            <Label for="output-path">Output Data Directory:</Label>
+          <div class="space-y-1.5">
+            <Label for="output-path">Output Data Directory</Label>
             <Input
               id="output-path"
               type="text"
@@ -77,7 +75,7 @@
       </CardContent>
     </Card>
 
-    <Card class="mb-4">
+    <Card>
       <CardContent>
         <list-layout
           :items="localParser.input_files"
@@ -113,7 +111,7 @@
       </CardContent>
     </Card>
 
-    <Card class="mb-4">
+    <Card>
       <CardContent>
         <list-layout
           :items="localParser.output_files"
@@ -151,16 +149,12 @@
         </list-layout>
       </CardContent>
     </Card>
-    <div class="flex justify-end">
-      <Button variant="default" @click="saveParser">Save</Button>
-      <Button
-        v-if="parser"
-        class="ml-2"
-        variant="destructive"
-        @click="removeParser"
+    <div class="flex justify-end gap-2">
+      <Button variant="secondary" @click="cancel">Cancel</Button>
+      <Button v-if="parser" variant="destructive" @click="removeParser"
         >Delete</Button
       >
-      <Button class="ml-2" variant="secondary" @click="cancel">Cancel</Button>
+      <Button variant="default" @click="saveParser">Save</Button>
     </div>
   </div>
 </template>
@@ -221,11 +215,6 @@ export default {
         },
       ],
     };
-  },
-  computed: {
-    title: function () {
-      return this.parser ? this.parser.id : "New Parser";
-    },
   },
   components: {
     X,

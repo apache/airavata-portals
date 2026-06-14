@@ -4,12 +4,14 @@
     <TableCell>{{ parser.image_name }}</TableCell>
     <TableCell>{{ parser.execution_command }}</TableCell>
     <TableCell>
-      <a
-        class="inline-flex items-center gap-1 text-primary hover:text-primary/90"
+      <Button
+        as="a"
+        variant="link"
+        size="sm"
         :href="'/dataparsers/edit/' + encodeURIComponent(parser.id) + '/'"
       >
         Edit <Pencil class="size-4" aria-hidden="true" />
-      </a>
+      </Button>
     </TableCell>
   </TableRow>
 </template>

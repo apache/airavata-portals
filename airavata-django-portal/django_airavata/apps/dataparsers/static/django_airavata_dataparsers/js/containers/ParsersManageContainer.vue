@@ -1,22 +1,25 @@
 <template>
-  <div>
-    <div class="mb-4 flex items-center justify-between gap-2">
-      <h1 class="text-xl font-semibold">Parsers</h1>
+  <main-layout
+    title="Parsers"
+    subtitle="Manage data parsers for processing experiment outputs."
+  >
+    <template #actions>
       <Button as="a" href="create" variant="default">
         Create New Parser
         <Plus class="size-4" aria-hidden="true" />
       </Button>
-    </div>
+    </template>
     <Card>
       <CardContent>
         <parser-list v-bind:parsers="parsers"></parser-list>
       </CardContent>
     </Card>
-  </div>
+  </main-layout>
 </template>
 
 <script>
 import { Plus } from "@lucide/vue";
+import MainLayout from "django-airavata-common-ui/js/components/MainLayout.vue";
 import ParserList from "../parser-components/ParserList.vue";
 
 import { services } from "django-airavata-api";
@@ -31,6 +34,7 @@ export default {
   },
   components: {
     Plus,
+    "main-layout": MainLayout,
     "parser-list": ParserList,
   },
   methods: {
@@ -41,11 +45,7 @@ export default {
       this.parserPaginator.previous();
     },
   },
-  computed: {
-    // parsers: function() {
-    //     return this.parserPaginator ? this.parserPaginator.results : null;
-    // },
-  },
+  computed: {},
   beforeMount: function () {
     services.ParserService.list().then((result) => (this.parsers = result));
   },
