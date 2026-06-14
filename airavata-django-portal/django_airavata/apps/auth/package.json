@@ -7,7 +7,7 @@
   "scripts": {
     "build": "node build-stats.mjs",
     "watch": "node build-stats.mjs",
-    "lint": "eslint ./static/django_airavata_auth/js",
+    "lint": "eslint ./static/django_airavata_auth/js --no-error-on-unmatched-pattern",
     "format": "prettier --write ."
   },
   "dependencies": {
@@ -15,27 +15,14 @@
     "django-airavata-common-ui": "link:../../static/common/"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.16",
-    "@babel/eslint-parser": "^7.12.16",
-    "@vitejs/plugin-vue2": "^2.3.3",
-    "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3",
-    "prettier": "^2.1.2",
-    "vite": "^5.4.0"
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/essential",
-      "eslint:recommended"
-    ],
-    "rules": {},
-    "parserOptions": {
-      "parser": "@babel/eslint-parser",
-      "requireConfigFile": false
-    }
+    "@eslint/js": "^10.0.1",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "eslint": "^10.5.0",
+    "eslint-plugin-vue": "^10.9.2",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.4",
+    "sass": "^1.101.0",
+    "vite": "^8.0.16",
+    "vue-eslint-parser": "^10.4.1"
   }
 }
