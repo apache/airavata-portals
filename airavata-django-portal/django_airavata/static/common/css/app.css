@@ -164,3 +164,10 @@
   --vis-tooltip-backdrop-filter: none;
   --vis-tooltip-padding: none;
 }
+
+/* Let Unovis' XY container fill its parent. Without this it falls back to a
+   fixed ~300px width, collapsing the area chart into a narrow box. */
+.unovis-xy-container {
+  width: 100%;
+  height: 100%;
+}
