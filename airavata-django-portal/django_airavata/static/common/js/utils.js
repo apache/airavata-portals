@@ -24,3 +24,22 @@ export const dateFormatters = {
     timeZoneName: "short",
   }),
 };
+
+// Tracks app-initiated (intentional) navigations so UnsavedChangesGuard does not
+// pop the native "Leave site?" dialog when the portal itself sends the user to
+// another page (e.g. after Save / Save and Launch). The guard should still warn
+// on genuinely accidental leaves (closing the tab, browser back/forward, editing
+// the URL bar, following an unrelated link) while there are unsaved edits.
+let intentionalNavigation = false;
+
+export function isIntentionalNavigation() {
+  return intentionalNavigation;
+}
+
+// Send the browser to `url` as an intentional, app-initiated navigation. Use this
+// instead of window.location.assign for in-portal navigations (e.g. redirecting
+// after a successful save) so the unsaved-changes guard stays silent.
+export function navigateTo(url) {
+  intentionalNavigation = true;
+  window.location.assign(url);
+}
