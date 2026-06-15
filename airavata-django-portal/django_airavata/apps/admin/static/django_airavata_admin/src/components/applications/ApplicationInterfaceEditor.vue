@@ -103,10 +103,10 @@
       >
         <template #item="{ element: input }">
           <application-input-field-editor
-            :value="input"
+            :model-value="input"
             :focus="input.key === focusApplicationInputKey"
             :collapse="collapseApplicationInputs"
-            @input="updatedInput"
+            @update:model-value="updatedInput"
             @delete="deleteInput(input)"
             :readonly="readonly"
           />
@@ -126,10 +126,10 @@
       <h2 class="mb-4 text-lg font-semibold">Output Fields</h2>
       <application-output-field-editor
         v-for="output in data.application_outputs"
-        :value="output"
+        :model-value="output"
         :key="output.key"
         :focus="output.key === focusApplicationOutputKey"
-        @input="updatedOutput"
+        @update:model-value="updatedOutput"
         @delete="deleteOutput(output)"
         :readonly="readonly"
       />

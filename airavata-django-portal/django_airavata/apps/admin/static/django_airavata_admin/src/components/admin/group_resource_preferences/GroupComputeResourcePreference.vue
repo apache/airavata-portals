@@ -148,7 +148,7 @@
         </template>
       </list-layout>
       <div
-        class="bg-background fixed inset-x-0 bottom-0 flex gap-2 border-t p-4 shadow-md"
+        class="bg-background fixed bottom-0 left-64 right-0 flex justify-end gap-2 border-t p-4 shadow-md"
       >
         <Button
           variant="default"

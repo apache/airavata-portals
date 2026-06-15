@@ -4,8 +4,9 @@
     subtitle="Gateway experiment activity over time."
   >
     <Tabs v-model="activeTab" ref="tabs" class="space-y-4">
-      <TabsList>
-        <TabsTrigger value="statistics">Statistics</TabsTrigger>
+      <!-- Only show the tab bar once experiment-detail tabs are open; the lone
+           "Statistics" pill was a no-op (the statistics view is the default). -->
+      <TabsList v-if="experimentDetailTabs.length > 0">
         <TabsTrigger
           v-for="experimentTab in experimentDetailTabs"
           :key="experimentTab.experiment.experiment_id"

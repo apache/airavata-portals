@@ -112,8 +112,8 @@
                 <Card>
                   <CardContent>
                     <compute-resource-reservation-editor
-                      :value="item"
-                      @input="updatedReservation"
+                      :model-value="item"
+                      @update:model-value="updatedReservation"
                       :queues="queues"
                       @valid="removeInvalidReservation(item.key)"
                       @invalid="recordInvalidReservation(item.key)"

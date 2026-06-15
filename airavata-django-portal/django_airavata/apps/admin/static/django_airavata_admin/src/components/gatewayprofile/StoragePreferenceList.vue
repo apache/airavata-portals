@@ -105,8 +105,8 @@
                 <Card>
                   <CardContent>
                     <storage-preference-editor
-                      :value="item"
-                      @input="updatedStoragePreference"
+                      :model-value="item"
+                      @update:model-value="updatedStoragePreference"
                       :default-credential-store-token="
                         defaultCredentialStoreToken
                       "
