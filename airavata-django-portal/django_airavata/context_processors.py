@@ -222,6 +222,25 @@ def _safe_reverse(name):
         return "#"
 
 
+def _account_console_url(request):
+    """Keycloak account console URL for the signed-in user's own profile.
+
+    Generated from the ``iss`` (issuer) claim of the user's own access token —
+    i.e. the realm they actually authenticated against, which is exactly the
+    ``issuer`` advertised by that realm's OIDC discovery (``.well-known``)
+    document. The account console lives at ``<issuer>/account/`` by Keycloak
+    convention (the discovery document itself exposes no account endpoint). This
+    keeps the link correct per-user/per-realm without depending on a separately
+    configured URL. Falls back to the configured ``KEYCLOAK_ACCOUNT_CONSOLE_URL``
+    setting if the token carries no issuer.
+    """
+    claims = getattr(getattr(request, "user", None), "claims", None) or {}
+    issuer = claims.get("iss")
+    if issuer:
+        return issuer.rstrip("/") + "/account/"
+    return getattr(settings, "KEYCLOAK_ACCOUNT_CONSOLE_URL", "")
+
+
 def shell_data(request):
     """Assemble the page-shell data the Vue app shell (AppShell.vue) renders.
 
@@ -302,7 +321,7 @@ def shell_data(request):
             "username": getattr(request.user, "username", ""),
             "email": getattr(request.user, "email", ""),
         }
-        data["accountUrl"] = getattr(settings, "KEYCLOAK_ACCOUNT_CONSOLE_URL", "")
+        data["accountUrl"] = _account_console_url(request)
         data["logoutUrl"] = _safe_reverse("django_airavata_auth:logout")
         notifications = get_notifications(request)
         data["notices"] = json.loads(notifications.get("notifications") or "[]")
