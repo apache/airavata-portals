@@ -3,6 +3,8 @@ export * from "./alert";
 export * from "./badge";
 export * from "./button";
 export * from "./card";
+export * from "./chart";
+export * from "./chart-area";
 export * from "./checkbox";
 export * from "./dialog";
 export * from "./dropdown-menu";

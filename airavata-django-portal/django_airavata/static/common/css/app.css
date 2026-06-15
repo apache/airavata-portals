@@ -138,3 +138,29 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*
+ * Unovis chart theming for the shadcn-vue chart components (ui/chart,
+ * ui/chart-area). Wire Unovis' CSS variables to the design tokens and size the
+ * axis/tooltip fonts to the design-system scale (text-xs, 0.75rem) so charts
+ * read consistently with the rest of the UI. The tooltip itself is rendered by
+ * our ChartTooltip (a Card), so Unovis' default tooltip chrome is neutralized.
+ */
+:root {
+  --vis-font-family: inherit;
+  --vis-axis-tick-label-font-size: 0.75rem;
+  --vis-axis-tick-label-color: var(--muted-foreground);
+  --vis-axis-tick-color: var(--border);
+  --vis-text-color: var(--muted-foreground);
+  --vis-primary-color: var(--primary);
+  --vis-secondary-color: var(--muted-foreground);
+  --vis-crosshair-line-stroke-color: var(--muted-foreground);
+  --vis-crosshair-circle-stroke-color: var(--background);
+
+  --vis-tooltip-background-color: none;
+  --vis-tooltip-border-color: none;
+  --vis-tooltip-text-color: none;
+  --vis-tooltip-shadow-color: none;
+  --vis-tooltip-backdrop-filter: none;
+  --vis-tooltip-padding: none;
+}

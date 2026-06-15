@@ -35,6 +35,19 @@ function renderWithProviders(component) {
   return render(Wrapper, renderOptions);
 }
 
+// The AreaChart is built on @unovis, which renders via SVG/measurement APIs that
+// jsdom does not implement. These tests exercise the lookup + filter logic, not
+// the chart rendering, so stub the chart-area module with a trivial component.
+vi.mock("django-airavata-common-ui/js/components/ui/chart-area", () => ({
+  __esModule: true,
+  AreaChart: {
+    name: "area-chart-stub",
+    props: ["data", "categories", "index", "colors", "curveType", "yFormatter"],
+    template: '<div data-testid="area-chart-stub" />',
+  },
+  CurveType: { MonotoneX: "monotoneX" },
+}));
+
 import { models, services, utils } from "django-airavata-api";
 import ExperimentStatus from "django-airavata-api/static/django_airavata_api/js/models/ExperimentStatus";
 vi.mock("django-airavata-api", async () => {

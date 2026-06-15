@@ -17,6 +17,8 @@
   "dependencies": {
     "@lucide/vue": "^1.18.0",
     "@tanstack/vue-table": "^8.21.3",
+    "@unovis/ts": "^1.6.5",
+    "@unovis/vue": "^1.6.5",
     "@uppy/core": "^5.2.0",
     "@uppy/drag-drop": "^5.1.0",
     "@uppy/status-bar": "^5.1.0",

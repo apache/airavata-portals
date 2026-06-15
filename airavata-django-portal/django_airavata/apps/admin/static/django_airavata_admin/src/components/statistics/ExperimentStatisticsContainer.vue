@@ -170,20 +170,62 @@
               </div>
             </div>
 
-            <!-- The chart (with its legend/toggles). A loading overlay covers it
-                 while the per-bucket requests are in flight. -->
-            <div class="relative">
+            <!-- Compact, smooth-curved area chart (shadcn-vue AreaChart, built
+                 on @unovis). A loading overlay covers it while the per-bucket
+                 requests are in flight. The chart's own legend is disabled in
+                 favor of the independent on/off toggle row below. -->
+            <div class="relative h-64 w-full">
               <div
                 v-if="loading"
                 class="absolute inset-0 z-10 flex items-center justify-center bg-background/60"
               >
                 <Loader2 class="size-6 animate-spin text-muted-foreground" />
               </div>
-              <experiment-statistics-chart
-                :buckets="buckets"
-                :series="series"
-                @toggle-series="toggleSeries"
+              <area-chart
+                v-if="visibleCategories.length > 0 && chartData.length > 0"
+                :key="chartKey"
+                :data="chartData"
+                :categories="visibleCategories"
+                index="label"
+                :colors="visibleColors"
+                :curve-type="curveType"
+                :y-formatter="formatCount"
+                :show-legend="false"
+                :show-grid-line="true"
+                class="h-full"
               />
+              <div
+                v-else
+                class="flex h-full items-center justify-center text-sm text-muted-foreground"
+              >
+                {{
+                  chartData.length === 0
+                    ? "No data for the selected range."
+                    : "No series selected."
+                }}
+              </div>
+            </div>
+            <!-- Legend doubling as independent on/off toggles, in the series
+                 colors, sized to the design-system text scale. -->
+            <div class="flex flex-wrap gap-x-4 gap-y-2">
+              <button
+                v-for="s in series"
+                :key="s.key"
+                type="button"
+                class="flex items-center gap-2 text-sm transition-opacity"
+                :class="s.visible ? 'opacity-100' : 'opacity-40'"
+                :aria-pressed="s.visible"
+                @click="toggleSeries(s.key)"
+              >
+                <span
+                  class="inline-block h-0.5 w-4 rounded-full"
+                  :style="{ backgroundColor: s.color }"
+                />
+                <span>{{ s.label }}</span>
+                <span class="text-muted-foreground tabular-nums">{{
+                  s.total
+                }}</span>
+              </button>
             </div>
             <p class="text-xs text-muted-foreground">
               {{ rangeSummary }}
@@ -341,7 +383,10 @@ import {
 } from "@lucide/vue";
 import { errors, models, services, utils } from "django-airavata-api";
 import { components, notifications } from "django-airavata-common-ui";
-import ExperimentStatisticsChart from "./ExperimentStatisticsChart.vue";
+import {
+  AreaChart,
+  CurveType,
+} from "django-airavata-common-ui/js/components/ui/chart-area";
 import ExperimentDetailsView from "./ExperimentDetailsView";
 
 import moment from "moment";
@@ -456,7 +501,7 @@ export default {
     Loader2,
     X,
     ExperimentDetailsView,
-    ExperimentStatisticsChart,
+    "area-chart": AreaChart,
     "application-name": components.ApplicationName,
     "compute-resource-name": components.ComputeResourceName,
     "human-date": components.HumanDate,
@@ -509,6 +554,39 @@ export default {
           values,
           total,
         };
+      });
+    },
+    // Smooth (monotone) curve interpolation for the area/line series.
+    curveType() {
+      return CurveType.MonotoneX;
+    },
+    // The currently-visible series, used to build the chart categories/colors.
+    visibleSeries() {
+      return this.series.filter((s) => s.visible);
+    },
+    // Category keys (the series labels) for the AreaChart, in display order.
+    visibleCategories() {
+      return this.visibleSeries.map((s) => s.label);
+    },
+    // Remount the chart when the set of visible series changes so its internal
+    // legend/crosshair state stays in sync with the categories/colors. Data-only
+    // refreshes within the same set keep the same key (and animate in place).
+    chartKey() {
+      return this.visibleCategories.join("|");
+    },
+    // Colors aligned 1:1 with visibleCategories.
+    visibleColors() {
+      return this.visibleSeries.map((s) => s.color);
+    },
+    // One row per time bucket: { label: <x-axis tick>, <series label>: count }.
+    // Only visible series are included so the chart redraws on toggle.
+    chartData() {
+      return this.buckets.map((bucket, i) => {
+        const row = { label: bucket.label };
+        for (const s of this.visibleSeries) {
+          row[s.label] = s.values[i] ?? 0;
+        }
+        return row;
       });
     },
     rangeSummary() {
@@ -589,6 +667,13 @@ export default {
     },
   },
   methods: {
+    // Compact count formatting for the Y axis (e.g. 1.2k, 3m).
+    formatCount(value) {
+      const n = Math.round(value);
+      if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "m";
+      if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "k";
+      return String(n);
+    },
     totalForKey(summaryKey) {
       const def = SERIES_DEFS.find((d) => d.summaryKey === summaryKey);
       const stats = this.experimentStatistics;
