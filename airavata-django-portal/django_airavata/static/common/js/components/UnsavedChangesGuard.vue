@@ -3,6 +3,8 @@
 </template>
 
 <script>
+import { isIntentionalNavigation } from "../utils";
+
 export default {
   name: "unsaved-changes-guard",
   props: {
@@ -19,7 +21,9 @@ export default {
   },
   methods: {
     onBeforeUnload(event) {
-      if (this.dirty) {
+      // Don't warn when the portal itself is navigating (e.g. after a save).
+      // Only genuinely accidental leaves with unsaved edits should prompt.
+      if (this.dirty && !isIntentionalNavigation()) {
         event.preventDefault();
         // Have to return a message for some browsers in order to trigger popup
         // asking user if they want to leave the page. I don't think any browser

@@ -1,3 +1,5 @@
+import { utils } from "django-airavata-common-ui";
+
 export default {
   editExperiment(experiment) {
     return (
@@ -7,13 +9,13 @@ export default {
     );
   },
   navigateToEditExperiment(experiment) {
-    window.location.assign(this.editExperiment(experiment));
+    utils.navigateTo(this.editExperiment(experiment));
   },
   experimentsList() {
     return "/workspace/experiments";
   },
   navigateToExperimentsList() {
-    window.location.assign(this.experimentsList());
+    utils.navigateTo(this.experimentsList());
   },
   viewExperiment(experiment, { launching = false } = {}) {
     return (
@@ -24,7 +26,7 @@ export default {
     );
   },
   navigateToViewExperiment(experiment, { launching = false } = {}) {
-    window.location.assign(
+    utils.navigateTo(
       this.viewExperiment(experiment, { launching: launching }),
     );
   },
@@ -36,7 +38,7 @@ export default {
     );
   },
   navigateToCreateExperiment(appModule) {
-    window.location.assign(this.createExperiment(appModule));
+    utils.navigateTo(this.createExperiment(appModule));
   },
   editProject(project) {
     return (
@@ -47,7 +49,7 @@ export default {
     return "/workspace/projects";
   },
   navigateToProjectsList() {
-    window.location.assign(this.projectsList());
+    utils.navigateTo(this.projectsList());
   },
   viewGroupResourceProfile(groupResourceProfile) {
     return `/admin/group-resource-profiles/${encodeURIComponent(
