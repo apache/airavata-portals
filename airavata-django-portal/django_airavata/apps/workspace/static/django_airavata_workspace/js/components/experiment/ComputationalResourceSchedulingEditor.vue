@@ -50,22 +50,18 @@
 
 <script>
 import QueueSettingsEditor from "./QueueSettingsEditor.vue";
-import {
-  errors,
-  models,
-  services,
-  utils as apiUtils,
-} from "django-airavata-api";
+import { errors, services, utils as apiUtils } from "django-airavata-api";
 import { mixins, utils } from "django-airavata-common-ui";
 import { NATIVE_SELECT_CLASS } from "../../lib/utils";
 
 export default {
   name: "computational-resource-scheduling-editor",
+  // VModelMixin supplies the `modelValue` prop and the `data` working copy, and
+  // emits `update:modelValue` for the parent's v-model. (This component used to
+  // also declare a Vue 2 `value` prop and emit `input`, which the parent ignored
+  // — and `this.value` was undefined under Vue 3, crashing data() below.)
   mixins: [mixins.VModelMixin],
   props: {
-    value: {
-      type: models.ComputationalResourceSchedulingModel,
-    },
     appModuleId: {
       type: String,
       required: true,
@@ -80,7 +76,7 @@ export default {
       computeResources: {},
       applicationDeployments: [],
       selectedGroupResourceProfileData: null,
-      resourceHostId: this.value.resource_host_id,
+      resourceHostId: this.modelValue.resource_host_id,
       invalidQueueSettings: false,
       workspacePreferences: null,
     };
@@ -233,7 +229,7 @@ export default {
       // whenever it changes
       this.localComputationalResourceScheduling.resource_host_id =
         this.resourceHostId;
-      this.$emit("input", this.data);
+      this.$emit("update:modelValue", this.data);
     },
     queueSettingsValidityChanged(valid) {
       this.invalidQueueSettings = !valid;
@@ -248,7 +244,7 @@ export default {
     },
     emitValueChanged: function () {
       this.validate();
-      this.$emit("input", this.localComputationalResourceScheduling);
+      this.$emit("update:modelValue", this.localComputationalResourceScheduling);
     },
     getValidationFeedback: function (properties) {
       return utils.getProperty(this.validation, properties);

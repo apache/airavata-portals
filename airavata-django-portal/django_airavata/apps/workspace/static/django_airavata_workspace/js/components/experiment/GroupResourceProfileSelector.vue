@@ -29,13 +29,18 @@ import { NATIVE_SELECT_CLASS } from "../../lib/utils";
 export default {
   name: "group-resource-profile-selector",
   props: {
-    value: {
+    // Vue 3 v-model: the parent binds with `v-model`, which passes `modelValue`
+    // and listens for `update:modelValue`. (Was the Vue 2 `value`/`input` pair,
+    // which the parent's v-model silently ignored — so the auto-selected
+    // allocation never propagated and experiments were created with a null
+    // group_resource_profile_id, 500ing server-side.)
+    modelValue: {
       type: String,
     },
   },
   data() {
     return {
-      groupResourceProfileId: this.value,
+      groupResourceProfileId: this.modelValue,
       groupResourceProfiles: [],
       workspacePreferences: null,
     };
@@ -78,7 +83,7 @@ export default {
         (groupResourceProfiles) => {
           this.groupResourceProfiles = groupResourceProfiles;
           if (
-            (!this.value ||
+            (!this.modelValue ||
               !this.selectedValueInGroupResourceProfileList(
                 groupResourceProfiles,
               )) &&
@@ -105,13 +110,13 @@ export default {
     },
     emitValueChanged: function () {
       this.validate();
-      this.$emit("input", this.groupResourceProfileId);
+      this.$emit("update:modelValue", this.groupResourceProfileId);
     },
     selectedValueInGroupResourceProfileList(groupResourceProfiles) {
       return (
         groupResourceProfiles
           .map((grp) => grp.group_resource_profile_id)
-          .indexOf(this.value) >= 0
+          .indexOf(this.modelValue) >= 0
       );
     },
     validate() {

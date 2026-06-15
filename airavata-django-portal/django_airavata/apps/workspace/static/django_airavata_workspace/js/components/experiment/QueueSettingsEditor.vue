@@ -261,11 +261,11 @@ import { NATIVE_SELECT_CLASS } from "../../lib/utils";
 export default {
   name: "queue-settings-editor",
   components: { Info, Lock, LockOpen, X },
+  // VModelMixin supplies the `modelValue` prop and the `data` working copy and
+  // emits `update:modelValue`; the parent binds with v-model. (Was a leftover
+  // Vue 2 `value` prop — undefined under Vue 3, crashing mounted() below.)
   mixins: [mixins.VModelMixin],
   props: {
-    value: {
-      type: models.ComputationalResourceSchedulingModel,
-    },
     appDeploymentId: {
       type: String,
       required: true,
@@ -586,7 +586,7 @@ export default {
         this.setDefaultQueue();
       }
     },
-    value: {
+    modelValue: {
       // Rerun validation whenever the queue settings change, which can from
       // outside the component, for example when a queue settings calculator
       // provides values
@@ -608,7 +608,7 @@ export default {
     this.loadAppDeploymentQueues().then(() => {
       // For brand new queue settings (no queueName specified) load the default
       // queue and its default values and apply them
-      if (!this.value.queue_name) {
+      if (!this.modelValue.queue_name) {
         this.setDefaultQueue();
       }
     });
