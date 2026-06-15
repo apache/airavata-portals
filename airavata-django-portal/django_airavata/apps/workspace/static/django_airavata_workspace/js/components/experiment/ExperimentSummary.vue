@@ -144,20 +144,20 @@
                           class="block text-muted-foreground"
                           >{{ stage.time }}</small
                         >
-                        <div v-if="stage.job" class="mt-1 text-sm">
+                        <div
+                          v-if="stage.job"
+                          class="mt-1 text-sm text-muted-foreground"
+                        >
+                          Job {{ stage.job.name }} (ID {{ stage.job.id }})
+                        </div>
+                        <div v-if="stage.jobState" class="mt-1 text-sm">
                           <span
                             class="timeline-dot timeline-dot--inline"
-                            :class="'timeline-dot--' + stage.job.kind"
+                            :class="'timeline-dot--' + stage.jobState.kind"
                           ></span>
                           <span class="text-muted-foreground"
-                            >Job {{ stage.job.name }} (ID
-                            {{ stage.job.id }})</span
-                          >
-                          <span
-                            v-if="stage.job.reason"
-                            class="text-muted-foreground"
-                          >
-                            — {{ stage.job.reason }}</span
+                            >Last observed state:
+                            {{ stage.jobState.stateLabel }}</span
                           >
                         </div>
                       </div>
@@ -442,9 +442,28 @@ export default {
       }
       const result = [];
       exp.processes.forEach((process) => {
+        // The job is created by the job-submission task and watched by the
+        // monitoring task. Resolve it once per process so we can show the job id
+        // under Job Submission and its latest observed state under Job Monitoring.
+        let processJob = null;
+        process.sortedTasks.forEach((task) => {
+          if (!processJob && task.jobs && task.jobs.length > 0) {
+            const job = task.jobs[0];
+            const js = job.latestJobStatus;
+            const jobStateName = js && js.job_state ? js.job_state.name : null;
+            processJob = {
+              id: job.job_id,
+              name: job.job_name,
+              stateLabel: this.titleCase(jobStateName) || "Pending",
+              kind: this.jobStateKind(jobStateName),
+            };
+          }
+        });
         process.sortedTasks.forEach((task) => {
           const latest = task.latestStatus;
           const stateName = latest && latest.state ? latest.state.name : null;
+          const taskTypeName =
+            task.task_type && task.task_type.name ? task.task_type.name : "";
           const stage = {
             taskId: task.task_id,
             typeLabel: this.taskTypeLabel(task.task_type),
@@ -455,19 +474,20 @@ export default {
               latest && latest.time_of_state_change
                 ? moment(latest.time_of_state_change).fromNow()
                 : "",
-            job: null,
+            job: null, // job id, shown under Job Submission
+            jobState: null, // last observed job state, shown under Job Monitoring
           };
-          if (task.jobs && task.jobs.length > 0) {
-            const job = task.jobs[0];
-            const js = job.latestJobStatus;
-            const jobStateName = js && js.job_state ? js.job_state.name : null;
-            stage.job = {
-              id: job.job_id,
-              name: job.job_name,
-              stateLabel: this.titleCase(jobStateName) || "Pending",
-              kind: this.jobStateKind(jobStateName),
-              reason: this.cleanReason(js ? js.reason : ""),
+          if (processJob && taskTypeName === "MONITORING") {
+            stage.jobState = {
+              stateLabel: processJob.stateLabel,
+              kind: processJob.kind,
             };
+          } else if (
+            processJob &&
+            (taskTypeName === "JOB_SUBMISSION" ||
+              (task.jobs && task.jobs.length > 0))
+          ) {
+            stage.job = { id: processJob.id, name: processJob.name };
           }
           result.push(stage);
         });
