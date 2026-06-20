@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Completing sign-in...</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: #333;
+    }
+    .message {
+      text-align: center;
+    }
+    .error {
+      color: #b00020;
+    }
+  </style>
+</head>
+<body>
+  <div class="message">
+    <p id="status">Completing sign-in...</p>
+  </div>
+  <script>
+    (function () {
+      var tokenUrl = "{{ token_url|escapejs }}";
+      var clientId = "{{ client_id|escapejs }}";
+      var redirectUri = "{{ redirect_uri|escapejs }}";
+
+      function showError(text) {
+        var status = document.getElementById("status");
+        status.textContent = text;
+        status.className = "error";
+        var link = document.createElement("a");
+        link.href = "/auth/login";
+        link.textContent = "Try signing in again";
+        var p = document.createElement("p");
+        p.appendChild(link);
+        document.querySelector(".message").appendChild(p);
+      }
+
+      var params = new URLSearchParams(window.location.search);
+      var code = params.get("code");
+      var state = params.get("state");
+      var error = params.get("error");
+
+      if (error) {
+        showError("Sign-in failed: " + error);
+        return;
+      }
+
+      if (!code) {
+        showError("Sign-in failed: no authorization code returned.");
+        return;
+      }
+
+      var expectedState = sessionStorage.getItem("kc_oauth_state");
+      if (!state || state !== expectedState) {
+        showError("Sign-in failed: state mismatch.");
+        return;
+      }
+
+      var verifier = sessionStorage.getItem("kc_pkce_verifier");
+      if (!verifier) {
+        showError("Sign-in failed: missing PKCE verifier.");
+        return;
+      }
+
+      var body = new URLSearchParams();
+      body.set("grant_type", "authorization_code");
+      body.set("code", code);
+      body.set("redirect_uri", redirectUri);
+      body.set("client_id", clientId);
+      body.set("code_verifier", verifier);
+
+      fetch(tokenUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
+      }).then(function (response) {
+        if (!response.ok) {
+          return response.text().then(function (text) {
+            throw new Error("token endpoint returned " + response.status + ": " + text);
+          });
+        }
+        return response.json();
+      }).then(function (data) {
+        if (!data || !data.access_token) {
+          throw new Error("no access token in response");
+        }
+
+        var cookie = "kc_token=" + data.access_token + "; Path=/; SameSite=Lax";
+        if (window.location.protocol === "https:") {
+          cookie += "; Secure";
+        }
+        document.cookie = cookie;
+
+        var destination = sessionStorage.getItem("kc_post_login_redirect") || "/";
+        // Only allow same-origin relative paths (a single leading slash); reject
+        // "//host" and absolute URLs to prevent a post-login open redirect.
+        if (!/^\/[^/]/.test(destination) && destination !== "/") {
+          destination = "/";
+        }
+        sessionStorage.removeItem("kc_pkce_verifier");
+        sessionStorage.removeItem("kc_oauth_state");
+        sessionStorage.removeItem("kc_post_login_redirect");
+
+        window.location.replace(destination);
+      }).catch(function (err) {
+        showError("Sign-in failed: " + err.message);
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signing in...</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: #333;
+    }
+    .message {
+      text-align: center;
+    }
+    .error {
+      color: #b00020;
+    }
+  </style>
+</head>
+<body>
+  <div class="message">
+    <p id="status">Signing in...</p>
+  </div>
+  <script>
+    (function () {
+      var authorizeUrl = "{{ authorize_url|escapejs }}";
+      var clientId = "{{ client_id|escapejs }}";
+      var redirectUri = "{{ redirect_uri|escapejs }}";
+      var scope = "{{ scope|escapejs }}";
+      var next = "{{ next|escapejs }}";
+
+      function base64UrlEncode(bytes) {
+        var binary = "";
+        for (var i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary)
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+      }
+
+      function randomVerifier() {
+        var bytes = new Uint8Array(32);
+        window.crypto.getRandomValues(bytes);
+        return base64UrlEncode(bytes);
+      }
+
+      function challengeFromVerifier(verifier) {
+        var data = new TextEncoder().encode(verifier);
+        return window.crypto.subtle.digest("SHA-256", data).then(function (digest) {
+          return base64UrlEncode(new Uint8Array(digest));
+        });
+      }
+
+      function showError(text) {
+        var status = document.getElementById("status");
+        status.textContent = text;
+        status.className = "error";
+      }
+
+      try {
+        var verifier = randomVerifier();
+        var state = randomVerifier();
+
+        challengeFromVerifier(verifier).then(function (challenge) {
+          sessionStorage.setItem("kc_pkce_verifier", verifier);
+          sessionStorage.setItem("kc_oauth_state", state);
+          sessionStorage.setItem("kc_post_login_redirect", next || "/");
+
+          window.location =
+            authorizeUrl +
+            "?response_type=code" +
+            "&client_id=" + encodeURIComponent(clientId) +
+            "&redirect_uri=" + encodeURIComponent(redirectUri) +
+            "&scope=" + encodeURIComponent(scope) +
+            "&state=" + state +
+            "&code_challenge=" + challenge +
+            "&code_challenge_method=S256";
+        }).catch(function (err) {
+          showError("Unable to start sign-in: " + err);
+        });
+      } catch (err) {
+        showError("Unable to start sign-in: " + err);
+      }
+    })();
+  </script>
+</body>
+</html>

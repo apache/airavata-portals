@@ -2,7 +2,6 @@
 
 import json
 import logging
-import time
 
 from django.conf import settings
 
@@ -10,28 +9,6 @@ from . import utils
 from .token_authentication import AnonymousUser
 
 log = logging.getLogger(__name__)
-
-
-def authz_token_middleware(get_response):
-    """Automatically add the 'authz_token' to the request."""
-
-    def middleware(request):
-
-        authz_token = None
-        if request.user.is_authenticated:
-            authz_token = utils.get_authz_token(request)
-            # If we can't construct an authz_token then need to re-login
-            if authz_token is None:
-                # no longer logged in with the IAM server: clear the session
-                # (cache-backed, no DB) and drop back to anonymous
-                request.session.flush()
-                request.user = AnonymousUser()
-
-        request.authz_token = authz_token
-
-        return get_response(request)
-
-    return middleware
 
 
 # Keycloak realm roles that map to the coarse gateway-admin flags.
@@ -93,95 +70,43 @@ def request_data_middleware(get_response):
     return middleware
 
 
-def session_keycloak_user_middleware(get_response):
-    """Derive ``request.user`` from the Keycloak access token in the session.
+def keycloak_token_user_middleware(get_response):
+    """Authenticate every request from a Keycloak access token (browser-OIDC).
 
-    Replaces ``AuthenticationMiddleware`` for the OIDC session flow: there is no
-    DB ``User`` and no ``login()`` call, so identity comes from the verified JWT
-    stored in the session by the OIDC callback. If the access token is expired
-    but a valid refresh token is present, the token is refreshed in place. On any
-    failure the session is flushed and the request is left Anonymous (the
-    permission/login_required layer then redirects to Keycloak).
+    The token comes from either the ``Authorization: Bearer <jwt>`` header
+    (token clients / the SDK) or the ``kc_token`` cookie (the browser PKCE flow
+    sets this cookie from the access token returned by Keycloak). There is no
+    Django session, no server-side OIDC redirect, and no Django-managed login —
+    identity is derived purely from the verified JWT.
 
-    Must run before ``authz_token_middleware`` so ``request.user`` is set when
-    ``get_authz_token`` runs, and before ``keycloak_bearer_middleware`` (which
-    no-ops when a session already authenticated the request).
+    Reuses ``token_authentication``'s ``_jwks`` / ``KeycloakUser``: the token is
+    validated (RS256, ``verify_aud`` False) and, on success, ``request.user`` /
+    ``request.authz_token`` are set (``admin_flags_middleware`` then derives the
+    admin flags from realm roles). With no token, or an invalid one, the request
+    is left Anonymous with ``request.authz_token = None`` (the permission/
+    login_required layer then redirects to Keycloak or returns 401). An invalid
+    token is logged at warning level; it does not raise.
+
+    Must run before ``airavata_grpc_client`` (which reads ``request.authz_token``)
+    and ``admin_flags_middleware`` (which reads ``request.user``).
     """
     import jwt
 
     from .token_authentication import KeycloakUser, _jwks
 
-    def _decode(token):
-        signing_key = _jwks().get_signing_key_from_jwt(token)
-        return jwt.decode(
-            token, signing_key.key, algorithms=["RS256"], options={"verify_aud": False}
-        )
-
     def middleware(request):
-        # If a prior middleware already authenticated the request, no-op.
-        user = getattr(request, "user", None)
-        if user is not None and getattr(user, "is_authenticated", False):
-            return get_response(request)
-
-        # This middleware replaces AuthenticationMiddleware, so it owns
-        # request.user. Default to Anonymous; the token paths below upgrade it.
         request.user = AnonymousUser()
-
-        if "ACCESS_TOKEN" not in request.session:
-            return get_response(request)
-
-        now = time.time()
-        access_token = request.session["ACCESS_TOKEN"]
-        access_expires_at = request.session.get("ACCESS_TOKEN_EXPIRES_AT", 0)
-        refresh_expires_at = request.session.get("REFRESH_TOKEN_EXPIRES_AT", 0)
-
-        try:
-            if access_expires_at > now:
-                claims = _decode(access_token)
-                request.user = KeycloakUser(claims)
-            elif "REFRESH_TOKEN" in request.session and refresh_expires_at > now:
-                token = utils.refresh_access_token(request)
-                if token is None:
-                    request.session.flush()
-                    return get_response(request)
-                utils.store_token_in_session(request, token)
-                claims = _decode(token["access_token"])
-                request.user = KeycloakUser(claims)
-            # else: token expired and no usable refresh token; leave Anonymous.
-        except Exception as e:
-            log.warning("Failed to derive user from session token: %s", e)
-            request.session.flush()
-
-        return get_response(request)
-
-    return middleware
-
-
-def keycloak_bearer_middleware(get_response):
-    """Authenticate ``Authorization: Bearer <jwt>`` requests against Keycloak.
-
-    Reuses ``token_authentication``'s ``_jwks`` / ``KeycloakUser`` / ``AuthzToken``:
-    if ``request.user`` is already
-    authenticated (session) this is a no-op; elif a Bearer token is present it is
-    validated and ``request.user`` / ``request.authz_token`` are set (the
-    ``admin_flags_middleware`` then derives the admin flags from realm roles); else
-    the request is left Anonymous. An invalid token leaves the user Anonymous (no
-    raise — the permission layer returns 401).
-    """
-    import jwt
-
-    from .token_authentication import KeycloakUser, _jwks
-
-    def middleware(request):
-        user = getattr(request, "user", None)
-        if user is not None and getattr(user, "is_authenticated", False):
-            return get_response(request)
+        request.authz_token = None
 
         header = request.META.get("HTTP_AUTHORIZATION", "")
-        if not header.startswith("Bearer "):
+        if header.startswith("Bearer "):
+            token = header[len("Bearer ") :].strip()
+        else:
+            token = request.COOKIES.get("kc_token")
+
+        if not token:
             return get_response(request)
 
-        token = header[len("Bearer ") :].strip()
         try:
             signing_key = _jwks().get_signing_key_from_jwt(token)
             claims = jwt.decode(
@@ -191,20 +116,18 @@ def keycloak_bearer_middleware(get_response):
                 options={"verify_aud": False},
             )
         except Exception as e:
-            log.warning("Keycloak bearer token validation failed: %s", e)
-            request.user = AnonymousUser()
+            log.warning("Keycloak token validation failed: %s", e)
             return get_response(request)
 
         keycloak_user = KeycloakUser(claims)
-        authz_token = utils.AuthzToken(
+        request.user = keycloak_user
+        request.authz_token = utils.AuthzToken(
             accessToken=token,
             claimsMap={
                 "gatewayID": settings.GATEWAY_ID,
                 "userName": keycloak_user.username,
             },
         )
-        request.user = keycloak_user
-        request.authz_token = authz_token
 
         return get_response(request)
 

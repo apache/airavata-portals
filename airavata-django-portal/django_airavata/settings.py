@@ -51,13 +51,11 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    # request.user from the session's Keycloak token; before the authz/bearer middleware.
-    "django_airavata.apps.auth.middleware.session_keycloak_user_middleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django_airavata.apps.auth.middleware.authz_token_middleware",
-    # Validate a Bearer JWT for token clients; after authz_token, before the gRPC client.
-    "django_airavata.apps.auth.middleware.keycloak_bearer_middleware",
+    # Validate the Keycloak access token (Bearer header or kc_token cookie) and
+    # set request.user / request.authz_token; before the gRPC client.
+    "django_airavata.apps.auth.middleware.keycloak_token_user_middleware",
     # Adds request.data / request.query_params for views.
     "django_airavata.apps.auth.middleware.request_data_middleware",
     # gRPC AiravataClient (request.airavata); after authz_token_middleware.
@@ -370,6 +368,9 @@ GATEWAY_ID = os.environ.get("GATEWAY_ID", "default")
 # Keycloak OIDC (realm: default, client: pga). The secret is the committed dev secret.
 KEYCLOAK_CLIENT_ID = "pga"
 KEYCLOAK_CLIENT_SECRET = "m36BXQIxX3j3VILadeHMK5IvbOeRlCCc"
+# Public client (PKCE S256) used by the browser Authorization Code flow. No
+# secret; the token exchange happens client-side in the callback template.
+KEYCLOAK_PUBLIC_CLIENT_ID = "pga-public"
 KEYCLOAK_AUTHORIZE_URL = "https://auth.airavata.host/realms/default/protocol/openid-connect/auth"
 KEYCLOAK_TOKEN_URL = "https://auth.airavata.host/realms/default/protocol/openid-connect/token"
 KEYCLOAK_USERINFO_URL = "https://auth.airavata.host/realms/default/protocol/openid-connect/userinfo"

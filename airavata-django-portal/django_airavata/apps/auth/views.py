@@ -5,7 +5,6 @@ from urllib.parse import quote, urlencode, urlparse
 
 import requests
 from django.conf import settings
-from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.http import (
     FileResponse,
@@ -16,7 +15,6 @@ from django.http import (
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
-from requests_oauthlib import OAuth2Session
 
 from . import utils
 from .decorators import login_required
@@ -25,99 +23,72 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Keycloak-only OIDC views (Authorization Code flow; no Django auth backend,
-# no DB User, no login()/logout()). Identity is derived from the session token
-# by session_keycloak_user_middleware.
+# Browser-OIDC views (Authorization Code + PKCE against the Keycloak PUBLIC
+# client). There is no server-side OIDC redirect and no Django-managed session:
+# the browser runs the PKCE flow, the code-for-token exchange happens
+# client-side in the callback template, and the raw access token is stored in
+# the ``kc_token`` cookie. Django only VALIDATES that token
+# (``keycloak_token_user_middleware``).
 # ---------------------------------------------------------------------------
 
 
 def oidc_login(request):
-    """Begin the Authorization Code flow: redirect the user to Keycloak."""
+    """Render the browser-PKCE initiation page.
+
+    The template (``django_airavata_auth/login.html``) generates the PKCE
+    verifier/challenge and CSRF state in the browser, stashes them in
+    sessionStorage (``kc_pkce_verifier`` / ``kc_oauth_state``) along with the
+    post-login destination (``kc_post_login_redirect``), then redirects to
+    Keycloak's authorization endpoint with the public client id and S256
+    challenge.
+    """
     redirect_uri = request.build_absolute_uri(reverse("django_airavata_auth:callback"))
-    # Preserve the desktop/CLI passthrough params on the callback (mirrors the
-    # legacy redirect_login behavior) so the desktop login flow keeps working.
-    passthrough_query_params = ("next", "login_desktop", "download-code", "show-code")
-    extra = []
-    for param in passthrough_query_params:
-        if param in request.GET:
-            extra.append(f"{param}={quote(request.GET[param])}")
-    if extra:
-        redirect_uri += "?" + "&".join(extra)
-    oauth2_session = OAuth2Session(
-        settings.KEYCLOAK_CLIENT_ID,
-        scope="openid profile email",
-        redirect_uri=redirect_uri,
-    )
-    authorization_url, state = oauth2_session.authorization_url(
-        settings.KEYCLOAK_AUTHORIZE_URL
-    )
-    request.session["OAUTH2_STATE"] = state
-    request.session["OAUTH2_REDIRECT_URI"] = redirect_uri
-    return redirect(authorization_url)
+    context = {
+        "authorize_url": settings.KEYCLOAK_AUTHORIZE_URL,
+        "token_url": settings.KEYCLOAK_TOKEN_URL,
+        "client_id": settings.KEYCLOAK_PUBLIC_CLIENT_ID,
+        "redirect_uri": redirect_uri,
+        "scope": "openid profile email",
+        "next": request.GET.get("next", "/"),
+    }
+    return render(request, "django_airavata_auth/login.html", context)
 
 
 def oidc_callback(request):
-    """Handle the Keycloak redirect: exchange the code, store the token."""
-    from .token_authentication import KeycloakUser
+    """Render the redirect_uri page that exchanges the code client-side.
 
-    try:
-        state = request.GET.get("state")
-        if not state or state != request.session.get("OAUTH2_STATE"):
-            raise Exception("OAuth2 state mismatch")
-        login_desktop = request.GET.get("login_desktop", "false") == "true"
-        token = utils.exchange_code_for_token(request)
-        utils.store_token_in_session(request, token)
-        # session_keycloak_user_middleware already ran (before the token
-        # existed), so set request.user inline from the freshly-issued token for
-        # any helper that reads request.user (e.g. the desktop-success response).
-        import jwt
-
-        from .token_authentication import _jwks
-
-        signing_key = _jwks().get_signing_key_from_jwt(token["access_token"])
-        claims = jwt.decode(
-            token["access_token"],
-            signing_key.key,
-            algorithms=["RS256"],
-            options={"verify_aud": False},
-        )
-        request.user = KeycloakUser(claims)
-        if login_desktop:
-            download_code = request.GET.get("download-code", "false") == "true"
-            show_code = request.GET.get("show-code", "false") == "true"
-            return _create_login_desktop_success_response(
-                request, download_code=download_code, show_code=show_code
-            )
-        next_url = request.GET.get("next", settings.LOGIN_REDIRECT_URL)
-        return redirect(next_url)
-    except Exception as err:
-        logger.exception(
-            f"An error occurred while processing OAuth2 callback: {request.build_absolute_uri()}",
-            extra={"request": request},
-        )
-        if request.GET.get("login_desktop", "false") == "true":
-            return _create_login_desktop_failed_response(request)
-        messages.error(request, f"Failed to process OAuth2 callback: {err!s}")
-        return redirect(settings.LOGIN_URL)
+    The template (``django_airavata_auth/callback.html``) reads the ``code`` and
+    ``state`` query params, validates ``state`` against the sessionStorage
+    ``kc_oauth_state``, POSTs the authorization-code grant to Keycloak's token
+    endpoint (public client + PKCE ``code_verifier`` from
+    ``kc_pkce_verifier``), sets the ``kc_token`` cookie from the returned
+    access token, then redirects to ``kc_post_login_redirect``.
+    """
+    redirect_uri = request.build_absolute_uri(reverse("django_airavata_auth:callback"))
+    context = {
+        "token_url": settings.KEYCLOAK_TOKEN_URL,
+        "client_id": settings.KEYCLOAK_PUBLIC_CLIENT_ID,
+        "redirect_uri": redirect_uri,
+    }
+    return render(request, "django_airavata_auth/callback.html", context)
 
 
 def logout(request):
-    """Log out locally and at Keycloak (federated / single logout)."""
-    request.session.flush()
-    post_logout_redirect_uri = request.build_absolute_uri(
-        reverse("django_airavata_auth:logged_out")
-    )
+    """Clear the ``kc_token`` cookie and log out at Keycloak (single logout)."""
+    post_logout_redirect_uri = request.build_absolute_uri("/")
     logout_url = (
         settings.KEYCLOAK_LOGOUT_URL
         + "?"
         + urlencode(
             {
-                "client_id": settings.KEYCLOAK_CLIENT_ID,
+                "client_id": settings.KEYCLOAK_PUBLIC_CLIENT_ID,
                 "post_logout_redirect_uri": post_logout_redirect_uri,
             }
         )
     )
-    return redirect(logout_url)
+    response = redirect(logout_url)
+    response.delete_cookie("kc_token", path="/", samesite="Lax")
+    return response
 
 
 def logged_out(request):
