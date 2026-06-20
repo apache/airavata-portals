@@ -17,7 +17,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-def build_airavata_client(access_token, gateway_id=None, claims=None):
+def build_airavata_client(access_token, gateway_id=None):
     """Build an :class:`AiravataClient` for the given Keycloak access token.
 
     The SDK is imported lazily so importing this module does not require the new
@@ -32,7 +32,6 @@ def build_airavata_client(access_token, gateway_id=None, claims=None):
         token=access_token,
         gateway_id=gateway_id,
         secure=settings.GRPC_API_SECURE,
-        claims=claims,
     )
 
 
@@ -45,5 +44,4 @@ def airavata_client_for_request(request):
     authz_token = getattr(request, "authz_token", None)
     if authz_token is None:
         return None
-    claims = dict(authz_token.claimsMap) if authz_token.claimsMap else None
-    return build_airavata_client(authz_token.accessToken, claims=claims)
+    return build_airavata_client(authz_token.accessToken)
