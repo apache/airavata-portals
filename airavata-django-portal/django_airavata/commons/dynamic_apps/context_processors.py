@@ -1,6 +1,4 @@
-import copy
 import logging
-import re
 from importlib import import_module
 
 from django_airavata.commons import dynamic_apps
@@ -22,9 +20,6 @@ def custom_app_registry(request):
         # 'custom_apps': list(map(_app_to_dict, custom_apps)),
         "custom_apps": custom_apps,
         "current_custom_app": current_custom_app,
-        "custom_app_nav": (
-            _get_app_nav(request, current_custom_app) if current_custom_app else None
-        ),
     }
 
 
@@ -94,35 +89,3 @@ def _get_current_app(request, apps):
         and app.url_app_name == request.resolver_match.app_name
     ]
     return current_app[0] if len(current_app) > 0 else None
-
-
-def _get_app_nav(request, current_app):
-    if hasattr(current_app, "nav"):
-        # Copy and filter current_app's nav items
-        nav = [
-            item
-            for item in copy.copy(current_app.nav)
-            if "enabled" not in item or item["enabled"](request)
-        ]
-        # convert "/djangoapp/path/in/app" to "path/in/app"
-        app_path = "/".join(request.path.split("/")[2:])
-        for nav_item in nav:
-            if "active_prefixes" in nav_item:
-                if re.match("|".join(nav_item["active_prefixes"]), app_path):
-                    nav_item["active"] = True
-                else:
-                    nav_item["active"] = False
-            else:
-                # 'active_prefixes' is optional, and if not specified, assume
-                # current item is active
-                nav_item["active"] = True
-    else:
-        # Default to the home view in the app
-        nav = [
-            {
-                "label": current_app.verbose_name,
-                "icon": "fa " + current_app.fa_icon_class,
-                "url": current_app.url_home,
-            }
-        ]
-    return nav

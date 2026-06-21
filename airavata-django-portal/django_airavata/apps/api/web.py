@@ -406,9 +406,6 @@ class ViewSetMixin:
             self.kwargs = kwargs
             return self.dispatch(request, *args, **kwargs)
 
-        view.cls = cls  # ty: ignore[unresolved-attribute]  # DRF shim: dynamic function attribute (mirrors DRF as_view)
-        view.initkwargs = initkwargs  # ty: ignore[unresolved-attribute]  # DRF shim: dynamic function attribute (mirrors DRF as_view)
-        view.actions = actions  # ty: ignore[unresolved-attribute]  # DRF shim: dynamic function attribute (mirrors DRF as_view)
         return view
 
     def initialize_request(self, request):
@@ -604,13 +601,12 @@ mixins = _Mixins()
 # ---------------------------------------------------------------------------
 
 
-def action(detail=False, methods=None, url_path=None, url_name=None, **kwargs):
+def action(detail=False, methods=None, url_path=None, url_name=None):
     """Mark a viewset method as a routable extra action.
 
     Records ``mapping`` (http-method → method-name), ``detail``, ``url_path``
-    (default = func name), ``url_name`` (default = func name with ``_``→``-``)
-    and preserves extra kwargs (``serializer_class``/``renderer_classes``) as
-    attributes, so :func:`route` can route to it (mirrors ``rest_framework``'s
+    (default = func name) and ``url_name`` (default = func name with
+    ``_``→``-``), so :func:`route` can route to it (mirrors ``rest_framework``'s
     ``@action``).
     """
     methods = ["get"] if methods is None else methods
@@ -621,7 +617,6 @@ def action(detail=False, methods=None, url_path=None, url_name=None, **kwargs):
         func.detail = detail
         func.url_path = url_path if url_path else func.__name__
         func.url_name = url_name if url_name else func.__name__.replace("_", "-")
-        func.kwargs = kwargs
         return func
 
     return decorator
@@ -653,7 +648,6 @@ def api_view(http_method_names=None):
         )
         WrappedAPIView.__name__ = func.__name__
         WrappedAPIView.__doc__ = func.__doc__
-        WrappedAPIView.func = staticmethod(func)  # ty: ignore[unresolved-attribute]  # dynamic class attribute (mirrors DRF @api_view)
         return WrappedAPIView.as_view()
 
     return decorator
@@ -751,8 +745,6 @@ class LimitOffsetPagination:
 # (mirroring ``from rest_framework import permissions``).
 class _Permissions:
     BasePermission = BasePermission
-    IsAuthenticated = IsAuthenticated
-    SAFE_METHODS = SAFE_METHODS
 
 
 permissions = _Permissions()

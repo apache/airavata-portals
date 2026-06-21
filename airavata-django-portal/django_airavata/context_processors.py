@@ -242,7 +242,9 @@ def shell_data(request):
 
     app_registry = airavata_app_registry(request)
     custom_registry = custom_app_registry(request)
-    current_airavata_app = app_registry.get("current_airavata_app")
+    current_airavata_app = _get_current_app(
+        request, app_registry.get("airavata_apps") or []
+    )
     current_custom_app = custom_registry.get("current_custom_app")
 
     def _items_for_app(app, is_current):

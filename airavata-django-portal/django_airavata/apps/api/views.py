@@ -116,16 +116,8 @@ class GroupViewSet(APIBackedViewSet):
         return sharing_resources
 
     def _gateway_groups(self):
-        # The middleware stashes a camelCase map in the session; the SDK helpers
-        # want snake_case keys. Translate when present, else None (helper fetches
-        # it via GetGatewayGroups).
-        gg = self.request.session.get("GATEWAY_GROUPS")
-        if gg:
-            return {
-                "admins_group_id": gg["adminsGroupId"],
-                "read_only_admins_group_id": gg["readOnlyAdminsGroupId"],
-                "default_gateway_users_group_id": gg["defaultGatewayUsersGroupId"],
-            }
+        # GATEWAY_GROUPS is never written to the session, so this is always None;
+        # the SDK helpers fetch the groups via GetGatewayGroups when not provided.
         return None
 
     def get_list(self):
@@ -705,7 +697,7 @@ class ApplicationModuleViewSet(web.mixins.DestroyModelMixin, SdkResourceViewSet)
         return HttpResponse(status=204)
 
     @web.action(detail=False)
-    def list_all(self, request, format=None):
+    def list_all(self, request):
         has_write = getattr(request, "is_gateway_admin", False)
         return web.Response(
             self.sdk().list_application_modules(
@@ -958,19 +950,19 @@ class ComputeResourceViewSet(web.mixins.RetrieveModelMixin, GenericAPIBackedView
 
         return compute_resources
 
-    def get_instance(self, lookup_value, format=None):
+    def get_instance(self, lookup_value):
         return self._sdk().get_compute_resource(self.request.airavata, lookup_value)
 
     def retrieve(self, request, *args, **kwargs):
         return web.Response(self.get_object())
 
     @web.action(detail=False)
-    def all_names(self, request, format=None):
+    def all_names(self, request):
         """Return a map of compute resource names keyed by resource id."""
         return web.Response(self._sdk().list_compute_resource_names(request.airavata))
 
     @web.action(detail=False)
-    def all_names_list(self, request, format=None):
+    def all_names_list(self, request):
         """Return a list of compute resource names keyed by resource id."""
         all_names = self._sdk().list_compute_resource_names(request.airavata)
         return web.Response(
@@ -990,7 +982,7 @@ class ComputeResourceViewSet(web.mixins.RetrieveModelMixin, GenericAPIBackedView
         )
 
     @web.action(detail=True)
-    def queues(self, request, compute_resource_id, format=None):
+    def queues(self, request, compute_resource_id):
         """Return the resource's batch-queue names (a plain string list)."""
         details = self._sdk().get_compute_resource(
             request.airavata, compute_resource_id
@@ -1030,7 +1022,7 @@ class DataProductView(web.APIView):
 
         return research_resources
 
-    def get(self, request, format=None):
+    def get(self, request):
         data_product_uri = request.query_params["product-uri"]
         data_product = request.airavata.research.get_data_product(data_product_uri)
         has_write = _data_product_has_write(request, data_product)
@@ -1039,7 +1031,7 @@ class DataProductView(web.APIView):
         )
         return web.Response(result)
 
-    def put(self, request, format=None):
+    def put(self, request):
         data_product_uri = request.query_params["product-uri"]
         data_product = request.airavata.research.get_data_product(data_product_uri)
         # The body carries ``file_content_text`` (snake_case); the legacy
@@ -1060,7 +1052,7 @@ class DataProductView(web.APIView):
                 content=file_content.encode("utf-8"),
                 name=data_product.product_name or os.path.basename(file_path),
             )
-            return self.get(request=request, format=format)
+            return self.get(request=request)
         else:
             return web.Response(status=web.status.HTTP_400_BAD_REQUEST)
 
@@ -1319,16 +1311,8 @@ class SharedEntityViewSet(
         return sharing_resources
 
     def _gateway_groups(self):
-        # The middleware stashes a camelCase map in the session; the SDK helpers
-        # want snake_case keys. Translate when present, else None (helper fetches
-        # it via GetGatewayGroups).
-        gg = self.request.session.get("GATEWAY_GROUPS")
-        if gg:
-            return {
-                "admins_group_id": gg["adminsGroupId"],
-                "read_only_admins_group_id": gg["readOnlyAdminsGroupId"],
-                "default_gateway_users_group_id": gg["defaultGatewayUsersGroupId"],
-            }
+        # GATEWAY_GROUPS is never written to the session, so this is always None;
+        # the SDK helpers fetch the groups via GetGatewayGroups when not provided.
         return None
 
     def retrieve(self, request, *args, **kwargs):
@@ -1549,7 +1533,7 @@ class CurrentGatewayResourceProfile(web.APIView):
 
         return compute_resources
 
-    def get(self, request, format=None):
+    def get(self, request):
         has_write = getattr(request, "is_gateway_admin", False)
         return web.Response(
             self._sdk().get_gateway_resource_profile(
@@ -1557,7 +1541,7 @@ class CurrentGatewayResourceProfile(web.APIView):
             )
         )
 
-    def put(self, request, format=None):
+    def put(self, request):
         has_write = getattr(request, "is_gateway_admin", False)
         data = request.data if isinstance(request.data, dict) else {}
         return web.Response(
@@ -1569,7 +1553,7 @@ class CurrentGatewayResourceProfile(web.APIView):
 
 
 class ExperimentArchiveView(web.APIView):
-    def get(self, request, experiment_id=None, format=None):
+    def get(self, request, experiment_id=None):
         # Archive status was sourced from the portal's UserDataArchive DB tables
         # (written by an offline batch job). With no database, the portal always
         # reports not-archived; there is no server-side RPC to query this yet.
@@ -1601,7 +1585,7 @@ class StorageResourceViewSet(web.mixins.RetrieveModelMixin, GenericAPIBackedView
         return web.Response(self.get_instance(self.kwargs[self.lookup_field]))
 
     @web.action(detail=False)
-    def all_names(self, request, format=None):
+    def all_names(self, request):
         return web.Response(self._sdk().list_storage_resource_names(request.airavata))
 
 
@@ -1690,13 +1674,13 @@ class UserStoragePathView(web.APIView):
 
         return storage_resources
 
-    def get(self, request, path="/", format=None):
+    def get(self, request, path="/"):
         # AIRAVATA-3460 Allow passing path as a query parameter instead
         path = request.query_params.get("path", path)
         experiment_id = request.query_params.get("experiment-id")
         return self._create_response(request, path, experiment_id=experiment_id)
 
-    def post(self, request, path="/", format=None):
+    def post(self, request, path="/"):
         sdk = self._sdk()
         path = request.data.get("path", path)
         experiment_id = request.data.get("experiment-id")
@@ -1737,14 +1721,14 @@ class UserStoragePathView(web.APIView):
         )
 
     # Accept either to replace file or to replace file content text.
-    def put(self, request, path="/", format=None):
+    def put(self, request, path="/"):
         sdk = self._sdk()
         path = request.POST.get("path", path)
         # Replace the file if the request has a file upload.
         if "file" in request.FILES:
-            self.delete(request=request, path=path, format=format)
+            self.delete(request=request, path=path)
             dir_path, _file_name = os.path.split(path)
-            self.post(request=request, path=dir_path, format=format)
+            self.post(request=request, path=dir_path)
         # Replace only the file content if the request body has the `fileContentText`
         elif request.data and "fileContentText" in request.data:
             request.airavata.storage.upload_file(
@@ -1757,7 +1741,7 @@ class UserStoragePathView(web.APIView):
 
         return self._create_response(request=request, path=path)
 
-    def delete(self, request, path="/", format=None):
+    def delete(self, request, path="/"):
         sdk = self._sdk()
         path = request.data.get("path", path)
         experiment_id = request.data.get("experiment-id")
@@ -1861,7 +1845,7 @@ class ExperimentStoragePathView(web.APIView):
 
         return storage_resources
 
-    def get(self, request, experiment_id=None, path="", format=None):
+    def get(self, request, experiment_id=None, path=""):
         return self._create_response(request, experiment_id, path)
 
     def _create_response(self, request, experiment_id, path):
@@ -1916,7 +1900,7 @@ class ExperimentStoragePathView(web.APIView):
 
 
 class WorkspacePreferencesView(web.APIView):
-    def get(self, request, format=None):
+    def get(self, request):
         helper = helpers.WorkspacePreferencesHelper()
         workspace_preferences = helper.get(request)
         return web.Response(
@@ -2050,7 +2034,7 @@ class ManageNotificationViewSet(APIBackedViewSet):
 
 
 class AckNotificationViewSet(web.APIView):
-    def get(self, request, format=None):
+    def get(self, request):
         if "id" in request.GET:
             notification_id = request.GET["id"]
             context_processors.mark_notification_read(
@@ -2308,7 +2292,7 @@ class ExperimentStatisticsView(web.APIView):
 
         return research_resources
 
-    def get(self, request, format=None):
+    def get(self, request):
         if "fromTime" in request.GET:
             from_time = (
                 view_utils.convert_utc_iso8601_to_date(
@@ -2434,7 +2418,7 @@ class UnverifiedEmailUserViewSet(
 
 
 class LogRecordConsumer(web.APIView):
-    def post(self, request, format=None):
+    def post(self, request):
         try:
             log_record = serializers.parse_log_record(request.data)
         except serializers.ValidationError as e:
@@ -2455,7 +2439,7 @@ class LogRecordConsumer(web.APIView):
 
 
 class SettingsAPIView(web.APIView):
-    def get(self, request, format=None):
+    def get(self, request):
         return web.Response(
             serializers.settings_data(
                 settings.FILE_UPLOAD_MAX_FILE_SIZE,
@@ -2466,7 +2450,7 @@ class SettingsAPIView(web.APIView):
 
 
 class APIServerStatusCheckView(web.APIView):
-    def get(self, request, format=None):
+    def get(self, request):
         try:
             request.airavata.research.get_user_projects(
                 gateway_id=settings.GATEWAY_ID,

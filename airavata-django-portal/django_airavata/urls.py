@@ -14,9 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 
-from django.conf import settings
 from django.conf.urls import include
-from django.conf.urls.static import static
 from django.urls import path, re_path
 
 from . import views
@@ -52,7 +50,6 @@ urlpatterns = [
     # standalone airavata-cms service; a reverse proxy routes the portal's app
     # paths (below) here and everything else to the CMS (see deploy/).
     path("", include("django_airavata.commons.dynamic_apps.urls")),
-    *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
 ]
 
 handler400 = views.error400

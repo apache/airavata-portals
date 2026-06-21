@@ -111,10 +111,6 @@ TIME_ZONE = "UTC"
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "django_airavata", "static")]
 
-# Media Files (PDF, Documents, Custom Images)
-MEDIA_ROOT = os.path.join(BASE_DIR, "django_airavata", "media")
-MEDIA_URL = "/media/"
-
 # Data storage
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o777
 FILE_UPLOAD_MAX_FILE_SIZE = 64 * 1024 * 1024  # 64 MB
