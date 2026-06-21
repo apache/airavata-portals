@@ -3,7 +3,6 @@ from django.shortcuts import render
 
 def home(request):
 
-    request.active_nav_item = "manage"
     return render(
         request,
         "django_airavata_dataparsers/parsers-manage.html",

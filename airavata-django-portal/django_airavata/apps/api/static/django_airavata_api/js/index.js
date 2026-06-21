@@ -50,14 +50,6 @@ import UserConfigurationData from "./models/UserConfigurationData";
 import UserPermission from "./models/UserPermission";
 import WorkspacePreferences from "./models/WorkspacePreferences";
 
-import CloudJobSubmissionService from "./services/CloudJobSubmissionService";
-import GlobusJobSubmissionService from "./services/GlobusJobSubmissionService";
-import LocaJobSubmissionService from "./services/LocaJobSubmissionService";
-import SshJobSubmissionService from "./services/SshJobSubmissionService";
-import UnicoreJobSubmissionService from "./services/UnicoreJobSubmissionService";
-import SCPDataMovementService from "./services/SCPDataMovementService";
-import GridFTPDataMovementService from "./services/GridFTPDataMovementService";
-import UnicoreDataMovementService from "./services/UnicoreDataMovementService";
 import ServiceFactory from "./services/ServiceFactory";
 
 import Session from "./session/Session";
@@ -130,7 +122,6 @@ const services = {
   ),
   ApplicationInterfaceService: ServiceFactory.service("ApplicationInterfaces"),
   ApplicationModuleService: ServiceFactory.service("ApplicationModules"),
-  CloudJobSubmissionService,
   ComputeResourceService: ServiceFactory.service("ComputeResources"),
   CredentialSummaryService: ServiceFactory.service("CredentialSummaries"),
   DataProductService: ServiceFactory.service("DataProducts"),
@@ -151,11 +142,8 @@ const services = {
   GatewayResourceProfileService: ServiceFactory.service(
     "GatewayResourceProfile"
   ),
-  GlobusJobSubmissionService,
-  GridFTPDataMovementService,
   GroupResourceProfileService: ServiceFactory.service("GroupResourceProfiles"),
   GroupService: ServiceFactory.service("Groups"),
-  LocaJobSubmissionService,
   LoggingService: ServiceFactory.service("LogRecords"),
   IAMUserProfileService: ServiceFactory.service("IAMUserProfiles"),
   ManageNotificationService: ServiceFactory.service("ManageNotifications"),
@@ -165,15 +153,11 @@ const services = {
   QueueSettingsCalculatorService: ServiceFactory.service(
     "QueueSettingsCalculators"
   ),
-  SCPDataMovementService,
   ServiceFactory,
   SettingsService: ServiceFactory.service("Settings"),
   SharedEntityService: ServiceFactory.service("SharedEntities"),
-  SshJobSubmissionService,
   StoragePreferenceService: ServiceFactory.service("StoragePreferences"),
   StorageResourceService: ServiceFactory.service("StorageResources"),
-  UnicoreDataMovementService,
-  UnicoreJobSubmissionService,
   UnverifiedEmailUserProfileService: ServiceFactory.service(
     "UnverifiedEmailUsers"
   ),

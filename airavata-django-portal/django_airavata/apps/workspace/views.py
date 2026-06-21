@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def experiments_list(request):
-    request.active_nav_item = "experiments"
 
     response = ExperimentSearchViewSet.as_view({"get": "list"})(request)
     if response.status_code != 200:
@@ -41,7 +40,6 @@ def experiments_list(request):
 
 @login_required
 def dashboard(request):
-    request.active_nav_item = "dashboard"
     return render(
         request,
         "django_airavata_workspace/dashboard.html",
@@ -54,7 +52,6 @@ def dashboard(request):
 
 @login_required
 def projects_list(request):
-    request.active_nav_item = "projects"
 
     response = ProjectViewSet.as_view({"get": "list"})(request)
     if response.status_code != 200:
@@ -72,7 +69,6 @@ def projects_list(request):
 
 @login_required
 def edit_project(request, project_id):
-    request.active_nav_item = "projects"
 
     return render(
         request,
@@ -83,7 +79,6 @@ def edit_project(request, project_id):
 
 @login_required
 def create_experiment(request, app_module_id):
-    request.active_nav_item = "dashboard"
 
     # User input files can be passed as query parameters
     # <input name>=<path/to/user_file>
@@ -154,7 +149,6 @@ def create_experiment(request, app_module_id):
 
 @login_required
 def edit_experiment(request, experiment_id):
-    request.active_nav_item = "experiments"
 
     experiment = request.airavata.research.get_experiment(experiment_id)
     applicationInterface = request.airavata.research.get_application_interface(
@@ -191,7 +185,6 @@ def get_custom_template(request, app_module_id):
 
 @login_required
 def view_experiment(request, experiment_id):
-    request.active_nav_item = "experiments"
 
     launching = json.loads(request.GET.get("launching", "false"))
     response = FullExperimentViewSet.as_view({"get": "retrieve"})(
@@ -216,7 +209,6 @@ def view_experiment(request, experiment_id):
 
 @login_required
 def user_storage(request):
-    request.active_nav_item = "storage"
     return render(
         request, "django_airavata_workspace/base.html", {"bundle_name": "user-storage"}
     )

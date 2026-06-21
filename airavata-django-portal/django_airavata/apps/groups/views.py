@@ -7,7 +7,6 @@ from django_airavata.apps.auth.decorators import login_required
 
 @login_required
 def groups_manage(request):
-    request.active_nav_item = "manage"
 
     return render(
         request, "django_airavata_groups/base.html", {"bundle_name": "group-list"}
@@ -16,7 +15,6 @@ def groups_manage(request):
 
 @login_required
 def groups_create(request):
-    request.active_nav_item = "manage"
 
     return render(
         request,
@@ -30,7 +28,6 @@ def groups_create(request):
 
 @login_required
 def edit_group(request, group_id):
-    request.active_nav_item = "manage"
 
     return render(
         request,

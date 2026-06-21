@@ -61,45 +61,9 @@ urlpatterns = [
     *_router_urlpatterns,
     re_path(r"^upload$", views.upload_input_file, name="upload_input_file"),
     re_path(r"^tus-upload-finish$", views.tus_upload_finish, name="tus_upload_finish"),
-    re_path(r"^download-file$", views.download, name="download-file"),
     re_path(r"^delete-file$", views.delete_file, name="delete_file"),
     re_path(
         r"^data-products", views.DataProductView.as_view(), name="data-products-detail"
-    ),
-    re_path(
-        r"^job/submission/local",
-        views.LocalJobSubmissionView.as_view(),
-        name="local_job_submission",
-    ),
-    re_path(
-        r"^job/submission/cloud",
-        views.CloudJobSubmissionView.as_view(),
-        name="cloud_job_submission",
-    ),
-    re_path(
-        r"^job/submission/ssh",
-        views.SshJobSubmissionView.as_view(),
-        name="ssh_job_submission",
-    ),
-    re_path(
-        r"^job/submission/unicore",
-        views.UnicoreJobSubmissionView.as_view(),
-        name="unicore_job_submission",
-    ),
-    re_path(
-        r"^data/movement/gridftp",
-        views.GridFtpDataMovementView.as_view(),
-        name="grid_ftp_data_movement",
-    ),
-    re_path(
-        r"^data/movement/local",
-        views.LocalDataMovementView.as_view(),
-        name="local_ftp_data_movement",
-    ),
-    re_path(
-        r"^data/movement/scp",
-        views.ScpDataMovementView.as_view(),
-        name="scp_ftp_data_movement",
     ),
     re_path(
         r"^gateway-resource-profile",
