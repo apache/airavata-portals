@@ -11,12 +11,10 @@ variants, the api-root and the browsable API), plus ``reverse`` and the
 ``remove_query_param``/``replace_query_param`` helpers.
 
 The classes mirror the exact DRF attributes/methods that ``view_utils.py`` and
-``views.py`` call (``get_object``/``get_queryset``/``get_serializer``/
-``check_object_permissions``/``lookup_field``/``lookup_url_kwarg``/
-``lookup_value_regex``/``kwargs``/``request``/``paginate_queryset``/
-``get_paginated_response``/``pagination_class``/``pagination_viewname``/
-``mixins.*``) so they are drop-in compatible when those modules later rebase onto
-this module.
+``views.py`` call (``get_object``/``check_object_permissions``/``lookup_field``/
+``lookup_url_kwarg``/``lookup_value_regex``/``kwargs``/``request``/
+``paginate_queryset``/``get_paginated_response``/``pagination_class``/
+``pagination_viewname``/``mixins.*``).
 """
 
 import json
@@ -27,7 +25,6 @@ from urllib import parse
 
 import grpc
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import Http404, HttpResponse, HttpResponseBase
 from django.urls import re_path, reverse  # noqa: F401  (reverse re-exported)
@@ -444,62 +441,8 @@ class GenericViewSet(ViewSetMixin, APIView):
     lookup_url_kwarg = None
     lookup_value_regex = "[^/]+"
 
-    serializer_class = None
-    queryset = None
-
     pagination_class = None
     _paginator = None
-
-    # -- queryset / object ------------------------------------------------
-    def get_queryset(self):
-        return self.queryset
-
-    def filter_queryset(self, queryset):
-        return queryset
-
-    def get_object(self):
-        """Django-ORM-style object lookup for the ORM-backed (auth) viewsets.
-
-        Filters ``get_queryset()`` by ``{lookup_field: kwargs[lookup_url_kwarg]}``
-        and raises ``Http404`` on ``DoesNotExist`` (mirrors DRF's
-        ``get_object_or_404``), then runs object-level permission checks.
-        Overridable — the API ``GenericAPIBackedViewSet`` replaces it with an SDK
-        proto-direct lookup.
-        """
-        queryset = self.filter_queryset(self.get_queryset())
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-        lookup_value = self.kwargs[lookup_url_kwarg]
-        try:
-            obj = queryset.get(**{self.lookup_field: lookup_value})
-        except (
-            ObjectDoesNotExist,
-            ValueError,
-            TypeError,
-            DjangoValidationError,
-        ) as err:
-            raise Http404(
-                f"No {getattr(queryset, 'model', type(self)).__name__} matches "
-                "the given query."
-            ) from err
-        self.check_object_permissions(self.request, obj)
-        return obj
-
-    # -- serializer -------------------------------------------------------
-    def get_serializer_class(self):
-        assert self.serializer_class is not None, (
-            f"'{self.__class__.__name__}' should either include a "
-            "`serializer_class` attribute, or override the "
-            "`get_serializer_class()` method."
-        )
-        return self.serializer_class
-
-    def get_serializer_context(self):
-        return {"request": self.request, "view": self}
-
-    def get_serializer(self, *args, **kwargs):
-        serializer_class = self.get_serializer_class()
-        kwargs.setdefault("context", self.get_serializer_context())
-        return serializer_class(*args, **kwargs)
 
     # -- pagination -------------------------------------------------------
     @property
@@ -520,53 +463,33 @@ class GenericViewSet(ViewSetMixin, APIView):
         return self.paginator.get_paginated_response(data)
 
 
-# -- model mixins (DRF default list/retrieve/create/update/destroy) -------
+# -- model action mixins --------------------------------------------------
 
 
-# These mixins are always composed with GenericViewSet, which supplies
-# filter_queryset/get_queryset/paginate_queryset/get_serializer/
-# get_paginated_response/get_object. ty analyzes each mixin standalone, so those
-# attribute accesses read as unresolved here even though they resolve at runtime.
+# Marker mixins declaring which default actions a viewset exposes so route()
+# routes them. The portal's viewsets always implement each action directly
+# (rendering protos / WithAccess envelopes via web.Response + ProtoJSONRenderer),
+# never through a DRF serializer, so the bodies here are abstract. The one
+# concrete default is DestroyModelMixin (below), which delegates to
+# perform_destroy().
 class ListModelMixin:
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())  # ty: ignore[unresolved-attribute]  # provided by GenericViewSet at composition
-        page = self.paginate_queryset(queryset)  # ty: ignore[unresolved-attribute]  # provided by GenericViewSet at composition
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)  # ty: ignore[unresolved-attribute]  # provided by GenericViewSet at composition
-            return self.get_paginated_response(serializer.data)  # ty: ignore[unresolved-attribute]  # provided by GenericViewSet at composition
-        serializer = self.get_serializer(queryset, many=True)  # ty: ignore[unresolved-attribute]  # provided by GenericViewSet at composition
-        return Response(serializer.data)
+        raise NotImplementedError(f"{type(self).__name__} must implement list()")
 
 
 class RetrieveModelMixin:
     def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()  # ty: ignore[unresolved-attribute]  # provided by GenericViewSet at composition
-        serializer = self.get_serializer(instance)  # ty: ignore[unresolved-attribute]  # provided by GenericViewSet at composition
-        return Response(serializer.data)
+        raise NotImplementedError(f"{type(self).__name__} must implement retrieve()")
 
 
 class CreateModelMixin:
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)  # ty: ignore[unresolved-attribute]  # provided by GenericViewSet at composition
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def perform_create(self, serializer):
-        serializer.save()
+        raise NotImplementedError(f"{type(self).__name__} must implement create()")
 
 
 class UpdateModelMixin:
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop("partial", False)
-        instance = self.get_object()  # ty: ignore[unresolved-attribute]  # provided by GenericViewSet at composition
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)  # ty: ignore[unresolved-attribute]  # provided by GenericViewSet at composition
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
-
-    def perform_update(self, serializer):
-        serializer.save()
+        raise NotImplementedError(f"{type(self).__name__} must implement update()")
 
     def partial_update(self, request, *args, **kwargs):
         kwargs["partial"] = True

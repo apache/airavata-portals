@@ -1446,9 +1446,18 @@ class SharedEntityViewSet(
         )
 
 
-class CredentialSummaryViewSet(APIBackedViewSet):
+class CredentialSummaryViewSet(
+    web.mixins.RetrieveModelMixin,
+    web.mixins.ListModelMixin,
+    web.mixins.DestroyModelMixin,
+    GenericAPIBackedViewSet,
+):
     """Credential-summaries resource. SDK returns ``WithAccess[CredentialSummary]``
-    (``user_has_write_access`` keyed on the credential ``token``)."""
+    (``user_has_write_access`` keyed on the credential ``token``).
+
+    Read + delete + the custom ``ssh``/``password`` list filters and
+    ``create_ssh``/``create_password`` actions (the generic create/update verbs
+    are not exposed; credentials are created via those typed actions)."""
 
     @staticmethod
     def _sdk():

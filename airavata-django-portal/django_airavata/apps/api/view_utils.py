@@ -37,16 +37,6 @@ class GenericAPIBackedViewSet(web.GenericViewSet):
         """
         raise NotImplementedError()
 
-    def get_queryset(self):
-        if isinstance(self, web.mixins.ListModelMixin):
-            return self.get_list()
-        else:
-            # get_queryset() is invoked whenever a detail extra action route
-            # returns a many valued response. For ViewSets that have such
-            # actions, return None here so they don't need to provide a
-            # get_list() implementation
-            return None
-
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         lookup_value = self.kwargs[lookup_url_kwarg]
