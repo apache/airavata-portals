@@ -3,27 +3,36 @@
     <aside
       class="bg-sidebar text-sidebar-foreground flex h-full w-64 shrink-0 flex-col border-r border-sidebar-border"
     >
-      <!-- Brand / logo -->
-      <a
-        href="/"
-        class="flex items-center gap-2.5 px-4 py-3.5 text-sidebar-foreground"
-      >
-        <span
-          class="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-sidebar-accent"
-          :style="logoBackgroundStyle"
+      <!-- Brand / logo + notifications bell -->
+      <div class="flex items-center gap-2 px-4 py-3.5">
+        <a
+          href="/"
+          class="flex min-w-0 flex-1 items-center gap-2.5 text-sidebar-foreground"
         >
-          <img
-            v-if="logoUrl"
-            :src="logoUrl"
-            alt=""
-            class="size-full object-contain"
-          />
-          <FlaskConical v-else class="size-4 text-sidebar-primary" />
-        </span>
-        <span class="truncate text-base font-semibold leading-tight">{{
-          title
-        }}</span>
-      </a>
+          <span
+            class="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-sidebar-accent"
+            :style="logoBackgroundStyle"
+          >
+            <img
+              v-if="logoUrl"
+              :src="logoUrl"
+              alt=""
+              class="size-full object-contain"
+            />
+            <FlaskConical v-else class="size-4 text-sidebar-primary" />
+          </span>
+          <span class="truncate text-base font-semibold leading-tight">{{
+            title
+          }}</span>
+        </a>
+
+        <!-- Notifications bell (icon only) -->
+        <gateway-notices-container
+          v-if="notices !== null"
+          :notices="notices"
+          :unread-count="unreadCount"
+        />
+      </div>
 
       <Separator class="bg-sidebar-border" />
 
@@ -50,15 +59,8 @@
 
       <Separator class="bg-sidebar-border" />
 
-      <!-- Bottom utilities: notifications + user menu -->
+      <!-- Bottom: user menu -->
       <div class="space-y-1 px-3 py-3">
-        <!-- Notifications -->
-        <gateway-notices-container
-          v-if="notices !== null"
-          :notices="notices"
-          :unread-count="unreadCount"
-        />
-
         <!-- User menu -->
         <DropdownMenu v-if="user">
           <DropdownMenuTrigger as-child>

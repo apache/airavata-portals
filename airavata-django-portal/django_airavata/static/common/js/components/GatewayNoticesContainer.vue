@@ -14,10 +14,9 @@
             >{{ localUnreadCount }}</span
           >
         </span>
-        <span class="flex-1 truncate text-left">Notifications</span>
       </button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="start" side="top" class="w-80 p-0">
+    <DropdownMenuContent align="end" side="bottom" class="w-80 p-0">
       <DropdownMenuLabel class="px-3 py-2">Notifications</DropdownMenuLabel>
       <DropdownMenuSeparator class="my-0" />
       <div class="max-h-80 overflow-y-auto">
@@ -99,7 +98,7 @@ export default {
   },
   computed: {
     triggerClasses() {
-      return "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring";
+      return "flex size-9 shrink-0 items-center justify-center rounded-md text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring";
     },
     unreadNotices() {
       return this.notices;
