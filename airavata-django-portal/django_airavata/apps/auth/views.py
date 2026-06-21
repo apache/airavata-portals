@@ -42,7 +42,6 @@ def oidc_login(request):
     redirect_uri = request.build_absolute_uri(reverse("django_airavata_auth:callback"))
     context = {
         "authorize_url": settings.KEYCLOAK_AUTHORIZE_URL,
-        "token_url": settings.KEYCLOAK_TOKEN_URL,
         "client_id": settings.KEYCLOAK_PUBLIC_CLIENT_ID,
         "redirect_uri": redirect_uri,
         "scope": "openid profile email",

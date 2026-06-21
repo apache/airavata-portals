@@ -136,13 +136,7 @@ def user_session_data(request):
         )
         # is_gateway_admin may not be set if a failure occurs during login
         data["isGatewayAdmin"] = getattr(request, "is_gateway_admin", False)
-    return {
-        "user_session_data": json.dumps(data),
-        # Keycloak account console for the "User Settings" link in base.html.
-        "KEYCLOAK_ACCOUNT_CONSOLE_URL": getattr(
-            settings, "KEYCLOAK_ACCOUNT_CONSOLE_URL", ""
-        ),
-    }
+    return {"user_session_data": json.dumps(data)}
 
 
 def airavata_app_registry(request):
@@ -156,15 +150,7 @@ def airavata_app_registry(request):
     ]
     # Sort by app_order then by verbose_name (case-insensitive)
     airavata_apps.sort(key=lambda app: f"{app.app_order:09}-{app.verbose_name.lower()}")
-    current_app = _get_current_app(request, airavata_apps)
-
-    return {
-        "airavata_apps": airavata_apps,
-        "current_airavata_app": current_app,
-        "airavata_app_nav": (
-            _get_app_nav(request, current_app) if current_app else None
-        ),
-    }
+    return {"airavata_apps": airavata_apps}
 
 
 def _get_current_app(request, apps):
