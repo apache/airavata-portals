@@ -56,10 +56,6 @@ class KeycloakUser:
     def realm_roles(self):
         return (self.claims.get("realm_access") or {}).get("roles") or []
 
-    @property
-    def is_staff(self):
-        return False
-
 
 class AnonymousUser:
     """Non-DB anonymous user.
@@ -73,14 +69,7 @@ class AnonymousUser:
     is_authenticated = False
     is_anonymous = True
     is_active = False
-    is_staff = False
     username = ""
 
     def __str__(self):
         return "AnonymousUser"
-
-    def has_perm(self, perm, obj=None):
-        return False
-
-    def has_module_perms(self, app_label):
-        return False

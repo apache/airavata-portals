@@ -27,8 +27,6 @@ from django_airavata.apps.auth import iam_admin_client
 
 from . import exceptions, helpers, output_views, serializers, signals, tus, view_utils
 
-READ_PERMISSION_TYPE = "{}:READ"
-
 # Input files uploaded for an experiment are staged under this directory in the
 # user's storage (mirrors the legacy SDK's TMP_INPUT_FILE_UPLOAD_DIR).
 TMP_INPUT_FILE_UPLOAD_DIR = "tmp"
