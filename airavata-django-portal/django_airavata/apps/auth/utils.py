@@ -12,16 +12,15 @@ logger = logging.getLogger(__name__)
 
 
 class AuthzToken:
-    """Plain carrier for the Keycloak access token + gateway/user claims.
+    """Plain carrier for the Keycloak access token.
 
-    Replaces the legacy Thrift ``AuthzToken`` value type; keeps the same
-    ``accessToken`` / ``claimsMap`` attribute names so existing consumers (the
-    gRPC client factory, IAM admin REST helpers, ...) are unchanged.
+    Replaces the legacy Thrift ``AuthzToken`` value type; keeps the
+    ``accessToken`` attribute name so existing consumers (the gRPC client
+    factory, IAM admin REST helpers, ...) are unchanged.
     """
 
-    def __init__(self, accessToken, claimsMap=None):
+    def __init__(self, accessToken):
         self.accessToken = accessToken
-        self.claimsMap = claimsMap or {}
 
 
 def get_service_account_authz_token():
@@ -43,11 +42,7 @@ def get_service_account_authz_token():
     )
 
     access_token = token.get("access_token")
-    return AuthzToken(
-        accessToken=access_token,
-        # This is a service account, so leaving out userName for now
-        claimsMap={"gatewayID": settings.GATEWAY_ID},
-    )
+    return AuthzToken(accessToken=access_token)
 
 
 def send_email_to_user(template_id, context):

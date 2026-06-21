@@ -3,8 +3,6 @@
 import json
 import logging
 
-from django.conf import settings
-
 from . import utils
 from .token_authentication import AnonymousUser
 
@@ -121,13 +119,7 @@ def keycloak_token_user_middleware(get_response):
 
         keycloak_user = KeycloakUser(claims)
         request.user = keycloak_user
-        request.authz_token = utils.AuthzToken(
-            accessToken=token,
-            claimsMap={
-                "gatewayID": settings.GATEWAY_ID,
-                "userName": keycloak_user.username,
-            },
-        )
+        request.authz_token = utils.AuthzToken(accessToken=token)
 
         return get_response(request)
 
