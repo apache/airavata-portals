@@ -30,14 +30,12 @@ INSTALLED_APPS = [
     # No django.contrib.auth/contenttypes: no database, no Django User model —
     # identity comes from the Keycloak token (apps/auth/middleware).
     "django.contrib.sessions",
-    "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_airavata.apps.auth.apps.AuthConfig",
     "django_airavata.apps.workspace.apps.WorkspaceConfig",
     "django_airavata.apps.api.apps.ApiConfig",
     "django_airavata.apps.groups.apps.GroupsConfig",
     "django_airavata.apps.dataparsers.apps.DataParsersConfig",
-    "django.contrib.humanize",
     # django-webpack-loader
     "webpack_loader",
 ]
@@ -51,7 +49,6 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Validate the Keycloak access token (Bearer header or kc_token cookie) and
     # set request.user / request.authz_token; before the gRPC client.
@@ -76,7 +73,6 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.template.context_processors.csrf",
                 "django_airavata.context_processors.user",
-                "django.contrib.messages.context_processors.messages",
                 "django_airavata.context_processors.airavata_app_registry",
                 "django_airavata.commons.dynamic_apps.context_processors.custom_app_registry",
                 "django_airavata.context_processors.get_notifications",
@@ -210,16 +206,12 @@ AUTHENTICATION_BACKENDS = []
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 LOGIN_URL = "django_airavata_auth:login"
-LOGIN_REDIRECT_URL = "django_airavata_workspace:dashboard"
 
-# Login is hosted by Keycloak; read by the desktop/CLI login templates.
+# External IdP options echoed into the generated settings_local.py
+# (apps/auth/views.download_settings_local).
 AUTHENTICATION_OPTIONS = {
     # 'external': [{'idp_alias': 'cilogon', 'name': 'CILogon', 'logo': 'path/to/image'}]
 }
-
-# Allowed redirect targets for /auth/access-token-redirect. List of dicts with
-# 'URI' and optional 'PARAM_NAME' (token query param; default 'access_token').
-ACCESS_TOKEN_REDIRECT_ALLOWED_URIS = []
 
 # Webpack loader
 WEBPACK_LOADER = {
@@ -391,7 +383,7 @@ with contextlib.suppress(ImportError):
 # Keycloak self-service account console, derived from KEYCLOAK_AUTHORIZE_URL.
 if "KEYCLOAK_ACCOUNT_CONSOLE_URL" not in dir() and "KEYCLOAK_AUTHORIZE_URL" in dir():
     KEYCLOAK_ACCOUNT_CONSOLE_URL = (
-        KEYCLOAK_AUTHORIZE_URL.split("/protocol/openid-connect/")[0]  # noqa: F405
+        KEYCLOAK_AUTHORIZE_URL.split("/protocol/openid-connect/")[0]
         + "/account/"
     )
 

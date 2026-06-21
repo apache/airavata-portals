@@ -64,24 +64,6 @@ class GenericAPIBackedViewSet(web.GenericViewSet):
     def gateway_id(self):
         return settings.GATEWAY_ID
 
-    @property
-    def authz_token(self):
-        return self.request.authz_token
-
-
-class ReadOnlyAPIBackedViewSet(
-    web.mixins.RetrieveModelMixin, web.mixins.ListModelMixin, GenericAPIBackedViewSet
-):
-    """
-    A viewset that provides default `retrieve()` and `list()` actions.
-
-    Subclasses must implement the following:
-    * get_list(self)
-    * get_instance(self, lookup_value)
-    """
-
-    pass
-
 
 class APIBackedViewSet(
     web.mixins.CreateModelMixin,
@@ -355,11 +337,6 @@ class IsInAdminsGroupPermission(web.permissions.BasePermission):
             return request.is_gateway_admin or request.is_read_only_gateway_admin
         else:
             return request.is_gateway_admin
-
-
-class ReadOnly(web.permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.method in web.SAFE_METHODS
 
 
 def _storage_root_relative(path):

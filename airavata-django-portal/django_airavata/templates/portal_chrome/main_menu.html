@@ -1,8 +1,0 @@
-{% for nav_item in user_menu_links %}
-  {% if forloop.first %}
-  <div class="dropdown-divider"></div>
-  {% endif %}
-  <a class="dropdown-item" href="{{ nav_item.link }}">
-    <i class="fa {{ nav_item.icon_class|default:'fa-link' }} me-2"></i>{{ nav_item.link_text }}
-  </a>
-{% endfor %}

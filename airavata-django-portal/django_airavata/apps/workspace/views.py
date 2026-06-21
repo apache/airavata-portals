@@ -2,6 +2,9 @@ import json
 import logging
 from urllib.parse import urlparse
 
+from airavata_sdk.generated.org.apache.airavata.model.application.io.application_io_pb2 import (
+    DataType,
+)
 from django.conf import settings
 from django.shortcuts import render
 from django.utils.module_loading import import_string
@@ -15,9 +18,6 @@ from django_airavata.apps.api.views import (
     ProjectViewSet,
 )
 from django_airavata.apps.auth.decorators import login_required
-from airavata_sdk.generated.org.apache.airavata.model.application.io.application_io_pb2 import (
-    DataType,
-)
 
 logger = logging.getLogger(__name__)
 

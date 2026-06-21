@@ -2,21 +2,15 @@ import collections.abc
 import inspect
 import json
 import logging
-import os
 from functools import partial
 
-import nbformat
-import papermill as pm
 from airavata_sdk.generated.org.apache.airavata.model.application.io.application_io_pb2 import (
     DataType,
 )
 from airavata_sdk.helpers import research_resources, storage_resources
 from django.conf import settings
-from nbconvert import HTMLExporter
 
 logger = logging.getLogger(__name__)
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # This is populated by apps.ApiConfig.ready()
 OUTPUT_VIEW_PROVIDERS = {}
@@ -31,35 +25,6 @@ class DefaultViewProvider:
         self, request, experiment_output, experiment, output_file=None, **kwargs
     ):
         return {}
-
-
-class ParameterizedNotebookViewProvider:
-    display_type = "notebook"
-    name = "Example Parameterized Notebook View"
-    # test_output_file = os.path.join(BASE_DIR, "data", "Gaussian.log")
-
-    def generate_data(
-        self, request, experiment_output, experiment, output_file=None, output_dir=None
-    ):
-        # use papermill to generate the output notebook
-        output_file_path = os.path.realpath(output_file.name)  # ty: ignore[unresolved-attribute]  # provider only invoked with a real output file handle
-        pm.execute_notebook(
-            os.path.join(BASE_DIR, "path", "to", "notebook.ipynb"),
-            # TODO: use TemporaryFile instead
-            "/tmp/output.ipynb",
-            parameters={
-                "experiment_output": {},
-                "experiment": {},
-                "output_file": output_file_path,
-                "output_dir": output_dir,
-            },
-        )
-        # TODO: convert the output notebook into html format
-        output_notebook = nbformat.read("/tmp/output.ipynb", as_version=4)
-        html_exporter = HTMLExporter()
-        (body, _resources) = html_exporter.from_notebook_node(output_notebook)
-        # TODO: return the HTML output as the output key
-        return {"output": body}
 
 
 DEFAULT_VIEW_PROVIDERS = {"default": DefaultViewProvider()}

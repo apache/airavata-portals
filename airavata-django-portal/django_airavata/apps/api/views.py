@@ -3,17 +3,13 @@ import io
 import json
 import logging
 import os
-import warnings
 from datetime import UTC, datetime, timedelta
-from urllib.parse import quote
 
 from airavata_sdk.helpers import experiment_orchestration, queue_settings
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
-from django.shortcuts import redirect
 from django.urls import reverse
-from django.views.decorators.gzip import gzip_page
 
 from django_airavata import context_processors
 from django_airavata.apps.api import web
@@ -38,14 +34,6 @@ READ_PERMISSION_TYPE = "{}:READ"
 TMP_INPUT_FILE_UPLOAD_DIR = "tmp"
 
 log = logging.getLogger(__name__)
-
-
-def _data_type_pb2():
-    from airavata_sdk.generated.org.apache.airavata.model.application.io import (
-        application_io_pb2,
-    )
-
-    return application_io_pb2
 
 
 # First replica's ~/-prefixed file path from a proto DataProductModel.
@@ -1231,24 +1219,6 @@ def tus_upload_finish(request):
         return exceptions.generic_json_exception_response(e, status=400)
 
 
-@gzip_page
-@web.api_view()
-def download_file(request):
-    # TODO: remove this deprecated view
-    warnings.warn(
-        "download_file view is deprecated; use 'download-file'",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    # Redirect to the gRPC byte-streaming download endpoint.
-    data_product_uri = request.GET.get("data-product-uri", "")
-    return redirect(
-        request.build_absolute_uri(reverse("django_airavata_api:download-file"))
-        + "?data-product-uri="
-        + quote(data_product_uri)
-    )
-
-
 @web.api_view()
 def download(request):
     """Stream the bytes of a data product's first replica.
@@ -1790,10 +1760,6 @@ class ParserViewSet(SdkResourceViewSet):
         from airavata_sdk.helpers import research_resources
 
         return research_resources
-
-
-# Sentinel for "key absent" in dict.pop (distinguishes a real None value).
-_SENTINEL = object()
 
 
 def _user_storage_path(path, experiment_id=None, request=None):

@@ -1,7 +1,6 @@
 import io
 import logging
-import time
-from urllib.parse import quote, urlencode, urlparse
+from urllib.parse import urlencode, urlparse
 
 import requests
 from django.conf import settings
@@ -9,8 +8,6 @@ from django.core.exceptions import PermissionDenied
 from django.http import (
     FileResponse,
     HttpResponseBadRequest,
-    HttpResponseForbidden,
-    JsonResponse,
 )
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
@@ -94,115 +91,6 @@ def logout(request):
 def logged_out(request):
     """Public landing page shown after a federated Keycloak logout."""
     return render(request, "django_airavata_auth/logged_out.html")
-
-
-def login_desktop(request):
-    context = {"options": settings.AUTHENTICATION_OPTIONS, "login_desktop": True}
-    if "username" in request.GET:
-        context["username"] = request.GET["username"]
-    download_code = request.GET.get("download-code", "false") == "true"
-    show_code = request.GET.get("show-code", "false") == "true"
-    context["download_code"] = download_code
-    context["show_code"] = show_code
-    return render(request, "django_airavata_auth/login-desktop.html", context)
-
-
-def login_desktop_success(request):
-    download_code = request.GET.get("download-code", "false") == "true"
-    show_code = request.GET.get("show-code", "false") == "true"
-
-    access_token = request.session["ACCESS_TOKEN"]
-    if download_code:
-        access_token_bytesio = io.BytesIO(access_token.encode())
-        return FileResponse(
-            access_token_bytesio, as_attachment=True, filename="access_token.txt"
-        )
-    else:
-        context = (
-            {
-                "show_code": show_code,
-                "code": access_token,
-            }
-            if (show_code)
-            else {}
-        )
-        return render(
-            request, "django_airavata_auth/login-desktop-success.html", context
-        )
-
-
-def refreshed_token_desktop(request):
-    refresh_code = request.GET["refresh_code"]
-    token = utils.refresh_access_token(request, refresh_token=refresh_code)
-    if token is not None:
-        utils.store_token_in_session(request, token)
-        valid_time = int(request.session["ACCESS_TOKEN_EXPIRES_AT"] - time.time())
-        return JsonResponse(
-            {
-                "status": "ok",
-                "code": request.session["ACCESS_TOKEN"],
-                "refresh_code": request.session["REFRESH_TOKEN"],
-                "valid_time": valid_time,
-            }
-        )
-    else:
-        return JsonResponse(
-            {
-                "status": "failed",
-            }
-        )
-
-
-def _create_login_desktop_success_response(
-    request, download_code=False, show_code=False
-):
-    valid_time = int(request.session["ACCESS_TOKEN_EXPIRES_AT"] - time.time())
-    query_params = {
-        "status": "ok",
-        "code": request.session["ACCESS_TOKEN"],
-        "refresh_code": request.session["REFRESH_TOKEN"],
-        "valid_time": valid_time,
-        "username": request.user.username,
-    }
-    if download_code:
-        query_params["download-code"] = "true"
-    if show_code:
-        query_params["show-code"] = "true"
-    return redirect(
-        reverse("django_airavata_auth:login_desktop_success")
-        + "?"
-        + urlencode(query_params)
-    )
-
-
-def _create_login_desktop_failed_response(request):
-    params = {"status": "failed"}
-    return redirect(
-        reverse("django_airavata_auth:login_desktop") + "?" + urlencode(params)
-    )
-
-
-@login_required
-def access_token_redirect(request):
-    redirect_uri = request.GET["redirect_uri"]
-    config = next(
-        filter(
-            lambda d: d.get("URI") == redirect_uri,
-            settings.ACCESS_TOKEN_REDIRECT_ALLOWED_URIS,
-        ),
-        None,
-    )
-    if config is None:
-        logger.warning(
-            f"redirect_uri value '{redirect_uri}' is not configured "
-            "in ACCESS_TOKEN_REDIRECT_ALLOWED_URIS setting"
-        )
-        return HttpResponseForbidden("Invalid redirect_uri value")
-    return redirect(
-        redirect_uri
-        + f"{'&' if '?' in redirect_uri else '?'}{config.get('PARAM_NAME', 'access_token')}="
-        f"{quote(request.authz_token.accessToken)}"
-    )
 
 
 @login_required

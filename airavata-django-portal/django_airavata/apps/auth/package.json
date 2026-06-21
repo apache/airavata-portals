@@ -10,11 +10,7 @@
     "lint": "eslint ./static/django_airavata_auth/js --no-error-on-unmatched-pattern",
     "format": "prettier --write ."
   },
-  "dependencies": {
-    "@lucide/vue": "^1.18.0",
-    "django-airavata-api": "link:../api/",
-    "django-airavata-common-ui": "link:../../static/common/"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.1",
