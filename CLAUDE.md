@@ -17,8 +17,7 @@ Monorepo of web portals, SDKs, and tools built on top of Apache Airavata. Contai
 | `airavata-local-agent` | Electron + Next.js | Desktop app for local Docker container management |
 | `airavata-mcp-client-chatbot` | Flask + React | MCP-based chatbot for querying CyberShuttle resources |
 | `airavata-jupyterhub` | JupyterHub + Docker | JupyterHub deployment for gateway notebook sessions (config, images, user container) |
-| `airavata-cookiecutter-django-app` | Cookiecutter | Template for scaffolding custom Django apps |
-| `airavata-cookiecutter-django-output-view` | Cookiecutter | Template for output viewer plugins |
+| `airavata-django-app-cookiecutter` | Cookiecutter | Template for scaffolding custom Django apps (page views and/or output-view providers) |
 | `airavata-php-gateway` | PHP | Legacy gateway (archived, replaced by Django portal) |
 
 ## airavata-django-portal (Main Portal)

@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseNotFound
 from django.shortcuts import render
 
 # Create your views here.
@@ -27,5 +26,9 @@ def home(request):
     # request.airavata.storage.upload_file(path="~/path/file", content=..., name="file")
 
     return render(request, "{{ cookiecutter.project_slug }}/home.html", {
-        'project_name': "{{ cookiecutter.project_name }}"
+        "project_name": "{{ cookiecutter.project_name }}",
+        # VITE_MANIFESTS key registered by this app's AppConfig.merge_settings.
+        # home.html is copied verbatim (not rendered), so the manifest key is
+        # passed in as a template context variable named 'vite_app'.
+        "vite_app": "{{ cookiecutter.project_slug | upper }}",
     })

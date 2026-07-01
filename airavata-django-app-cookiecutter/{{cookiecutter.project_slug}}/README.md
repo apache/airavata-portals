@@ -12,4 +12,13 @@
    pip install -e .
    ```
 
-3. Start (or restart) the Django Portal server.
+3. If this app serves its own pages, build the Vite frontend so the portal can
+   load its bundle:
+
+   ```
+   cd {{ cookiecutter.project_slug }}/static/{{ cookiecutter.project_slug }}
+   npm install
+   npm run build     # or `npm run watch` while developing
+   ```
+
+4. Start (or restart) the Django Portal server.

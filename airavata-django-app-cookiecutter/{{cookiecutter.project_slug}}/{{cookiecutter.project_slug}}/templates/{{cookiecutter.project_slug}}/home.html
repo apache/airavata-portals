@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% load vite %}
+
+{% block content %}
+<div class="main-content-wrapper">
+    <main class="main-content">
+        <div class="container-fluid">
+            <h1>Welcome to {{ project_name }}</h1>
+            <!-- The app's Vite bundle (static/<slug>/js/main.js) mounts here. -->
+            <div id="app"></div>
+        </div>
+    </main>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+{% comment %}
+Load this app's own Vite bundle via the portal's Vite manifest tags. 'main' is
+the rollupOptions.input key from static/<slug>/vite.config.js; 'vite_app' is the
+VITE_MANIFESTS key (passed in from the view) that this app registered in its
+AppConfig.merge_settings. Build the manifest with `npm install && npm run build`
+in static/<slug>/.
+{% endcomment %}
+{% vite_css 'main' vite_app %}
+{% vite_js 'main' vite_app %}
+{% endblock scripts %}

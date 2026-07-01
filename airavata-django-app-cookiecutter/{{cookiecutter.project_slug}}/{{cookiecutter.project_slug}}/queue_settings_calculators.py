@@ -1,4 +1,4 @@
-from airavata_sdk.helpers.queue_settings import queue_settings_calculator
+from django_airavata.apps.api.queue_settings import queue_settings_calculator
 
 # See https://apache-airavata-django-portal.readthedocs.io/en/latest/dev/queue_settings_calculator/ for more information
 @queue_settings_calculator(

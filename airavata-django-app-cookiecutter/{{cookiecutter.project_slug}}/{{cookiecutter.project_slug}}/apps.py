@@ -1,3 +1,5 @@
+import os
+
 from django.apps import AppConfig
 
 
@@ -29,3 +31,16 @@ class {{ cookiecutter.app_config_class_name }}(AppConfig):
         # Uncomment to register your queue settings calculators.
         # from {{ cookiecutter.project_slug }} import queue_settings_calculators  # noqa
         pass
+
+    def merge_settings(self, settings_module) -> None:
+        # Register this app's Vite bundle manifest so the portal's vite_js /
+        # vite_css template tags can resolve "{{ cookiecutter.project_slug | upper }}".
+        # Only needed if this app serves its own Vite frontend (i.e. it has
+        # page views that load static/{{ cookiecutter.project_slug }}/dist).
+        settings_module.VITE_MANIFESTS["{{ cookiecutter.project_slug | upper }}"] = {
+            "manifest": os.path.join(
+                os.path.dirname(__file__),
+                "static", "{{ cookiecutter.project_slug }}", "dist", ".vite", "manifest.json",
+            ),
+            "base": "/static/{{ cookiecutter.project_slug }}/dist/",
+        }

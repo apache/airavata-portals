@@ -1,0 +1,12 @@
+{
+  "name": "{{ cookiecutter.project_slug }}-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "watch": "vite build --watch"
+  },
+  "devDependencies": {
+    "vite": "^8.0.16"
+  }
+}

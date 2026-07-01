@@ -4,6 +4,11 @@
   "project_short_description": "Custom Django app with everything needed to be installed in the airavata-django-portal",
   "app_config_class_name": "{{ cookiecutter.project_name | slugify(separator=' ') | title | replace(' ', '') }}Config",
   "version": "0.1.0",
+  "include_app_pages": ["yes", "no"],
+  "include_output_view": ["yes", "no"],
+  "output_view_provider_class_name": "{{ cookiecutter.project_name | title | replace(' ', '') }}Provider",
+  "output_view_display_type": ["image", "link", "html"],
+  "number_of_output_files": ["single (URI)", "multiple (URI_COLLECTION)"],
   "_copy_without_render": [
       "*.html"
   ]
