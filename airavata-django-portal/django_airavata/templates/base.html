@@ -1,12 +1,12 @@
 {% load portal_chrome static %}
-{% load render_bundle get_files from webpack_loader %}
+{% load vite %}
 <!DOCTYPE html>
 
 <head>
   {% portal_favicon %}
   {% include "./django_airavata/google_analytics.html" %}
 
-  {% render_bundle 'app' 'css' 'COMMON' %}
+  {% vite_css 'app' 'COMMON' %}
   {% block css %}
 
   {% endblock %}
@@ -186,12 +186,8 @@
   {% comment %} Vite emits ES module bundles; load them as type="module" so their
   shared-chunk imports resolve. The inline session script above is a classic
   script and runs first, before these deferred modules. {% endcomment %}
-  {% get_files 'app' 'js' 'COMMON' as common_app_js %}
-  {% for f in common_app_js %}<script type="module" src="{{ f.url }}"></script>
-  {% endfor %}
-  {% get_files 'shell' 'js' 'COMMON' as common_shell_js %}
-  {% for f in common_shell_js %}<script type="module" src="{{ f.url }}"></script>
-  {% endfor %}
+  {% vite_js 'app' 'COMMON' %}
+  {% vite_js 'shell' 'COMMON' %}
   {% block scripts %}
   {% endblock %}
 </body>

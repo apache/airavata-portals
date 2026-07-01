@@ -16,9 +16,7 @@
     "lint": "eslint ./static/django_airavata_api/js/",
     "format": "prettier --write ."
   },
-  "dependencies": {
-    "stacktrace-js": "^2.0.2"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.5.0",

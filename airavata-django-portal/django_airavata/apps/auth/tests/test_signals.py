@@ -1,7 +1,7 @@
-from airavata_sdk.generated.org.apache.airavata.model.group.group_manager_pb2 import (
+from airavata.model.group.group_manager_pb2 import (
     GroupModel,
 )
-from airavata_sdk.generated.org.apache.airavata.model.user.user_profile_pb2 import (
+from airavata.model.user.user_profile_pb2 import (
     UserProfile,
 )
 from django.core import mail

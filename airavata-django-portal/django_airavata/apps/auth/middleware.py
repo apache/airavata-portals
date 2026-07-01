@@ -1,10 +1,23 @@
 """Django Airavata Auth Middleware."""
 
+from __future__ import annotations
+
 import json
 import logging
+from typing import TYPE_CHECKING
 
 from . import utils
 from .token_authentication import AnonymousUser
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from django.http import HttpResponseBase
+
+    from django_airavata.request import AiravataRequest
+
+type Middleware = Callable[[AiravataRequest], HttpResponseBase]
+type GetResponse = Callable[[AiravataRequest], HttpResponseBase]
 
 log = logging.getLogger(__name__)
 
@@ -14,17 +27,17 @@ GATEWAY_ADMIN_ROLE = "admin-rw"
 READ_ONLY_ADMIN_ROLE = "admin-ro"
 
 
-def set_admin_flags_from_roles(request):
+def set_admin_flags_from_roles(request: AiravataRequest) -> None:
     """Set is_gateway_admin / is_read_only_gateway_admin from the JWT realm roles."""
     roles = set(getattr(request.user, "realm_roles", []) or [])
     request.is_gateway_admin = GATEWAY_ADMIN_ROLE in roles
     request.is_read_only_gateway_admin = READ_ONLY_ADMIN_ROLE in roles
 
 
-def admin_flags_middleware(get_response):
+def admin_flags_middleware(get_response: GetResponse) -> Middleware:
     """Add 'is_gateway_admin' / 'is_read_only_gateway_admin' from the user's realm roles."""
 
-    def middleware(request):
+    def middleware(request: AiravataRequest) -> HttpResponseBase:
         set_admin_flags_from_roles(request)
         return get_response(request)
 
@@ -37,7 +50,7 @@ def admin_flags_middleware(get_response):
 # ---------------------------------------------------------------------------
 
 
-def request_data_middleware(get_response):
+def request_data_middleware(get_response: GetResponse) -> Middleware:
     """Augment every request with ``request.data`` and ``request.query_params``.
 
     DRF supplied these on its ``Request`` wrapper; views/view_utils read them.
@@ -47,7 +60,7 @@ def request_data_middleware(get_response):
     an empty dict).
     """
 
-    def middleware(request):
+    def middleware(request: AiravataRequest) -> HttpResponseBase:
         request.query_params = request.GET
 
         content_type = (request.META.get("CONTENT_TYPE", "") or "").lower()
@@ -68,7 +81,7 @@ def request_data_middleware(get_response):
     return middleware
 
 
-def keycloak_token_user_middleware(get_response):
+def keycloak_token_user_middleware(get_response: GetResponse) -> Middleware:
     """Authenticate every request from a Keycloak access token (browser-OIDC).
 
     The token comes from either the ``Authorization: Bearer <jwt>`` header
@@ -92,7 +105,7 @@ def keycloak_token_user_middleware(get_response):
 
     from .token_authentication import KeycloakUser, _jwks
 
-    def middleware(request):
+    def middleware(request: AiravataRequest) -> HttpResponseBase:
         request.user = AnonymousUser()
         request.authz_token = None
 

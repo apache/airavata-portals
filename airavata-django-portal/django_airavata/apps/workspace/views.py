@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import json
 import logging
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlparse
 
-from airavata_sdk.generated.org.apache.airavata.model.application.io.application_io_pb2 import (
+from airavata.model.application.io.application_io_pb2 import (
     DataType,
 )
 from django.conf import settings
@@ -19,13 +22,21 @@ from django_airavata.apps.api.views import (
 )
 from django_airavata.apps.auth.decorators import login_required
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest, HttpResponse
+
+    from django_airavata.apps.api.web import Response
+    from django_airavata.request import AiravataRequest
+
 logger = logging.getLogger(__name__)
 
 
 @login_required
-def experiments_list(request):
+def experiments_list(request: AiravataRequest) -> HttpResponse:
 
-    response = ExperimentSearchViewSet.as_view({"get": "list"})(request)
+    response = cast(
+        "Response", ExperimentSearchViewSet.as_view({"get": "list"})(request)
+    )
     if response.status_code != 200:
         raise Exception(
             "Failed to load experiments list: {}".format(response.data["detail"])
@@ -39,7 +50,7 @@ def experiments_list(request):
 
 
 @login_required
-def dashboard(request):
+def dashboard(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "django_airavata_workspace/dashboard.html",
@@ -51,9 +62,9 @@ def dashboard(request):
 
 
 @login_required
-def projects_list(request):
+def projects_list(request: AiravataRequest) -> HttpResponse:
 
-    response = ProjectViewSet.as_view({"get": "list"})(request)
+    response = cast("Response", ProjectViewSet.as_view({"get": "list"})(request))
     if response.status_code != 200:
         raise Exception(
             "Failed to load projects list: {}".format(response.data["detail"])
@@ -68,7 +79,7 @@ def projects_list(request):
 
 
 @login_required
-def edit_project(request, project_id):
+def edit_project(request: HttpRequest, project_id: str) -> HttpResponse:
 
     return render(
         request,
@@ -78,14 +89,17 @@ def edit_project(request, project_id):
 
 
 @login_required
-def create_experiment(request, app_module_id):
+def create_experiment(request: AiravataRequest, app_module_id: str) -> HttpResponse:
 
     # User input files can be passed as query parameters
     # <input name>=<path/to/user_file>
     # and also as data product URIs
     # <input name>=<data product URI>
-    app_interface = ApplicationModuleViewSet.as_view({"get": "application_interface"})(
-        request, app_module_id=app_module_id
+    app_interface = cast(
+        "Response",
+        ApplicationModuleViewSet.as_view({"get": "application_interface"})(
+            request, app_module_id=app_module_id
+        ),
     )
     if app_interface.status_code != 200:
         raise Exception(
@@ -94,11 +108,11 @@ def create_experiment(request, app_module_id):
             )
         )
     user_input_values = {}
-    # `application_interface` returns a proto-direct WithAccess envelope, so read
-    # the ApplicationInterfaceDescription proto and its inputs directly (rather
-    # than subscripting a serialized dict). app_input.type stays the proto DataType
-    # enum; compare against its named members.
-    application_interface = app_interface.data.message
+    # The `application_interface` action returns a proto-direct
+    # ApplicationInterfaceWithAccess, so read the ApplicationInterfaceDescription
+    # proto and its inputs directly (rather than subscripting a serialized dict).
+    # app_input.type stays the proto DataType enum; compare against its named members.
+    application_interface = app_interface.data.application_interface
     for app_input in application_interface.application_inputs:
         if app_input.type == DataType.URI and app_input.name in request.GET:
             user_file_value = request.GET[app_input.name]
@@ -107,12 +121,34 @@ def create_experiment(request, app_module_id):
                 if user_file_url.scheme == "airavata-dp":
                     dp_uri = user_file_value
                     try:
-                        data_product = request.airavata.research.get_data_product(
-                            dp_uri
+                        from airavata.services import (
+                            data_product_service_pb2 as dp_pb2,
+                        )
+                        from airavata.services import (
+                            file_service_pb2 as fs_pb2,
+                        )
+                        from airavata.services.data_product_service_pb2_grpc import (
+                            DataProductServiceStub,
+                        )
+                        from airavata.services.file_service_pb2_grpc import (
+                            UserStorageServiceStub,
+                        )
+
+                        data_product = DataProductServiceStub(
+                            request.airavata_channel
+                        ).GetDataProduct(
+                            dp_pb2.GetDataProductRequest(product_uri=dp_uri)
                         )
                         file_path = view_utils.data_product_file_path(data_product)
-                        if file_path and request.airavata.storage.file_exists(
+                        if (
                             file_path
+                            and UserStorageServiceStub(request.airavata_channel)
+                            .FileExists(
+                                fs_pb2.FileExistsRequest(
+                                    storage_resource_id="", path=file_path
+                                )
+                            )
+                            .exists
                         ):
                             user_input_values[app_input.name] = dp_uri
                     except Exception:
@@ -148,11 +184,27 @@ def create_experiment(request, app_module_id):
 
 
 @login_required
-def edit_experiment(request, experiment_id):
+def edit_experiment(request: AiravataRequest, experiment_id: str) -> HttpResponse:
+    from airavata.services import (
+        application_catalog_service_pb2 as ac_pb2,
+    )
+    from airavata.services import (
+        experiment_service_pb2 as exp_pb2,
+    )
+    from airavata.services.application_catalog_service_pb2_grpc import (
+        ApplicationCatalogServiceStub,
+    )
+    from airavata.services.experiment_service_pb2_grpc import (
+        ExperimentServiceStub,
+    )
 
-    experiment = request.airavata.research.get_experiment(experiment_id)
-    applicationInterface = request.airavata.research.get_application_interface(
-        experiment.execution_id
+    experiment = ExperimentServiceStub(request.airavata_channel).GetExperiment(
+        exp_pb2.GetExperimentRequest(experiment_id=experiment_id)
+    )
+    applicationInterface = ApplicationCatalogServiceStub(
+        request.airavata_channel
+    ).GetApplicationInterface(
+        ac_pb2.GetApplicationInterfaceRequest(app_interface_id=experiment.execution_id)
     )
     app_module_id = applicationInterface.application_modules[0]
     context = {
@@ -171,9 +223,11 @@ def edit_experiment(request, experiment_id):
     return render(request, template_path, context)
 
 
-def get_custom_template(request, app_module_id):
+def get_custom_template(
+    request: AiravataRequest, app_module_id: str
+) -> tuple[str | None, dict[str, Any]]:
     template_path = None
-    context = {}
+    context: dict[str, Any] = {}
     config = settings.PORTAL_APPLICATION_TEMPLATES.get(app_module_id)
     if config:
         template_path = config.get("template_path")
@@ -184,11 +238,14 @@ def get_custom_template(request, app_module_id):
 
 
 @login_required
-def view_experiment(request, experiment_id):
+def view_experiment(request: AiravataRequest, experiment_id: str) -> HttpResponse:
 
     launching = json.loads(request.GET.get("launching", "false"))
-    response = FullExperimentViewSet.as_view({"get": "retrieve"})(
-        request, experiment_id=experiment_id
+    response = cast(
+        "Response",
+        FullExperimentViewSet.as_view({"get": "retrieve"})(
+            request, experiment_id=experiment_id
+        ),
     )
     if response.status_code != 200:
         raise Exception(
@@ -208,7 +265,7 @@ def view_experiment(request, experiment_id):
 
 
 @login_required
-def user_storage(request):
+def user_storage(request: HttpRequest) -> HttpResponse:
     return render(
         request, "django_airavata_workspace/base.html", {"bundle_name": "user-storage"}
     )

@@ -57,10 +57,8 @@ export default {
 
 <style lang="scss">
 @import "../styles";
-// Need to explicitly import the slider CSS because importing component scss doesn't work
-// https://github.com/vuejs/vue-web-component-wrapper/issues/12
-// vue-3-slider-component (Vue 3 port) ships its styles under lib/styles.
-@import "vue-3-slider-component/lib/styles/style.scss";
+// The slider is now reka-ui (headless); its appearance comes from Tailwind
+// utility classes, so there is no component stylesheet to import here.
 :host {
   display: block;
 }

@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import json
 import logging
 import os
+from collections.abc import Callable
+from typing import Any
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -8,7 +12,9 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-def save_tus_upload(upload_url, save_function):
+def save_tus_upload(
+    upload_url: str, save_function: Callable[[str, str, str], Any]
+) -> Any:
     """
     Save upload identified by upload_url using the provided save_function.
 

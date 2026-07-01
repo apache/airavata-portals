@@ -344,11 +344,14 @@ import { components, notifications } from "django-airavata-common-ui";
 import OutputDisplayContainer from "./output-displays/OutputDisplayContainer";
 import urls from "../../utils/urls";
 
-import moment from "moment";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import ExperimentStorageViewContainer from "../storage/ExperimentStorageViewContainer.vue";
 import DataProductViewer from "django-airavata-common-ui/js/components/DataProductViewer.vue";
 import { mapActions, mapState } from "pinia";
 import { useViewExperimentStore } from "../../store";
+
+dayjs.extend(relativeTime);
 
 export default {
   name: "experiment-summary",
@@ -413,12 +416,12 @@ export default {
       return result;
     },
     creationTime: function () {
-      return moment(
+      return dayjs(
         this.localFullExperiment.experiment.creation_time,
       ).fromNow();
     },
     lastModifiedTime: function () {
-      return moment(
+      return dayjs(
         this.localFullExperiment.experimentStatus.time_of_state_change,
       ).fromNow();
     },
@@ -427,7 +430,7 @@ export default {
     },
     jobCreationTimes: function () {
       return this.localFullExperiment.job_details.map((jobDetail) =>
-        moment(jobDetail.creation_time).fromNow(),
+        dayjs(jobDetail.creation_time).fromNow(),
       );
     },
     // The experiment's PROCESS -> TASK pipeline as an ordered stage list (env setup, data
@@ -472,7 +475,7 @@ export default {
             reason: this.cleanReason(latest ? latest.reason : ""),
             time:
               latest && latest.time_of_state_change
-                ? moment(latest.time_of_state_change).fromNow()
+                ? dayjs(latest.time_of_state_change).fromNow()
                 : "",
             job: null, // job id, shown under Job Submission
             jobState: null, // last observed job state, shown under Job Monitoring

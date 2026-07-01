@@ -1,11 +1,26 @@
+from __future__ import annotations
+
+from typing import IO, TYPE_CHECKING, override
+
 from django.conf import settings
 from django.core.files.uploadhandler import StopUpload, TemporaryFileUploadHandler
 
+if TYPE_CHECKING:
+    from django.core.files.uploadedfile import UploadedFile
+    from django.http.request import QueryDict
+    from django.utils.datastructures import MultiValueDict
+
 
 class MaxFileSizeTemporaryFileUploadHandler(TemporaryFileUploadHandler):
+    @override
     def handle_raw_input(
-        self, input_data, META, content_length, boundary, encoding=None
-    ):
+        self,
+        input_data: IO[bytes],
+        META: dict[str, str],
+        content_length: int,
+        boundary: str,
+        encoding: str | None = None,
+    ) -> tuple[QueryDict, MultiValueDict[str, UploadedFile]] | None:
         """
         Use the content_length to enforce max size limit.
         """

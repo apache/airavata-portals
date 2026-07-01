@@ -104,7 +104,10 @@
 <script>
 import { models } from "django-airavata-api";
 import { mixins, utils } from "django-airavata-common-ui";
-import moment from "moment";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
 
 export default {
   name: "notice-editor",
@@ -121,19 +124,19 @@ export default {
     //checks whether the component is used for editing or updating the notificaion
     if (this.value.notification_id != null) {
       this.editNotification = true;
-      this.inputPublishedTime = new moment(
+      this.inputPublishedTime = dayjs(
         this.value.published_time.toISOString(),
       )
         .utc()
         .format();
-      this.inputExpirationTime = new moment(
+      this.inputExpirationTime = dayjs(
         this.value.expiration_time.toISOString(),
       )
         .utc()
         .format();
       this.data.priority = this.value.priority.name;
       this.data.show_in_dashboard = this.value.show_in_dashboard;
-      this.today = new moment(
+      this.today = dayjs(
         this.value.expiration_time.toISOString(),
       ).format();
     }
@@ -144,7 +147,7 @@ export default {
       userBeginsInput: false,
       inputPublishedTime: null,
       inputExpirationTime: null,
-      today: new moment().format(),
+      today: dayjs().format(),
       select: {
         selected: "LOW",
         options: [

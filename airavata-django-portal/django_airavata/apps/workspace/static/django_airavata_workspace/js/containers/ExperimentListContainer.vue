@@ -180,8 +180,11 @@ import FlatPickr from "vue-flatpickr-component";
 import "flatpickr/dist/flatpickr.css";
 import { NATIVE_SELECT_CLASS } from "../lib/utils";
 
-import moment from "moment";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import urls from "../utils/urls";
+
+dayjs.extend(relativeTime);
 
 export default {
   props: ["initialExperimentsData"],
@@ -304,7 +307,7 @@ export default {
       this.experimentsPaginator.previous();
     },
     fromNow: function (date) {
-      return moment(date).fromNow();
+      return dayjs(date).fromNow();
     },
     editLink: function (experiment) {
       return urls.editExperiment(experiment);

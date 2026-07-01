@@ -10,18 +10,36 @@ a minimal ``request.user.is_authenticated`` check that redirects to
 ``settings.LOGIN_URL`` with the usual ``?next=`` parameter.
 """
 
+from __future__ import annotations
+
 from functools import wraps
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse, urlunparse
 
 from django.conf import settings
 from django.http import HttpResponseRedirect, QueryDict
 from django.shortcuts import resolve_url
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
-def login_required(view_func=None, redirect_field_name="next", login_url=None):
-    def decorator(view):
+    from django.http import HttpResponseBase
+
+    from django_airavata.request import AiravataRequest
+
+type ViewFunc = Callable[..., HttpResponseBase]
+
+
+def login_required(
+    view_func: ViewFunc | None = None,
+    redirect_field_name: str = "next",
+    login_url: str | None = None,
+) -> ViewFunc | Callable[[ViewFunc], ViewFunc]:
+    def decorator(view: ViewFunc) -> ViewFunc:
         @wraps(view)
-        def _wrapped(request, *args, **kwargs):
+        def _wrapped(
+            request: AiravataRequest, *args: Any, **kwargs: Any
+        ) -> HttpResponseBase:
             if getattr(request.user, "is_authenticated", False):
                 return view(request, *args, **kwargs)
             resolved_url = resolve_url(login_url or settings.LOGIN_URL)

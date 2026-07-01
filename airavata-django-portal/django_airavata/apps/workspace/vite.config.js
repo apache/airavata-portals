@@ -6,50 +6,6 @@ import tailwindcss from "@tailwindcss/vite";
 const publicPath = "/static/django_airavata_workspace/dist/";
 const jsDir = resolve(__dirname, "static/django_airavata_workspace/js");
 
-// Emit a webpack-stats.json compatible with django-webpack-loader so base.html
-// keeps resolving each page's bundle by name after the Vue CLI/webpack -> Vite
-// migration. Entries are ES module bundles, so base.html loads them via
-// <script type="module">: the browser fetches statically-imported JS chunks
-// itself, so only the entry script is listed. Extracted CSS is not part of the
-// module graph, so we walk the entry's static-import closure and list every CSS
-// file (shared chunks' CSS first, the entry's own CSS last, to preserve cascade).
-function djangoWebpackStats() {
-  return {
-    name: "django-webpack-stats",
-    generateBundle(_options, bundle) {
-      const chunks = {};
-      for (const fileName of Object.keys(bundle)) {
-        const item = bundle[fileName];
-        if (item.type !== "chunk" || !item.isEntry) continue;
-        const css = [];
-        const seen = new Set();
-        const visited = new Set();
-        const walk = (name) => {
-          if (visited.has(name)) return;
-          visited.add(name);
-          const chunk = bundle[name];
-          if (!chunk || chunk.type !== "chunk") return;
-          for (const imp of chunk.imports || []) walk(imp);
-          for (const f of chunk.viteMetadata?.importedCss || []) {
-            if (!seen.has(f)) (seen.add(f), css.push(f));
-          }
-        };
-        walk(fileName);
-        const files = [fileName, ...css].map((f) => ({
-          name: f,
-          publicPath: publicPath + f,
-        }));
-        chunks[item.name] = files;
-      }
-      this.emitFile({
-        type: "asset",
-        fileName: "webpack-stats.json",
-        source: JSON.stringify({ status: "done", publicPath, chunks }, null, 2),
-      });
-    },
-  };
-}
-
 const entry = (name) => resolve(jsDir, name);
 
 // NOTE: two things are intentionally deferred to Track D and NOT handled here:
@@ -64,7 +20,7 @@ const entry = (name) => resolve(jsDir, name);
 
 export default defineConfig({
   base: publicPath,
-  plugins: [vue(), tailwindcss(), djangoWebpackStats()],
+  plugins: [vue(), tailwindcss()],
   resolve: {
     // `.vue` so extensionless imports resolve like they did under Vue CLI.
     extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json", ".vue"],
@@ -98,6 +54,7 @@ export default defineConfig({
   },
   build: {
     outDir: "static/django_airavata_workspace/dist",
+    manifest: true,
     emptyOutDir: true,
     modulePreload: false,
     rollupOptions: {

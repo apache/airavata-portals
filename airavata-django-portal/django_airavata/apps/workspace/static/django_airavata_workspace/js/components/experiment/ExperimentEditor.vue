@@ -186,7 +186,7 @@ import { models, services } from "django-airavata-api";
 import { components, utils } from "django-airavata-common-ui";
 import WorkspaceNoticesManagementContainer from "../notices/WorkspaceNoticesManagementContainer";
 import { NATIVE_SELECT_CLASS } from "../../lib/utils";
-import _ from "lodash";
+import { useDebounceFn } from "@vueuse/core";
 
 export default {
   name: "edit-experiment",
@@ -355,7 +355,7 @@ export default {
     inputValueChanged: function () {
       this.localExperiment.evaluateInputDependencies();
     },
-    calculateQueueSettings: _.debounce(async function () {
+    calculateQueueSettings: useDebounceFn(async function () {
       const queueSettingsUpdate =
         await services.QueueSettingsCalculatorService.calculate(
           {

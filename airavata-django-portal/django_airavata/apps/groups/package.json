@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "@lucide/vue": "^1.18.0",
-    "django-airavata-api": "link:../api",
-    "django-airavata-common-ui": "link:../../static/common",
+    "django-airavata-api": "*",
+    "django-airavata-common-ui": "*",
     "reka-ui": "^2.9.10",
     "vue": "^3.5.38"
   },

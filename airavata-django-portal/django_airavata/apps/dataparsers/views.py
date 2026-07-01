@@ -1,7 +1,14 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.shortcuts import render
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest, HttpResponse
 
-def home(request):
+
+def home(request: HttpRequest) -> HttpResponse:
 
     return render(
         request,
@@ -10,7 +17,7 @@ def home(request):
     )
 
 
-def parser_details(request, parser_id):
+def parser_details(request: HttpRequest, parser_id: str) -> HttpResponse:
     return render(
         request,
         "django_airavata_dataparsers/parser-details.html",
@@ -18,7 +25,7 @@ def parser_details(request, parser_id):
     )
 
 
-def edit_parser(request, parser_id):
+def edit_parser(request: HttpRequest, parser_id: str) -> HttpResponse:
     return render(
         request,
         "django_airavata_dataparsers/edit-parser.html",
@@ -26,7 +33,7 @@ def edit_parser(request, parser_id):
     )
 
 
-def create_parser(request):
+def create_parser(request: HttpRequest) -> HttpResponse:
     # Same editor bundle as edit, but with no parser_id — the Vue ParserEditContainer
     # treats an empty data-parser-id as "new parser" (it only fetches when an id is set).
     return render(

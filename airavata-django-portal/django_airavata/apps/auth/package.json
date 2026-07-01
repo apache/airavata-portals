@@ -5,8 +5,6 @@
   "author": "Apache Airavata <dev@airavata.apache.org>",
   "private": true,
   "scripts": {
-    "build": "node build-stats.mjs",
-    "watch": "node build-stats.mjs",
     "lint": "eslint ./static/django_airavata_auth/js --no-error-on-unmatched-pattern",
     "format": "prettier --write ."
   },

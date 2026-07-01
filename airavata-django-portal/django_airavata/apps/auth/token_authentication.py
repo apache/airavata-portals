@@ -4,24 +4,27 @@ Track D: the portal expects a valid Keycloak access token and validates it
 against the realm's JWKS — there is no separate Django auth layer (no login flow,
 no session-stored tokens, no DB ``User``). Identity is derived from the verified
 JWT claims, and ``request.authz_token`` is built directly from the token so the
-gRPC facade (``request.airavata``) carries it.
+Bearer-authenticated gRPC channel (``request.airavata_channel``) carries it.
 
 ``keycloak_bearer_middleware`` (``apps/auth/middleware.py``) consumes the
 ``_jwks`` JWKS client and the :class:`KeycloakUser` claims wrapper defined here.
 """
 
+from __future__ import annotations
+
 import logging
 import ssl
+from typing import Any, override
 
 import jwt
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-_jwks_client = None
+_jwks_client: jwt.PyJWKClient | None = None
 
 
-def _jwks():
+def _jwks() -> jwt.PyJWKClient:
     """Lazily build a cached PyJWKClient for the realm's signing keys."""
     global _jwks_client
     if _jwks_client is None:
@@ -42,18 +45,21 @@ class KeycloakUser:
     is_anonymous = False
     is_active = True
 
-    def __init__(self, claims):
+    username: str
+
+    def __init__(self, claims: dict[str, Any]) -> None:
         self.claims = claims
-        self.username = claims.get("preferred_username") or claims.get("sub")
+        self.username = claims.get("preferred_username") or claims.get("sub") or ""
         self.email = claims.get("email", "")
         self.first_name = claims.get("given_name", "")
         self.last_name = claims.get("family_name", "")
 
-    def __str__(self):
+    @override
+    def __str__(self) -> str:
         return self.username or "<anonymous>"
 
     @property
-    def realm_roles(self):
+    def realm_roles(self) -> list[str]:
         return (self.claims.get("realm_access") or {}).get("roles") or []
 
 
@@ -71,5 +77,6 @@ class AnonymousUser:
     is_active = False
     username = ""
 
-    def __str__(self):
+    @override
+    def __str__(self) -> str:
         return "AnonymousUser"

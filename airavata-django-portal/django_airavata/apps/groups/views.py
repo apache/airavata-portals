@@ -1,12 +1,19 @@
 # Create your views here.
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.shortcuts import render
 
 from django_airavata.apps.auth.decorators import login_required
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest, HttpResponse
+
 
 @login_required
-def groups_manage(request):
+def groups_manage(request: HttpRequest) -> HttpResponse:
 
     return render(
         request, "django_airavata_groups/base.html", {"bundle_name": "group-list"}
@@ -14,7 +21,7 @@ def groups_manage(request):
 
 
 @login_required
-def groups_create(request):
+def groups_create(request: HttpRequest) -> HttpResponse:
 
     return render(
         request,
@@ -27,7 +34,7 @@ def groups_create(request):
 
 
 @login_required
-def edit_group(request, group_id):
+def edit_group(request: HttpRequest, group_id: str) -> HttpResponse:
 
     return render(
         request,

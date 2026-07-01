@@ -1,9 +1,17 @@
 """Generic proto-direct → snake_case JSON rendering for migrated ViewSets.
 
-:func:`to_jsonable` turns an SDK return value (a proto ``Message``, a
-:class:`~airavata_sdk.helpers._envelope.WithAccess` envelope, a composed pydantic
+:func:`to_jsonable` turns a return value (a proto ``Message``, a composed pydantic
 ``BaseModel``, or a list/dict of those) into plain JSON-serializable Python with
 snake_case keys; :class:`ProtoJSONRenderer` applies it on the DRF response path.
+
+A raw server ``*WithAccess`` proto — the wrapper shape ``{<resource> = 1,
+access = 2}`` where ``access`` is an ``*AccessFlags`` message (see
+:func:`_access_envelope_fields`) — is FLATTENED to the resource's fields with the
+access flags merged on as siblings. This is what lets a ViewSet return the raw
+generated proto from a direct stub call (no helper, no SDK envelope) without
+changing the JSON the frontend reads. (The retired ``airavata`` ``_envelope``
+dataclasses produced this same flattened shape; the structural detector replaced
+them.)
 
 The ``MessageToDict`` options below are the source-of-truth read contract; the
 defaults (enums → member NAMES, int64 → decimal STRING) are deliberate and
@@ -24,31 +32,66 @@ int64 / uint64 / fixed64 render as decimal STRINGS (they exceed JS ``Number``
 safe-integer range), e.g. ``creation_time`` epoch-millis as ``"1705320000000"``.
 """
 
+from __future__ import annotations
+
 import json
+from typing import TYPE_CHECKING, Any
 
 from django.core.serializers.json import DjangoJSONEncoder
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.message import Message
+
+if TYPE_CHECKING:
+    from google.protobuf.descriptor import FieldDescriptor
 
 try:  # pydantic is optional on this path; only composed shapes use it
     from pydantic import BaseModel as _PydanticBaseModel
 except Exception:  # pragma: no cover - pydantic always present in practice
     _PydanticBaseModel = None  # ty: ignore[invalid-assignment]  # optional-import fallback sentinel
 
-from airavata_sdk.helpers._envelope import WithAccess, WithGroupAccess
-
 # The single source of truth for how every proto on the read path is rendered.
-_MESSAGE_TO_DICT_OPTS = {
+_MESSAGE_TO_DICT_OPTS: dict[str, bool] = {
     "preserving_proto_field_name": True,
     "always_print_fields_with_no_presence": True,
 }
 
 
-def proto_to_dict(message: Message) -> dict:
+def proto_to_dict(message: Message) -> dict[str, Any]:
     return MessageToDict(message, **_MESSAGE_TO_DICT_OPTS)
 
 
-def to_jsonable(obj):
+def _access_envelope_fields(
+    message: Message,
+) -> tuple[FieldDescriptor, FieldDescriptor] | None:
+    """If ``message`` is a server ``*WithAccess`` wrapper, return its
+    ``(resource_field, access_field)`` descriptors; otherwise ``None``.
+
+    The wrapper convention is a two-field message ``{<resource> = 1, access = 2}``
+    whose second field is named ``access`` and is an ``*AccessFlags`` message
+    (``commons.AccessFlags`` or ``GroupAccessFlags``). Detecting it structurally
+    lets the renderer flatten the access flags onto the resource — exactly the
+    shape the SDK ``_envelope.WithAccess``/``WithGroupAccess`` produced — so the
+    portal can consume raw generated protos and the SDK envelope can be retired.
+    """
+    descriptor = message.DESCRIPTOR
+    # The base ``Message.DESCRIPTOR`` is typed ``None`` in the stubs; every concrete
+    # generated message overrides it, so it is always set on a real instance.
+    if descriptor is None:
+        return None
+    fields = descriptor.fields
+    if len(fields) != 2:
+        return None
+    resource_f, access_f = fields
+    if resource_f.message_type is None or access_f.message_type is None:
+        return None
+    if access_f.name != "access" or not access_f.message_type.name.endswith(
+        "AccessFlags"
+    ):
+        return None
+    return resource_f, access_f
+
+
+def to_jsonable(obj: Any) -> Any:
     """Convert an SDK return value into JSON-serializable snake_case Python.
 
     An envelope (``WithAccess`` / ``WithGroupAccess``) renders its proto and
@@ -57,23 +100,13 @@ def to_jsonable(obj):
     values but passes keys through unchanged (callers here already use snake_case).
     """
     if isinstance(obj, Message):
+        env = _access_envelope_fields(obj)
+        if env is not None:
+            resource_f, access_f = env
+            base = to_jsonable(getattr(obj, resource_f.name))
+            base.update(proto_to_dict(getattr(obj, access_f.name)))
+            return base
         return proto_to_dict(obj)
-    if isinstance(obj, WithAccess):
-        base = to_jsonable(obj.message)
-        base["is_owner"] = obj.is_owner
-        base["user_has_write_access"] = obj.user_has_write_access
-        return base
-    if isinstance(obj, WithGroupAccess):
-        base = to_jsonable(obj.message)
-        base["is_admin"] = obj.is_admin
-        base["is_owner"] = obj.is_owner
-        base["is_member"] = obj.is_member
-        base["is_gateway_admins_group"] = obj.is_gateway_admins_group
-        base["is_read_only_gateway_admins_group"] = (
-            obj.is_read_only_gateway_admins_group
-        )
-        base["is_default_gateway_users_group"] = obj.is_default_gateway_users_group
-        return base
     if isinstance(obj, (list, tuple)):
         return [to_jsonable(x) for x in obj]
     if isinstance(obj, dict):
@@ -92,5 +125,10 @@ class ProtoJSONRenderer:
     """Plain JSON renderer that runs :func:`to_jsonable` over the data, then
     JSON-encodes it to bytes. Page views call ``.render(data) -> bytes``."""
 
-    def render(self, data, accepted_media_type=None, renderer_context=None):
+    def render(
+        self,
+        data: Any,
+        accepted_media_type: str | None = None,
+        renderer_context: dict[str, Any] | None = None,
+    ) -> bytes:
         return json.dumps(to_jsonable(data), cls=DjangoJSONEncoder).encode("utf-8")

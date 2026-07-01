@@ -17,13 +17,19 @@ re-prove — is exercised here directly against ``to_jsonable`` / ``proto_to_dic
   proto carried wholesale inside it flows through the SAME renderer.
 """
 
-from airavata_sdk.generated.org.apache.airavata.model.group import (
+from airavata.model.commons import (
+    commons_pb2,
+)
+from airavata.model.group import (
     group_manager_pb2,
 )
-from airavata_sdk.generated.org.apache.airavata.model.workspace import (
+from airavata.model.workspace import (
     workspace_pb2,
 )
-from airavata_sdk.helpers._envelope import WithAccess, WithGroupAccess
+from airavata.services import (
+    group_manager_service_pb2,
+    project_service_pb2,
+)
 from django.test import SimpleTestCase
 from pydantic import BaseModel
 
@@ -90,33 +96,46 @@ class StableShapeTest(SimpleTestCase):
         self.assertEqual(rendered["shared_users"], [])
 
 
-class WithAccessMergeTest(SimpleTestCase):
-    def test_scalars_merged_onto_flattened_proto(self):
-        rendered = to_jsonable(
-            WithAccess(_project(), is_owner=True, user_has_write_access=False)
+class RawWithAccessProtoFlattenTest(SimpleTestCase):
+    """A raw server ``*WithAccess`` proto (``{<resource>=1, access=2}`` where
+    ``access`` is an ``*AccessFlags`` message) flattens to the SAME shape the
+    ``WithAccess`` / ``WithGroupAccess`` dataclasses produce: the resource's
+    fields with the access flags merged on as siblings. This is what lets the
+    portal consume raw generated protos and retire the SDK ``_envelope``.
+    """
+
+    def test_project_with_access_proto_flattens(self):
+        proto = project_service_pb2.ProjectWithAccess(
+            project=_project(project_id="p1"),
+            access=commons_pb2.AccessFlags(is_owner=True, user_has_write_access=False),
         )
+        rendered = to_jsonable(proto)
+        # flat resource fields — NOT nested under "project"
         self.assertEqual(rendered["project_id"], "p1")
+        self.assertNotIn("project", rendered)
+        self.assertNotIn("access", rendered)
+        # access flags merged as siblings
         self.assertIs(rendered["is_owner"], True)
         self.assertIs(rendered["user_has_write_access"], False)
 
-
-class WithGroupAccessMergeTest(SimpleTestCase):
-    def test_six_group_flags_merged(self):
-        group = group_manager_pb2.GroupModel(
-            id="g1", name="G", owner_id="o", members=["a"]
-        )
-        rendered = to_jsonable(
-            WithGroupAccess(
-                group,
+    def test_group_with_access_proto_flattens_six_flags(self):
+        proto = group_manager_service_pb2.GroupWithAccess(
+            group=group_manager_pb2.GroupModel(
+                id="g1", name="G", owner_id="o", members=["a"]
+            ),
+            access=group_manager_service_pb2.GroupAccessFlags(
                 is_admin=True,
                 is_owner=False,
                 is_member=True,
                 is_gateway_admins_group=False,
                 is_read_only_gateway_admins_group=False,
                 is_default_gateway_users_group=True,
-            )
+            ),
         )
+        rendered = to_jsonable(proto)
         self.assertEqual(rendered["id"], "g1")
+        self.assertNotIn("group", rendered)
+        self.assertNotIn("access", rendered)
         self.assertEqual(
             {
                 k: rendered[k]
@@ -139,6 +158,20 @@ class WithGroupAccessMergeTest(SimpleTestCase):
             },
         )
 
+    def test_list_of_with_access_protos_recurses_and_flattens(self):
+        protos = [
+            project_service_pb2.ProjectWithAccess(
+                project=_project(project_id=pid),
+                access=commons_pb2.AccessFlags(
+                    is_owner=True, user_has_write_access=True
+                ),
+            )
+            for pid in ("a", "b")
+        ]
+        rendered = to_jsonable(protos)
+        self.assertEqual([r["project_id"] for r in rendered], ["a", "b"])
+        self.assertTrue(all(r["is_owner"] is True for r in rendered))
+
 
 class RecursionTest(SimpleTestCase):
     def test_list_of_protos_recurses(self):
@@ -150,8 +183,8 @@ class RecursionTest(SimpleTestCase):
         self.assertEqual(rendered["by_id"]["project_id"], "a")
 
     def test_pydantic_model_recurses_field_by_field(self):
-        # A composed model carries a proto and a WithAccess envelope wholesale;
-        # each must flow through the SAME renderer, not model_dump().
+        # A composed model carries a bare proto and a raw *WithAccess proto
+        # wholesale; each must flow through the SAME renderer, not model_dump().
         class _Composed(BaseModel):
             model_config = {"arbitrary_types_allowed": True}
             plain: str
@@ -162,10 +195,11 @@ class RecursionTest(SimpleTestCase):
             _Composed(
                 plain="x",
                 proto=_project(project_id="bare"),
-                wrapped=WithAccess(
-                    _project(project_id="env"),
-                    is_owner=True,
-                    user_has_write_access=True,
+                wrapped=project_service_pb2.ProjectWithAccess(
+                    project=_project(project_id="env"),
+                    access=commons_pb2.AccessFlags(
+                        is_owner=True, user_has_write_access=True
+                    ),
                 ),
             )
         )

@@ -1,4 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, override
+
 from django_airavata.app_config import AiravataAppConfig
+
+if TYPE_CHECKING:
+    from django_airavata.request import AiravataRequest
 
 
 class DataParsersConfig(AiravataAppConfig):
@@ -20,5 +27,6 @@ class DataParsersConfig(AiravataAppConfig):
         },
     ]
 
-    def enabled(self, request):
+    @override
+    def enabled(self, request: AiravataRequest) -> bool:
         return getattr(request, "is_gateway_admin", False)

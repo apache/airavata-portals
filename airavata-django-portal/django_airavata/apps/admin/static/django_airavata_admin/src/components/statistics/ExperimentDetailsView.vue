@@ -426,7 +426,10 @@ import { RefreshCw } from "@lucide/vue";
 import { models, services } from "django-airavata-api";
 import { components } from "django-airavata-common-ui";
 
-import moment from "moment";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
 
 export default {
   name: "experiment-details-view",
@@ -474,16 +477,16 @@ export default {
       return result;
     },
     creationTime: function () {
-      return moment(this.fullExperiment.experiment.creation_time).fromNow();
+      return dayjs(this.fullExperiment.experiment.creation_time).fromNow();
     },
     lastModifiedTime: function () {
-      return moment(
+      return dayjs(
         this.fullExperiment.experimentStatus.time_of_state_change,
       ).fromNow();
     },
     jobCreationTimes: function () {
       return this.fullExperiment.job_details.map((jobDetail) =>
-        moment(jobDetail.creation_time).fromNow(),
+        dayjs(jobDetail.creation_time).fromNow(),
       );
     },
     failedJobs() {

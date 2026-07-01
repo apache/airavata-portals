@@ -1,21 +1,36 @@
 <template>
-  <vue-slider
-    v-model="sliderValue"
-    @change="onChange"
-    :disabled="readOnly"
-    :min="sliderMin"
-    :max="sliderMax"
-    :interval="sliderStep"
-    tooltip="always"
-    :tooltip-formatter="tooltipFormatter"
-  />
+  <!-- pt-6 leaves room for the value label that floats above the thumb -->
+  <div class="pt-6">
+    <SliderRoot
+      :model-value="[sliderValue]"
+      :min="sliderMin"
+      :max="sliderMax"
+      :step="sliderStep"
+      :disabled="readOnly"
+      class="relative flex h-5 w-full touch-none select-none items-center data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+      @update:model-value="onUpdate"
+    >
+      <SliderTrack class="relative h-1 w-full grow rounded-full bg-muted">
+        <SliderRange class="absolute h-full rounded-full bg-primary" />
+      </SliderTrack>
+      <SliderThumb
+        class="relative block h-4 w-4 rounded-full border border-primary bg-background shadow focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+      >
+        <!-- reka-ui has no built-in tooltip; render the always-visible value
+             label above the thumb, formatted via tooltipFormatter -->
+        <span
+          class="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-muted-foreground"
+        >
+          {{ tooltipFormatter(sliderValue) }}
+        </span>
+      </SliderThumb>
+    </SliderRoot>
+  </div>
 </template>
 
 <script>
 import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
-// vue-3-slider-component is the Vue 3 port of vue-slider-component (v3 was Vue 2
-// only); it exposes the same `vue-slider` component and props.
-import VueSlider from "vue-3-slider-component";
+import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from "reka-ui";
 
 export default {
   name: "slider-input-editor",
@@ -41,7 +56,10 @@ export default {
     },
   },
   components: {
-    VueSlider,
+    SliderRoot,
+    SliderTrack,
+    SliderRange,
+    SliderThumb,
   },
   data() {
     return {
@@ -87,6 +105,11 @@ export default {
       // Just remove any percentage signs
       const result = value ? parseFloat(value.replaceAll("%", "")) : NaN;
       return !isNaN(result) ? result : this.sliderMin;
+    },
+    // reka-ui's modelValue is always a number[]; unwrap the single value.
+    onUpdate(value) {
+      this.sliderValue = value[0];
+      this.onChange(value[0]);
     },
     onChange(value) {
       this.data = this.formatValue(value);

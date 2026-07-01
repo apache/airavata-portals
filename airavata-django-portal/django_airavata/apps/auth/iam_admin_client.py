@@ -1,73 +1,91 @@
-"""IAM admin operations via the gRPC ``iam`` facade.
+"""IAM admin operations via the raw IamAdminService gRPC stub.
 
 These operations run in admin/service contexts (e.g. the user-management admin
 views), so they use a Keycloak **service-account** token rather than a logged-in
-user's token. Each call builds a short-lived ``AiravataClient`` scoped to that
-token and talks to the gRPC ``iam`` facade; callers consume the returned protobuf
-``UserProfile`` directly (``user_id``/``first_name``/``last_name``/``emails``).
+user's token. Each call builds a short-lived Bearer-authenticated channel scoped
+to that token and talks to the raw ``IamAdminServiceStub``; callers consume the
+returned protobuf ``UserProfile`` directly (``user_id``/``first_name``/
+``last_name``/``emails``).
 
 ``update_username`` talks to the Keycloak admin REST API directly (not the gRPC
 backend).
 """
 
+from __future__ import annotations
+
 import logging
 from contextlib import contextmanager
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 import requests
+from airavata.services import iam_admin_service_pb2 as pb2
 from django.conf import settings
 
-from django_airavata.airavata_grpc import build_airavata_client
+from django_airavata.airavata_grpc import build_airavata_channel
 
 from . import utils
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from airavata.model.user.user_profile_pb2 import UserProfile
+    from airavata.services.iam_admin_service_pb2_grpc import IamAdminServiceStub
 
 logger = logging.getLogger(__name__)
 
 
 @contextmanager
-def _iam():
-    """Yield the gRPC ``iam`` facade scoped to the Keycloak service account.
-
-    The IAM admin operations resolve the Keycloak realm from the request's
-    gateway claim, so the service-account client carries ``gatewayID`` in its
-    ``x-claims`` metadata (mirroring the legacy service-account ``AuthzToken``).
-    """
-    access_token = utils.get_service_account_authz_token().accessToken
-    client = build_airavata_client(
-        access_token, claims={"gatewayID": settings.GATEWAY_ID}
+def _iam() -> Iterator[IamAdminServiceStub]:
+    """Yield the IamAdminService stub on a channel scoped to the Keycloak service
+    account. The server derives the caller's gateway from the verified
+    service-account token."""
+    from airavata.services.iam_admin_service_pb2_grpc import (
+        IamAdminServiceStub,
     )
+
+    access_token = utils.get_service_account_authz_token().accessToken
+    if access_token is None:
+        raise RuntimeError("Keycloak service account returned no access token")
+    channel = build_airavata_channel(access_token)
     try:
-        yield client.iam
+        yield IamAdminServiceStub(channel)
     finally:
-        client.close()
+        channel.close()
 
 
-def is_username_available(username):
+def is_username_available(username: str) -> bool:
     with _iam() as iam:
-        return iam.is_username_available(username)
+        return iam.IsUsernameAvailable(
+            pb2.IsUsernameAvailableRequest(username=username)
+        ).available
 
 
-def enable_user(username):
+def enable_user(username: str) -> None:
     with _iam() as iam:
-        return iam.enable_user(username)
+        iam.EnableUser(pb2.EnableUserRequest(username=username))
 
 
-def delete_user(username):
+def delete_user(username: str) -> None:
     with _iam() as iam:
-        return iam.delete_iam_user(username)
+        iam.DeleteUser(pb2.DeleteUserRequest(username=username))
 
 
-def get_user(username):
+def get_user(username: str) -> UserProfile:
     with _iam() as iam:
-        return iam.get_iam_user(username)
+        return iam.GetUser(pb2.GetIamUserRequest(username=username))
 
 
-def get_users(offset, limit, search=None):
+def get_users(offset: int, limit: int, search: str | None = None) -> list[UserProfile]:
     with _iam() as iam:
-        return iam.get_iam_users(offset, limit, search or "")
+        return list(
+            iam.GetUsers(
+                pb2.GetIamUsersRequest(offset=offset, limit=limit, search=search or "")
+            ).users
+        )
 
 
-def update_username(username, new_username):
+def update_username(username: str, new_username: str) -> None:
     # make sure that new_username is available
     if not is_username_available(new_username):
         raise Exception(

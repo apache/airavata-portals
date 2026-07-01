@@ -1,11 +1,14 @@
+from __future__ import annotations
+
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
 
-def home(request):
+def home(request: HttpRequest) -> HttpResponse:
     return render(request, "django_airavata/home.html", {})
 
 
-def error500(request):
+def error500(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "django_airavata/error_page.html",
@@ -19,7 +22,7 @@ def error500(request):
     )
 
 
-def error400(request, exception):
+def error400(request: HttpRequest, exception: Exception) -> HttpResponse:
     return render(
         request,
         "django_airavata/error_page.html",
@@ -32,7 +35,7 @@ def error400(request, exception):
     )
 
 
-def error404(request, exception):
+def error404(request: HttpRequest, exception: Exception) -> HttpResponse:
     return render(
         request,
         "django_airavata/error_page.html",
@@ -41,7 +44,7 @@ def error404(request, exception):
     )
 
 
-def error403(request, exception):
+def error403(request: HttpRequest, exception: Exception) -> HttpResponse:
     return render(
         request,
         "django_airavata/error_page.html",

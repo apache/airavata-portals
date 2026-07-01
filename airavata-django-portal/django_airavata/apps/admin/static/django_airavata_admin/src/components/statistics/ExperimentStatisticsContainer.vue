@@ -390,7 +390,7 @@ import {
 } from "django-airavata-common-ui/js/components/ui/chart-area";
 import ExperimentDetailsView from "./ExperimentDetailsView";
 
-import moment from "moment";
+import dayjs from "dayjs";
 
 const MS_PER_HOUR = 60 * 60 * 1000;
 const MS_PER_DAY = 24 * MS_PER_HOUR;
@@ -591,8 +591,8 @@ export default {
       });
     },
     rangeSummary() {
-      const from = moment(this.fromTime).format("MMM D, YYYY HH:mm");
-      const to = moment(this.toTime).format("MMM D, YYYY HH:mm");
+      const from = dayjs(this.fromTime).format("MMM D, YYYY HH:mm");
+      const to = dayjs(this.toTime).format("MMM D, YYYY HH:mm");
       const n = this.buckets.length;
       const granularity = n > 0 ? this.buckets[0].granularity : "";
       return `${from} – ${to} · ${n} ${granularity} bucket${
@@ -726,8 +726,8 @@ export default {
           granularity,
           label:
             granularity === "hourly"
-              ? moment(start).format("HH:mm")
-              : moment(start).format("MMM D"),
+              ? dayjs(start).format("HH:mm")
+              : dayjs(start).format("MMM D"),
         });
       }
       return buckets;

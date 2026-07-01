@@ -17,7 +17,10 @@ import { notifications } from "django-airavata-common-ui";
 import ExperimentEditor from "../components/experiment/ExperimentEditor.vue";
 import urls from "../utils/urls";
 
-import moment from "moment";
+import dayjs from "dayjs";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+
+dayjs.extend(localizedFormat);
 
 export default {
   name: "create-experiment-container",
@@ -57,7 +60,7 @@ export default {
       .then(([appModule, appInterface]) => {
         const experiment = appInterface.createExperiment();
         experiment.experiment_name =
-          appModule.app_module_name + " on " + moment().format("lll");
+          appModule.app_module_name + " on " + dayjs().format("lll");
         this.appModule = appModule;
         this.appInterface = appInterface;
         if (this.userInputValues) {

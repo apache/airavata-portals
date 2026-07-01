@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import copy
 import datetime
 import json
 import logging
 import re
+from typing import TYPE_CHECKING, Any
 
 from django.apps import apps
 from django.conf import settings
@@ -14,27 +17,32 @@ from django_airavata.commons.dynamic_apps.context_processors import (
     custom_app_registry,
 )
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+
+    from django_airavata.request import AiravataRequest
+
 logger = logging.getLogger(__name__)
 
 
 # Per-user notification read-state lives in the cache (was the
 # api_user_notifications table): {notification_id: is_read}. Pure UX state; cache
 # eviction just re-marks notifications unread.
-def _notif_read_key(username):
+def _notif_read_key(username: str) -> str:
     return f"notif_read:{username}"
 
 
-def notification_read_state(username):
+def notification_read_state(username: str) -> dict[str, bool]:
     return cache.get(_notif_read_key(username), {})
 
 
-def mark_notification_read(username, notification_id):
+def mark_notification_read(username: str, notification_id: str) -> None:
     state = notification_read_state(username)
     state[notification_id] = True
     cache.set(_notif_read_key(username), state)
 
 
-def user(request):
+def user(request: AiravataRequest) -> dict[str, Any]:
     """Provide ``{{ user }}`` to templates without ``django.contrib.auth``.
 
     Replaces ``django.contrib.auth.context_processors.auth`` (the auth app is no
@@ -48,13 +56,13 @@ def user(request):
 # proto NotificationPriority value -> the Thrift NotificationPriority integer the
 # frontend dashboard expects (proto LOW=1/NORMAL=2/HIGH=3 vs Thrift 0/1/2). Built
 # lazily so this module stays importable without the gRPC SDK on the path.
-_notification_priority_proto_to_thrift = None
+_notification_priority_proto_to_thrift: dict[int, int] | None = None
 
 
-def _notification_priority(value):
+def _notification_priority(value: int) -> int | None:
     global _notification_priority_proto_to_thrift
     if _notification_priority_proto_to_thrift is None:
-        from airavata_sdk.generated.org.apache.airavata.model.workspace import (
+        from airavata.model.workspace import (
             workspace_pb2,
         )
 
@@ -70,12 +78,23 @@ def _notification_priority(value):
     return _notification_priority_proto_to_thrift.get(value)
 
 
-def get_notifications(request):
+def get_notifications(request: AiravataRequest) -> dict[str, Any]:
     if request.user.is_authenticated and getattr(request, "authz_token", None):
         unread_notifications = 0
         try:
+            from airavata.services import notification_service_pb2
+            from airavata.services.notification_service_pb2_grpc import (
+                NotificationServiceStub,
+            )
+
             notifications = list(
-                request.airavata.research.get_all_notifications(settings.GATEWAY_ID)
+                NotificationServiceStub(request.airavata_channel)
+                .GetAllNotifications(
+                    notification_service_pb2.GetAllNotificationsRequest(
+                        gateway_id=settings.GATEWAY_ID
+                    )
+                )
+                .notifications
             )
         except Exception:
             logger.warning("Failed to load notifications")
@@ -127,8 +146,8 @@ def get_notifications(request):
         return {"notifications": json.dumps([])}
 
 
-def user_session_data(request):
-    data = {}
+def user_session_data(request: AiravataRequest) -> dict[str, Any]:
+    data: dict[str, Any] = {}
     if request.user.is_authenticated:
         data["username"] = request.user.username
         data["airavataInternalUserId"] = (
@@ -139,7 +158,7 @@ def user_session_data(request):
     return {"user_session_data": json.dumps(data)}
 
 
-def airavata_app_registry(request):
+def airavata_app_registry(request: AiravataRequest) -> dict[str, Any]:
     """Put airavata django apps into the context."""
     airavata_apps = [
         app
@@ -153,7 +172,9 @@ def airavata_app_registry(request):
     return {"airavata_apps": airavata_apps}
 
 
-def _get_current_app(request, apps):
+def _get_current_app(
+    request: HttpRequest, apps: list[AiravataAppConfig]
+) -> AiravataAppConfig | None:
     current_app = [
         app
         for app in apps
@@ -163,7 +184,9 @@ def _get_current_app(request, apps):
     return current_app[0] if len(current_app) > 0 else None
 
 
-def _get_app_nav(request, current_app):
+def _get_app_nav(
+    request: HttpRequest, current_app: AiravataAppConfig
+) -> list[dict[str, Any]]:
     if hasattr(current_app, "nav"):
         # Copy and filter current_app's nav items
         nav = [
@@ -195,12 +218,12 @@ def _get_app_nav(request, current_app):
     return nav
 
 
-def google_analytics_tracking_id(request):
+def google_analytics_tracking_id(request: HttpRequest) -> dict[str, Any]:
     """Put the Google Analytics tracking id into context."""
     return {"ga_tracking_id": getattr(settings, "GOOGLE_ANALYTICS_TRACKING_ID", None)}
 
 
-def _safe_reverse(name):
+def _safe_reverse(name: str | None) -> str:
     """Reverse a named URL, returning ``#`` if it can't be resolved."""
     try:
         return reverse(name)
@@ -208,7 +231,7 @@ def _safe_reverse(name):
         return "#"
 
 
-def _account_console_url(request):
+def _account_console_url(request: AiravataRequest) -> str:
     """Keycloak account console URL for the signed-in user's own profile.
 
     Generated from the ``iss`` (issuer) claim of the user's own access token —
@@ -227,7 +250,7 @@ def _account_console_url(request):
     return getattr(settings, "KEYCLOAK_ACCOUNT_CONSOLE_URL", "")
 
 
-def shell_data(request):
+def shell_data(request: AiravataRequest) -> dict[str, Any]:
     """Assemble the page-shell data the Vue app shell (AppShell.vue) renders.
 
     The shell is a lightweight client: this composes the brand, primary nav,
@@ -247,7 +270,9 @@ def shell_data(request):
     )
     current_custom_app = custom_registry.get("current_custom_app")
 
-    def _items_for_app(app, is_current):
+    def _items_for_app(
+        app: AiravataAppConfig, is_current: bool
+    ) -> list[dict[str, Any]]:
         items = []
         for nav in _get_app_nav(request, app) or []:
             items.append(
@@ -265,7 +290,7 @@ def shell_data(request):
     # Grouped navigation: every app is a section header with all of its nav items
     # shown beneath it (replacing the collapsed app-switcher). Only the current
     # app's matching item is flagged active.
-    nav_groups = []
+    nav_groups: list[dict[str, Any]] = []
     for app in app_registry.get("airavata_apps") or []:
         is_current = app is current_airavata_app
         items = _items_for_app(app, is_current)
@@ -293,10 +318,9 @@ def shell_data(request):
                 }
             )
 
-    data = {
+    data: dict[str, Any] = {
         "title": title,
-        "logoUrl": chrome.get("logo_url")
-            or static_logo_url(),
+        "logoUrl": chrome.get("logo_url") or static_logo_url(),
         "logoBackgroundColor": chrome.get("logo_background_color"),
         "menuLinks": chrome.get("user_menu_links") or [],
         "navGroups": nav_groups,
@@ -318,7 +342,7 @@ def shell_data(request):
     return {"shell_data": data}
 
 
-def static_logo_url():
+def static_logo_url() -> str | None:
     """Default portal logo served from static files."""
     from django.templatetags.static import static
 

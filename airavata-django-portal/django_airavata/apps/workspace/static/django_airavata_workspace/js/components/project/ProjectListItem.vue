@@ -19,7 +19,10 @@
 <script>
 import { Pencil } from "@lucide/vue";
 import urls from "../../utils/urls";
-import moment from "moment";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
 
 export default {
   name: "project-list-item",
@@ -28,7 +31,7 @@ export default {
   computed: {
     creationTime: function () {
       var dt = new Date(this.project.creation_time);
-      return moment(dt).fromNow();
+      return dayjs(dt).fromNow();
     },
     editLink() {
       return urls.editProject(this.project);

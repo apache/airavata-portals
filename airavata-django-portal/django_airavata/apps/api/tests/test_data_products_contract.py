@@ -1,27 +1,27 @@
 """Proto-direct contract snapshot for the data-product family.
 
-The data-product read endpoint (``DataProductView.get``) returns the SDK
-``get_data_product`` result — a ``WithAccess[DataProductModel]``: the raw
-``replica_catalog_pb2.DataProductModel`` proto unioned with the caller's access
-flags (``is_owner`` = the product is owned by the caller; ``user_has_write_access``
-= the boolean the view resolves via ``_data_product_has_write`` and passes in).
-The global ``ProtoJSONRenderer`` (``to_jsonable``) flattens that to snake_case JSON.
+The data-product read endpoint (``DataProductView.get``) returns a raw
+``DataProductWithAccess`` proto: the ``replica_catalog_pb2.DataProductModel``
+unioned with the caller's access flags (``is_owner`` = the product is owned by the
+caller; ``user_has_write_access`` = the boolean the view resolves via
+``_data_product_has_write``). The global ``ProtoJSONRenderer`` (``to_jsonable``)
+flattens that to snake_case JSON via the structural ``*WithAccess`` detector.
 
 This test builds a representative ``DataProductModel`` (a FILE product with a
-nested GATEWAY_DATA_STORE / TRANSIENT replica and ``mime-type`` metadata), runs it
-through ``get_data_product`` + the renderer, and asserts the resulting JSON shape:
-snake_case keys only, ``data_product_type`` / replica enums as member NAMES
-(``"FILE"`` / ``"GATEWAY_DATA_STORE"`` / ``"TRANSIENT"`` — not Thrift integers),
-``product_metadata`` rendered as a native JSON object, int64 timestamp fields as
-decimal STRINGS (``product_size`` is int32 -> a JSON number), no camelCase keys,
-and the two access scalars merged on top.
+nested GATEWAY_DATA_STORE / TRANSIENT replica and ``mime-type`` metadata), wraps it
+in ``DataProductWithAccess`` and runs it through the renderer, and asserts the
+resulting JSON shape: snake_case keys only, ``data_product_type`` / replica enums as
+member NAMES (``"FILE"`` / ``"GATEWAY_DATA_STORE"`` / ``"TRANSIENT"`` — not Thrift
+integers), ``product_metadata`` rendered as a native JSON object, int64 timestamp
+fields as decimal STRINGS (``product_size`` is int32 -> a JSON number), no camelCase
+keys, and the two access scalars merged on top.
 """
 
-from airavata_sdk.generated.org.apache.airavata.model.data.replica import (
+from airavata.model.commons import commons_pb2
+from airavata.model.data.replica import (
     replica_catalog_pb2 as rc,
 )
-from airavata_sdk.helpers._envelope import WithAccess
-from airavata_sdk.helpers.research_resources import get_data_product
+from airavata.services import experiment_service_pb2
 from django.test import SimpleTestCase
 
 from django_airavata.apps.api.proto_render import to_jsonable
@@ -29,26 +29,16 @@ from django_airavata.apps.api.proto_render import to_jsonable
 _PRODUCT_URI = "airavata-dp://gateway/alice/file.txt"
 
 
-# ---------------------------------------------------------------------------
-# Stub client — returns a fixed proto from the raw research facade
-# ---------------------------------------------------------------------------
-
-
-class _FakeResearch:
-    def __init__(self, product):
-        self._product = product
-        self.calls = []
-
-    def get_data_product(self, product_uri):
-        self.calls.append(product_uri)
-        return self._product
-
-
-class _FakeClient:
-    def __init__(self, product, username="alice"):
-        self.research = _FakeResearch(product)
-        self.gateway_id = "default"
-        self.username = username
+def _with_access(product, has_write=True, username="alice"):
+    """The raw ``DataProductWithAccess`` proto the read endpoint builds: the product
+    unioned with the caller's flags (is_owner = owner == caller)."""
+    is_owner = bool(product.owner_name) and product.owner_name == username
+    return experiment_service_pb2.DataProductWithAccess(
+        data_product=product,
+        access=commons_pb2.AccessFlags(
+            is_owner=is_owner, user_has_write_access=has_write
+        ),
+    )
 
 
 def _make_replica():
@@ -123,24 +113,9 @@ _EXPECTED_SNAPSHOT = {
 
 class DataProductContractSnapshotTest(SimpleTestCase):
     def _render(self, has_write=True, username="alice"):
-        client = _FakeClient(_make_product(), username=username)
-        result = get_data_product(client, _PRODUCT_URI, has_write=has_write)  # ty: ignore[invalid-argument-type]  # _FakeClient is a duck-typed test double
-        return to_jsonable(result)
-
-    # ------------------------------------------------------------------
-    # SDK return shape
-    # ------------------------------------------------------------------
-
-    def test_sdk_returns_withaccess_carrying_the_proto(self):
-        product = _make_product()
-        client = _FakeClient(product)
-        result = get_data_product(client, _PRODUCT_URI, has_write=True)  # ty: ignore[invalid-argument-type]  # _FakeClient is a duck-typed test double
-        self.assertIsInstance(result, WithAccess)
-        # the proto flows through wholesale — no field copied out.
-        self.assertIs(result.message, product)
-        self.assertTrue(result.is_owner)
-        self.assertTrue(result.user_has_write_access)
-        self.assertEqual(client.research.calls, [_PRODUCT_URI])
+        return to_jsonable(
+            _with_access(_make_product(), has_write=has_write, username=username)
+        )
 
     # ------------------------------------------------------------------
     # Full snapshot
@@ -226,8 +201,7 @@ class DataProductContractSnapshotTest(SimpleTestCase):
 
     def test_unknown_type_renders_as_sentinel_name(self):
         product = rc.DataProductModel(product_uri=_PRODUCT_URI)
-        client = _FakeClient(product)
-        rendered = to_jsonable(get_data_product(client, _PRODUCT_URI, has_write=False))  # ty: ignore[invalid-argument-type]  # _FakeClient is a duck-typed test double
+        rendered = to_jsonable(_with_access(product, has_write=False))
         self.assertEqual(rendered["data_product_type"], "DATA_PRODUCT_TYPE_UNKNOWN")
 
     # ------------------------------------------------------------------
@@ -267,10 +241,7 @@ class DataProductContractSnapshotTest(SimpleTestCase):
 
     def test_empty_product_has_stable_shape(self):
         product = rc.DataProductModel(product_uri="airavata-dp://empty")
-        client = _FakeClient(product)
-        rendered = to_jsonable(
-            get_data_product(client, "airavata-dp://empty", has_write=False)  # ty: ignore[invalid-argument-type]  # _FakeClient is a duck-typed test double
-        )
+        rendered = to_jsonable(_with_access(product, has_write=False))
         self.assertEqual(rendered["replica_locations"], [])
         self.assertEqual(rendered["gateway_id"], "")
         self.assertEqual(rendered["product_size"], 0)

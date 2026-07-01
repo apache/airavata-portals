@@ -1,10 +1,12 @@
 """Auth utilities."""
 
+from __future__ import annotations
+
 import logging
 
 from django.conf import settings
 from django.core.mail import EmailMessage
-from django.template import Template
+from django.template import Context, Template
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
@@ -19,11 +21,11 @@ class AuthzToken:
     factory, IAM admin REST helpers, ...) are unchanged.
     """
 
-    def __init__(self, accessToken):
+    def __init__(self, accessToken: str | None) -> None:
         self.accessToken = accessToken
 
 
-def get_service_account_authz_token():
+def get_service_account_authz_token() -> AuthzToken:
     client_id = settings.KEYCLOAK_CLIENT_ID
     client_secret = settings.KEYCLOAK_CLIENT_SECRET
     token_url = settings.KEYCLOAK_TOKEN_URL
@@ -45,7 +47,7 @@ def get_service_account_authz_token():
     return AuthzToken(accessToken=access_token)
 
 
-def send_email_to_user(template_id, context):
+def send_email_to_user(template_id: int, context: Context) -> None:
     email_template = settings.PORTAL_EMAIL_TEMPLATES[template_id]
     subject = Template(email_template["subject"]).render(context)
     body = Template(email_template["body"]).render(context)

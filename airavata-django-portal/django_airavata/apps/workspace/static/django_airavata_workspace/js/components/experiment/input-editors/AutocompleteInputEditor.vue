@@ -24,7 +24,7 @@ import { X } from "@lucide/vue";
 import { utils } from "django-airavata-api";
 import { InputEditorMixin } from "django-airavata-workspace-plugin-api";
 import { components } from "django-airavata-common-ui";
-import _ from "lodash";
+import { useDebounceFn } from "@vueuse/core";
 
 export default {
   name: "autocomplete-input-editor",
@@ -125,7 +125,7 @@ export default {
       this.text = suggestion.name;
       this.valueChanged();
     },
-    searchChanged: _.debounce(function (newValue) {
+    searchChanged: useDebounceFn(function (newValue) {
       // TODO: don't query when search value is empty string
       this.searchString = newValue;
       const currentTime = Date.now();

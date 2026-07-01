@@ -3,63 +3,56 @@
 Replaces the abandoned ``test_group_resource_profile_parity.py`` (which validated
 the legacy camelCase + Thrift-int DRF contract).  The proto-direct contract is:
 
-* the SDK ``get_group_resource_profile`` returns a
-  ``WithAccess[GroupResourceProfile]`` — the raw
-  ``group_resource_profile_pb2.GroupResourceProfile`` proto unioned with the
-  caller's access flags (``is_owner`` always ``False`` — the profile has no
-  owner; ``user_has_write_access`` is the composite ``userHasWriteAccess``
-  boolean the ViewSet resolves and passes in: WRITE on the profile AND READ on
-  every credential token);
-* the portal's generic ``to_jsonable`` renderer flattens that to **snake_case**
-  JSON: ``MessageToDict(preserving_proto_field_name=True,
-  always_print_fields_with_no_presence=True)`` merged with the two scalars.
+* the read ViewSet returns a raw ``GroupResourceProfileWithAccess`` proto — the
+  ``group_resource_profile_pb2.GroupResourceProfile`` unioned with the caller's
+  access flags (``is_owner`` always ``False`` — a profile has no owner;
+  ``user_has_write_access`` is the composite the ViewSet resolves: WRITE on the
+  profile AND READ on every credential token);
+* the portal's generic ``to_jsonable`` renderer detects that two-field
+  ``*WithAccess`` wrapper structurally and flattens it to **snake_case** JSON:
+  ``MessageToDict(preserving_proto_field_name=True,
+  always_print_fields_with_no_presence=True)`` merged with the two access scalars.
 
 This test builds a representative ``GroupResourceProfile`` proto (a SLURM compute
 preference with nested provisioner configs + reservations, an AWS compute
-preference, an unset-oneof compute preference, plus the two policy lists), runs it
-through ``get_group_resource_profile`` + the renderer, and asserts the resulting
-JSON shape: snake_case keys only, the three enums as member NAMES (``"SSH"`` /
-``"SFTP"`` / ``"SLURM"`` — NOT the legacy Thrift integers), the
-``specific_preferences`` SLURM/AWS oneof rendered natively (an unset oneof leaves
-the field ABSENT — no legacy ``{"slurm": ..., "aws": None}`` mirroring, no
-flattened ``allocation_project_number``), int64 timestamps as epoch-millis
-STRINGS, the proto field name ``override_by_airavata`` (NOT the legacy
+preference, an unset-oneof compute preference, plus the two policy lists), wraps it
+in ``GroupResourceProfileWithAccess`` and runs it through the renderer, and asserts
+the resulting JSON shape: snake_case keys only, the ``resource_type`` enum as a
+member NAME (``"SLURM"`` / ``"AWS"`` / ``"RESOURCE_TYPE_UNKNOWN"`` — NOT the legacy
+Thrift integer), the ``specific_preferences`` SLURM/AWS oneof rendered natively (an
+unset oneof leaves the field ABSENT — no legacy ``{"slurm": ..., "aws": None}``
+mirroring, no flattened ``allocation_project_number``), int64 timestamps as
+epoch-millis STRINGS, the proto field name ``override_by_airavata`` (NOT the legacy
 ``overrideby_airavata``), no camelCase, and no ``url`` hyperlink.
 
-The chained-sharing call the project family makes does NOT apply here — the
-composite write flag is resolved by the ViewSet and passed straight into the SDK
-function (no sharing lookup to stub).
+The composite write flag is resolved by the ViewSet and merged straight onto the
+proto's access flags (no sharing lookup to stub).
 """
 
-from airavata_sdk.generated.org.apache.airavata.model.appcatalog.groupresourceprofile import (
+from airavata.model.appcatalog.groupresourceprofile import (
     group_resource_profile_pb2 as grp,
 )
-from airavata_sdk.helpers._envelope import WithAccess
-from airavata_sdk.helpers.compute_resources import get_group_resource_profile
+from airavata.model.commons import commons_pb2
+from airavata.services import group_resource_profile_service_pb2
 from django.test import SimpleTestCase
 
 from django_airavata.apps.api.proto_render import to_jsonable
 
 # ---------------------------------------------------------------------------
-# Stub client — returns a fixed proto from the raw compute facade
+# The raw ``GroupResourceProfileWithAccess`` proto the read endpoint builds.
 # ---------------------------------------------------------------------------
 
 
-class _FakeCompute:
-    def __init__(self, profile):
-        self._profile = profile
-        self.calls = []
-
-    def get_group_resource_profile(self, group_resource_profile_id):
-        self.calls.append(group_resource_profile_id)
-        return self._profile
-
-
-class _FakeClient:
-    def __init__(self, profile, username="alice"):
-        self.compute = _FakeCompute(profile)
-        self.gateway_id = "default"
-        self.username = username
+def _with_access(profile, has_write=True):
+    """The raw ``GroupResourceProfileWithAccess`` proto the read ViewSet returns:
+    the profile unioned with the caller's flags. ``is_owner`` is always ``False``
+    (a profile has no owner); ``user_has_write_access`` is the composite the
+    ViewSet resolves (WRITE on the profile AND READ on every credential token)
+    and passes straight through."""
+    return group_resource_profile_service_pb2.GroupResourceProfileWithAccess(
+        group_resource_profile=profile,
+        access=commons_pb2.AccessFlags(is_owner=False, user_has_write_access=has_write),
+    )
 
 
 def _make_slurm_pref():
@@ -87,9 +80,6 @@ def _make_slurm_pref():
         override_by_airavata=True,
         login_user_name="alice",
         scratch_location="/scratch",
-        # proto SSH / SFTP — rendered as member NAMES, not Thrift ints.
-        preferred_job_submission_protocol=2,  # SSH
-        preferred_data_movement_protocol=3,  # SFTP
         resource_type=grp.ResourceType.SLURM,
         specific_preferences=grp.EnvironmentSpecificPreferences(slurm=slurm),
     )
@@ -157,9 +147,7 @@ _EXPECTED_SLURM_PREF = {
     "override_by_airavata": True,
     "login_user_name": "alice",
     "scratch_location": "/scratch",
-    # enums as member NAMES (proto-direct), NOT Thrift integers.
-    "preferred_job_submission_protocol": "SSH",
-    "preferred_data_movement_protocol": "SFTP",
+    # enum as member NAME (proto-direct), NOT a Thrift integer.
     "resource_type": "SLURM",
     "resource_specific_credential_store_token": "",
     # the oneof renders natively as {"slurm": {...}} — no legacy aws=None mirror,
@@ -200,8 +188,6 @@ _EXPECTED_AWS_PREF = {
     "override_by_airavata": False,
     "login_user_name": "",
     "scratch_location": "",
-    "preferred_job_submission_protocol": "JOB_SUBMISSION_PROTOCOL_UNKNOWN",
-    "preferred_data_movement_protocol": "DATA_MOVEMENT_PROTOCOL_UNKNOWN",
     "resource_type": "AWS",
     "resource_specific_credential_store_token": "",
     "specific_preferences": {
@@ -219,8 +205,6 @@ _EXPECTED_UNSET_PREF = {
     "override_by_airavata": False,
     "login_user_name": "",
     "scratch_location": "",
-    "preferred_job_submission_protocol": "JOB_SUBMISSION_PROTOCOL_UNKNOWN",
-    "preferred_data_movement_protocol": "DATA_MOVEMENT_PROTOCOL_UNKNOWN",
     "resource_type": "RESOURCE_TYPE_UNKNOWN",
     "resource_specific_credential_store_token": "",
     # specific_preferences is ABSENT — the unset oneof is not emitted.
@@ -267,24 +251,7 @@ _EXPECTED_SNAPSHOT = {
 
 class GroupResourceProfileContractSnapshotTest(SimpleTestCase):
     def _render(self, has_write=True):
-        client = _FakeClient(_make_profile())
-        result = get_group_resource_profile(client, "grp-1", has_write=has_write)  # ty: ignore[invalid-argument-type]  # _FakeClient is a duck-typed test double
-        return to_jsonable(result)
-
-    # ------------------------------------------------------------------
-    # SDK return shape
-    # ------------------------------------------------------------------
-
-    def test_sdk_returns_withaccess_carrying_the_proto(self):
-        profile = _make_profile()
-        client = _FakeClient(profile)
-        result = get_group_resource_profile(client, "grp-1", has_write=True)  # ty: ignore[invalid-argument-type]  # _FakeClient is a duck-typed test double
-        self.assertIsInstance(result, WithAccess)
-        # the proto flows through wholesale — no field copied out.
-        self.assertIs(result.message, profile)
-        self.assertFalse(result.is_owner)
-        self.assertTrue(result.user_has_write_access)
-        self.assertEqual(client.compute.calls, ["grp-1"])
+        return to_jsonable(_with_access(_make_profile(), has_write=has_write))
 
     # ------------------------------------------------------------------
     # Full snapshot
@@ -346,8 +313,6 @@ class GroupResourceProfileContractSnapshotTest(SimpleTestCase):
             "overrideByAiravata",
             "loginUserName",
             "scratchLocation",
-            "preferredJobSubmissionProtocol",
-            "preferredDataMovementProtocol",
             "resourceType",
             "specificPreferences",
             "resourceSpecificCredentialStoreToken",
@@ -355,26 +320,17 @@ class GroupResourceProfileContractSnapshotTest(SimpleTestCase):
             self.assertNotIn(legacy, cp)
 
     # ------------------------------------------------------------------
-    # Enum NAMES (the three proto enums)
+    # Enum NAMES (the resource_type proto enum)
     # ------------------------------------------------------------------
 
-    def test_protocol_and_resource_type_enums_render_as_member_names(self):
+    def test_resource_type_enum_renders_as_member_name(self):
         cp = self._render()["compute_preferences"][0]
-        self.assertEqual(cp["preferred_job_submission_protocol"], "SSH")
-        self.assertEqual(cp["preferred_data_movement_protocol"], "SFTP")
         self.assertEqual(cp["resource_type"], "SLURM")
-        # not the legacy Thrift integers.
-        self.assertNotIn(cp["preferred_job_submission_protocol"], (1, "1"))
+        # the member NAME, not the legacy Thrift integer.
         self.assertNotIn(cp["resource_type"], (0, "0"))
 
-    def test_unknown_enums_render_as_sentinel_names(self):
+    def test_unknown_resource_type_renders_as_sentinel_name(self):
         cp = self._render()["compute_preferences"][2]
-        self.assertEqual(
-            cp["preferred_job_submission_protocol"], "JOB_SUBMISSION_PROTOCOL_UNKNOWN"
-        )
-        self.assertEqual(
-            cp["preferred_data_movement_protocol"], "DATA_MOVEMENT_PROTOCOL_UNKNOWN"
-        )
         self.assertEqual(cp["resource_type"], "RESOURCE_TYPE_UNKNOWN")
 
     # ------------------------------------------------------------------
@@ -444,10 +400,7 @@ class GroupResourceProfileContractSnapshotTest(SimpleTestCase):
                 )
             ],
         )
-        client = _FakeClient(profile)
-        rendered = to_jsonable(
-            get_group_resource_profile(client, "grp-1", has_write=False)  # ty: ignore[invalid-argument-type]  # _FakeClient is a duck-typed test double
-        )
+        rendered = to_jsonable(_with_access(profile, has_write=False))
         bqp = rendered["batch_queue_resource_policies"][0]
         self.assertEqual(bqp["max_allowed_nodes"], 0)
 
@@ -468,10 +421,7 @@ class GroupResourceProfileContractSnapshotTest(SimpleTestCase):
 
     def test_empty_profile_has_stable_shape(self):
         profile = grp.GroupResourceProfile(group_resource_profile_id="grp-empty")
-        client = _FakeClient(profile)
-        rendered = to_jsonable(
-            get_group_resource_profile(client, "grp-empty", has_write=False)  # ty: ignore[invalid-argument-type]  # _FakeClient is a duck-typed test double
-        )
+        rendered = to_jsonable(_with_access(profile, has_write=False))
         self.assertEqual(rendered["compute_preferences"], [])
         self.assertEqual(rendered["compute_resource_policies"], [])
         self.assertEqual(rendered["batch_queue_resource_policies"], [])

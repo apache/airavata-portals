@@ -36,8 +36,6 @@ INSTALLED_APPS = [
     "django_airavata.apps.api.apps.ApiConfig",
     "django_airavata.apps.groups.apps.GroupsConfig",
     "django_airavata.apps.dataparsers.apps.DataParsersConfig",
-    # django-webpack-loader
-    "webpack_loader",
 ]
 
 # List of app labels for Airavata apps that should be hidden from menus
@@ -55,7 +53,7 @@ MIDDLEWARE = [
     "django_airavata.apps.auth.middleware.keycloak_token_user_middleware",
     # Adds request.data / request.query_params for views.
     "django_airavata.apps.auth.middleware.request_data_middleware",
-    # gRPC AiravataClient (request.airavata); after authz_token_middleware.
+    # Bearer-authenticated gRPC channel (request.airavata_channel); after authz_token_middleware.
     "django_airavata.middleware.airavata_grpc_client",
     # Sets is_gateway_admin / is_read_only_gateway_admin from JWT roles; after auth.
     "django_airavata.apps.auth.middleware.admin_flags_middleware",
@@ -199,29 +197,29 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 LOGIN_URL = "django_airavata_auth:login"
 
-# External IdP options echoed into the generated settings_local.py
-# (apps/auth/views.download_settings_local).
 AUTHENTICATION_OPTIONS = {
     # 'external': [{'idp_alias': 'cilogon', 'name': 'CILogon', 'logo': 'path/to/image'}]
 }
 
-# Webpack loader
-WEBPACK_LOADER = {
+# Vite native manifests, read by the {% vite_js/vite_css %} template tags
+# (django_airavata/apps/api/templatetags/vite.py). `base` is each vite config's
+# publicPath; `manifest` is the app's dist/.vite/manifest.json.
+VITE_MANIFESTS = {
     "COMMON": {
-        "BUNDLE_DIR_NAME": "common/dist/",
-        "STATS_FILE": os.path.join(
+        "base": "/static/common/dist/",
+        "manifest": os.path.join(
             BASE_DIR,
             "django_airavata",
             "static",
             "common",
             "dist",
-            "webpack-stats.json",
+            ".vite",
+            "manifest.json",
         ),
-        "TIMEOUT": 60,
     },
     "ADMIN": {
-        "BUNDLE_DIR_NAME": "django_airavata_admin/dist/",
-        "STATS_FILE": os.path.join(
+        "base": "/static/django_airavata_admin/dist/",
+        "manifest": os.path.join(
             BASE_DIR,
             "django_airavata",
             "apps",
@@ -229,26 +227,13 @@ WEBPACK_LOADER = {
             "static",
             "django_airavata_admin",
             "dist",
-            "webpack-stats.json",
-        ),
-        "TIMEOUT": 60,
-    },
-    "AUTH": {
-        "BUNDLE_DIR_NAME": "django_airavata_auth/dist/",
-        "STATS_FILE": os.path.join(
-            BASE_DIR,
-            "django_airavata",
-            "apps",
-            "auth",
-            "static",
-            "django_airavata_auth",
-            "dist",
-            "webpack-stats.json",
+            ".vite",
+            "manifest.json",
         ),
     },
     "DATAPARSERS": {
-        "BUNDLE_DIR_NAME": "django_airavata_dataparsers/dist/",
-        "STATS_FILE": os.path.join(
+        "base": "/static/django_airavata_dataparsers/dist/",
+        "manifest": os.path.join(
             BASE_DIR,
             "django_airavata",
             "apps",
@@ -256,13 +241,13 @@ WEBPACK_LOADER = {
             "static",
             "django_airavata_dataparsers",
             "dist",
-            "webpack-stats.json",
+            ".vite",
+            "manifest.json",
         ),
-        "TIMEOUT": 60,
     },
     "GROUPS": {
-        "BUNDLE_DIR_NAME": "django_airavata_groups/dist/",
-        "STATS_FILE": os.path.join(
+        "base": "/static/django_airavata_groups/dist/",
+        "manifest": os.path.join(
             BASE_DIR,
             "django_airavata",
             "apps",
@@ -270,13 +255,13 @@ WEBPACK_LOADER = {
             "static",
             "django_airavata_groups",
             "dist",
-            "webpack-stats.json",
+            ".vite",
+            "manifest.json",
         ),
-        "TIMEOUT": 60,
     },
     "WORKSPACE": {
-        "BUNDLE_DIR_NAME": "django_airavata_workspace/dist/",
-        "STATS_FILE": os.path.join(
+        "base": "/static/django_airavata_workspace/dist/",
+        "manifest": os.path.join(
             BASE_DIR,
             "django_airavata",
             "apps",
@@ -284,9 +269,9 @@ WEBPACK_LOADER = {
             "static",
             "django_airavata_workspace",
             "dist",
-            "webpack-stats.json",
+            ".vite",
+            "manifest.json",
         ),
-        "TIMEOUT": 60,
     },
 }
 
@@ -355,14 +340,22 @@ KEYCLOAK_CLIENT_SECRET = "m36BXQIxX3j3VILadeHMK5IvbOeRlCCc"
 # Public client (PKCE S256) used by the browser Authorization Code flow. No
 # secret; the token exchange happens client-side in the callback template.
 KEYCLOAK_PUBLIC_CLIENT_ID = "pga-public"
-KEYCLOAK_AUTHORIZE_URL = "https://auth.airavata.host/realms/default/protocol/openid-connect/auth"
-KEYCLOAK_TOKEN_URL = "https://auth.airavata.host/realms/default/protocol/openid-connect/token"
-KEYCLOAK_USERINFO_URL = "https://auth.airavata.host/realms/default/protocol/openid-connect/userinfo"
-KEYCLOAK_LOGOUT_URL = "https://auth.airavata.host/realms/default/protocol/openid-connect/logout"
+KEYCLOAK_AUTHORIZE_URL = (
+    "https://auth.airavata.host/realms/default/protocol/openid-connect/auth"
+)
+KEYCLOAK_TOKEN_URL = (
+    "https://auth.airavata.host/realms/default/protocol/openid-connect/token"
+)
+KEYCLOAK_USERINFO_URL = (
+    "https://auth.airavata.host/realms/default/protocol/openid-connect/userinfo"
+)
+KEYCLOAK_LOGOUT_URL = (
+    "https://auth.airavata.host/realms/default/protocol/openid-connect/logout"
+)
 # mkcert dev cert; the python OIDC client doesn't import the CA, so skip verify.
 KEYCLOAK_VERIFY_SSL = False
 
-# Airavata gRPC/REST server (airavata-python-sdk AiravataClient), in-network as
+# Airavata gRPC/REST server (raw airavata-python-sdk generated stubs), in-network as
 # airavata-server:9090 (not published to the host).
 GRPC_API_HOST = os.environ.get("GRPC_API_HOST", "airavata-server")
 GRPC_API_PORT = int(os.environ.get("GRPC_API_PORT", 9090))
@@ -375,14 +368,13 @@ with contextlib.suppress(ImportError):
 # Keycloak self-service account console, derived from KEYCLOAK_AUTHORIZE_URL.
 if "KEYCLOAK_ACCOUNT_CONSOLE_URL" not in dir() and "KEYCLOAK_AUTHORIZE_URL" in dir():
     KEYCLOAK_ACCOUNT_CONSOLE_URL = (
-        KEYCLOAK_AUTHORIZE_URL.split("/protocol/openid-connect/")[0]
-        + "/account/"
+        KEYCLOAK_AUTHORIZE_URL.split("/protocol/openid-connect/")[0] + "/account/"
     )
 
 # Load custom Django apps registered via the "airavata.djangoapp" entry point;
 # must run after the settings above so custom code sees them.
 dynamic_apps.load(INSTALLED_APPS, "airavata.djangoapp")
 
-# Merge WEBPACK_LOADER settings from custom Django apps
+# Merge VITE_MANIFESTS settings from custom Django apps
 settings_module = sys.modules[__name__]
 dynamic_apps.merge_settings(settings_module)

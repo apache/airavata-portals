@@ -1,4 +1,4 @@
-from django.urls import path, re_path
+from django.urls import re_path
 
 from . import views
 
@@ -8,7 +8,4 @@ urlpatterns = [
     re_path(r"^logout$", views.logout, name="logout"),
     re_path(r"^logged-out$", views.logged_out, name="logged_out"),
     re_path(r"^callback/$", views.oidc_callback, name="callback"),
-    path(
-        "settings-local/", views.download_settings_local, name="download_settings_local"
-    ),
 ]

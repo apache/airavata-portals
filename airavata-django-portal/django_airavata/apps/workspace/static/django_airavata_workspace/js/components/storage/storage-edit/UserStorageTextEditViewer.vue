@@ -32,9 +32,9 @@
 </template>
 
 <script>
-import CodeMirror from "codemirror";
-import "codemirror/lib/codemirror.css";
-import "codemirror/theme/abcdef.css";
+import { EditorState } from "@codemirror/state";
+import { abcdef } from "@uiw/codemirror-theme-abcdef";
+import { EditorView, basicSetup } from "codemirror";
 import { services, utils } from "django-airavata-api";
 import UserStorageDownloadButton from "./UserStorageDownloadButton";
 
@@ -74,7 +74,7 @@ export default {
     // this.editor is created only when the file is small enough to be
     // previewed/edited in browser
     if (this.editor) {
-      this.editor.getWrapperElement().remove();
+      this.editor.destroy();
     }
   },
   computed: {
@@ -92,7 +92,7 @@ export default {
   },
   methods: {
     fileContentChanged() {
-      const changedFileContent = this.editor.getDoc().getValue();
+      const changedFileContent = this.editor.state.doc.toString();
       if (changedFileContent) {
         utils.FetchUtils.put(
           `/api/data-products?product-uri=${this.dataProductUri}`,
@@ -129,18 +129,25 @@ export default {
       });
     },
     setFileContentEditor(value = "") {
-      this.editor = CodeMirror(this.$refs.editor, {
-        theme: "abcdef",
-        mode: "text/plain",
-        lineNumbers: true,
-        lineWrapping: true,
-        scrollbarStyle: "native",
-        extraKeys: { "Ctrl-Space": "autocomplete" },
-        value: value,
-        readOnly: this.readOnly,
-      });
-      this.editor.on("change", () => {
-        this.saved = false;
+      // CodeMirror 6: basicSetup brings line numbers, history, and the default
+      // keymap (incl. Ctrl-Space autocomplete); lineWrapping + the abcdef theme
+      // and readOnly facet mirror the previous CM5 options.
+      this.editor = new EditorView({
+        parent: this.$refs.editor,
+        state: EditorState.create({
+          doc: value,
+          extensions: [
+            basicSetup,
+            EditorView.lineWrapping,
+            abcdef,
+            EditorState.readOnly.of(this.readOnly),
+            EditorView.updateListener.of((update) => {
+              if (update.docChanged) {
+                this.saved = false;
+              }
+            }),
+          ],
+        }),
       });
     },
   },
@@ -148,7 +155,7 @@ export default {
 </script>
 
 <style>
-.CodeMirror {
+.cm-editor {
   height: auto;
   min-height: 600px;
 }

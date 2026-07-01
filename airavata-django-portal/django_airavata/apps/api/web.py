@@ -17,20 +17,44 @@ The classes mirror the exact DRF attributes/methods that ``view_utils.py`` and
 ``pagination_viewname``/``mixins.*``).
 """
 
+from __future__ import annotations
+
 import json
 import logging
 from collections import OrderedDict
 from inspect import getmembers
+from typing import TYPE_CHECKING, Any, Protocol, cast, override
 from urllib import parse
 
 import grpc
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
-from django.http import Http404, HttpResponse, HttpResponseBase
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseBase
 from django.urls import re_path, reverse  # noqa: F401  (reverse re-exported)
 from django.views import View
 
 from .proto_render import to_jsonable
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
+    from django.urls import URLPattern
+
+    from django_airavata.request import AiravataRequest
+
+    class _ActionMethod(Protocol):
+        """A viewset method after ``@action``/``@permission_classes`` has attached
+        its routing metadata (mirrors ``rest_framework``'s decorated actions)."""
+
+        __name__: str
+        mapping: dict[str, str]
+        detail: bool
+        url_path: str
+        url_name: str
+        permission_classes: list[type[BasePermission]]
+
+        def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+
 
 log = logging.getLogger(__name__)
 
@@ -80,7 +104,13 @@ class Response(HttpResponse):
     JSON ``null``.
     """
 
-    def __init__(self, data=None, status=200, headers=None, content_type=None):
+    def __init__(
+        self,
+        data: Any = None,
+        status: int = 200,
+        headers: dict[str, str] | None = None,
+        content_type: str | None = None,
+    ) -> None:
         # Initialize the HttpResponse with an empty body; do NOT serialize yet.
         super().__init__(content=b"", status=status, content_type=content_type)
         self.data = data
@@ -90,14 +120,14 @@ class Response(HttpResponse):
                 self[name] = value
 
     @property
-    def rendered_content(self):
+    def rendered_content(self) -> bytes:
         """The JSON-encoded body bytes for ``self.data`` (empty for 204/None)."""
         if self.status_code == status.HTTP_204_NO_CONTENT or self.data is None:
             return b""
         self["Content-Type"] = "application/json"
         return json.dumps(to_jsonable(self.data), cls=DjangoJSONEncoder).encode("utf-8")
 
-    def render(self):
+    def render(self) -> Response:
         """Materialize ``rendered_content`` into ``self.content`` (idempotent).
 
         Django's response handling calls ``render()`` on template-style responses
@@ -111,14 +141,16 @@ class Response(HttpResponse):
         return self
 
     @property
-    def content(self):
+    @override
+    def content(self) -> bytes:
         # Lazily render on first read so page views can access ``.data`` first.
         if not self._is_rendered:
             self.render()
         return HttpResponse.content.fget(self)
 
     @content.setter
-    def content(self, value):
+    @override
+    def content(self, value: Any) -> None:
         HttpResponse.content.fset(self, value)
         self._is_rendered = True
 
@@ -134,7 +166,7 @@ class ParseError(Exception):
     status_code = status.HTTP_400_BAD_REQUEST
     default_detail = "Malformed request."
 
-    def __init__(self, detail=None):
+    def __init__(self, detail: str | None = None) -> None:
         self.detail = detail if detail is not None else self.default_detail
         super().__init__(self.detail)
 
@@ -149,15 +181,18 @@ SAFE_METHODS = ("GET", "HEAD", "OPTIONS")
 class BasePermission:
     """Base permission. Defaults allow; subclasses override the hooks."""
 
-    def has_permission(self, request, view):
+    def has_permission(self, request: HttpRequest, view: APIView) -> bool:
         return True
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(
+        self, request: HttpRequest, view: APIView, obj: Any
+    ) -> bool:
         return True
 
 
 class IsAuthenticated(BasePermission):
-    def has_permission(self, request, view):
+    @override
+    def has_permission(self, request: HttpRequest, view: APIView) -> bool:
         user = getattr(request, "user", None)
         return bool(user and user.is_authenticated)
 
@@ -190,12 +225,17 @@ class PermissionDenied(Exception):
     pass
 
 
-def exception_to_response(exc, request=None):
+def exception_to_response(
+    exc: Exception, request: HttpRequest | None = None
+) -> Response:
     """Map an exception to a :class:`Response`, replicating
     ``exceptions.custom_exception_handler`` + ``GRPC_STATUS_TO_HTTP``."""
     if isinstance(exc, grpc.RpcError):
-        code = exc.code()
-        detail = exc.details() or str(exc)
+        # grpc declares code()/details() on grpc.Call, not the base RpcError; the
+        # RpcError raised by a unary call is always a Call at runtime.
+        call = cast("grpc.Call", exc)
+        code = call.code()
+        detail = call.details() or str(exc)
         if code == grpc.StatusCode.UNAVAILABLE:
             log.warning("gRPC UNAVAILABLE", exc_info=exc)
             return Response(
@@ -251,7 +291,7 @@ def exception_to_response(exc, request=None):
 # ---------------------------------------------------------------------------
 
 
-def replace_query_param(url, key, val):
+def replace_query_param(url: str, key: str, val: object) -> str:
     """Return ``url`` with the query parameter ``key`` set to ``val``."""
     (scheme, netloc, path, query, fragment) = parse.urlsplit(str(url))
     query_dict = parse.parse_qs(query, keep_blank_values=True)
@@ -260,7 +300,7 @@ def replace_query_param(url, key, val):
     return parse.urlunsplit((scheme, netloc, path, query, fragment))
 
 
-def remove_query_param(url, key):
+def remove_query_param(url: str, key: str) -> str:
     """Return ``url`` with the query parameter ``key`` removed."""
     (scheme, netloc, path, query, fragment) = parse.urlsplit(str(url))
     query_dict = parse.parse_qs(query, keep_blank_values=True)
@@ -274,7 +314,7 @@ def remove_query_param(url, key):
 # ---------------------------------------------------------------------------
 
 
-def _render_response(result):
+def _render_response(result: Any) -> HttpResponseBase:
     """Normalize a handler return value into an ``HttpResponse`` to return.
 
     A :class:`Response` (now itself an ``HttpResponse`` with a lazily-rendered
@@ -292,7 +332,9 @@ def _render_response(result):
     return Response(result)
 
 
-def _instantiate_permissions(permission_classes):
+def _instantiate_permissions(
+    permission_classes: Iterable[type[BasePermission]],
+) -> list[BasePermission]:
     return [p() for p in permission_classes]
 
 
@@ -311,7 +353,7 @@ class APIView(View):
     ``self.request``/``self.args``/``self.kwargs``.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes: list[type[BasePermission]] = [IsAuthenticated]
 
     # Subclasses (and the ViewSet routing layer) may override.
     http_method_names = [
@@ -325,47 +367,55 @@ class APIView(View):
         "trace",
     ]
 
-    def get_permissions(self):
+    def get_permissions(self) -> list[BasePermission]:
         return _instantiate_permissions(self.permission_classes)
 
-    def permission_denied(self, request, message=None):
+    def permission_denied(
+        self, request: HttpRequest, message: str | None = None
+    ) -> None:
         user = getattr(request, "user", None)
         if not (user and user.is_authenticated):
             raise NotAuthenticated(message)
         raise PermissionDenied(message)
 
-    def check_permissions(self, request):
+    def check_permissions(self, request: HttpRequest) -> None:
         for permission in self.get_permissions():
             if not permission.has_permission(request, self):
                 self.permission_denied(
                     request, message=getattr(permission, "message", None)
                 )
 
-    def check_object_permissions(self, request, obj):
+    def check_object_permissions(self, request: HttpRequest, obj: Any) -> None:
         for permission in self.get_permissions():
             if not permission.has_object_permission(request, self, obj):
                 self.permission_denied(
                     request, message=getattr(permission, "message", None)
                 )
 
-    def initial(self, request, *args, **kwargs):
+    def initial(self, request: HttpRequest, *args: Any, **kwargs: Any) -> None:
         self.check_permissions(request)
 
-    def dispatch(self, request, *args, **kwargs):
+    @override
+    def dispatch(
+        self, request: HttpRequest, *args: Any, **kwargs: Any
+    ) -> HttpResponseBase:
         self.request = request
         self.args = args
         self.kwargs = kwargs
         try:
             self.initial(request, *args, **kwargs)
             handler = getattr(
-                self, request.method.lower(), self.http_method_not_allowed
+                self, (request.method or "").lower(), self.http_method_not_allowed
             )
             result = handler(request, *args, **kwargs)
             return _render_response(result)
         except Exception as exc:
             return _render_response(exception_to_response(exc, request))
 
-    def http_method_not_allowed(self, request, *args, **kwargs):
+    @override
+    def http_method_not_allowed(
+        self, request: HttpRequest, *args: Any, **kwargs: Any
+    ) -> Response:
         return Response(
             {"detail": f'Method "{request.method}" not allowed.'}, status=405
         )
@@ -383,14 +433,16 @@ class ViewSetMixin:
     ``APIView``)."""
 
     @classmethod
-    def as_view(cls, actions=None, **initkwargs):
+    def as_view(
+        cls, actions: dict[str, str] | None = None, **initkwargs: Any
+    ) -> Callable[..., HttpResponseBase]:
         if not actions:
             raise TypeError(
                 "The `actions` argument must be provided when calling "
                 "`.as_view()` on a ViewSet."
             )
 
-        def view(request, *args, **kwargs):
+        def view(request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
             self = cls(**initkwargs)
             if "get" in actions and "head" not in actions:
                 actions["head"] = actions["get"]
@@ -405,14 +457,16 @@ class ViewSetMixin:
 
         return view
 
-    def initialize_request(self, request):
-        method = request.method.lower()
+    def initialize_request(self, request: HttpRequest) -> None:
+        method = (request.method or "").lower()
         if method == "options":
             self.action = "metadata"
         else:
             self.action = self.action_map.get(method)  # ty: ignore[unresolved-attribute]  # DRF shim: action_map set on the instance by as_view()
 
-    def dispatch(self, request, *args, **kwargs):
+    def dispatch(
+        self, request: HttpRequest, *args: Any, **kwargs: Any
+    ) -> HttpResponseBase:
         self.request = request
         self.args = args
         self.kwargs = kwargs
@@ -421,7 +475,7 @@ class ViewSetMixin:
             self.initial(request, *args, **kwargs)  # ty: ignore[unresolved-attribute]  # mixin: always composed with APIView (ViewSet/GenericViewSet)
             handler = getattr(
                 self,
-                request.method.lower(),
+                (request.method or "").lower(),
                 self.http_method_not_allowed,  # ty: ignore[unresolved-attribute]  # mixin: always composed with APIView (ViewSet/GenericViewSet)
             )
             result = handler(request, *args, **kwargs)
@@ -438,15 +492,15 @@ class GenericViewSet(ViewSetMixin, APIView):
 
     # Match GenericAPIBackedViewSet's relaxed regex (Airavata ids contain '.').
     lookup_field = "pk"
-    lookup_url_kwarg = None
+    lookup_url_kwarg: str | None = None
     lookup_value_regex = "[^/]+"
 
-    pagination_class = None
-    _paginator = None
+    pagination_class: type[LimitOffsetPagination] | None = None
+    _paginator: LimitOffsetPagination | None = None
 
     # -- pagination -------------------------------------------------------
     @property
-    def paginator(self):
+    def paginator(self) -> LimitOffsetPagination | None:
         if self._paginator is None:
             if self.pagination_class is None:
                 self._paginator = None
@@ -454,13 +508,17 @@ class GenericViewSet(ViewSetMixin, APIView):
                 self._paginator = self.pagination_class()
         return self._paginator
 
-    def paginate_queryset(self, queryset):
-        if self.paginator is None:
+    def paginate_queryset(self, queryset: Any) -> list[Any] | None:
+        paginator = self.paginator
+        if paginator is None:
             return None
-        return self.paginator.paginate_queryset(queryset, self.request, view=self)
+        request = cast("AiravataRequest", self.request)
+        return paginator.paginate_queryset(queryset, request, view=self)
 
-    def get_paginated_response(self, data):
-        return self.paginator.get_paginated_response(data)
+    def get_paginated_response(self, data: Any) -> Response:
+        paginator = self.paginator
+        assert paginator is not None
+        return paginator.get_paginated_response(data)
 
 
 # -- model action mixins --------------------------------------------------
@@ -473,36 +531,38 @@ class GenericViewSet(ViewSetMixin, APIView):
 # concrete default is DestroyModelMixin (below), which delegates to
 # perform_destroy().
 class ListModelMixin:
-    def list(self, request, *args, **kwargs):
+    def list(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         raise NotImplementedError(f"{type(self).__name__} must implement list()")
 
 
 class RetrieveModelMixin:
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         raise NotImplementedError(f"{type(self).__name__} must implement retrieve()")
 
 
 class CreateModelMixin:
-    def create(self, request, *args, **kwargs):
+    def create(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         raise NotImplementedError(f"{type(self).__name__} must implement create()")
 
 
 class UpdateModelMixin:
-    def update(self, request, *args, **kwargs):
+    def update(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         raise NotImplementedError(f"{type(self).__name__} must implement update()")
 
-    def partial_update(self, request, *args, **kwargs):
+    def partial_update(
+        self, request: HttpRequest, *args: Any, **kwargs: Any
+    ) -> Response:
         kwargs["partial"] = True
         return self.update(request, *args, **kwargs)
 
 
 class DestroyModelMixin:
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         instance = self.get_object()  # ty: ignore[unresolved-attribute]  # provided by GenericViewSet at composition
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Any) -> None:
         instance.delete()
 
 
@@ -524,7 +584,12 @@ mixins = _Mixins()
 # ---------------------------------------------------------------------------
 
 
-def action(detail=False, methods=None, url_path=None, url_name=None):
+def action(
+    detail: bool = False,
+    methods: list[str] | None = None,
+    url_path: str | None = None,
+    url_name: str | None = None,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Mark a viewset method as a routable extra action.
 
     Records ``mapping`` (http-method → method-name), ``detail``, ``url_path``
@@ -535,17 +600,20 @@ def action(detail=False, methods=None, url_path=None, url_name=None):
     methods = ["get"] if methods is None else methods
     methods = [m.lower() for m in methods]
 
-    def decorator(func):
-        func.mapping = dict.fromkeys(methods, func.__name__)
-        func.detail = detail
-        func.url_path = url_path if url_path else func.__name__
-        func.url_name = url_name if url_name else func.__name__.replace("_", "-")
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        fn = cast("_ActionMethod", func)
+        fn.mapping = dict.fromkeys(methods, fn.__name__)
+        fn.detail = detail
+        fn.url_path = url_path if url_path else fn.__name__
+        fn.url_name = url_name if url_name else fn.__name__.replace("_", "-")
         return func
 
     return decorator
 
 
-def api_view(http_method_names=None):
+def api_view(
+    http_method_names: list[str] | None = None,
+) -> Callable[[Callable[..., Any]], Callable[..., HttpResponseBase]]:
     """Wrap a plain function as an ``APIView``-equivalent.
 
     Defaults to GET. Provides the same dispatch (Response rendering, exception
@@ -555,11 +623,15 @@ def api_view(http_method_names=None):
     http_method_names = ["GET"] if http_method_names is None else http_method_names
     allowed = [m.lower() for m in http_method_names]
 
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., HttpResponseBase]:
+        fn = cast("_ActionMethod", func)
+
         class WrappedAPIView(APIView):
             pass
 
-        def handler(self, request, *args, **kwargs):
+        def handler(
+            self: APIView, request: HttpRequest, *args: Any, **kwargs: Any
+        ) -> Any:
             return func(request, *args, **kwargs)
 
         for method in allowed:
@@ -569,20 +641,22 @@ def api_view(http_method_names=None):
         WrappedAPIView.permission_classes = getattr(
             func, "permission_classes", APIView.permission_classes
         )
-        WrappedAPIView.__name__ = func.__name__
+        WrappedAPIView.__name__ = fn.__name__
         WrappedAPIView.__doc__ = func.__doc__
         return WrappedAPIView.as_view()
 
     return decorator
 
 
-def permission_classes(permission_classes):
+def permission_classes(
+    permission_classes: list[type[BasePermission]],
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """``@permission_classes([...])`` for ``@api_view`` functions. Apply it
     *above* ``@api_view`` (DRF order); it stashes the classes the wrapper reads.
     """
 
-    def decorator(func):
-        func.permission_classes = permission_classes
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        cast("_ActionMethod", func).permission_classes = permission_classes
         return func
 
     return decorator
@@ -606,9 +680,11 @@ class LimitOffsetPagination:
     default_limit = 10
     limit_query_param = "limit"
     offset_query_param = "offset"
-    max_limit = None
+    max_limit: int | None = None
+    limit: int
+    offset: int
 
-    def get_limit(self, request):
+    def get_limit(self, request: AiravataRequest) -> int | None:
         if self.limit_query_param:
             try:
                 raw = request.query_params[self.limit_query_param]
@@ -620,21 +696,24 @@ class LimitOffsetPagination:
                 pass
         return self.default_limit
 
-    def get_offset(self, request):
+    def get_offset(self, request: AiravataRequest) -> int:
         try:
             return max(0, int(request.query_params[self.offset_query_param]))
         except (KeyError, ValueError):
             return 0
 
-    def paginate_queryset(self, queryset, request, view=None):
-        self.limit = self.get_limit(request)
-        if self.limit is None:
+    def paginate_queryset(
+        self, queryset: Any, request: AiravataRequest, view: Any = None
+    ) -> list[Any] | None:
+        limit = self.get_limit(request)
+        if limit is None:
             return None
+        self.limit = limit
         self.offset = self.get_offset(request)
         self.request = request
         return list(queryset[self.offset : self.offset + self.limit])
 
-    def get_paginated_response(self, data):
+    def get_paginated_response(self, data: Any) -> Response:
         return Response(
             OrderedDict(
                 [
@@ -647,13 +726,13 @@ class LimitOffsetPagination:
             )
         )
 
-    def get_next_link(self):
+    def get_next_link(self) -> str:
         url = self.request.build_absolute_uri()
         url = replace_query_param(url, self.limit_query_param, self.limit)
         offset = self.offset + self.limit
         return replace_query_param(url, self.offset_query_param, offset)
 
-    def get_previous_link(self):
+    def get_previous_link(self) -> str | None:
         if self.offset <= 0:
             return None
         url = self.request.build_absolute_uri()
@@ -699,7 +778,7 @@ _DETAIL_ROUTE = {
 }
 
 
-def _get_lookup_regex(viewset):
+def _get_lookup_regex(viewset: type[ViewSetMixin]) -> str:
     lookup_field = getattr(viewset, "lookup_field", "pk")
     lookup_url_kwarg = getattr(viewset, "lookup_url_kwarg", None) or lookup_field
     # DRF's SimpleRouter default value pattern is '[^/.]+'; our GenericViewSet
@@ -709,7 +788,7 @@ def _get_lookup_regex(viewset):
     return f"(?P<{lookup_url_kwarg}>{lookup_value})"
 
 
-def _method_map(viewset, mapping):
+def _method_map(viewset: type[ViewSetMixin], mapping: dict[str, str]) -> dict[str, str]:
     """Keep only the http-method→action pairs the viewset actually implements."""
     bound = {}
     for method, action_name in mapping.items():
@@ -718,11 +797,11 @@ def _method_map(viewset, mapping):
     return bound
 
 
-def _extra_actions(viewset):
+def _extra_actions(viewset: type[ViewSetMixin]) -> list[Any]:
     return [m for _, m in getmembers(viewset, lambda attr: hasattr(attr, "mapping"))]
 
 
-def route(prefix, viewset, basename):
+def route(prefix: str, viewset: type[ViewSetMixin], basename: str) -> list[URLPattern]:
     """Reproduce DRF ``DefaultRouter`` output for ``viewset`` (no ``.json``
     format-suffix variants, no api-root, no browsable API).
 
@@ -739,7 +818,7 @@ def route(prefix, viewset, basename):
 
     # Build the ordered route specs: list route, list-actions, detail route,
     # detail-actions (mirrors SimpleRouter.routes ordering).
-    specs = []
+    specs: list[dict[str, Any]] = []
     specs.append(dict(_LIST_ROUTE))
     for a in list_actions:
         specs.append(
@@ -761,17 +840,21 @@ def route(prefix, viewset, basename):
             }
         )
 
-    urls = []
+    urls: list[URLPattern] = []
     for spec in specs:
         mapping = _method_map(viewset, spec["mapping"])
         if not mapping:
             continue
-        regex = spec["url"].format(prefix=prefix, lookup=lookup)  # ty: ignore[unresolved-attribute]  # heterogeneous spec dict: "url" is always a str
+        regex = spec["url"].format(
+            prefix=prefix, lookup=lookup
+        )  # heterogeneous spec dict: "url" is always a str
         view = viewset.as_view(mapping, basename=basename, detail=spec["detail"])
-        name = spec["name"].format(basename=basename)  # ty: ignore[unresolved-attribute]  # heterogeneous spec dict: "name" is always a str
+        name = spec["name"].format(
+            basename=basename
+        )  # heterogeneous spec dict: "name" is always a str
         urls.append(re_path(regex, view, name=name))
     return urls
 
 
-def _escape(url_path):
+def _escape(url_path: str) -> str:
     return url_path.replace("{", "{{").replace("}", "}}")

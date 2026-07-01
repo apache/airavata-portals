@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from importlib.metadata import entry_points
+from typing import override
 
 from django.apps import AppConfig
 
@@ -7,7 +10,8 @@ class ApiConfig(AppConfig):
     name = "django_airavata.apps.api"
     label = "django_airavata_api"
 
-    def ready(self):
+    @override
+    def ready(self) -> None:
         from . import signals  # noqa
         from . import output_views
 
