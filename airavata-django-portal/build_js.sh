@@ -2,16 +2,21 @@
 
 # Get the directory that this script is in
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR" || exit 1
 
+# Ordered production build of the npm-workspaces packages. Dependencies are
+# installed once at the workspace root (npm ci / npm install) by CI and the
+# Docker build; this script only runs the builds. Order matters: api + common
+# first (consumers import their source), and workspace-plugin-api before
+# workspace (workspace depends on its built dist/).
 echo -e "Running production JS builds"
-(cd $SCRIPT_DIR/django_airavata/apps/api && yarn && yarn run build) || exit 1
-(cd $SCRIPT_DIR/django_airavata/static/common && yarn && yarn run build) || exit 1
-(cd $SCRIPT_DIR/django_airavata/apps/auth && yarn && yarn run build) || exit 1
-(cd $SCRIPT_DIR/django_airavata/apps/admin && yarn && yarn run build) || exit 1
-(cd $SCRIPT_DIR/django_airavata/apps/groups && yarn && yarn run build) || exit 1
-(cd $SCRIPT_DIR/django_airavata/apps/workspace/django-airavata-workspace-plugin-api && yarn && yarn run build) || exit 1
-(cd $SCRIPT_DIR/django_airavata/apps/workspace && yarn && yarn run build) || exit 1
-(cd $SCRIPT_DIR/django_airavata/apps/dataparsers && yarn && yarn run build) || exit 1
+npm run build --workspace=django-airavata-api || exit 1
+npm run build --workspace=django-airavata-common-ui || exit 1
+npm run build --workspace=admin-airavata || exit 1
+npm run build --workspace=django-airavata-group-views || exit 1
+npm run build --workspace=django-airavata-workspace-plugin-api || exit 1
+npm run build --workspace=django-airavata-workspace-views || exit 1
+npm run build --workspace=django-airavata-dataparsers-views || exit 1
 
 echo -e "All builds finished successfully!"
 

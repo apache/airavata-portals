@@ -2,7 +2,11 @@
   <abbr :title="date.toString()">{{ fromNow }}</abbr>
 </template>
 <script>
-import moment from "moment";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
+
 export default {
   name: "human-date",
   props: {
@@ -10,7 +14,7 @@ export default {
   },
   computed: {
     fromNow() {
-      return moment(this.date).fromNow();
+      return dayjs(this.date).fromNow();
     },
   },
 };

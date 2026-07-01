@@ -11,8 +11,11 @@ venv/
 .vscode/
 jsconfig.json
 airavata_django_portal.egg-info
-# AIRAVATA-2951 package-lock.json files cause the build to fail when deploying to server
-package-lock.json
+# Stray per-app package-lock.json files broke older server deploys (AIRAVATA-2951).
+# The npm-workspaces setup keeps a single ROOT lockfile, which must be committed so
+# `npm ci` works in CI and the Docker build; ignore only nested lockfiles.
+**/package-lock.json
+!/package-lock.json
 # mkdocs
 site/
 .tox/

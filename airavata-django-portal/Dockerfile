@@ -1,65 +1,34 @@
 # node image is based on Debian and includes necessary build tools
-# node 20 LTS — vite 6 requires ^18 || ^20 || >=22 (excludes the old 19.9.0).
-FROM node:20 as build-stage
+# node 24 LTS — satisfies vite 8 (^18 || ^20 || >=22) and the dataparsers
+# maplibre-gl/@unovis chain, which requires node >=22.
+FROM node:24 as build-stage
 
-# build api javascript
-# api must come first, then common, since the others depend on these
-WORKDIR /code/django_airavata/apps/api
-COPY ./django_airavata/apps/api/package.json ./django_airavata/apps/api/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/api/ .
-RUN yarn run build
+WORKDIR /code
 
-# build common javascript
-WORKDIR /code/django_airavata/static/common
-COPY ./django_airavata/static/common/package.json ./django_airavata/static/common/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/static/common/ .
-RUN yarn run build
+# The frontend is a single npm-workspaces monorepo: one root package.json declares
+# the 8 member packages, one root package-lock.json pins the whole graph. Copy the
+# root manifest + lockfile and EVERY member's package.json first so `npm ci` is
+# cached independently of source changes (npm needs each member's manifest present
+# to resolve and link the workspace graph).
+COPY package.json package-lock.json ./
+COPY django_airavata/apps/api/package.json ./django_airavata/apps/api/
+COPY django_airavata/static/common/package.json ./django_airavata/static/common/
+COPY django_airavata/apps/auth/package.json ./django_airavata/apps/auth/
+COPY django_airavata/apps/admin/package.json ./django_airavata/apps/admin/
+COPY django_airavata/apps/groups/package.json ./django_airavata/apps/groups/
+COPY django_airavata/apps/dataparsers/package.json ./django_airavata/apps/dataparsers/
+COPY django_airavata/apps/workspace/package.json ./django_airavata/apps/workspace/
+COPY django_airavata/apps/workspace/django-airavata-workspace-plugin-api/package.json ./django_airavata/apps/workspace/django-airavata-workspace-plugin-api/
 
-# build dataparsers javascript
-WORKDIR /code/django_airavata/apps/dataparsers
-COPY ./django_airavata/apps/dataparsers/package.json ./django_airavata/apps/dataparsers/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/dataparsers/ .
-RUN yarn run build
+# One install for the whole workspace (cached npm download dir speeds rebuilds).
+RUN --mount=type=cache,target=/root/.npm npm ci
 
-# build groups javascript
-WORKDIR /code/django_airavata/apps/groups
-COPY ./django_airavata/apps/groups/package.json ./django_airavata/apps/groups/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/groups/ .
-RUN yarn run build
-
-# build auth javascript
-WORKDIR /code/django_airavata/apps/auth
-COPY ./django_airavata/apps/auth/package.json ./django_airavata/apps/auth/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/auth/ .
-RUN yarn run build
-
-# build workspace/django-airavata-workspace-plugin-api javascript
-# This one must come before workspace build
-WORKDIR /code/django_airavata/apps/workspace/django-airavata-workspace-plugin-api
-COPY ./django_airavata/apps/workspace/django-airavata-workspace-plugin-api/package.json ./django_airavata/apps/workspace/django-airavata-workspace-plugin-api/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/workspace/django-airavata-workspace-plugin-api/ .
-RUN yarn run build
-
-# build admin javascript
-# To reuse cache best, putting the two most volatile apps, admin and workspace, last
-WORKDIR /code/django_airavata/apps/admin
-COPY ./django_airavata/apps/admin/package.json ./django_airavata/apps/admin/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/admin/ .
-RUN yarn run build
-
-# build workspace javascript
-WORKDIR /code/django_airavata/apps/workspace
-COPY ./django_airavata/apps/workspace/package.json ./django_airavata/apps/workspace/yarn.lock ./
-RUN yarn
-COPY ./django_airavata/apps/workspace/ .
-RUN yarn run build
+# Copy sources and run the ordered workspace build (api + common first, then the
+# rest; workspace-plugin-api before workspace). build_js.sh fans out via
+# `npm run build --workspace=<name>` from this root.
+COPY build_js.sh ./
+COPY django_airavata ./django_airavata
+RUN ./build_js.sh
 
 
 

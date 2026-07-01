@@ -21,7 +21,6 @@ dependencies = [
     "Django>=5.2.15,<6",
     "requests>=2.32",
     "requests-oauthlib>=2.0",
-    "django-webpack-loader==0.6.0",
     "PyJWT>=2.10",
     # gRPC runtime for the Airavata SDK stubs.
     "grpcio>=1.60.0",
@@ -65,10 +64,17 @@ extend-exclude = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "DJ", "RUF"]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "DJ", "RUF", "ANN"]
 # E501 (line length) is owned by `ruff format`; RUF012 fights Django's mutable
-# class attributes (Meta, fields), so it is disabled rather than annotated away.
-ignore = ["E501", "RUF012"]
+# class attributes (Meta, fields); ANN401 forbids the `Any` the JSON/proto-dict
+# request boundary legitimately needs. All disabled rather than annotated away.
+ignore = ["E501", "RUF012", "ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests are exercised, not type-surfaces — don't force annotations on them.
+"**/tests/**" = ["ANN"]
+"**/tests.py" = ["ANN"]
+"runtests.py" = ["ANN"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["django_airavata", "tests"]
@@ -80,5 +86,13 @@ python-version = "3.12"
 extra-paths = ["../../airavata/airavata-python-sdk"]
 
 [tool.ty.src]
-include = ["django_airavata", "tests", "manage.py", "runtests.py"]
-exclude = ["**/migrations", "settings_local.py"]
+include = ["django_airavata", "manage.py"]
+# Tests are exercised by the runner, not held to the static type bar (the Django
+# test-client response typing in particular is intentionally loose) — matching
+# the ANN exclusion for tests above.
+exclude = ["**/migrations", "settings_local.py", "**/tests/**"]
+
+[tool.ty.rules]
+# Strict: every rule is an error. The portal builds on the (sound) generated
+# pb2 types and is fully annotated, so the whole Python surface is type-checked.
+all = "error"

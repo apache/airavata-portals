@@ -59,9 +59,12 @@
 </template>
 
 <script>
-import moment from "moment";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import { Bell, CheckCircle2 } from "@lucide/vue";
 import { utils } from "django-airavata-api";
+
+dayjs.extend(relativeTime);
 
 export default {
   name: "gateway-notices-container",
@@ -77,7 +80,7 @@ export default {
   },
   methods: {
     fromNow(date) {
-      return moment(date).fromNow();
+      return dayjs(date).fromNow();
     },
     ackNotification(notice) {
       utils.FetchUtils.get(notice.url).then(() => {

@@ -1,0 +1,21 @@
+{
+  "name": "airavata-django-portal-frontend",
+  "description": "npm-workspaces monorepo for the Airavata Django Portal frontend packages",
+  "private": true,
+  "license": "Apache-2.0",
+  "workspaces": [
+    "django_airavata/apps/api",
+    "django_airavata/static/common",
+    "django_airavata/apps/auth",
+    "django_airavata/apps/admin",
+    "django_airavata/apps/groups",
+    "django_airavata/apps/dataparsers",
+    "django_airavata/apps/workspace",
+    "django_airavata/apps/workspace/django-airavata-workspace-plugin-api"
+  ],
+  "scripts": {
+    "build": "./build_js.sh",
+    "lint": "./lint_js.sh",
+    "test": "./test_js.sh"
+  }
+}

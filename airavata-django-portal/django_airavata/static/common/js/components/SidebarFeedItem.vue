@@ -24,7 +24,10 @@
 </template>
 
 <script>
-import moment from "moment";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
 
 export default {
   name: "sidebar-feed-item",
@@ -42,7 +45,7 @@ export default {
   computed: {
     timestamp() {
       if (this.feedItem.timestamp) {
-        return moment(this.feedItem.timestamp).fromNow();
+        return dayjs(this.feedItem.timestamp).fromNow();
       } else {
         return null;
       }

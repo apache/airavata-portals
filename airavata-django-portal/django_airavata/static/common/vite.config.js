@@ -5,54 +5,12 @@ import tailwindcss from "@tailwindcss/vite";
 
 const publicPath = "/static/common/dist/";
 
-// Emit a webpack-stats.json compatible with django-webpack-loader so the Django
-// templates' {% render_bundle/get_files 'app'/'shell' ... 'COMMON' %} tags keep
-// working unchanged after the webpack -> Vite migration.
-function djangoWebpackStats() {
-  return {
-    name: "django-webpack-stats",
-    generateBundle(_options, bundle) {
-      // Index emitted CSS assets by their base name (e.g. "css/app.css" -> "app").
-      // A CSS-only entry (main.js imports only app.css, no JS) leaves the CSS out
-      // of the chunk's viteMetadata.importedCss, so we also match CSS assets to
-      // their entry by name.
-      const cssByName = {};
-      for (const [fileName, item] of Object.entries(bundle)) {
-        if (item.type === "asset" && fileName.endsWith(".css")) {
-          const base = fileName.split("/").pop().replace(/\.css$/, "");
-          (cssByName[base] ||= []).push(fileName);
-        }
-      }
-      const chunks = {};
-      for (const fileName of Object.keys(bundle)) {
-        const item = bundle[fileName];
-        if (item.type === "chunk" && item.isEntry) {
-          const files = (chunks[item.name] ||= []);
-          const seen = new Set();
-          const add = (f) => {
-            if (seen.has(f)) return;
-            seen.add(f);
-            files.push({ name: f, publicPath: publicPath + f });
-          };
-          add(fileName);
-          for (const css of item.viteMetadata?.importedCss || []) add(css);
-          for (const css of cssByName[item.name] || []) add(css);
-        }
-      }
-      this.emitFile({
-        type: "asset",
-        fileName: "webpack-stats.json",
-        source: JSON.stringify({ status: "done", publicPath, chunks }, null, 2),
-      });
-    },
-  };
-}
-
-// Bundles loaded directly by Django templates (no index.html); entry JS + CSS
-// are mapped into webpack-stats.json for django-webpack-loader.
+// Bundles loaded directly by Django templates (no index.html); the entry JS +
+// CSS are resolved from Vite's native manifest (dist/.vite/manifest.json) by the
+// {% vite_js/vite_css %} Django template tags.
 export default defineConfig({
   base: publicPath,
-  plugins: [vue(), tailwindcss(), djangoWebpackStats()],
+  plugins: [vue(), tailwindcss()],
   // The source uses extensionless `.vue` imports throughout (Vue CLI resolved
   // them automatically); add `.vue` so Vite/Rollup resolves them too.
   resolve: {
@@ -63,6 +21,7 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
+    manifest: true,
     emptyOutDir: true,
     modulePreload: false,
     rollupOptions: {

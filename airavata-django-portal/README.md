@@ -16,16 +16,15 @@ Django Portal locally. This will allow you to try it out and can also be used as
 a development environment. If you just want to run the Airavata Django Portal
 locally, see the Docker instructions below for a more simplified approach.
 
-The Airavata Django Portal works with Python versions 3.6 - 3.10. You'll need
-one of these versions installed locally.
+The Airavata Django Portal requires Python 3.12. You'll need it installed
+locally.
 
-You'll also need Node.js and yarn to build the JavaScript frontend code. Please
-install Node.js version 19. You
-can also use [nvm](https://github.com/nvm-sh/nvm) to manage the Node.js install.
-If you have nvm installed you can run `nvm install && nvm use` before running
-any yarn commands. See
-[the Yarn package manager](https://classic.yarnpkg.com/lang/en/) for information
-on how to install Yarn 1 (Classic).
+You'll also need Node.js (version 24) and npm to build the JavaScript frontend
+code; npm ships with Node.js. You can use
+[nvm](https://github.com/nvm-sh/nvm) to manage the Node.js install — with nvm
+installed, run `nvm install && nvm use` (it reads `.nvmrc`) before building. The
+frontend is an npm workspace, so a single `npm install` at the repo root installs
+all of the packages.
 
 > **Recommended (Tilt + devstack):** run the portal as a container against a
 > local Apache Airavata stack, both managed with [Tilt](https://tilt.dev).
@@ -66,7 +65,7 @@ all persistence goes through the Airavata gRPC API and the cache.
     ./build_js.sh
     ```
 
-    - **Windows note**: on Windows, run `.\build_js.bat` instead
+    - **Windows note**: run `./build_js.sh` from WSL or Git Bash.
 
 4.  Run the server.
 

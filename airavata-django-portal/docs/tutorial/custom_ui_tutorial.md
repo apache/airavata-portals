@@ -653,7 +653,7 @@ the settings_local.py file for local development. Move or copy it to the
 
     7. Build the JavaScript frontend code.
 
-            (tutorial-env) PS C:\Users\username\airavata-django-portal>.\build_js.bat
+            (tutorial-env) PS C:\Users\username\airavata-django-portal>./build_js.sh   # run from WSL or Git Bash
 
        This last step can take a few minutes to complete.
 
