@@ -27,7 +27,7 @@ prompt-toolkit==3.0.32
 ptyprocess==0.7.0
 pure-eval==0.2.2
 Pygments==2.13.0
-PyJWT==0.4.3
+PyJWT==2.13.0
 pytz==2022.6
 requests==2.32.5
 six==1.17.0
