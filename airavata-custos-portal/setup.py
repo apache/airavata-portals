@@ -25,7 +25,7 @@ setup(
               'airavata_custos_portal.apps.api'],
     package_data={'airavata_custos_portal.apps.frontend': ['static/**/*', 'templates/**/*']},
     install_requires=[
-        "Django<4.0",
+        "Django<6.0",
         "django-webpack-loader",
         "djangorestframework",
         "requests",
