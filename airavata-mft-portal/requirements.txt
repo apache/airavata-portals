@@ -1,4 +1,4 @@
-Django==4.2.30
+Django==5.2.16
 djangorestframework==3.16.1
 grpcio==1.80.0
 googleapis-common-protos==1.75.0
