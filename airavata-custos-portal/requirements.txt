@@ -31,7 +31,7 @@ PyJWT==0.4.3
 pytz==2022.6
 requests==2.32.5
 six==1.17.0
-sqlparse==0.5.4
+sqlparse==0.6.0
 stack-data==0.6.0
 tomli==2.0.1
 traitlets==5.5.0
