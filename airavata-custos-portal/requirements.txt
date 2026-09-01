@@ -10,7 +10,7 @@ decorator==5.1.1
 Django==3.2.16
 django-environ==0.9.0
 django-webpack-loader==0.6.0
-djangorestframework==3.14.0
+djangorestframework==3.17.2
 executing==1.2.0
 gunicorn==22.0.0
 idna==3.4
