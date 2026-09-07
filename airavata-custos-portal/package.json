@@ -21,7 +21,7 @@
     "dotenv-webpack": "^8.0.1",
     "fs": "^0.0.1-security",
     "jwt-decode": "^3.0.0-beta.2",
-    "qs": "^6.9.4",
+    "qs": "^6.16.0",
     "vue": "^2.6.11",
     "vue-router": "^3.4.3",
     "vue-typeahead-bootstrap": "^2.11.1",
